@@ -1,0 +1,130 @@
+/* pages/profile/profile.wxss —— 对齐 ui-redesign-preview.html v2 */
+/* 竖直渐变底（顶部青绿→底部桃色），与首页/训练执行页统一；顶部青绿与 .profile-head 同色自然衔接，底部桃色与 overscroll 一致 */
+.page { padding: 0 0 calc(130rpx + env(safe-area-inset-bottom)); min-height: 100vh; background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%); }
+
+/* ===== 头部（玻璃卡，与首页 hero / 全局玻璃体系一致） ===== */
+.profile-head {
+  margin: 24rpx 32rpx;
+  background: var(--glass-strong);
+  border: 1rpx solid var(--glass-border);
+  border-radius: 36rpx;
+  box-shadow: var(--shadow-mint);
+  padding: 36rpx 32rpx;
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+}
+/* 柔和薄荷光晕（玻璃高光，呼应玻璃拟态光反射） */
+.profile-head:after {
+  content: ""; position: absolute; right: -60rpx; top: -60rpx;
+  width: 220rpx; height: 220rpx; border-radius: 50%;
+  background: radial-gradient(circle, rgba(46,207,176,0.30), rgba(46,207,176,0) 70%);
+  pointer-events: none; /* 纯装饰，避免盖住右上角「退出」按钮吞掉点击 */
+}
+.profile-head .av {
+  width: 112rpx; height: 112rpx; border-radius: 50%;
+  background: var(--primary-tint); color: var(--primary-deep); font-size: 52rpx; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.avatar-img { width: 112rpx; height: 112rpx; border-radius: 50%; display: block; }
+
+/* 已登录：头像 + 昵称 + 退出，横向排列 */
+.profile-head { display: flex; align-items: center; gap: 24rpx; }
+/* 未登录（访客）：竖向居中排版，避免头像 / 欢迎语 / 登录按钮挤在一行成一团 */
+.profile-head.guest {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 44rpx 32rpx 40rpx;
+  gap: 0;
+}
+.profile-head.guest .av { margin-bottom: 22rpx; }
+.profile-head.guest .ph-text { align-items: center; gap: 12rpx; margin-bottom: 30rpx; }
+.profile-head.guest .pn { font-size: 38rpx; }
+.profile-head.guest .ps { font-size: 24rpx; }
+.profile-head.guest .login-btn { width: 100%; max-width: 380rpx; height: 84rpx; line-height: 84rpx; font-size: 30rpx; }
+.ph-text { flex: 1; display: flex; flex-direction: column; gap: 8rpx; min-width: 0; }
+.pn { font-size: 34rpx; font-weight: 700; color: var(--text); }
+.ps { font-size: 24rpx; color: var(--text-sub); }
+.login-btn {
+  flex: 0 0 auto; background: linear-gradient(135deg, var(--primary), var(--primary-deep)); color: #fff;
+  border-radius: 999rpx; font-size: 28rpx; font-weight: 600;
+  padding: 0 36rpx; height: 72rpx; line-height: 72rpx; border: none;
+  box-shadow: var(--shadow-mint);
+}
+.login-btn::after { border: none; }
+
+/* 已登录 */
+.avatar-btn {
+  width: 112rpx; height: 112rpx; border-radius: 50%; overflow: hidden;
+  padding: 0; margin: 0; border: none; background: transparent; line-height: 1;
+  flex-shrink: 0; box-shadow: 0 0 0 4rpx rgba(46,207,176,0.35);
+}
+.avatar-btn:active { opacity: 0.85; }
+.nick-input {
+  width: 100%; font-size: 34rpx; font-weight: 700; color: var(--text);
+  background: transparent; border: none; padding: 0; min-height: 48rpx;
+}
+.logout-link {
+  flex-shrink: 0; font-size: 24rpx; color: var(--primary-deep);
+  padding: 10rpx 20rpx; border-radius: 24rpx; background: var(--primary-tint);
+}
+.logout-link:active { opacity: 0.6; }
+
+/* ===== 数据条（对齐预览 pstats） ===== */
+.pstats {
+  margin: 24rpx 32rpx 0;
+  background: var(--glass-strong); border: 1rpx solid var(--glass-border); border-radius: 28rpx; box-shadow: var(--shadow-card);
+  padding: 24rpx; display: flex;
+}
+.pv { flex: 1; text-align: center; position: relative; }
+.pv:not(:last-child):after { content: ""; position: absolute; right: 0; top: 8rpx; bottom: 8rpx; width: 1rpx; background: var(--line); }
+.pv-n { font-size: 44rpx; font-weight: 800; color: var(--text); }
+.pv-k { font-size: 22rpx; color: var(--text-sub); margin-top: 6rpx; }
+
+/* ===== 健康概览卡片 ===== */
+.health-card { margin: 24rpx 32rpx 0; }
+.section-title { display: flex; align-items: center; gap: 12rpx; font-size: 32rpx; font-weight: 700; color: var(--text); margin-bottom: 20rpx; }
+
+.health-grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
+.hg-item {
+  width: calc(50% - 8rpx); box-sizing: border-box;
+  display: flex; align-items: center; gap: 18rpx;
+  background: var(--bg); border: 1rpx solid var(--glass-border);
+  border-radius: 24rpx; padding: 22rpx 20rpx;
+  box-shadow: var(--shadow-card);
+}
+/* 图标徽章：浅玻璃底衬托彩色 PNG 图标（图标为位图不可染色，故用浅底而非深底白字）；
+   BMI 无专属图标，用桃色实底 + 白字文字徽章加以突出 */
+.hg-ic {
+  width: 72rpx; height: 72rpx; border-radius: 20rpx; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24rpx; font-weight: 800; line-height: 1;
+  border: 1rpx solid rgba(46,207,176,.14);
+}
+.hg-ic-goal { background: linear-gradient(135deg, #EAFFFA, #D6F6EE); }
+.hg-ic-scale { background: linear-gradient(135deg, #E9FBF8, #D4F2EC); }
+.hg-ic-user { background: linear-gradient(135deg, #FFF3EC, #FFE6D8); }
+.hg-ic-bmi { background: linear-gradient(135deg, #FFB199, #FF8A66); color: #fff; border-color: transparent; box-shadow: 0 6rpx 16rpx rgba(232,116,59,.26); }
+
+.hg-body { display: flex; flex-direction: column; min-width: 0; }
+.hg-v { font-size: 38rpx; font-weight: 800; color: var(--text); line-height: 1.15; }
+.hg-u { font-size: 22rpx; font-weight: 600; color: var(--text-sub); margin-left: 4rpx; }
+.hg-k { font-size: 22rpx; color: var(--text-sub); margin-top: 4rpx; }
+
+/* ===== 菜单（对齐预览） ===== */
+.menu { margin: 24rpx 32rpx 0; padding: 8rpx 0; overflow: hidden; }
+.menu .mi { display: flex; align-items: center; gap: 20rpx; padding: 28rpx 28rpx; }
+.menu .mi:not(:last-child) { border-bottom: 1rpx solid var(--line); }
+.menu .mi-ic {
+  width: 64rpx; height: 64rpx; border-radius: 16rpx; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto; font-size: 34rpx;
+}
+.menu .mi-t { flex: 1; font-size: 30rpx; font-weight: 600; color: var(--text); }
+.menu .mi-ar { color: var(--line-strong); font-size: 36rpx; }
+
+/* 媒体署名 */
+.attribution { text-align: center; font-size: 20rpx; color: var(--text-weak); padding: 28rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); line-height: 1.6; }
+.attribution text { display: block; }
+
+.bottom-gap { height: 20rpx; }

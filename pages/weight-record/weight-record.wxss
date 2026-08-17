@@ -1,0 +1,19 @@
+/* pages/weight-record/weight-record.wxss —— 品牌焕新版 */
+.page { padding-top: 24rpx; }
+.wr-title { font-size: 34rpx; font-weight: 800; margin-bottom: 24rpx; color: var(--text); }
+.wr-row { display: flex; justify-content: space-between; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid var(--line); }
+.wr-label { color: var(--text-sub); font-size: 28rpx; font-weight: 500; }
+.wr-value { font-size: 28rpx; font-weight: 700; color: var(--text); }
+
+.wr-input-wrap {
+  display: flex; align-items: center; gap: 16rpx;
+  margin: 36rpx 0; background: var(--bg); border-radius: 22rpx; padding: 0 28rpx; height: 114rpx;
+  border: 1rpx solid var(--line);
+  transition: border-color 0.2s;
+}
+.wr-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4rpx var(--primary-light); }
+.wr-input { flex: 1; font-size: 44rpx; font-weight: 800; color: var(--text); }
+.wr-unit { color: var(--text-sub); font-size: 30rpx; font-weight: 600; }
+.wr-save { margin-top: 16rpx; border-radius: 18rpx; box-shadow: var(--shadow-brand); }
+
+.tip { text-align: center; color: var(--text-weak); font-size: 24rpx; margin: 26rpx 28rpx; line-height: 1.6; }

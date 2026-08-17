@@ -1,0 +1,166 @@
+<!-- pages/advice/advice.wxml -->
+<view class="page">
+
+  <!-- 分段控件：饮食建议 / 饮食记录（吸顶药丸 + 滑动指示条） -->
+  <view class="seg">
+    <view class="seg-thumb {{tab==='record' ? 'right' : ''}}"></view>
+    <view class="seg-btn {{tab==='suggest' ? 'on' : ''}}" data-tab="suggest" bindtap="switchTab">饮食建议</view>
+    <view class="seg-btn {{tab==='record' ? 'on' : ''}}" data-tab="record" bindtap="switchTab">饮食记录</view>
+  </view>
+
+  <!-- ============ 饮食建议 ============ -->
+  <view wx:if="{{tab==='suggest'}}" class="tab-pane">
+
+    <!-- 餐次 chips -->
+    <scroll-view scroll-x class="chips">
+      <view
+        wx:for="{{mealTypes}}"
+        wx:key="*this"
+        class="chip {{mealType===item?'on':''}}"
+        data-type="{{item}}"
+        bindtap="switchMeal"
+      >{{item}}</view>
+    </scroll-view>
+
+    <!-- 餐次推荐块：头部（彩色图标 + X推荐 + 总热量）+ 菜式列表 -->
+    <view class="meal" wx:if="{{mealHead}}">
+      <view class="mh">
+        <view class="mi" style="background:{{mealHead.bg}}"><icon name="{{mealHead.icon}}" size="40"/></view>
+        <view class="mtitle">{{mealHead.name}}推荐</view>
+        <view class="kc">{{mealHead.kcalText}}</view>
+      </view>
+
+      <view class="dish" wx:for="{{recommends}}" wx:key="id">
+        <view class="emo {{item.image ? 'has-img' : ''}}">
+          <image wx:if="{{item.image}}" class="emo-img" src="{{item.image}}" mode="aspectFill" lazy-load />
+          <text wx:else>{{item.emoji}}</text>
+        </view>
+        <view class="dbody">
+          <view class="dn">{{item.name}}</view>
+          <view class="dd">{{item.desc}}</view>
+        </view>
+        <view class="dk">~{{item.calories}}</view>
+        <view class="dadd" data-id="{{item.id}}" bindtap="addMeal">添加</view>
+      </view>
+
+      <view wx:if="{{recommends.length===0}}" class="empty">该餐别暂无推荐</view>
+    </view>
+  </view>
+
+  <!-- ============ 饮食记录 ============ -->
+  <view wx:else class="tab-pane">
+    <!-- 日期筛选 -->
+    <view class="date-filter">
+      <picker mode="date" value="{{dietDate}}" bindchange="onDietDateChange">
+        <view class="df-picker {{dietDate ? 'has-val' : ''}}">{{dietDate || '选择日期'}}</view>
+      </picker>
+      <text wx:if="{{!isToday}}" class="df-sep" bindtap="resetDietDate">回到今天</text>
+    </view>
+
+    <!-- 摄入汇总：环形进度 + 三大营养素 -->
+    <view class="kcal-ring">
+      <view class="kr">
+        <view class="kr-donut" style="background: conic-gradient(#FF7A3D {{ringPct}}%, #FFD9C8 0);">
+          <view class="kr-hole">
+            <view class="kr-pct">{{ringPct}}<text class="kr-pct-u">%</text></view>
+            <view class="kr-lab">已摄入</view>
+          </view>
+        </view>
+      </view>
+      <view class="kt">
+        <view class="kt-cap">{{isToday ? '今日摄入总热量' : dietDate + ' 摄入总热量'}}</view>
+        <view class="kt-big tnum">{{dietSummary.cal}}<text class="kt-u"> / {{intakeTarget}} 千卡</text></view>
+        <view class="kt-sub">还可摄入 {{remain}} 千卡</view>
+      </view>
+    </view>
+
+    <view class="macros">
+      <view class="m">
+        <view class="dot" style="background:#3E8BFF"></view>
+        <view class="v tnum" style="color:#3E8BFF">{{dietSummary.p}}<text class="mu">g</text></view>
+        <view class="l">蛋白质</view>
+      </view>
+      <view class="m">
+        <view class="dot" style="background:#F4B740"></view>
+        <view class="v tnum" style="color:#B07C09">{{dietSummary.c}}<text class="mu">g</text></view>
+        <view class="l">碳水</view>
+      </view>
+      <view class="m">
+        <view class="dot" style="background:#FF7A3D"></view>
+        <view class="v tnum" style="color:#FF7A3D">{{dietSummary.f}}<text class="mu">g</text></view>
+        <view class="l">脂肪</view>
+      </view>
+    </view>
+
+    <!-- 今日饮食明细（按餐别分组） -->
+    <view class="meal" wx:for="{{mealSections}}" wx:key="key" wx:if="{{item.items.length}}">
+      <view class="mh">
+        <view class="mi" style="background:{{item.bg}}"><icon name="{{item.icon}}" size="40"/></view>
+        <view class="mtitle">{{item.key}}</view>
+        <view class="kc">{{item.subCal}} kcal</view>
+      </view>
+      <view class="dish" wx:for="{{item.items}}" wx:key="id" wx:for-item="food">
+        <view class="emo"><icon name="food-bowl" size="40"/></view>
+        <view class="dbody">
+          <view class="dn">{{food.name}}</view>
+          <view class="dd">
+            <text wx:if="{{food.portion}}">{{food.portion}} · </text>{{food.calories}}kcal<text wx:if="{{food.protein>0}}"> · 蛋{{food.protein}}g</text><text wx:if="{{food.carb>0}}"> · 碳{{food.carb}}g</text><text wx:if="{{food.fat>0}}"> · 脂{{food.fat}}g</text>
+          </view>
+          <view wx:if="{{food.note}}" class="dnote">{{food.note}}</view>
+        </view>
+        <view class="dacts">
+          <view class="dact-edit" catchtap="editRecord" data-id="{{food.id}}">改</view>
+          <view class="dact-del" catchtap="deleteRecord" data-id="{{food.id}}">✕</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{totalItems===0}}" class="empty">还没有饮食记录，去「添加」吧</view>
+  </view>
+
+  <!-- 添加饮食记录弹窗 -->
+  <view wx:if="{{showAdd}}" class="modal-mask" bindtap="closeAdd">
+    <view class="modal" catchtap="noop">
+      <view class="modal-title">{{editingId ? '修改饮食记录' : '添加' + addType + '记录'}}</view>
+
+      <view class="rec-cam {{recognizing ? 'loading' : ''}}" bindtap="takePhoto">
+        <view class="cam-ic"><icon name="camera" size="36"/></view>
+        <view class="cam-tx">{{recognizing ? '识别中...' : 'AI 拍照识别'}}</view>
+      </view>
+
+      <view class="param-row">
+        <view class="param-cell name-cell">
+          <view class="field-label">食物名称</view>
+          <input class="modal-input" placeholder="如：鸡胸肉" value="{{recName}}" data-field="recName" bindinput="onRecInput" />
+        </view>
+        <view class="param-cell portion-cell">
+          <view class="field-label">份量</view>
+          <input class="modal-input sm" placeholder="1份" value="{{recPortion}}" data-field="recPortion" bindinput="onRecInput" />
+        </view>
+      </view>
+
+      <view class="param-row">
+        <view class="param-cell"><view class="field-label">热量(kcal) <text class="opt">选填</text></view>
+          <input class="modal-input sm" type="digit" placeholder="0" value="{{recCalories}}" data-field="recCalories" bindinput="onRecInput" /></view>
+        <view class="param-cell"><view class="field-label">蛋白质(g) <text class="opt">选填</text></view>
+          <input class="modal-input sm" type="digit" placeholder="0" value="{{recProtein}}" data-field="recProtein" bindinput="onRecInput" /></view>
+      </view>
+      <view class="param-row">
+        <view class="param-cell"><view class="field-label">碳水(g) <text class="opt">选填</text></view>
+          <input class="modal-input sm" type="digit" placeholder="0" value="{{recCarb}}" data-field="recCarb" bindinput="onRecInput" /></view>
+        <view class="param-cell"><view class="field-label">脂肪(g) <text class="opt">选填</text></view>
+          <input class="modal-input sm" type="digit" placeholder="0" value="{{recFat}}" data-field="recFat" bindinput="onRecInput" /></view>
+      </view>
+
+      <view class="field-label">备注</view>
+      <input class="modal-input" placeholder="可选，如：少油少盐" value="{{recNote}}" data-field="recNote" bindinput="onRecInput" />
+
+      <view class="modal-actions">
+        <button class="btn-secondary modal-cancel" bindtap="cancelAdd">取消</button>
+        <button class="btn-primary modal-ok" bindtap="saveRecord">保存记录</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-gap" />
+</view>

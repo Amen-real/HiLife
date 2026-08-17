@@ -1,0 +1,109 @@
+/* custom-tab-bar/index.wxss —— 毛玻璃底栏 */
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 内容区固定 110rpx，安全区额外叠加在底部，避免内容被压缩溢出 */
+  height: 110rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom));
+  box-sizing: content-box;
+  /* 兜底色：custom-tab-bar 为隔离组件，不会继承 app.wxss 的 CSS 变量；若 var 解析失败也保证可见 */
+  background: rgba(236, 251, 246, 0.92);
+  background: var(--glass-strong);
+  border-top: 1rpx solid var(--glass-border);
+  box-shadow: 0 -4rpx 24rpx rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  display: flex;
+  z-index: 1000;
+}
+
+.tab-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-weak);
+  transition: color 0.15s ease;
+}
+
+.tab-icon {
+  width: 60rpx;
+  height: 60rpx;
+  margin-bottom: 6rpx;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+.tab-icon-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tab-text {
+  font-size: 22rpx;
+  line-height: 1.2;
+}
+
+.tab-bar-item.active {
+  color: var(--primary);
+}
+
+.tab-bar-item.active .tab-icon {
+  opacity: 1;
+  transform: translateY(-2rpx) scale(1.08);
+  filter: drop-shadow(0 4rpx 8rpx rgba(46, 207, 176, 0.45));
+  transition: transform 0.15s ease;
+}
+
+/* 全局训练计时悬浮窗：可拖拽容器。覆盖全屏但 pointer-events:none，不挡住页面与底部 tab；
+   仅内部 movable-view 接收点击/拖拽（pointer-events:auto）。 */
+.wo-float-area {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  pointer-events: none;
+}
+.wo-float {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 136rpx;
+  height: 136rpx;
+  border-radius: 50%;
+  background: #1AA885;
+  background: linear-gradient(155deg, var(--primary, #2ECFB0), var(--primary-deep, #1AA885));
+  border: 4rpx solid #ffffff;
+  box-shadow: 0 14rpx 34rpx rgba(15, 23, 42, 0.40);
+}
+.wo-float.running {
+  background: #1AA885;
+  background: linear-gradient(155deg, var(--primary-deep, #1AA885), #127A60);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 14rpx 34rpx rgba(15, 23, 42, 0.46);
+}
+.wo-float-ico { font-size: 30rpx; line-height: 1; color: #fff; text-shadow: 0 1rpx 3rpx rgba(15, 23, 42, 0.30); }
+.wo-float-clock {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #fff;
+  font-feature-settings: "tnum";
+  line-height: 1.1;
+  margin: 2rpx 0;
+  text-shadow: 0 1rpx 4rpx rgba(15, 23, 42, 0.35);
+}
+.wo-float-tip {
+  font-size: 18rpx;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1;
+  text-shadow: 0 1rpx 3rpx rgba(15, 23, 42, 0.30);
+}

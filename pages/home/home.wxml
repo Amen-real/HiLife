@@ -1,0 +1,192 @@
+<!-- pages/home/home.wxml —— 对齐 ui-redesign-preview.html v2 -->
+<view class="page">
+
+  <!-- 渐变 hero（预览：问候 + 昵称 + 日期行） -->
+  <view class="hero-grad">
+    <view class="hi">{{greeting}}</view>
+    <view class="name">{{nickname}}</view>
+    <view class="date">{{dateLine}}</view>
+  </view>
+
+  <!-- 今日打卡卡（百分比进度条 + 体重/训练/饮食 三项待打卡） -->
+  <view class="card float-card status-card">
+    <view class="sc-head">
+      <view class="sc-title">今日打卡</view>
+      <view class="sc-pct tnum">{{checkins.pct}}<text class="sc-pct-sign">%</text></view>
+    </view>
+
+    <!-- 百分比进度条 -->
+    <view class="pbar">
+      <view class="pbar-fill" style="width:{{checkPctWidth}}"></view>
+    </view>
+    <view class="sc-tip">{{statusTip}}</view>
+
+    <!-- 三项打卡：圆形图标 + 名称 + 状态 + 完成勾 -->
+    <view class="checkins">
+      <view class="checkin {{checkins.weight ? 'on' : ''}}">
+        <view class="ci-ico">
+          <icon name="scale" size="40"/>
+          <view wx:if="{{checkins.weight}}" class="ci-check">✓</view>
+        </view>
+        <view class="ci-name">体重</view>
+        <view class="ci-state">{{checkins.weight ? '已打卡' : '待记录'}}</view>
+      </view>
+      <view class="checkin {{checkins.train ? 'on' : ''}}">
+        <view class="ci-ico">
+          <icon name="train" size="40"/>
+          <view wx:if="{{checkins.train}}" class="ci-check">✓</view>
+        </view>
+        <view class="ci-name">训练</view>
+        <view class="ci-state">{{checkins.train ? '已打卡' : '待记录'}}</view>
+      </view>
+      <view class="checkin {{checkins.diet ? 'on' : ''}}">
+        <view class="ci-ico">
+          <icon name="diet" size="40"/>
+          <view wx:if="{{checkins.diet}}" class="ci-check">✓</view>
+        </view>
+        <view class="ci-name">饮食</view>
+        <view class="ci-state">{{checkins.diet ? '已打卡' : '待记录'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷开始（2×2 长方形磁贴，图标左 / 文字右，对齐 Glass UI 参考） -->
+  <view class="section quick-sec">
+    <view class="section-title">快捷开始</view>
+    <view class="quick-grid">
+      <view class="quick" bindtap="startPlan">
+        <view class="ic g"><icon name="train" size="36"/></view>
+        <view class="qtxt">
+          <view class="qt">开始训练</view>
+          <view class="qs">今日计划</view>
+        </view>
+      </view>
+      <view class="quick" bindtap="openCamera">
+        <view class="ic o"><icon name="diet" size="36"/></view>
+        <view class="qtxt">
+          <view class="qt">记录饮食</view>
+          <view class="qs">AI 识别</view>
+        </view>
+      </view>
+      <view class="quick" bindtap="goWeight">
+        <view class="ic b"><icon name="scale" size="36"/></view>
+        <view class="qtxt">
+          <view class="qt">记录体重</view>
+          <view class="qs">追踪趋势</view>
+        </view>
+      </view>
+      <view class="quick" bindtap="goPlan">
+        <view class="ic p"><icon name="plan" size="36"/></view>
+        <view class="qtxt">
+          <view class="qt">我的计划</view>
+          <view class="qs">查看安排</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 训练记录日历：本周迷你日历（对齐参考，周一~周日，今日绿底，记录日珊瑚点） -->
+  <view class="card cal">
+    <view class="cal-head">
+      <view class="section-title" style="margin:0">训练记录日历</view>
+      <view class="link-arrow" bindtap="toggleCalendar">查看日历<text class="arrow"> ›</text></view>
+    </view>
+
+    <!-- 本周 7 天迷你日历 -->
+    <view class="wk">
+      <view wx:for="{{weekCells}}" wx:key="index"
+            class="wk-d {{item.isToday ? 'today' : ''}} {{item.hasRecord ? 'rec' : ''}}"
+            data-date="{{item.dateStr}}" bindtap="onSelectWeekDay">
+        <view class="wk-wd">{{item.wd}}</view>
+        <view class="wk-box">{{item.day}}<view wx:if="{{item.hasRecord}}" class="wk-dot"></view></view>
+      </view>
+    </view>
+
+    <!-- 训练日历弹窗（保留：月历 + 当日详情） -->
+    <view wx:if="{{calExpanded}}" class="cal-mask" bindtap="closeCalendar">
+      <view class="cal-modal" catchtap="stopProp">
+        <view class="cal-modal-head">
+          <view class="cal-nav" bindtap="prevMonth">‹</view>
+          <view class="cal-title">{{calTitle}}</view>
+          <view class="cal-nav" bindtap="nextMonth">›</view>
+        </view>
+        <view class="cal-week">
+          <text class="cal-wk">日</text><text class="cal-wk">一</text><text class="cal-wk">二</text><text class="cal-wk">三</text><text class="cal-wk">四</text><text class="cal-wk">五</text><text class="cal-wk">六</text>
+        </view>
+        <view class="cal-grid">
+          <view wx:for="{{calCells}}" wx:key="index"
+                class="cal-cell {{item.empty ? 'empty' : ''}} {{item.hasRecord ? 'rec' : ''}} {{item.isToday ? 'today' : ''}} {{item.isSelected ? 'sel' : ''}}"
+                data-date="{{item.dateStr}}" bindtap="onSelectDate">
+            <text wx:if="{{!item.empty}}" class="cal-day">{{item.day}}</text>
+          </view>
+        </view>
+        <view class="cal-tip">绿色日期为已训练日，点击可查看当日训练</view>
+
+        <!-- 当日训练详情：弹窗内联展示，避免页面跳转延迟 -->
+        <view wx:if="{{calDetail}}" class="cdi">
+          <view class="cdi-head">
+            <text class="cdi-date">{{calDetail.date}} 训练</text>
+            <view class="cdi-back" bindtap="closeDetail">收起</view>
+          </view>
+          <view class="cdi-overview">
+            <view class="cdi-ov"><view class="cdi-num">{{calDetail.summary.actions}}</view><view class="cdi-cap">动作数</view></view>
+            <view class="cdi-ov"><view class="cdi-num">{{calDetail.summary.sets}}</view><view class="cdi-cap">总组数</view></view>
+            <view class="cdi-ov"><view class="cdi-num">{{calDetail.summary.train}}</view><view class="cdi-cap">训练时长</view></view>
+            <view class="cdi-ov"><view class="cdi-num">{{calDetail.summary.rest}}</view><view class="cdi-cap">休息时长</view></view>
+          </view>
+          <view class="cdi-act" wx:for="{{calDetail.actions}}" wx:key="name" wx:for-item="act">
+            <view class="cdi-act-head">
+              <text class="cdi-act-name">{{act.name}}</text>
+              <text class="cdi-act-sets">{{act.sets}} 组</text>
+            </view>
+            <view class="cdi-set-row cdi-th">
+              <text class="cdi-idx">组</text>
+              <text class="cdi-col">次数</text>
+              <text class="cdi-col">重量</text>
+              <text class="cdi-time">训练</text>
+              <text class="cdi-time">休息</text>
+            </view>
+            <view class="cdi-set-row" wx:for="{{act.setsDetail}}" wx:for-item="s" wx:for-index="si" wx:key="si">
+              <text class="cdi-idx">{{si + 1}}</text>
+              <text class="cdi-col">{{s.reps || '-'}}</text>
+              <text class="cdi-col">{{s.weight ? s.weight + 'kg' : '-'}}</text>
+              <text class="cdi-time">{{s.trainSec ? s.trainSec + 's' : '-'}}</text>
+              <text class="cdi-time rest">{{s.restSec ? s.restSec + 's' : '-'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日训练计划：显示创建计划里的动作卡片（对齐参考 .plan-item 样式） -->
+  <view class="section plan-sec">
+    <view class="section-title">今日训练计划 <text class="more" bindtap="goPlan">全部 ›</text></view>
+
+    <block wx:if="{{todayPlan.has}}">
+      <view class="card plan-item {{item.done ? 'on' : ''}}" wx:for="{{todayPlan.actions}}" wx:key="id">
+        <view class="pi-thumb">
+          <text class="pi-emoji">{{item.emoji}}</text>
+          <image wx:if="{{item.thumb && !item.thumbFail}}" class="pi-img" src="{{item.thumb}}" mode="aspectFill" binderror="onPlanThumbError" data-id="{{item.id}}"></image>
+        </view>
+        <view class="pi-body">
+          <view class="pi-name ellipsis">{{item.name}}</view>
+          <view class="pi-meta">{{item.meta}}</view>
+          <view class="bar"><view class="bar-i" style="width:{{item.pctWidth}}"></view></view>
+        </view>
+        <text class="tag {{item.done ? 'tag-primary' : ''}}">{{item.tag}}</text>
+      </view>
+    </block>
+
+    <view wx:else class="card plan-item plan-empty">
+      <view class="pi-thumb"><icon name="plan" size="48"/></view>
+      <view class="pi-body">
+        <view class="pi-name">还没有训练计划</view>
+        <view class="pi-meta">创建计划，首页一眼看到今天练什么</view>
+      </view>
+      <view class="btn-secondary plan-btn-sm" hover-class="btn-hover" bindtap="goPlan">去创建</view>
+    </view>
+  </view>
+
+  <view class="bottom-gap" />
+</view>

@@ -1,0 +1,4 @@
+<!-- components/icon/icon.wxml -->
+<view wx:if="{{src}}" class="ic-box" style="{{boxStyle}}">
+  <image class="ic-img" src="{{src}}" mode="aspectFit" lazy-load />
+</view>

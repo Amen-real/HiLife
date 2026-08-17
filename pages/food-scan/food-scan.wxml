@@ -1,0 +1,126 @@
+<!-- pages/food-scan/food-scan.wxml -->
+<view class="page">
+
+  <!-- 顶部说明 -->
+  <view class="card intro">
+    <view class="intro-title">食物识别 · Open Food Facts</view>
+    <view class="intro-sub">免费开源营养数据库。扫码商品条码，或搜索名称，即可获取真实热量与营养素。</view>
+  </view>
+
+  <!-- 操作区 -->
+  <view class="card">
+    <view class="section-title">识别方式</view>
+    <view class="actions">
+      <view class="act-btn" hover-class="act-hover" bindtap="scanCode">
+        <view class="act-ico"><icon name="camera" size="44"/></view>
+        <view class="act-name">扫码识别</view>
+        <view class="act-desc">对准商品条码</view>
+      </view>
+      <view class="act-btn" hover-class="act-hover" bindtap="onSearch">
+        <view class="act-ico"><icon name="search" size="44"/></view>
+        <view class="act-name">名称搜索</view>
+        <view class="act-desc">输入食物 / 品牌</view>
+      </view>
+    </view>
+
+    <view class="search-row">
+      <input class="search-input" placeholder="如：酸奶 / 全麦面包 / 可乐" value="{{keyword}}" bindinput="onInput" confirm-type="search" bindconfirm="onSearch" />
+      <view class="search-go" bindtap="onSearch">搜索</view>
+    </view>
+
+    <view class="note">说明：Open Food Facts 提供「条码 + 名称」查询，不含「拍照识别食物图像」能力；下方「拍照识别」由自托管 CalorieScan 视觉模型实现，需你部署后端服务（见 server/ 目录）。</view>
+
+    <!-- 拍照识别（自托管 CalorieScan） -->
+    <view class="cam-btn" hover-class="cam-hover" bindtap="chooseAndAnalyze">
+      <view class="cam-ico"><icon name="camera" size="36"/></view>
+      <text>拍照识别热量（本地模型）</text>
+    </view>
+  </view>
+
+  <!-- 搜索结果列表 -->
+  <view wx:if="{{mode === 'search' && results.length}}" class="card">
+    <view class="section-title">搜索结果（点选查看营养）</view>
+    <view class="res" wx:for="{{results}}" wx:key="code" data-code="{{item.code}}" bindtap="onPick">
+      <image wx:if="{{item.image}}" class="res-img" src="{{item.image}}" mode="aspectFill" />
+      <view wx:else class="res-img res-emoji"><icon name="food-bowl" size="60"/></view>
+      <view class="res-info">
+        <view class="res-name ellipsis">{{item.name}}</view>
+        <view class="res-brand ellipsis">{{item.brand || '未知品牌'}}</view>
+      </view>
+      <view wx:if="{{item.nutriScore}}" class="ns ns-{{item.nutriScore}}">{{item.nutriScore}}</view>
+      <text class="arrow"> ›</text>
+    </view>
+  </view>
+
+  <!-- 商品详情 -->
+  <block wx:if="{{mode === 'product' && product}}">
+    <view class="card detail">
+      <view class="detail-head">
+        <image wx:if="{{product.image}}" class="detail-img" src="{{product.image}}" mode="aspectFill" />
+        <view wx:else class="detail-img detail-emoji"><icon name="food-bowl" size="80"/></view>
+        <view class="detail-meta">
+          <view class="detail-name">{{product.name}}</view>
+          <view class="detail-brand">{{product.brand || '未知品牌'}}</view>
+          <view class="badges">
+            <view wx:if="{{product.nutriScore}}" class="ns ns-{{product.nutriScore}}">营养评分 {{product.nutriScore}}</view>
+            <view wx:if="{{product.novaGroup}}" class="tag">NOVA {{product.novaGroup}}</view>
+            <view wx:if="{{product.servingSize}}" class="tag">每份 {{product.servingSize}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 每 100g 营养 -->
+      <view class="section-title">每 100g 营养</view>
+      <view class="nutri">
+        <view class="nutri-item"><text class="nutri-val">{{product.per100g.kcal != null ? product.per100g.kcal : '—'}}</text><text class="nutri-lab">热量 kcal</text></view>
+        <view class="nutri-item"><text class="nutri-val">{{product.per100g.protein != null ? product.per100g.protein : '—'}}</text><text class="nutri-lab">蛋白质 g</text></view>
+        <view class="nutri-item"><text class="nutri-val">{{product.per100g.fat != null ? product.per100g.fat : '—'}}</text><text class="nutri-lab">脂肪 g</text></view>
+        <view class="nutri-item"><text class="nutri-val">{{product.per100g.carbs != null ? product.per100g.carbs : '—'}}</text><text class="nutri-lab">碳水 g</text></view>
+        <view class="nutri-item"><text class="nutri-val">{{product.per100g.sugars != null ? product.per100g.sugars : '—'}}</text><text class="nutri-lab">糖 g</text></view>
+        <view class="nutri-item"><text class="nutri-val">{{product.per100g.salt != null ? product.per100g.salt : '—'}}</text><text class="nutri-lab">盐 g</text></view>
+      </view>
+
+      <!-- 记录表单 -->
+      <view class="section-title">记录到今日饮食</view>
+      <view class="form-row">
+        <text class="form-lab">餐别</text>
+        <picker class="form-picker" mode="selector" range="{{meals}}" value="{{mealIndex}}" bindchange="onMealChange">
+          <view class="form-picker-val">{{meals[mealIndex]}} <text class="arrow">›</text></view>
+        </picker>
+      </view>
+      <view class="form-row">
+        <text class="form-lab">份量(g)</text>
+        <input class="form-input" type="digit" value="{{grams}}" bindinput="onGramsInput" />
+      </view>
+      <view class="form-preview" wx:if="{{scaled}}">本次约 <text class="hl">{{scaled.kcal != null ? scaled.kcal : '—'}}</text> kcal · 蛋白 {{scaled.protein}}g · 碳水 {{scaled.carbs}}g · 脂肪 {{scaled.fat}}g</view>
+      <button class="btn-primary add-btn" hover-class="btn-hover" bindtap="addToDiet">记录到今日饮食</button>
+      <view class="go-advice" bindtap="goAdvice">查看饮食建议 ›</view>
+    </view>
+  </block>
+
+  <!-- 拍照识别结果 -->
+  <block wx:if="{{mode === 'camera' && photo}}">
+    <view class="card detail">
+      <view class="section-title">AI 拍照识别结果</view>
+      <view class="photo-name">{{photo.name}}</view>
+      <view class="photo-kcal">{{photo.total_calories != null ? photo.total_calories : '—'}}<text class="unit">kcal</text></view>
+      <view class="photo-meta">约 {{photo.total_weight_g != null ? photo.total_weight_g : '—'}} g · 置信度 {{photo.confidenceText}}</view>
+      <view class="conf-bar"><view class="conf-fill" style="width:{{photo.confidencePct}}%"></view></view>
+      <view wx:if="{{photo.mock}}" class="mock-tag">示例数据（未接入真实模型）</view>
+      <view wx:if="{{photo.note}}" class="note">{{photo.note}}</view>
+
+      <view class="section-title">记录到今日饮食</view>
+      <view class="form-row">
+        <text class="form-lab">餐别</text>
+        <picker class="form-picker" mode="selector" range="{{meals}}" value="{{mealIndex}}" bindchange="onMealChange">
+          <view class="form-picker-val">{{meals[mealIndex]}} <text class="arrow">›</text></view>
+        </picker>
+      </view>
+      <button class="btn-primary add-btn" hover-class="btn-hover" bindtap="recordPhoto">记录到今日饮食</button>
+      <view class="go-advice" bindtap="goAdvice">查看饮食建议 ›</view>
+    </view>
+  </block>
+
+  <view wx:if="{{loading}}" class="loading-tip">加载中…</view>
+  <view class="bottom-gap" />
+</view>

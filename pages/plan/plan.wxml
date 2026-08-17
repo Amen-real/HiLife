@@ -1,0 +1,69 @@
+<!-- pages/plan/plan.wxml -->
+<view class="page">
+  <!-- 列表模式 -->
+  <block wx:if="{{mode === 'list'}}">
+    <view class="topbar">
+      <view class="tb-title">训练计划</view>
+      <view class="tb-add" bindtap="goCreate">+ 新建</view>
+    </view>
+
+    <view wx:if="{{plans.length}}" class="plan-list">
+      <view class="plan-item" wx:for="{{plans}}" wx:key="id">
+        <view class="pi-main">
+          <view class="pi-name">{{item.name}}</view>
+          <view class="pi-count">{{item.count}} 个动作</view>
+          <view wx:if="{{item.isActive}}" class="pi-tag">当前</view>
+        </view>
+        <view class="pi-actions">
+          <view class="pi-btn {{item.isActive ? 'on' : ''}}" data-id="{{item.id}}" bindtap="setActive">{{item.isActive ? '使用中' : '设为当前'}}</view>
+          <view class="pi-btn primary" data-id="{{item.id}}" bindtap="startPlan">开始训练</view>
+          <view class="pi-btn" data-id="{{item.id}}" bindtap="goEdit">修改</view>
+          <view class="pi-btn danger" data-id="{{item.id}}" bindtap="deletePlan">删除</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty">
+      <view class="empty-ico"><icon name="plan" size="72"/></view>
+      <view class="empty-title">还没有训练计划</view>
+      <view class="empty-hint">新建一套，首页即可看到今天练什么</view>
+      <view class="btn-primary empty-btn" bindtap="goCreate">新建计划</view>
+    </view>
+  </block>
+
+  <!-- 新建模式 -->
+  <block wx:else>
+    <view class="topbar">
+      <view class="tb-back" bindtap="backToList">‹ 返回</view>
+      <view class="tb-title">{{isEdit ? '修改计划' : '新建计划'}}</view>
+      <view class="tb-save" bindtap="savePlan">保存</view>
+    </view>
+
+    <view class="card">
+      <view class="field-label">计划名称</view>
+      <!-- 非受控输入：输入暂存实例变量，避免整页重渲染丢字 -->
+      <input class="name-input" placeholder="如：练胸日 / 全身循环" value="{{planName}}" bindinput="onPlanName" />
+    </view>
+
+    <view class="card">
+      <view class="field-label">选择动作（{{pickedCount}}）</view>
+      <!-- 分类 tab（复用训练页模式，单分类渲染，不一次渲染千条） -->
+      <scroll-view scroll-x class="cat-tabs">
+        <view wx:for="{{catList}}" wx:key="*this"
+              class="cat-tab {{activeCat === item ? 'on' : ''}}" data-cat="{{item}}" bindtap="switchCat">{{item}}</view>
+      </scroll-view>
+      <view class="search-box">
+        <input class="search-input" placeholder="搜索动作" bindinput="onSearch" />
+      </view>
+      <view class="act-pool">
+        <view class="pool-item {{pickedMap[item.id] ? 'picked' : ''}}" wx:for="{{actionPool}}" wx:key="id" data-id="{{item.id}}" bindtap="togglePick" hover-class="pool-hover">
+          <view class="pool-main">
+            <text class="pool-name">{{item.nameZh || item.name}}</text>
+            <text class="pool-cat">{{item.part || item.category}}</text>
+          </view>
+          <view class="pool-check">{{pickedMap[item.id] ? '✓' : ''}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

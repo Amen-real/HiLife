@@ -1,0 +1,43 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/training/training",
+    "pages/list/list",
+    "pages/advice/advice",
+    "pages/profile/profile",
+    "pages/settings/settings",
+    "pages/weight-record/weight-record",
+    "pages/action-detail/action-detail",
+    "pages/workout/workout",
+    "pages/train-detail/train-detail",
+    "pages/food-vision/food-vision",
+    "pages/plan/plan"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#1AA885",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "衡力健身记录",
+    "backgroundColor": "#E5FBF5",
+    "backgroundColorTop": "#1AA885",
+    "backgroundColorBottom": "#FFF1E8"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#94A3B8",
+    "selectedColor": "#2ECFB0",
+    "backgroundColor": "#ECFBF6",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "首页" },
+      { "pagePath": "pages/training/training", "text": "训练" },
+      { "pagePath": "pages/list/list", "text": "记录" },
+      { "pagePath": "pages/advice/advice", "text": "饮食" },
+      { "pagePath": "pages/profile/profile", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "usingComponents": {
+    "icon": "/components/icon/icon"
+  }
+}

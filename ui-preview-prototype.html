@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>衡力健身 · 小程序 UI 预览原型（基于当前 WXML/WXSS 工程）</title>
+<style>
+  :root{
+    --primary:#2ECFB0; --primary-deep:#1AA885; --primary-light:#3EDECA; --primary-tint:#E5FBF5;
+    --accent:#FF7A3D; --accent-deep:#E8652A; --accent-soft:#FFE7DA;
+    --info:#3E8BFF; --purple:#8B5CF6; --gold:#F5B544;
+    --bg:rgba(255,255,255,0.55); --card:rgba(255,255,255,0.78);
+    --glass:rgba(255,255,255,0.72); --glass-strong:rgba(255,255,255,0.86); --glass-border:rgba(255,255,255,0.85);
+    --app-bg:linear-gradient(180deg,#1AA885 0%,#2ECFB0 14%,#E5FBF5 40%,#FFF1E8 100%);
+    --text:#1E293B; --text-sub:#64748B; --text-weak:#94A3B8;
+    --line:#E2E8F0; --line-strong:#CBD5E1;
+    --shadow-mint:0 12px 30px rgba(46,207,176,0.30);
+    --shadow-coral:0 12px 30px rgba(232,101,42,0.28);
+    --shadow-card:0 8px 24px rgba(15,23,42,0.08);
+    --error:#F2545B; --success:#16C784;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:#0f1115; color:#e6e8ec;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+    line-height:1.5; padding:0 0 60px;
+  }
+
+  /* ============ 文档头部 / 设计系统 ============ */
+  .doc-header{max-width:1180px;margin:0 auto;padding:40px 32px 8px;}
+  .doc-header h1{font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+  .doc-header p{color:#9aa0a6;font-size:14px;margin-top:8px;max-width:760px;line-height:1.7;}
+  .tokens{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px;}
+  .token{display:flex;align-items:center;gap:10px;background:#1a1d24;border:1px solid #262a33;border-radius:12px;padding:10px 14px;}
+  .token .sw{width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.08);}
+  .token .meta{font-size:12px;line-height:1.3;}
+  .token .meta b{color:#fff;font-weight:700;display:block;}
+  .token .meta span{color:#7a828d;}
+
+  /* ============ 画廊 ============ */
+  .gallery{max-width:1180px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;gap:34px;justify-content:center;}
+  .phone-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .phone-label{font-size:14px;font-weight:700;color:#cfd3da;}
+  .phone-label small{display:block;font-size:11px;font-weight:500;color:#7a828d;margin-top:2px;}
+  .phone{
+    width:375px;background:var(--app-bg);border-radius:42px;
+    box-shadow:0 24px 70px rgba(0,0,0,.45);
+    border:10px solid #0a0c10;position:relative;overflow:hidden;
+  }
+  .statusbar{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;color:#fff;font-weight:600;background:transparent;}
+  .statusbar .dots{letter-spacing:2px;}
+  .screen{height:700px;overflow-y:auto;background:var(--app-bg);padding-bottom:62px;}
+  .screen::-webkit-scrollbar{width:0;}
+
+  /* ============ 通用组件 ============ */
+  .card{background:var(--card);border:1px solid var(--glass-border);border-radius:16px;box-shadow:var(--shadow-card);padding:16px;margin:12px 16px;}
+  .section{padding:0 16px;margin-bottom:24px;}
+  .section-title{font-size:15px;font-weight:700;color:var(--text);margin:0 0 10px;display:flex;align-items:center;gap:6px;}
+  .section-title .more{margin-left:auto;font-size:12px;color:var(--text-weak);font-weight:500;}
+  .link-arrow{color:var(--text-sub);font-size:13px;display:inline-flex;align-items:center;}
+  .link-arrow .arrow{margin-left:3px;color:var(--text-weak);}
+  .tag{display:inline-flex;align-items:center;font-size:11px;font-weight:500;color:var(--text-sub);background:var(--bg);border-radius:999px;padding:3px 9px;margin-right:6px;}
+  .tag-primary{color:var(--primary-deep);background:var(--primary-tint);}
+  .tag-accent{color:#C2410C;background:var(--accent-soft);}
+
+  /* 今日训练计划动作卡片（对齐参考 .plan-item：缩略图 + 名称 + 元信息 + 进度条 + 状态标签） */
+  .plan-item{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:0 0 8px;position:relative;background:var(--card);border:1px solid var(--glass-border);border-radius:16px;box-shadow:var(--shadow-card);}
+  .pi-thumb{width:38px;height:38px;border-radius:9px;flex:0 0 auto;background:var(--primary-tint);display:flex;align-items:center;justify-content:center;font-size:20px;position:relative;overflow:hidden;}
+  .pi-emoji{line-height:1;}
+  .pi-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .pi-body{flex:1;min-width:0;}
+  .pi-name{font-size:15px;font-weight:700;color:var(--text);}
+  .pi-meta{font-size:11px;color:var(--text-weak);margin-top:3px;}
+  .bar{height:6px;border-radius:999px;background:var(--line);margin-top:7px;overflow:hidden;}
+  .bar i{display:block;height:100%;background:var(--primary);border-radius:999px;}
+  .plan-item .tag{flex:0 0 auto;margin-right:0;}
+  .plan-item.on{background:var(--primary-tint);}
+  .empty{text-align:center;color:var(--text-weak);font-size:13px;padding:30px;}
+
+  /* ============ 首页 ============ */
+  .hero-grad{margin:0;padding:14px 16px 6px;position:relative;color:#fff;}
+  .hero-grad .hi{font-size:13px;color:rgba(255,255,255,.92);font-weight:600;text-shadow:0 1px 3px rgba(13,59,48,.30);}
+  .hero-grad .name{font-size:20px;font-weight:800;color:#fff;margin-top:4px;letter-spacing:-.5px;text-shadow:0 1px 3px rgba(13,59,48,.30);}
+  .hero-grad .date{font-size:11px;color:rgba(255,255,255,.82);margin-top:6px;text-shadow:0 1px 3px rgba(13,59,48,.24);}
+  .status-card{margin:0 16px;background:var(--glass-strong);border-radius:16px;padding:14px 16px;box-shadow:0 2px 8px rgba(15,23,42,.06);position:relative;z-index:2;}
+  .sc-head{display:flex;align-items:flex-end;justify-content:space-between;}
+  .sc-title{font-size:15px;font-weight:700;color:var(--text);}
+  .sc-pct{font-size:22px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;line-height:1;}
+  .sc-pct-sign{font-size:12px;font-weight:600;margin-left:1px;}
+  .pbar{position:relative;height:8px;border-radius:999px;background:var(--line);margin-top:9px;overflow:hidden;}
+  .pbar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--primary-light),var(--primary-deep));}
+  .sc-tip{font-size:12px;color:var(--text-sub);margin-top:7px;}
+  .checkins{display:flex;margin-top:12px;gap:8px;}
+  .checkin{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px 8px;border-radius:9px;background:var(--bg);border:1px solid transparent;position:relative;}
+  .checkin .ci-ico{position:relative;width:36px;height:36px;border-radius:50%;background:var(--glass-strong);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(15,23,42,.06);}
+  .checkin .ci-emoji{font-size:19px;line-height:1;}
+  .checkin .ci-check{position:absolute;right:-2px;bottom:-2px;width:15px;height:15px;border-radius:50%;background:var(--primary);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 2px rgba(46,207,176,.4);}
+  .checkin .ci-name{font-size:13px;font-weight:700;}
+  .checkin .ci-state{font-size:10px;color:var(--text-weak);}
+  .checkin.on{background:var(--primary-tint);border-color:var(--primary);}
+  .checkin.on .ci-state{color:var(--primary-deep);font-weight:700;}
+  .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .quick{background:var(--glass-strong);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:row;align-items:center;gap:11px;box-shadow:0 2px 8px rgba(15,23,42,.06);}
+  .quick .ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .quick .ic.g{background:var(--primary-tint);}.quick .ic.o{background:var(--accent-soft);}.quick .ic.b{background:#E6F0FF;}.quick .ic.p{background:#F1E9FF;}
+  .quick .qtxt{flex:1;min-width:0;}
+  .quick .qt{font-size:14px;font-weight:700;text-align:left;}
+  .quick .qs{font-size:11px;color:var(--text-weak);text-align:left;margin-top:1px;}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;}
+  .wk{display:flex;gap:4px;margin-top:9px;}
+  .wk-d{flex:1;display:flex;flex-direction:column;align-items:center;}
+  .wk-wd{font-size:10px;color:var(--text-weak);font-weight:600;}
+  .wk-box{position:relative;width:36px;height:40px;margin-top:4px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:9px;}
+  .wk-d.today .wk-box{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .wk-dot{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:var(--accent);}
+  .wk-d.today .wk-dot{background:var(--glass-strong);}
+  .attribution{text-align:center;font-size:10px;color:var(--text-weak);padding:14px 16px 8px;line-height:1.6;}
+
+  /* ============ 训练 ============ */
+  .lib-head{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 9px;}
+  .lib-title{font-size:17px;font-weight:800;}
+  .create-btn{background:var(--primary-tint);color:var(--primary-deep);font-size:13px;font-weight:700;border-radius:999px;padding:6px 12px;}
+  .chips{white-space:nowrap;display:flex;padding:1px 14px 10px;overflow:hidden;}
+  .chip{flex:0 0 auto;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.95);border:1px solid var(--line);box-shadow:0 2px 7px rgba(15,23,42,.10);font-size:13px;color:var(--text-sub);font-weight:600;margin-right:6px;}
+  .chip.on{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .chip-count{margin-left:3px;font-size:11px;}
+  .search-bar{display:flex;align-items:center;gap:7px;padding:0 14px;margin-bottom:10px;}
+  .search-input{flex:1;display:flex;align-items:center;background:var(--bg);border-radius:999px;padding:0 12px;height:39px;border:1px solid var(--line);}
+  .search-ico{margin-right:6px;font-size:0;display:inline-flex;align-items:center;}.search-ico .svg-ico{width:16px;height:16px;color:#94A3B8;filter:drop-shadow(0 1px 1.5px rgba(82,95,130,.18));}.search-field{flex:1;font-size:13px;color:var(--text);}
+  .sel-pill{font-size:12px;color:var(--primary-deep);background:var(--primary-tint);border-radius:999px;padding:7px 12px;font-weight:700;}
+  .action-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px;}
+  .action-card{position:relative;background:var(--glass-strong);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.05);}
+  .action-thumb{position:relative;width:100%;aspect-ratio:1/1;background:linear-gradient(135deg,var(--primary-light),rgba(255,255,255,0));display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .action-emoji{font-size:40px;}.play{position:absolute;right:5px;bottom:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;}
+  .fav{position:absolute;top:6px;right:7px;color:#fff;font-size:18px;text-shadow:0 1px 2px rgba(0,0,0,.45);}.fav.on{color:var(--error);}
+  .action-body{padding:8px 9px 32px;}.action-name{font-size:14px;font-weight:700;}.action-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+  .add-btn{position:absolute;right:7px;bottom:7px;width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;font-size:21px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(46,207,176,.3);}
+  .add-btn.added{background:var(--primary-tint);color:var(--primary);box-shadow:none;}
+  .action-bar{position:absolute;left:0;right:0;bottom:55px;display:flex;align-items:center;gap:10px;background:var(--glass-strong);border-top:1px solid var(--glass-border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:7px 12px;box-shadow:0 -4px 24px rgba(15,23,42,.06);}
+  .ab-count{display:flex;flex-direction:column;align-items:center;}.ab-num{font-size:20px;font-weight:800;color:var(--primary);}.ab-label{font-size:11px;color:var(--text-sub);}
+  .ab-start{flex:1;display:flex;align-items:center;justify-content:center;height:40px;background:var(--primary);color:#fff;border-radius:12px;font-size:15px;font-weight:700;box-shadow:var(--shadow-mint);}
+
+  /* ============ 列表 ============ */
+  /* 记录页分段已从 .tabs 升级为 .seg 药丸控件（滑动指示条 + 过渡效果，与建议段一致），旧规则弃用 */
+  .rec-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:12px;height:44px;font-size:15px;font-weight:700;box-shadow:0 4px 14px rgba(46,207,176,.3);margin-bottom:10px;}
+  .overview{display:flex;gap:10px;}.ov-item{flex:1;text-align:center;background:var(--bg);border-radius:12px;padding:12px 4px;}
+  .ov-num{font-size:22px;font-weight:800;color:var(--primary);}.ov-num.down{color:var(--accent);}.ov-unit{font-size:11px;color:var(--text-sub);}.ov-cap{font-size:11px;color:var(--text-sub);margin-top:2px;}
+  .ranges{display:flex;gap:5px;margin-bottom:10px;}.range{font-size:12px;color:var(--text-sub);background:var(--bg);border-radius:999px;padding:5px 12px;font-weight:600;}.range.active{background:var(--primary-tint);color:var(--primary);font-weight:700;}
+  .chart-wrap{width:100%;height:170px;background:var(--bg);border-radius:12px;overflow:hidden;}
+  .stats-row{display:flex;gap:8px;padding:0 14px;}.stat-card{flex:1;background:var(--glass-strong);border-radius:14px;box-shadow:0 1px 4px rgba(15,23,42,.05);border:1px solid var(--line);padding:11px 0;text-align:center;}
+  .stat-num{font-size:18px;font-weight:800;}.stat-cap{font-size:11px;color:var(--text-sub);margin-top:2px;}
+  .his-row{display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line);font-size:13px;}.his-row:last-child{border-bottom:none;}
+  .his-date{color:var(--text-sub);}.his-weight{font-weight:700;}
+  .date-filter{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:14px;}
+  .df-picker{font-size:12px;color:var(--text-weak);background:var(--glass-strong);border-radius:10px;padding:8px 14px;border:1px solid var(--line);white-space:nowrap;font-weight:500;}
+  .df-picker.has-val{color:var(--text);font-weight:600;border-color:var(--primary);}
+  .df-clear{font-size:12px;color:var(--primary);font-weight:600;margin-left:auto;}
+
+  /* ============ 建议（对齐参考文件：餐次块 + 菜式卡 + 环形汇总） ============ */
+  .seg{display:flex;gap:4px;margin:10px 14px 0;padding:4px;background:var(--glass-strong);border-radius:999px;border:1px solid var(--line);box-shadow:0 1px 4px rgba(15,23,42,.05);position:sticky;top:0;z-index:4;}
+  .seg-thumb{position:absolute;left:4px;top:4px;bottom:4px;width:calc(50% - 6px);background:var(--primary);border-radius:999px;box-shadow:var(--shadow-mint);transform:translateX(0);transition:transform .28s var(--ease-out,ease);z-index:0;}
+  .seg-thumb.right{transform:translateX(calc(100% + 4px));}
+  .seg-btn{flex:1;text-align:center;font-size:15px;color:var(--text-sub);font-weight:700;padding:9px 0;border-radius:999px;position:relative;z-index:1;transition:color .22s var(--ease-out,ease);}
+  .seg-btn.on{color:#fff;}
+  .tab-pane{animation:paneIn .30s var(--ease-out,ease);}
+  @keyframes paneIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .pane-record{display:none;}
+  .pane-training{display:none;}
+  .phone.show-record .pane-suggest{display:none;}
+  .phone.show-record .pane-record{display:block;}
+  .chips{white-space:nowrap;padding:11px 14px 3px;overflow-x:auto;}
+  .chip{display:inline-block;font-size:13px;color:var(--text-sub);background:rgba(255,255,255,.95);border:1px solid var(--line);box-shadow:0 2px 7px rgba(15,23,42,.10);border-radius:999px;padding:6px 15px;font-weight:600;margin-right:7px;}
+  .chip.on{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .meal{margin:11px 14px 0;}
+  .meal .mh{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .meal .mi{width:36px;height:36px;border-radius:11px;flex:0 0 36px;display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .meal .mtitle{flex:1;font-size:16px;font-weight:800;color:var(--text);}
+  .meal .kc{font-size:12px;font-weight:700;color:#D9531F;}
+  .dish{display:flex;align-items:center;gap:10px;background:var(--glass-strong);border:1px solid var(--line);border-radius:14px;padding:10px 11px;margin-bottom:7px;box-shadow:0 1px 4px rgba(15,23,42,.05);}
+  .dish .emo{width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;}
+  .dish .emo-img{width:100%;height:100%;border-radius:10px;}
+  .dish .dbody{flex:1;min-width:0;}
+  .dish .dn{font-size:15px;font-weight:700;}
+  .dish .dd{font-size:11px;color:var(--text-sub);margin-top:2px;line-height:1.5;}
+  .dish .dk{font-size:13px;font-weight:700;color:var(--text-sub);flex:0 0 auto;}
+  .dish .dadd{flex:0 0 auto;font-size:12px;font-weight:700;color:var(--primary-deep);background:var(--primary-tint);border-radius:999px;padding:6px 13px;}
+  .date-filter{display:flex;align-items:center;gap:8px;margin:8px 14px 0;padding:9px 12px;background:var(--bg);border-radius:12px;}
+  .df-picker{font-size:12px;color:var(--text-weak);background:var(--glass-strong);border:1px solid var(--line);border-radius:9px;padding:7px 12px;white-space:nowrap;font-weight:500;}
+  .df-picker.has-val{color:var(--text);font-weight:600;}
+  .df-clear{font-size:12px;color:var(--primary);font-weight:600;margin-left:auto;}
+  .kcal-ring{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#FFF4EE,#FFE9DF);border:1px solid #FFD9C8;border-radius:16px;padding:14px 16px;margin:8px 14px 0;box-shadow:0 1px 4px rgba(15,23,42,.05);}
+  .kr{width:84px;height:84px;flex:0 0 84px;border-radius:50%;position:relative;}
+  .kr-donut{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .kr-hole{width:62px;height:62px;border-radius:50%;background:var(--glass-strong);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(15,23,42,.08);}
+  .kr-pct{font-size:22px;font-weight:800;color:#FF7A3D;line-height:1;}
+  .kr-pct-u{font-size:11px;font-weight:700;}
+  .kr-lab{font-size:10px;color:var(--text-sub);margin-top:2px;}
+  .kt{flex:1;min-width:0;}
+  .kt-cap{font-size:12px;color:var(--text-sub);font-weight:600;}
+  .kt-big{font-size:23px;font-weight:800;color:#FF7A3D;margin:3px 0;line-height:1.1;}
+  .kt-u{font-size:11px;color:var(--text-sub);font-weight:600;}
+  .kt-sub{font-size:11px;color:#B5613C;font-weight:600;}
+  .macros{display:flex;gap:8px;margin:8px 14px 0;}
+  .macros .m{flex:1;background:var(--glass-strong);border:1px solid var(--line);border-radius:12px;padding:12px 6px;box-shadow:0 1px 4px rgba(15,23,42,.05);text-align:center;}
+  .macros .dot{width:9px;height:9px;border-radius:50%;margin:0 auto 7px;}
+  .macros .v{font-size:19px;font-weight:800;line-height:1;}
+  .macros .mu{font-size:10px;color:var(--text-sub);font-weight:600;}
+  .macros .l{font-size:11px;color:var(--text-sub);margin-top:4px;font-weight:500;}
+  .food-row{display:flex;align-items:center;gap:6px;padding:8px 0;border-top:1px solid var(--line);}.food-row:first-child{border-top:none;}.fr-main{flex:1;min-width:0;}.fr-name{font-size:14px;font-weight:700;}.fr-nutri{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap;}.fr-nutri span{font-size:11px;color:var(--text-sub);background:var(--bg);border-radius:8px;padding:2px 6px;}
+
+  /* ============ 我的 ============ */
+  .profile-head{margin:14px 16px;background:var(--glass-strong);border:1px solid var(--glass-border);border-radius:22px;box-shadow:var(--shadow-mint);padding:18px 16px;color:var(--text);display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;}
+  .profile-head:after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(46,207,176,.30),rgba(46,207,176,0) 70%);pointer-events:none;}
+  .av{width:56px;height:56px;border-radius:50%;background:var(--primary-tint);color:var(--primary-deep);font-size:26px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ph-text{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}.pn{font-size:17px;font-weight:700;color:var(--text);}.ps{font-size:12px;color:var(--text-sub);}
+  .logout-link{font-size:12px;color:var(--primary-deep);padding:5px 10px;border-radius:14px;background:var(--primary-tint);flex-shrink:0;}
+  .login-btn{background:linear-gradient(135deg,var(--primary),var(--primary-deep));color:#fff;border-radius:999px;font-size:28px;font-weight:600;padding:0 36px;height:72px;line-height:72px;border:none;box-shadow:var(--shadow-mint);text-align:center;}
+  .profile-head.guest{flex-direction:column;align-items:center;text-align:center;padding:26px 16px 24px;gap:0;}
+  .profile-head.guest .av{margin-bottom:12px;}
+  .profile-head.guest .ph-text{align-items:center;gap:8px;margin-bottom:18px;}
+  .profile-head.guest .pn{font-size:21px;}
+  .profile-head.guest .login-btn{width:100%;max-width:220px;height:46px;line-height:46px;font-size:17px;margin:0 auto;}
+  .pstats{margin:14px 16px 0;background:var(--glass-strong);border-radius:12px;box-shadow:0 2px 8px rgba(15,23,42,.06);padding:12px;display:flex;position:relative;z-index:2;}
+  .pv{flex:1;text-align:center;position:relative;}.pv:not(:last-child):after{content:"";position:absolute;right:0;top:4px;bottom:4px;width:1px;background:var(--line);}
+  .pv-n{font-size:22px;font-weight:800;}.pv-k{font-size:11px;color:var(--text-sub);margin-top:3px;}
+  .menu{margin:12px 16px 0;padding:4px 0;background:var(--glass-strong);border-radius:16px;border:1px solid var(--line);overflow:hidden;}
+  .mi{display:flex;align-items:center;gap:10px;padding:14px 14px;}.mi:not(:last-child){border-bottom:1px solid var(--line);}
+  .mi-ic{width:32px;height:32px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}.mi-t{flex:1;font-size:15px;font-weight:600;}.mi-ar{color:var(--line-strong);font-size:18px;}
+  .ov-list{display:flex;margin-top:4px;}.ov-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:5px 1px;border-right:1px solid var(--line);}.ov-item:last-child{border-right:none;}.ov-cap{font-size:11px;color:var(--text-sub);margin-bottom:3px;}.ov-val{font-size:14px;font-weight:600;text-align:center;}.fit-days{margin-top:6px;text-align:center;font-size:13px;color:var(--text-sub);}.fd-num{color:var(--primary);font-weight:700;font-size:16px;margin:0 3px;}
+  /* 健康概览（对齐小程序：彩色图标徽章 + 内嵌玻璃卡；BMI 用桃色实底白字文字徽章） */
+  .section-title{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px;}
+  .section-title .svg-ico{width:18px;height:18px;}
+  .hg-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .hg-item{width:calc(50% - 4px);box-sizing:border-box;display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--glass-border);border-radius:12px;padding:11px 10px;box-shadow:0 4px 12px rgba(31,41,55,.05);}
+  .hg-ic{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;line-height:1;border:1px solid rgba(46,207,176,.14);}
+  .hg-ic .svg-ico{width:20px;height:20px;}
+  .hg-ic-goal{background:linear-gradient(135deg,#EAFFFA,#D6F6EE);}
+  .hg-ic-scale{background:linear-gradient(135deg,#E9FBF8,#D4F2EC);}
+  .hg-ic-user{background:linear-gradient(135deg,#FFF3EC,#FFE6D8);}
+  .hg-ic-bmi{background:linear-gradient(135deg,#FFB199,#FF8A66);color:#fff;border-color:transparent;box-shadow:0 3px 8px rgba(232,116,59,.26);}
+  .hg-body{display:flex;flex-direction:column;min-width:0;}
+  .hg-v{font-size:19px;font-weight:800;color:var(--text);line-height:1.15;}
+  .hg-k{font-size:11px;color:var(--text-sub);margin-top:2px;}
+  .set-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);}.set-row:last-child{border-bottom:none;}.set-left{display:flex;flex-direction:column;}.set-name{font-size:15px;font-weight:500;}.set-desc{font-size:11px;color:var(--text-weak);margin-top:1px;}.set-right{font-size:14px;color:var(--primary);display:flex;align-items:center;}
+  .rep-switcher{display:flex;gap:6px;margin:4px 0 10px;}.rep-chip{flex:1;text-align:center;font-size:13px;color:var(--text-sub);background:var(--bg);border-radius:14px;padding:6px 0;}.rep-chip.on{color:#fff;background:var(--primary);font-weight:600;}
+  .rep-stats{display:flex;gap:6px;margin:4px 0 9px;}.rep-stat{flex:1;text-align:center;background:var(--bg);border-radius:10px;padding:10px 4px;}.rs-num{font-size:17px;font-weight:800;color:var(--primary);}.rs-cap{font-size:11px;color:var(--text-sub);margin-top:2px;}
+  .rep-session{background:var(--bg);border-radius:10px;padding:9px 10px;margin-bottom:7px;}.rep-tag{font-size:11px;color:#fff;background:var(--primary);border-radius:14px;padding:2px 8px;}.rep-acts{font-size:14px;font-weight:600;}.rep-s-meta{font-size:11px;color:var(--text-weak);margin-top:4px;}.rep-more{margin-top:8px;text-align:center;font-size:13px;color:var(--primary);font-weight:600;}
+
+  /* ============ 动作详情 ============ */
+  .hero{position:relative;aspect-ratio:1/1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--primary-tint);}
+  .hero-emoji{font-size:90px;}.gif-badge{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:3px 8px;border-radius:999px;}
+  .zoom-btn{position:absolute;right:8px;top:8px;width:30px;height:30px;line-height:30px;text-align:center;color:#fff;background:rgba(0,0,0,.45);border-radius:50%;display:flex;align-items:center;justify-content:center;}.zoom-btn .svg-ico{width:17px;height:17px;color:#fff;}
+  .d-name{font-size:20px;font-weight:700;}.d-tags{margin:9px 0 0;display:flex;flex-wrap:wrap;gap:4px;}.d-desc{font-size:14px;color:var(--text-sub);line-height:1.7;margin-top:8px;}
+  .step{display:flex;align-items:flex-start;gap:10px;margin-bottom:11px;}.step-no{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--primary-tint);color:var(--primary);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px;}.step-text{flex:1;font-size:14px;line-height:1.7;}
+  .btn-row{position:absolute;left:0;right:0;bottom:55px;padding:8px 16px;background:var(--glass-strong);display:flex;align-items:center;gap:10px;border-top:1px solid var(--glass-border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 -4px 24px rgba(15,23,42,.06);}
+  .fav-btn{flex:1;height:44px;border-radius:12px;background:var(--glass-strong);border:2px solid var(--primary);color:var(--primary);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;}.fav-btn.on{background:#ffeceb;color:#ff4d4f;border-color:#ffd6d6;}
+  .add-today{flex:2;height:44px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;}
+
+  /* ============ 饮食识别 ============ */
+  .scan{margin:0 0 7px;min-height:150px;border:2px dashed var(--primary);border-radius:16px;background:var(--primary-tint);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--primary-deep);}
+  .scan .cam{width:48px;height:48px;border-radius:14px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;}.scan .stxt{font-size:15px;font-weight:700;}.scan .ssub{font-size:12px;color:var(--text-sub);}
+  .scan-alt{text-align:center;font-size:13px;color:var(--text-sub);padding:9px 0 4px;}
+  .mock-tip{background:var(--accent-soft);color:#C2410C;font-size:12px;padding:8px 10px;border-radius:10px;margin:0 0 10px;line-height:1.5;}
+  .macro-grid{display:flex;margin-top:4px;}.macro{flex:1;text-align:center;}.m-num{font-size:20px;font-weight:700;color:var(--primary);}.m-cap{font-size:11px;color:var(--text-sub);margin-top:2px;}
+  .food{display:flex;align-items:center;gap:10px;padding:12px;margin:0 0 10px;}.f-thumb{width:42px;height:42px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}.f-body{flex:1;min-width:0;}.f-name{font-size:15px;font-weight:600;}.f-meta{font-size:11px;color:var(--text-sub);margin-top:3px;}.f-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}.f-cal{font-size:16px;font-weight:700;color:var(--accent);}
+  .btn-record{background:var(--primary);color:#fff;font-size:12px;padding:4px 13px;border-radius:999px;font-weight:600;}
+  .record-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;}.seg{flex:1;display:flex;background:var(--bg);border-radius:999px;padding:3px;}.seg-item{flex:1;text-align:center;font-size:12px;color:var(--text-sub);padding:6px 0;border-radius:999px;}.seg-item.on{background:var(--glass-strong);color:var(--primary);font-weight:700;box-shadow:var(--shadow-mint);}.btn-all{background:var(--text);color:#fff;font-size:13px;padding:8px 14px;border-radius:999px;font-weight:600;}
+  .total-card{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;}.tc-label{font-size:14px;color:var(--text-sub);}.tc-value{font-size:20px;font-weight:700;color:var(--accent);}
+
+  /* ============ 底部 Tab Bar ============ */
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:55px;background:var(--glass-strong);display:flex;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 -4px 24px rgba(15,23,42,.06);z-index:10;border-top:1px solid var(--glass-border);border-radius:0 0 32px 32px;}
+  .tabbar-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;font-size:11px;}
+  .tabbar-item .ti-icon{font-size:20px;line-height:1;margin-bottom:3px;}
+  .tabbar-item.active{color:var(--primary);}
+  .note{font-size:11px;color:var(--text-sub);padding:4px 6px;line-height:1.5;}
+
+  /* ============ 清新可爱图标（扁平渐变 + 通透立体） ============ */
+  .svg-ico{display:inline-block;width:22px;height:22px;overflow:visible;filter:drop-shadow(0 2px 2.5px rgba(82,95,130,.20));}
+  /* 首页三项打卡：白底圆 + 彩色图标 */
+  .ci-ico .svg-ico{width:21px;height:21px;}
+  /* 快捷开始四宫格：浅底圆 + 彩色图标 */
+  .quick .ic{font-size:0;}
+  .quick .ic .svg-ico{width:22px;height:22px;}
+  /* 底部 TabBar：彩色图标，选中态加柔光圆底 */
+  .tabbar-item .ti-icon{font-size:0;line-height:1;margin-bottom:3px;display:flex;align-items:center;justify-content:center;}
+  .tabbar-item .ti-icon .svg-ico{width:23px;height:23px;}
+  .tabbar-item.active .ti-icon{background:var(--primary-tint);border-radius:50%;padding:5px;}
+  /* 餐次块图标：中性浅底 + 彩色图标 */
+  .meal .mi .svg-ico{width:20px;height:20px;}
+  /* 菜品卡食物图标 */
+  .dish .emo .svg-ico{width:24px;height:24px;filter:drop-shadow(0 2px 2.5px rgba(82,95,130,.18));}
+  /* 我的页面菜单图标 */
+  .mi-ic .svg-ico{width:20px;height:20px;filter:drop-shadow(0 2px 2.5px rgba(82,95,130,.18));}
+  /* 饮食识别页食物缩略图 */
+  .f-thumb .svg-ico{width:26px;height:26px;filter:drop-shadow(0 2px 2.5px rgba(82,95,130,.18));}
+  /* 拍照识别按钮（白图标） */
+  .scan .cam .svg-ico{width:26px;height:26px;filter:brightness(0) invert(1);}
+  /* 首页计划卡 / 训练动作卡 emoji 兜底 → 图标 */
+  .pi-emoji .svg-ico{width:30px;height:30px;}
+  .action-emoji .svg-ico{width:40px;height:40px;filter:drop-shadow(0 3px 4px rgba(82,95,130,.2));}
+  .hero-emoji .svg-ico{width:80px;height:80px;filter:drop-shadow(0 4px 6px rgba(82,95,130,.22));}
+  /* 我的页面「连续打卡」火焰（行内） */
+  .ps-flame{display:inline-flex;align-items:center;vertical-align:-2px;margin-left:2px;}
+  .ps-flame .svg-ico{width:14px;height:14px;}
+  /* 图标总览 */
+  .icon-showcase{max-width:1180px;margin:0 auto;padding:6px 32px 0;}
+  .icon-showcase h2{font-size:18px;font-weight:800;color:#fff;}
+  .icon-showcase>p{font-size:13px;color:#9aa0a6;margin-top:4px;font-weight:500;}
+  .ico-grid{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;}
+  .ico-cell{display:flex;flex-direction:column;align-items:center;gap:6px;width:86px;}
+  .ico-chip{width:58px;height:58px;border-radius:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(82,95,130,.18);}
+  .ico-chip .svg-ico{width:30px;height:30px;filter:drop-shadow(0 2px 2.5px rgba(82,95,130,.20));}
+  .ico-cell b{font-size:13px;color:#e6e8ec;font-weight:700;}
+  .ico-cell small{font-size:11px;color:#7a828d;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+
+  /* ============ 首页「快捷开始」点击跳转高亮 ============ */
+  .quick{cursor:pointer;transition:transform .14s var(--ease-out,ease),box-shadow .14s;}
+  .quick:hover{box-shadow:0 6px 18px rgba(46,207,176,.18);}
+  .quick:active{transform:scale(.96);}
+  @keyframes flashHi{0%,100%{box-shadow:0 24px 70px rgba(0,0,0,.45);}35%{box-shadow:0 0 0 4px var(--primary),0 24px 70px rgba(0,0,0,.45);}}
+  .phone-wrap.flash .phone{animation:flashHi 1.1s ease;}
+
+  /* ============ 我的计划（plan） ============ */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;}
+  .tb-title{font-size:18px;font-weight:800;color:var(--text);}
+  .tb-add{color:var(--primary);font-weight:700;font-size:14px;}
+  .plan-list{padding:0 16px;}
+  .plan-row{background:var(--glass-strong);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(15,23,42,.05);}
+  .pl-main{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+  .pl-name{font-size:16px;font-weight:700;color:var(--text);}
+  .pl-count{font-size:12px;color:var(--text-sub);}
+  .pl-tag{font-size:11px;color:var(--primary-deep);background:var(--primary-tint);border-radius:999px;padding:2px 8px;font-weight:600;}
+  .pl-actions{display:flex;gap:7px;}
+  .pl-btn{flex:1;text-align:center;font-size:12px;font-weight:600;padding:8px 0;border-radius:10px;background:var(--bg);color:var(--text-sub);border:1px solid var(--line);}
+  .pl-btn.on{color:var(--primary);background:var(--primary-tint);border-color:transparent;}
+  .pl-btn.primary{background:var(--primary);color:#fff;border-color:transparent;}
+  .pl-btn.danger{color:var(--error);background:var(--glass-strong);border-color:#FFD9D9;}
+
+  /* ============ 训练记录（list · training tab） ============ */
+  .qf{font-size:12px;color:var(--text-sub);background:var(--bg);border-radius:999px;padding:7px 14px;font-weight:600;}.qf.active{background:var(--primary-tint);color:var(--primary);font-weight:700;}
+  .train-group{background:var(--glass-strong);border:1px solid var(--line);border-radius:12px;margin-top:10px;overflow:hidden;}
+  .tg-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg);}
+  .tg-date{font-size:14px;font-weight:700;color:var(--text);}
+  .tg-meta{display:flex;align-items:center;gap:10px;}
+  .tg-count{font-size:12px;color:var(--text-sub);font-weight:600;}
+  .tg-arrow{font-size:12px;color:var(--text-weak);}
+  .tg-sessions{padding:0 14px 10px;}
+  .tg-session{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+  .tg-session:first-child{border-top:none;}
+  .tl-session{font-size:11px;color:#fff;background:var(--primary);border-radius:14px;padding:2px 9px;flex:0 0 auto;}
+  .tl-actions{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:6px;}
+  .tl-act{font-size:13px;color:var(--text);background:var(--bg);border-radius:8px;padding:2px 8px;}
+  .tl-arrow{color:var(--line-strong);font-size:16px;flex:0 0 auto;}
+  .rep-tabs{position:relative;display:flex;gap:6px;margin:10px 0 12px;background:var(--card);border-radius:12px;padding:5px;border:1px solid var(--line);box-shadow:var(--shadow-sm);}
+  .rep-thumb{position:absolute;left:5px;top:5px;bottom:5px;width:calc(50% - 8px);background:var(--primary);border-radius:999px;box-shadow:0 4px 14px rgba(46,207,176,.30);transform:translateX(0);transition:transform .28s var(--ease-out,ease);z-index:0;}
+  .rep-thumb.right{transform:translateX(calc(100% + 6px));}
+  .rep-tab{flex:1;text-align:center;font-size:13px;color:var(--text-sub);border-radius:12px;padding:9px 0;font-weight:600;position:relative;z-index:1;transition:color .22s var(--ease-out,ease);}
+  .rep-tab.active{color:#fff;font-weight:700;}
+  .rep-block{animation:paneIn .3s ease;}
+  .rep-head{display:flex;align-items:baseline;justify-content:space-between;}
+  .rep-title{font-size:15px;font-weight:700;color:var(--text);}
+  .rep-delta{font-size:13px;font-weight:700;}.rep-delta.up{color:var(--success);}.rep-delta.down{color:var(--error);}
+  .rep-sub{font-size:12px;color:var(--text-sub);margin:4px 0 8px;}
+  .rep-legend-inline{display:flex;gap:14px;font-size:11px;color:var(--text-sub);margin-bottom:8px;}
+  .lg{display:flex;align-items:center;gap:5px;}
+  .lg-dot{width:9px;height:9px;border-radius:3px;}.lg-dot.prev{background:#CBD5E1;}.lg-dot.cur{background:var(--primary);}
+  .bar-chart{display:flex;align-items:flex-end;gap:14px;height:160px;padding:6px 2px 0;border-bottom:1px solid var(--line);}
+  .bar-group{flex:1;display:flex;flex-direction:column;align-items:center;}
+  .bars{display:flex;align-items:flex-end;gap:5px;height:120px;}
+  .bar{position:relative;width:16px;border-radius:5px 5px 0 0;display:flex;align-items:flex-start;justify-content:center;}
+  .bar-prev{background:#CBD5E1;}
+  .bar-cur{background:var(--primary);}
+  .bar-num{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--text-sub);white-space:nowrap;}
+  .bar-name{font-size:11px;color:var(--text-sub);margin-top:6px;}
+  .rep-summary{font-size:13px;color:var(--text-sub);line-height:1.7;margin-top:10px;background:var(--bg);border-radius:12px;padding:10px 12px;}
+  .rep-summary b{color:var(--primary);font-weight:800;}
+</style>
+</head>
+<body>
+
+<!-- ============ SVG 图标精灵（清新可爱 · 扁平渐变 · 多彩低饱和 · 通透立体） ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 1. 首页 home -->
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M4 11.6 12 4.6 20 11.6a1 1 0 0 1-1 1.1H5a1 1 0 0 1-1-1.1Z" fill="url(#gh-roof)"/>
+      <rect x="5.6" y="12.2" width="12.8" height="7.4" rx="1.8" fill="url(#gh-body)"/>
+      <path d="M10 19.6v-4.6a1.1 1.1 0 0 1 1.1-1.1h1.8a1.1 1.1 0 0 1 1.1 1.1v4.6" fill="#fff" opacity=".92"/>
+      <circle cx="8.3" cy="15.4" r="1.3" fill="#fff" opacity=".92"/>
+      <ellipse cx="9" cy="8.2" rx="1.7" ry="1" fill="#fff" opacity=".3"/>
+      <linearGradient id="gh-roof" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9BE3C4"/><stop offset="1" stop-color="#5FCFA0"/></linearGradient>
+      <linearGradient id="gh-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CDE7FB"/><stop offset="1" stop-color="#A6D4F5"/></linearGradient>
+    </symbol>
+    <!-- 2. 训练 train（哑铃） -->
+    <symbol id="i-train" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="2.4" rx="1.2" fill="url(#gt-bar)"/>
+      <rect x="3" y="7.2" width="3" height="9.6" rx="1.5" fill="url(#gt-plate)"/>
+      <rect x="6.6" y="8.8" width="2.2" height="6.4" rx="1.1" fill="url(#gt-plate2)"/>
+      <rect x="15.2" y="8.8" width="2.2" height="6.4" rx="1.1" fill="url(#gt-plate2)"/>
+      <rect x="18" y="7.2" width="3" height="9.6" rx="1.5" fill="url(#gt-plate)"/>
+      <ellipse cx="4.2" cy="9.4" rx="1" ry="2.2" fill="#fff" opacity=".35"/>
+      <linearGradient id="gt-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBD0A8"/><stop offset="1" stop-color="#F4A988"/></linearGradient>
+      <linearGradient id="gt-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB39E"/><stop offset="1" stop-color="#FF8F7A"/></linearGradient>
+      <linearGradient id="gt-plate2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD0C0"/><stop offset="1" stop-color="#FFB39E"/></linearGradient>
+    </symbol>
+    <!-- 3. 饮食 diet（碗） -->
+    <symbol id="i-diet" viewBox="0 0 24 24">
+      <path d="M4 11.5h16a8 8 0 0 1-16 0Z" fill="url(#gd-bowl)"/>
+      <ellipse cx="12" cy="11.5" rx="9" ry="2.2" fill="#fff" opacity=".85"/>
+      <circle cx="9" cy="10.2" r="1.5" fill="#A8E6CF"/>
+      <circle cx="13" cy="10.6" r="1.3" fill="#FBC7A8"/>
+      <circle cx="15.6" cy="9.9" r="1.1" fill="#FFE3A0"/>
+      <path d="M9 7.6c-1-1.1.3-2.1-.3-3" stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none" opacity=".7"/>
+      <path d="M13.2 7.6c-1-1.1.3-2.1-.3-3" stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none" opacity=".7"/>
+      <linearGradient id="gd-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient>
+    </symbol>
+    <!-- 4. 体重 scale（天平） -->
+    <symbol id="i-scale" viewBox="0 0 24 24">
+      <rect x="11.2" y="4" width="1.6" height="15.2" rx=".8" fill="url(#gs-post)"/>
+      <rect x="3.4" y="4.3" width="17.2" height="2.4" rx="1.2" fill="url(#gs-beam)"/>
+      <rect x="8" y="18.4" width="8" height="2.4" rx="1.2" fill="url(#gs-post)"/>
+      <path d="M5 6.8 3.4 11.6a2.1 2.1 0 0 0 3.8 0Z" fill="url(#gs-pan)"/>
+      <path d="M19 6.8 17.4 11.6a2.1 2.1 0 0 0 3.8 0Z" fill="url(#gs-pan)"/>
+      <linearGradient id="gs-post" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9C9F2"/><stop offset="1" stop-color="#B79FE8"/></linearGradient>
+      <linearGradient id="gs-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C9B8F0"/><stop offset="1" stop-color="#A98FE0"/></linearGradient>
+      <linearGradient id="gs-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9B8F0"/><stop offset="1" stop-color="#A98FE0"/></linearGradient>
+    </symbol>
+    <!-- 5. 我的计划 plan（剪贴板） -->
+    <symbol id="i-plan" viewBox="0 0 24 24">
+      <rect x="5.5" y="4.5" width="13" height="16" rx="3.2" fill="url(#gp-board)"/>
+      <rect x="9" y="2.8" width="6" height="3.6" rx="1.6" fill="#fff" stroke="#EFE2FB" stroke-width="1"/>
+      <rect x="8" y="9" width="8" height="1.6" rx=".8" fill="#fff" opacity=".85"/>
+      <rect x="8" y="12.2" width="8" height="1.6" rx=".8" fill="#fff" opacity=".85"/>
+      <circle cx="12" cy="16.6" r="2.6" fill="#fff"/>
+      <path d="M10.6 16.6l1.1 1.1 2-2.2" stroke="url(#gp-board)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <linearGradient id="gp-board" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCE3A0"/><stop offset="1" stop-color="#FBC98C"/></linearGradient>
+    </symbol>
+    <!-- 6. 建议 idea（灯泡） -->
+    <symbol id="i-idea" viewBox="0 0 24 24">
+      <path d="M12 3.2a6 6 0 0 0-3.6 10.8c.6.5.9 1.2.9 2h5.4c0-.8.3-1.5.9-2A6 6 0 0 0 12 3.2Z" fill="url(#gi-bulb)"/>
+      <rect x="9.4" y="16.4" width="5.2" height="3.2" rx="1.4" fill="#C9B8F0"/>
+      <rect x="10.2" y="19.4" width="3.6" height="1.9" rx=".9" fill="#B79FE8"/>
+      <path d="M12 2.2v1.4M6.4 4.6l1 1M17.6 4.6l-1 1" stroke="#FFD98A" stroke-width="1.3" stroke-linecap="round"/>
+      <ellipse cx="10" cy="7" rx="2" ry="1.3" fill="#fff" opacity=".35"/>
+      <linearGradient id="gi-bulb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE6A0"/><stop offset="1" stop-color="#FBC98C"/></linearGradient>
+    </symbol>
+    <!-- 7. 我的 user（头像） -->
+    <symbol id="i-user" viewBox="0 0 24 24">
+      <path d="M5 20.4c.4-3.8 3.2-6 7-6s6.6 2.2 7 6a.6.6 0 0 1-.6.6H5.6a.6.6 0 0 1-.6-.6Z" fill="url(#gu-body)"/>
+      <circle cx="12" cy="9" r="4.3" fill="url(#gu-head)"/>
+      <circle cx="10.3" cy="9.5" r="1" fill="#F7B8D2" opacity=".85"/>
+      <circle cx="13.7" cy="9.5" r="1" fill="#F7B8D2" opacity=".85"/>
+      <ellipse cx="10.4" cy="6.3" rx="1.4" ry="1" fill="#fff" opacity=".32"/>
+      <linearGradient id="gu-head" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCD7E6"/><stop offset="1" stop-color="#F4A9C8"/></linearGradient>
+      <linearGradient id="gu-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E0D6F7"/><stop offset="1" stop-color="#C9B8F0"/></linearGradient>
+    </symbol>
+    <!-- 8. 早餐 breakfast（咖啡） -->
+    <symbol id="i-breakfast" viewBox="0 0 24 24">
+      <path d="M6 11h10v3.6A4.4 4.4 0 0 1 11.6 19H10.4A4.4 4.4 0 0 1 6 14.6Z" fill="url(#gb-cup)"/>
+      <path d="M16 12.2a2.4 2.4 0 0 1 0 4.6" stroke="#FBC98C" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <rect x="5" y="19" width="12" height="2" rx="1" fill="#E7C9A0"/>
+      <path d="M9.6 8.4c-1-1 .3-2-.3-3" stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none" opacity=".75"/>
+      <path d="M12.6 8.4c-1-1 .3-2-.3-3" stroke="#fff" stroke-width="1.3" stroke-linecap="round" fill="none" opacity=".75"/>
+      <linearGradient id="gb-cup" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBD0A8"/><stop offset="1" stop-color="#F4A988"/></linearGradient>
+    </symbol>
+    <!-- 9. 午餐 lunch（太阳） -->
+    <symbol id="i-lunch" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4.6" fill="url(#gl-sun)"/>
+      <g fill="#FFD98A">
+        <circle cx="12" cy="3.4" r="1.6"/><circle cx="12" cy="20.6" r="1.6"/>
+        <circle cx="3.4" cy="12" r="1.6"/><circle cx="20.6" cy="12" r="1.6"/>
+        <circle cx="5.6" cy="5.6" r="1.2"/><circle cx="18.4" cy="5.6" r="1.2"/>
+        <circle cx="5.6" cy="18.4" r="1.2"/><circle cx="18.4" cy="18.4" r="1.2"/>
+      </g>
+      <ellipse cx="10.4" cy="10" rx="1.6" ry="1.1" fill="#fff" opacity=".35"/>
+      <linearGradient id="gl-sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE6A0"/><stop offset="1" stop-color="#FBC98C"/></linearGradient>
+    </symbol>
+    <!-- 10. 晚餐 dinner（月亮） -->
+    <symbol id="i-dinner" viewBox="0 0 24 24">
+      <path d="M16.5 3.2a8.2 8.2 0 1 0 4.3 15.2 6.6 6.6 0 0 1-4.3-15.2Z" fill="url(#gd-moon)"/>
+      <path d="M7.6 6.4l.7 1.5 1.6.4-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6L4.9 8.3l1.6-.4Z" fill="#fff" opacity=".9"/>
+      <linearGradient id="gd-moon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A9C4F2"/><stop offset="1" stop-color="#7E9BE8"/></linearGradient>
+    </symbol>
+    <!-- 11. 加餐 snack（闪电） -->
+    <symbol id="i-snack" viewBox="0 0 24 24">
+      <path d="M13.5 3 6 13.2h3.8L10.2 21 18 10.4h-3.8Z" fill="url(#gs-bolt)" stroke="#FFE3A0" stroke-width=".6" stroke-linejoin="round"/>
+      <ellipse cx="10.8" cy="6.2" rx="1.3" ry="2.3" fill="#fff" opacity=".3" transform="rotate(18 10.8 6.2)"/>
+      <linearGradient id="gs-bolt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE6A0"/><stop offset="1" stop-color="#F6B35A"/></linearGradient>
+    </symbol>
+    <!-- 12. 蔬果 veg（叶子） -->
+    <symbol id="i-veg" viewBox="0 0 24 24">
+      <path d="M5 19c-.4-7.5 5-13.5 14.5-14.2-1.2 9.2-7 14.2-14.5 14.2Z" fill="url(#gv-leaf)"/>
+      <path d="M8.5 16C11 13 14 11 17 9.5" stroke="#fff" stroke-width="1.3" fill="none" opacity=".6" stroke-linecap="round"/>
+      <ellipse cx="14.5" cy="8.5" rx="1.2" ry="2.4" fill="#fff" opacity=".25" transform="rotate(38 14.5 8.5)"/>
+      <linearGradient id="gv-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A8E6CF"/><stop offset="1" stop-color="#5FCFA0"/></linearGradient>
+    </symbol>
+
+    <!-- 13. 食物 · 鸡腿 -->
+    <symbol id="i-food-meat" viewBox="0 0 24 24">
+      <g transform="rotate(-22 12 12)">
+        <ellipse cx="13" cy="9.3" rx="6" ry="6.6" fill="url(#gfm-meat)"/>
+        <rect x="9.6" y="14.4" width="3.2" height="7.2" rx="1.6" fill="url(#gfm-bone)"/>
+        <circle cx="9.4" cy="21.2" r="2" fill="#fff"/>
+        <circle cx="13.2" cy="21.6" r="2" fill="#fff"/>
+      </g>
+      <ellipse cx="11.2" cy="6.7" rx="2.3" ry="1.3" fill="#fff" opacity=".28"/>
+      <linearGradient id="gfm-meat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC2A8"/><stop offset="1" stop-color="#F6917A"/></linearGradient>
+      <linearGradient id="gfm-bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF7EE"/><stop offset="1" stop-color="#F0E2CF"/></linearGradient>
+    </symbol>
+    <!-- 14. 食物 · 拉面 -->
+    <symbol id="i-food-noodle" viewBox="0 0 24 24">
+      <path d="M4 12.8h16a8 8 0 0 1-16 0Z" fill="url(#gfn-bowl)"/>
+      <ellipse cx="12" cy="12.8" rx="9" ry="2.1" fill="#fff" opacity=".82"/>
+      <path d="M7 11.6c1-2 9-2 10 0" stroke="url(#gfn-noodle)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M8.2 10.6c1-1.5 6.6-1.5 7.6 0" stroke="url(#gfn-noodle)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="14.6" cy="10.6" r="1.5" fill="#FBC7A8"/>
+      <circle cx="14.6" cy="10.6" r=".7" fill="#fff"/>
+      <path d="M9.2 8c-1-1 .3-2-.3-3" stroke="#fff" stroke-width="1.1" stroke-linecap="round" fill="none" opacity=".55"/>
+      <path d="M13 8c-1-1 .3-2-.3-3" stroke="#fff" stroke-width="1.1" stroke-linecap="round" fill="none" opacity=".55"/>
+      <linearGradient id="gfn-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6B7A0"/><stop offset="1" stop-color="#E98E78"/></linearGradient>
+      <linearGradient id="gfn-noodle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF0CF"/><stop offset="1" stop-color="#F4D592"/></linearGradient>
+    </symbol>
+    <!-- 15. 食物 · 鱼 -->
+    <symbol id="i-food-fish" viewBox="0 0 24 24">
+      <path d="M5 12c0-3.2 3.4-5.5 7.5-5.5 4 0 7.2 2.3 7.2 5.5s-3.2 5.5-7.2 5.5C8.4 17.5 5 15.2 5 12Z" fill="url(#gff-body)"/>
+      <path d="M5 12 1.4 8.4c1.2 1.6 1.2 5.6 0 7.2Z" fill="url(#gff-tail)"/>
+      <circle cx="16.4" cy="10.8" r="1.3" fill="#fff"/>
+      <circle cx="16.7" cy="10.8" r=".65" fill="#33425C"/>
+      <ellipse cx="10" cy="14.4" rx="2.4" ry="1" fill="#fff" opacity=".22"/>
+      <linearGradient id="gff-body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A9D8F5"/><stop offset="1" stop-color="#6FB6EC"/></linearGradient>
+      <linearGradient id="gff-tail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7FC0EE"/><stop offset="1" stop-color="#5AA6E0"/></linearGradient>
+    </symbol>
+    <!-- 16. 食物 · 煎蛋 -->
+    <symbol id="i-food-egg" viewBox="0 0 24 24">
+      <path d="M12 4.2c4 0 7 3 7 6.4 0 3.6-3.2 6.4-7 6.4S5 14.2 5 10.6C5 7.2 8 4.2 12 4.2Z" fill="url(#gfe-white)"/>
+      <circle cx="12.6" cy="11" r="3.3" fill="url(#gfe-yolk)"/>
+      <ellipse cx="11" cy="9.4" rx="1.3" ry=".8" fill="#fff" opacity=".4"/>
+      <linearGradient id="gfe-white" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F4F6FA"/></linearGradient>
+      <linearGradient id="gfe-yolk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE39A"/><stop offset="1" stop-color="#FFC94D"/></linearGradient>
+    </symbol>
+    <!-- 17. 食物 · 燕麦碗 -->
+    <symbol id="i-food-bowl" viewBox="0 0 24 24">
+      <path d="M4 11.5h16a8 8 0 0 1-16 0Z" fill="url(#gfb-bowl)"/>
+      <ellipse cx="12" cy="11.5" rx="9" ry="2.2" fill="url(#gfb-oat)"/>
+      <circle cx="9" cy="11.1" r="1.2" fill="#C99A6A"/>
+      <circle cx="13" cy="11.7" r="1" fill="#D9AE7E"/>
+      <circle cx="15.4" cy="10.9" r="1.1" fill="#C99A6A"/>
+      <ellipse cx="10" cy="9" rx="1.6" ry=".9" fill="#fff" opacity=".3"/>
+      <linearGradient id="gfb-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient>
+      <linearGradient id="gfb-oat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E2C6"/><stop offset="1" stop-color="#E4CC9F"/></linearGradient>
+    </symbol>
+    <!-- 18. 食物 · 米饭 -->
+    <symbol id="i-food-rice" viewBox="0 0 24 24">
+      <path d="M4 12.5h16a8 8 0 0 1-16 0Z" fill="url(#gfr-bowl)"/>
+      <path d="M6.5 12.5c0-3 2.7-5.2 5.5-5.2s5.5 2.2 5.5 5.2Z" fill="url(#gfr-rice)"/>
+      <ellipse cx="12" cy="8" rx="3" ry="1.4" fill="#fff" opacity=".5"/>
+      <linearGradient id="gfr-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CDE7FB"/><stop offset="1" stop-color="#9CC9F0"/></linearGradient>
+      <linearGradient id="gfr-rice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F1F4F8"/></linearGradient>
+    </symbol>
+    <!-- 19. 食物 · 沙拉 -->
+    <symbol id="i-food-salad" viewBox="0 0 24 24">
+      <path d="M4 12.5h16a8 8 0 0 1-16 0Z" fill="url(#gfs-bowl)"/>
+      <ellipse cx="12" cy="12.5" rx="9" ry="2.2" fill="#fff" opacity=".8"/>
+      <path d="M9 12c-1-3 1-5 3-5s3 1 2.5 3.5c2-1 3.5.5 3 2.5-3 1-8 1-8.5-1Z" fill="url(#gfs-leaf)"/>
+      <circle cx="14.6" cy="10.4" r="1.4" fill="#FF9B8A"/>
+      <circle cx="10.4" cy="11" r="1.1" fill="#FFC36B"/>
+      <linearGradient id="gfs-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient>
+      <linearGradient id="gfs-leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B6E8B0"/><stop offset="1" stop-color="#6FC97A"/></linearGradient>
+    </symbol>
+    <!-- 20. 目标 -->
+    <symbol id="i-goal" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="url(#gm-goal-o)"/>
+      <circle cx="12" cy="12" r="5.4" fill="#fff"/>
+      <circle cx="12" cy="12" r="2.7" fill="url(#gm-goal-i)"/>
+      <ellipse cx="9" cy="9" rx="2" ry="1.1" fill="#fff" opacity=".25"/>
+      <linearGradient id="gm-goal-o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB199"/><stop offset="1" stop-color="#FF7E6B"/></linearGradient>
+      <linearGradient id="gm-goal-i" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9E88"/><stop offset="1" stop-color="#F26B57"/></linearGradient>
+    </symbol>
+    <!-- 21. 成就 -->
+    <symbol id="i-trophy" viewBox="0 0 24 24">
+      <path d="M6 4h12v4a6 6 0 0 1-12 0Z" fill="url(#gm-tr-cup)"/>
+      <path d="M6.2 5H3.6a2 2 0 0 0 2.1 4" fill="none" stroke="url(#gm-tr-cup)" stroke-width="2"/>
+      <path d="M17.8 5h2.6a2 2 0 0 1-2.1 4" fill="none" stroke="url(#gm-tr-cup)" stroke-width="2"/>
+      <rect x="10.5" y="13" width="3" height="3" fill="url(#gm-tr-cup)"/>
+      <rect x="7.4" y="16" width="9.2" height="3" rx="1.2" fill="url(#gm-tr-base)"/>
+      <ellipse cx="10" cy="5.6" rx="1.5" ry=".9" fill="#fff" opacity=".3"/>
+      <linearGradient id="gm-tr-cup" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD98A"/><stop offset="1" stop-color="#F4B54E"/></linearGradient>
+      <linearGradient id="gm-tr-base" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E7A94A"/><stop offset="1" stop-color="#C98A33"/></linearGradient>
+    </symbol>
+    <!-- 22. 设置 -->
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <g fill="url(#gm-set)">
+        <rect x="10.6" y="2.4" width="2.8" height="4.4" rx="1.1"/>
+        <rect x="10.6" y="17.2" width="2.8" height="4.4" rx="1.1"/>
+        <rect x="2.4" y="10.6" width="4.4" height="2.8" rx="1.1"/>
+        <rect x="17.2" y="10.6" width="4.4" height="2.8" rx="1.1"/>
+        <rect x="4.8" y="4.8" width="4.4" height="2.8" rx="1.1" transform="rotate(45 7 6.2)"/>
+        <rect x="14.8" y="4.8" width="4.4" height="2.8" rx="1.1" transform="rotate(-45 17 6.2)"/>
+        <rect x="4.8" y="16.4" width="4.4" height="2.8" rx="1.1" transform="rotate(-45 7 17.8)"/>
+        <rect x="14.8" y="16.4" width="4.4" height="2.8" rx="1.1" transform="rotate(45 17 17.8)"/>
+      </g>
+      <circle cx="12" cy="12" r="5" fill="url(#gm-set)"/>
+      <circle cx="12" cy="12" r="2.1" fill="#fff"/>
+      <linearGradient id="gm-set" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9C2D6"/><stop offset="1" stop-color="#8E9AB6"/></linearGradient>
+    </symbol>
+    <!-- 23. 关于 -->
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="url(#gm-info)"/>
+      <rect x="10.7" y="10.4" width="2.6" height="7.2" rx="1.3" fill="#fff"/>
+      <circle cx="12" cy="7.4" r="1.7" fill="#fff"/>
+      <ellipse cx="9" cy="9" rx="2" ry="1.1" fill="#fff" opacity=".22"/>
+      <linearGradient id="gm-info" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient>
+    </symbol>
+    <!-- 24. 连续打卡 -->
+    <symbol id="i-flame" viewBox="0 0 24 24">
+      <path d="M12 3c1.6 3-1.1 4.6-1.1 7.2 0 1 .8 1.8 1.8 1.8 1.7 0 2.5-1.4 2.3-3.2 2.2 1.5 3.2 4 3.2 6.2A7 7 0 1 1 6 15.4c0-2.7 1.7-4.6 3.4-6.2C10.7 7.6 10.3 5 12 3Z" fill="url(#gm-flame)"/>
+      <path d="M12 11c.8 1.4-.3 2.6-1.2 3.4.6-.2 1-.7 1-1.3 0-1-.9-1.7-1.6-2.4.8.2 1.6.3 1.8.3Z" fill="#fff" opacity=".28"/>
+      <linearGradient id="gm-flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC58A"/><stop offset="1" stop-color="#FF7A4D"/></linearGradient>
+    </symbol>
+    <!-- 25. 拍照识别 -->
+    <symbol id="i-camera" viewBox="0 0 24 24">
+      <rect x="3" y="7" width="18" height="13" rx="3.5" fill="url(#gm-cam-body)"/>
+      <path d="M9 7l1.3-2h3.4L15 7Z" fill="url(#gm-cam-body)"/>
+      <circle cx="12" cy="13.6" r="3.6" fill="#fff"/>
+      <circle cx="12" cy="13.6" r="2.3" fill="url(#gm-cam-lens)"/>
+      <circle cx="17" cy="10" r="1" fill="#fff" opacity=".85"/>
+      <linearGradient id="gm-cam-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9E8D2"/><stop offset="1" stop-color="#6FC9A6"/></linearGradient>
+      <linearGradient id="gm-cam-lens" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FCFA0"/><stop offset="1" stop-color="#2E9E78"/></linearGradient>
+    </symbol>
+    <!-- 26. 搜索 -->
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="6.2" fill="#fff"/>
+      <circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="url(#gm-src)" stroke-width="2.4"/>
+      <path d="M15 15l5 5" stroke="url(#gm-src)" stroke-width="2.8" stroke-linecap="round"/>
+      <ellipse cx="8.4" cy="8.2" rx="2" ry="1.2" fill="#fff" opacity=".5"/>
+      <linearGradient id="gm-src" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9BE3C4"/><stop offset="1" stop-color="#5FCFA0"/></linearGradient>
+    </symbol>
+    <!-- 27. 放大（全屏查看） -->
+    <symbol id="i-zoom" viewBox="0 0 24 24">
+      <path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4" fill="none" stroke="url(#gm-zoom)" stroke-width="2.2" stroke-linecap="round"/>
+      <linearGradient id="gm-zoom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9C2D6"/><stop offset="1" stop-color="#8E9AB6"/></linearGradient>
+    </symbol>
+    <!-- 28. 相册 -->
+    <symbol id="i-album" viewBox="0 0 24 24">
+      <rect x="3.5" y="5" width="14" height="13" rx="3" fill="url(#gm-alb-a)"/>
+      <rect x="6.5" y="8" width="14" height="13" rx="3" fill="url(#gm-alb-b)"/>
+      <circle cx="12.5" cy="14" r="3" fill="#fff" opacity=".9"/>
+      <path d="M17 18l4 4" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+      <linearGradient id="gm-alb-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD0B0"/><stop offset="1" stop-color="#F4A988"/></linearGradient>
+      <linearGradient id="gm-alb-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9E8D2"/><stop offset="1" stop-color="#6FC9A6"/></linearGradient>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="doc-header">
+  <h1>衡力健身 · 小程序 UI 预览原型</h1>
+  <p>本原型基于当前工程的 <b>WXML 结构 + WXSS 设计系统</b> 1:1 还原，仅作视觉预览，功能模块与交互逻辑完全保留（未改动任何业务代码）。下方为各页面在真机（375pt 宽度）下的渲染效果，每个手机框底部为小程序自定义 TabBar（首页 / 训练 / 记录 / 饮食 / 我的）。</p>
+  <div class="tokens">
+    <div class="token"><span class="sw" style="background:#2ECFB0"></span><span class="meta"><b>--primary</b><span>#2ECFB0 薄荷绿</span></span></div>
+    <div class="token"><span class="sw" style="background:#FF7A3D"></span><span class="meta"><b>--accent</b><span>#FF7A3D 活力橙</span></span></div>
+    <div class="token"><span class="sw" style="background:linear-gradient(180deg,#1AA885 0%,#2ECFB0 14%,#E5FBF5 40%,#FFF1E8 100%)"></span><span class="meta"><b>--app-bg</b><span>#1AA885 → #FFF1E8 · 薄荷渐变底</span></span></div>
+    <div class="token"><span class="sw" style="background:#1E293B"></span><span class="meta"><b>--text</b><span>#1E293B 主文字</span></span></div>
+    <div class="token"><span class="sw" style="background:#E2E8F0"></span><span class="meta"><b>--line</b><span>#E2E8F0 描边</span></span></div>
+    <div class="token"><span class="sw" style="background:rgba(255,255,255,.72)"></span><span class="meta"><b>--glass</b><span>rgba(255,255,255,.72) 玻璃卡</span></span></div>
+  </div>
+</div>
+
+<section class="icon-showcase">
+  <h2>图标总览 · Icon Set</h2>
+  <p>清新可爱 · 扁平渐变 · 多彩低饱和 · 通透立体（适配运动健身场景）</p>
+  <div class="ico-grid">
+    <div class="ico-cell"><span class="ico-chip" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-home"></use></svg></span><b>首页</b><small>i-home</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFEDE3"><svg class="svg-ico"><use href="#i-train"></use></svg></span><b>训练</b><small>i-train</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E6F0FB"><svg class="svg-ico"><use href="#i-diet"></use></svg></span><b>饮食</b><small>i-diet</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#F1E9FF"><svg class="svg-ico"><use href="#i-scale"></use></svg></span><b>体重</b><small>i-scale</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFF3DC"><svg class="svg-ico"><use href="#i-plan"></use></svg></span><b>我的计划</b><small>i-plan</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFF3DC"><svg class="svg-ico"><use href="#i-idea"></use></svg></span><b>建议</b><small>i-idea</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FCE7F0"><svg class="svg-ico"><use href="#i-user"></use></svg></span><b>我的</b><small>i-user</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFEDE3"><svg class="svg-ico"><use href="#i-breakfast"></use></svg></span><b>早餐</b><small>i-breakfast</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFF3DC"><svg class="svg-ico"><use href="#i-lunch"></use></svg></span><b>午餐</b><small>i-lunch</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E6EEFB"><svg class="svg-ico"><use href="#i-dinner"></use></svg></span><b>晚餐</b><small>i-dinner</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFF3DC"><svg class="svg-ico"><use href="#i-snack"></use></svg></span><b>加餐</b><small>i-snack</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-veg"></use></svg></span><b>蔬果</b><small>i-veg</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFEDE3"><svg class="svg-ico"><use href="#i-food-meat"></use></svg></span><b>鸡腿</b><small>i-food-meat</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFEEDC"><svg class="svg-ico"><use href="#i-food-noodle"></use></svg></span><b>拉面</b><small>i-food-noodle</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E6EEFB"><svg class="svg-ico"><use href="#i-food-fish"></use></svg></span><b>鱼</b><small>i-food-fish</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFF7EC"><svg class="svg-ico"><use href="#i-food-egg"></use></svg></span><b>煎蛋</b><small>i-food-egg</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E6F0FB"><svg class="svg-ico"><use href="#i-food-bowl"></use></svg></span><b>燕麦碗</b><small>i-food-bowl</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E6F0FB"><svg class="svg-ico"><use href="#i-food-rice"></use></svg></span><b>米饭</b><small>i-food-rice</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-food-salad"></use></svg></span><b>沙拉</b><small>i-food-salad</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFE0DA"><svg class="svg-ico"><use href="#i-goal"></use></svg></span><b>目标</b><small>i-goal</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFF3DC"><svg class="svg-ico"><use href="#i-trophy"></use></svg></span><b>成就</b><small>i-trophy</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#EBEDF2"><svg class="svg-ico"><use href="#i-settings"></use></svg></span><b>设置</b><small>i-settings</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E6F0FB"><svg class="svg-ico"><use href="#i-info"></use></svg></span><b>关于</b><small>i-info</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#FFE0DA"><svg class="svg-ico"><use href="#i-flame"></use></svg></span><b>连续打卡</b><small>i-flame</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-camera"></use></svg></span><b>拍照识别</b><small>i-camera</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-search"></use></svg></span><b>搜索</b><small>i-search</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#EBEDF2"><svg class="svg-ico"><use href="#i-zoom"></use></svg></span><b>放大</b><small>i-zoom</small></div>
+    <div class="ico-cell"><span class="ico-chip" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-album"></use></svg></span><b>相册</b><small>i-album</small></div>
+  </div>
+</section>
+
+<div class="gallery">
+
+  <!-- ============ 1. 首页 ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">首页 <small>home · 渐变 hero + 三项打卡 + 周历</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="hero-grad">
+          <div class="hi">早上好</div>
+          <div class="name">健身小达人</div>
+          <div class="date">8月11日 周二</div>
+        </div>
+
+        <div class="card status-card">
+          <div class="sc-head">
+            <div class="sc-title">今日打卡</div>
+            <div class="sc-pct">33<span class="sc-pct-sign">%</span></div>
+          </div>
+          <div class="pbar"><div class="pbar-fill" style="width:33%"></div></div>
+          <div class="sc-tip">还差 2 项待打卡</div>
+          <div class="checkins">
+            <div class="checkin on"><div class="ci-ico"><svg class="svg-ico"><use href="#i-scale"></use></svg><div class="ci-check">✓</div></div><div class="ci-name">体重</div><div class="ci-state">已打卡</div></div>
+            <div class="checkin"><div class="ci-ico"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="ci-name">训练</div><div class="ci-state">待记录</div></div>
+            <div class="checkin"><div class="ci-ico"><svg class="svg-ico"><use href="#i-diet"></use></svg></div><div class="ci-name">饮食</div><div class="ci-state">待记录</div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">快捷开始</div>
+          <div class="quick-grid">
+            <div class="quick" data-jump="trainPhone"><div class="ic g"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="qtxt"><div class="qt">开始训练</div><div class="qs">今日计划</div></div></div>
+            <div class="quick" data-jump="advicePhone"><div class="ic o"><svg class="svg-ico"><use href="#i-diet"></use></svg></div><div class="qtxt"><div class="qt">记录饮食</div><div class="qs">AI 识别</div></div></div>
+            <div class="quick" data-jump="listPhone"><div class="ic b"><svg class="svg-ico"><use href="#i-scale"></use></svg></div><div class="qtxt"><div class="qt">记录体重</div><div class="qs">追踪趋势</div></div></div>
+            <div class="quick" data-jump="planPhone"><div class="ic p"><svg class="svg-ico"><use href="#i-plan"></use></svg></div><div class="qtxt"><div class="qt">我的计划</div><div class="qs">查看安排</div></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cal-head">
+            <div class="section-title" style="margin:0">训练记录日历</div>
+            <div class="link-arrow">查看日历<span class="arrow"> ›</span></div>
+          </div>
+          <div class="wk">
+            <div class="wk-d"><div class="wk-wd">一</div><div class="wk-box">10<div class="wk-dot"></div></div></div>
+            <div class="wk-d today"><div class="wk-wd">二</div><div class="wk-box">11</div></div>
+            <div class="wk-d"><div class="wk-wd">三</div><div class="wk-box">12</div></div>
+            <div class="wk-d"><div class="wk-wd">四</div><div class="wk-box">13</div></div>
+            <div class="wk-d"><div class="wk-wd">五</div><div class="wk-box">14</div></div>
+            <div class="wk-d"><div class="wk-wd">六</div><div class="wk-box">15</div></div>
+            <div class="wk-d"><div class="wk-wd">日</div><div class="wk-box">16</div></div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:24px">
+          <div class="section-title" style="margin:0 0 12px">今日训练计划 <span class="more">全部 ›</span></div>
+          <div class="card plan-item">
+            <div class="pi-thumb"><span class="pi-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></span><img class="pi-img" src="https://pub-d1c906fc65734d81a50cd8fabad52ca5.r2.dev/videos/0001-2gPfomN.gif" onerror="this.style.display='none'"></div>
+            <div class="pi-body">
+              <div class="pi-name">杠铃卧推</div>
+              <div class="pi-meta">4 组 · 12 次 · 20kg</div>
+              <div class="bar"><i style="width:100%"></i></div>
+            </div>
+            <span class="tag tag-primary">已练</span>
+          </div>
+          <div class="card plan-item">
+            <div class="pi-thumb"><span class="pi-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></span><img class="pi-img" src="https://pub-d1c906fc65734d81a50cd8fabad52ca5.r2.dev/videos/0002-Hy9D21L.gif" onerror="this.style.display='none'"></div>
+            <div class="pi-body">
+              <div class="pi-name">深蹲</div>
+              <div class="pi-meta">4 组 · 10 次 · 40kg</div>
+              <div class="bar"><i style="width:0%"></i></div>
+            </div>
+            <span class="tag">未练</span>
+          </div>
+          <div class="card plan-item">
+            <div class="pi-thumb"><span class="pi-emoji"><svg class="svg-ico"><use href="#i-flame"></use></svg></span><img class="pi-img" src="https://pub-d1c906fc65734d81a50cd8fabad52ca5.r2.dev/videos/0003-1ZFqTDN.gif" onerror="this.style.display='none'"></div>
+            <div class="pi-body">
+              <div class="pi-name">平板支撑</div>
+              <div class="pi-meta">3 组 · 60 秒</div>
+              <div class="bar"><i style="width:0%"></i></div>
+            </div>
+            <span class="tag">未练</span>
+          </div>
+        </div>
+
+        <div class="attribution">动作演示媒体 © Gym visual<br>https://gymvisual.com/</div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 训练 ============ -->
+  <div class="phone-wrap" id="trainPhone">
+    <div class="phone-label">训练 <small>training · 动作库 + 双排卡片 + 底部行动栏</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="lib-head"><div class="lib-title">动作库</div><div class="create-btn">+ 创建动作</div></div>
+
+        <div class="chips">
+          <div class="chip on">全部<span class="chip-count">12</span></div>
+          <div class="chip">胸<span class="chip-count">3</span></div>
+          <div class="chip">背<span class="chip-count">2</span></div>
+          <div class="chip">腿<span class="chip-count">4</span></div>
+          <div class="chip">肩<span class="chip-count">2</span></div>
+          <div class="chip">核心<span class="chip-count">3</span></div>
+        </div>
+
+        <div class="search-bar">
+          <div class="search-input"><span class="search-ico"><svg class="svg-ico"><use href="#i-search"></use></svg></span><span class="search-field" style="color:#94A3B8">搜索动作、部位或器械</span></div>
+          <div class="sel-pill">3 已选 ›</div>
+        </div>
+
+        <div class="action-list">
+          <div class="action-card">
+            <div class="action-thumb"><div class="action-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="play">▶</div><div class="fav on">♥</div></div>
+            <div class="action-body"><div class="action-name">哑铃卧推</div><div class="action-tags"><span class="tag tag-primary">胸</span><span class="tag">哑铃</span></div></div>
+            <div class="add-btn">+</div>
+          </div>
+          <div class="action-card">
+            <div class="action-thumb"><div class="action-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="fav">♡</div></div>
+            <div class="action-body"><div class="action-name">引体向上</div><div class="action-tags"><span class="tag tag-primary">背</span><span class="tag">徒手</span></div></div>
+            <div class="add-btn">+</div>
+          </div>
+          <div class="action-card">
+            <div class="action-thumb"><div class="action-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="play">▶</div><div class="fav">♡</div></div>
+            <div class="action-body"><div class="action-name">杠铃深蹲</div><div class="action-tags"><span class="tag tag-primary">腿</span><span class="tag">杠铃</span></div></div>
+            <div class="add-btn">+</div>
+          </div>
+          <div class="action-card">
+            <div class="action-thumb"><div class="action-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="fav">♡</div></div>
+            <div class="action-body"><div class="action-name">平板支撑</div><div class="action-tags"><span class="tag tag-primary">核心</span><span class="tag">徒手</span></div></div>
+            <div class="add-btn">+</div>
+          </div>
+          <div class="action-card">
+            <div class="action-thumb"><div class="action-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="fav on">♥</div></div>
+            <div class="action-body"><div class="action-name">哑铃划船</div><div class="action-tags"><span class="tag tag-primary">背</span><span class="tag">哑铃</span></div></div>
+            <div class="add-btn">+</div>
+          </div>
+          <div class="action-card">
+            <div class="action-thumb"><div class="action-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="fav">♡</div></div>
+            <div class="action-body"><div class="action-name">卷腹</div><div class="action-tags"><span class="tag tag-primary">核心</span><span class="tag">徒手</span></div></div>
+            <div class="add-btn added">✓</div>
+          </div>
+        </div>
+
+        <div class="empty" style="padding:24px 0">动作图片 © Gym visual</div>
+      </div>
+      <div class="action-bar">
+        <div class="ab-count"><div class="ab-num">3</div><div class="ab-label">已选动作</div></div>
+        <div class="ab-start">开始训练</div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3. 列表（记录 · 可交互切换「体重记录 / 训练记录」） ============ -->
+  <div class="phone-wrap" id="listPhone">
+    <div class="phone-label">记录 <small>list · 点击分段切换「体重记录 / 训练记录」</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="seg" data-seg>
+          <div class="seg-thumb"></div>
+          <div class="seg-btn on" data-to="weight">体重记录</div>
+          <div class="seg-btn" data-to="training">训练记录</div>
+        </div>
+
+        <!-- 体重记录 pane -->
+        <div class="pane-weight tab-pane">
+
+        <div class="card">
+          <button class="rec-btn">+ 记录体重</button>
+          <div class="overview">
+            <div class="ov-item"><div class="ov-num">68.5<span class="ov-unit">kg</span></div><div class="ov-cap">最新体重</div></div>
+            <div class="ov-item"><div class="ov-num down">-1.2</div><div class="ov-cap">区间变化</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">体重变化趋势</div>
+          <div class="ranges">
+            <div class="range active">近7天</div>
+            <div class="range">近30天</div>
+            <div class="range">近90天</div>
+          </div>
+          <div class="chart-wrap">
+            <svg width="100%" height="170" viewBox="0 0 320 170" preserveAspectRatio="none">
+              <line x1="0" y1="30" x2="320" y2="30" stroke="#eee" stroke-width="1"/>
+              <line x1="0" y1="70" x2="320" y2="70" stroke="#eee" stroke-width="1"/>
+              <line x1="0" y1="110" x2="320" y2="110" stroke="#eee" stroke-width="1"/>
+              <line x1="0" y1="150" x2="320" y2="150" stroke="#eee" stroke-width="1"/>
+              <polyline fill="none" stroke="#2ECFB0" stroke-width="3" points="10,90 60,80 110,95 160,70 210,85 260,60 310,75"/>
+              <circle cx="10" cy="90" r="4" fill="#2ECFB0"/><circle cx="60" cy="80" r="4" fill="#2ECFB0"/>
+              <circle cx="110" cy="95" r="4" fill="#2ECFB0"/><circle cx="160" cy="70" r="4" fill="#2ECFB0"/>
+              <circle cx="210" cy="85" r="4" fill="#2ECFB0"/><circle cx="260" cy="60" r="4" fill="#2ECFB0"/>
+              <circle cx="310" cy="75" r="4" fill="#2ECFB0"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-num">70.2</div><div class="stat-cap">最高体重</div></div>
+          <div class="stat-card"><div class="stat-num">67.8</div><div class="stat-cap">最低体重</div></div>
+          <div class="stat-card"><div class="stat-num">24</div><div class="stat-cap">记录天数</div></div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">体重历史记录（共 4 条）</div>
+          <div class="date-filter">
+            <div class="df-picker">开始日期</div>
+            <span style="font-size:12px;color:#94A3B8">至</span>
+            <div class="df-picker">结束日期</div>
+          </div>
+          <div class="his-row"><span class="his-date">2026-08-11</span><span class="his-weight">68.5 kg</span></div>
+          <div class="his-row"><span class="his-date">2026-08-10</span><span class="his-weight">68.8 kg</span></div>
+          <div class="his-row"><span class="his-date">2026-08-09</span><span class="his-weight">69.0 kg</span></div>
+          <div class="his-row"><span class="his-date">2026-08-07</span><span class="his-weight">69.3 kg</span></div>
+        </div>
+        </div><!-- /pane-weight -->
+
+        <!-- 训练记录 pane -->
+        <div class="pane-training tab-pane">
+        <div class="card">
+          <div class="section-title">训练历史记录（共 3 天）</div>
+          <div class="date-filter">
+            <div class="qf active">今日</div>
+            <div class="qf">昨日</div>
+            <div class="qf">选择日期</div>
+            <div class="df-clear">回到今日</div>
+          </div>
+          <div class="train-group">
+            <div class="tg-head"><span class="tg-date">2026-08-11</span><div class="tg-meta"><span class="tg-count">2 场</span><span class="tg-arrow">▾</span></div></div>
+            <div class="tg-sessions">
+              <div class="tg-session"><span class="tl-session">第1练</span><div class="tl-actions"><span class="tl-act">杠铃卧推</span><span class="tl-act">引体向上</span><span class="tl-act">卷腹</span></div><span class="tl-arrow">›</span></div>
+              <div class="tg-session"><span class="tl-session">第2练</span><div class="tl-actions"><span class="tl-act">平板支撑</span><span class="tl-act">深蹲</span></div><span class="tl-arrow">›</span></div>
+            </div>
+          </div>
+          <div class="train-group">
+            <div class="tg-head"><span class="tg-date">2026-08-10</span><div class="tg-meta"><span class="tg-count">1 场</span><span class="tg-arrow">▾</span></div></div>
+            <div class="tg-sessions">
+              <div class="tg-session"><span class="tl-session">第1练</span><div class="tl-actions"><span class="tl-act">哑铃划船</span><span class="tl-act">硬拉</span></div><span class="tl-arrow">›</span></div>
+            </div>
+          </div>
+          <div class="train-group">
+            <div class="tg-head"><span class="tg-date">2026-08-09</span><div class="tg-meta"><span class="tg-count">1 场</span><span class="tg-arrow">▾</span></div></div>
+            <div class="tg-sessions">
+              <div class="tg-session"><span class="tl-session">第1练</span><div class="tl-actions"><span class="tl-act">跑步</span></div><span class="tl-arrow">›</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card report-card">
+          <div class="section-title">训练详细报表</div>
+          <div class="rep-tabs">
+            <div class="rep-thumb"></div>
+            <div class="rep-tab active">组数对比</div>
+            <div class="rep-tab">锻炼时间</div>
+          </div>
+          <div class="rep-block">
+            <div class="rep-head"><span class="rep-title">组数对比</span><span class="rep-delta up">+12%</span></div>
+            <div class="rep-sub">展示部位的具体完成组数（单位：组）</div>
+            <div class="rep-legend-inline"><div class="lg"><div class="lg-dot prev"></div>上周</div><div class="lg"><div class="lg-dot cur"></div>本周</div></div>
+            <div class="bar-chart sets-chart">
+              <div class="bar-group"><div class="bars"><div class="bar bar-prev" style="height:42px"><span class="bar-num">18</span></div><div class="bar bar-cur" style="height:66px"><span class="bar-num">26</span></div></div><span class="bar-name">胸</span></div>
+              <div class="bar-group"><div class="bars"><div class="bar bar-prev" style="height:30px"><span class="bar-num">12</span></div><div class="bar bar-cur" style="height:48px"><span class="bar-num">18</span></div></div><span class="bar-name">背</span></div>
+              <div class="bar-group"><div class="bars"><div class="bar bar-prev" style="height:36px"><span class="bar-num">15</span></div><div class="bar bar-cur" style="height:52px"><span class="bar-num">20</span></div></div><span class="bar-name">腿</span></div>
+              <div class="bar-group"><div class="bars"><div class="bar bar-prev" style="height:18px"><span class="bar-num">8</span></div><div class="bar bar-cur" style="height:30px"><span class="bar-num">12</span></div></div><span class="bar-name">核心</span></div>
+            </div>
+            <div class="rep-summary">与上周做对比，本周训练次数总计训练 <b>26</b> 次 · 上周 <b>18</b> 次 👍</div>
+          </div>
+        </div>
+        </div><!-- /pane-training -->
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4. 饮食（可交互：点击分段切换「饮食建议 / 饮食记录」） ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">饮食 <small>advice · 点击分段切换「饮食建议 / 饮食记录」</small></div>
+    <div class="phone" id="advicePhone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="seg" data-seg>
+          <div class="seg-thumb"></div>
+          <div class="seg-btn on" data-to="suggest">饮食建议</div>
+          <div class="seg-btn" data-to="record">饮食记录</div>
+        </div>
+
+        <!-- 饮食建议 pane -->
+        <div class="pane-suggest tab-pane">
+          <div class="chips">
+            <div class="chip">早餐</div>
+            <div class="chip active">午餐</div>
+            <div class="chip">晚餐</div>
+            <div class="chip">加餐</div>
+            <div class="chip">蔬果</div>
+          </div>
+          <div class="meal">
+            <div class="mh"><div class="mi" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-lunch"></use></svg></div><div class="mtitle">午餐推荐</div><div class="kc">约 1430 千卡</div></div>
+            <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-meat"></use></svg></div><div class="dbody"><div class="dn">糙米饭 + 煎鸡胸 + 西兰花</div><div class="dd">标准减脂餐，蛋白足、碳水稳。</div></div><div class="dk">~480</div><div class="dadd">添加</div></div>
+            <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-noodle"></use></svg></div><div class="dbody"><div class="dn">荞麦面 + 牛肉片 + 菠菜</div><div class="dd">荞麦低 GI，补铁又饱腹。</div></div><div class="dk">~520</div><div class="dadd">添加</div></div>
+            <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-fish"></use></svg></div><div class="dbody"><div class="dn">紫薯 + 清蒸鱼 + 芦笋</div><div class="dd">优质脂肪酸与蛋白来源。</div></div><div class="dk">~430</div><div class="dadd">添加</div></div>
+          </div>
+        </div>
+
+        <!-- 饮食记录 pane -->
+        <div class="pane-record tab-pane">
+          <div class="date-filter"><div class="df-picker has-val">2026-08-11</div><div class="df-clear">回到今天</div></div>
+          <div class="kcal-ring">
+            <div class="kr"><div class="kr-donut" style="background:conic-gradient(#FF7A3D 84%,#FFD9C8 0);"><div class="kr-hole"><div class="kr-pct">84<span class="kr-pct-u">%</span></div><div class="kr-lab">已摄入</div></div></div></div>
+            <div class="kt"><div class="kt-cap">今日摄入总热量</div><div class="kt-big">1,520<span class="kt-u"> / 1,800 千卡</span></div><div class="kt-sub">还可摄入 280 千卡</div></div>
+          </div>
+          <div class="macros">
+            <div class="m"><div class="dot" style="background:#3E8BFF"></div><div class="v" style="color:#3E8BFF">96<span class="mu">g</span></div><div class="l">蛋白质</div></div>
+            <div class="m"><div class="dot" style="background:#F4B740"></div><div class="v" style="color:#B07C09">168<span class="mu">g</span></div><div class="l">碳水</div></div>
+            <div class="m"><div class="dot" style="background:#FF7A3D"></div><div class="v" style="color:#FF7A3D">52<span class="mu">g</span></div><div class="l">脂肪</div></div>
+          </div>
+          <div class="meal">
+            <div class="mh"><div class="mi" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-breakfast"></use></svg></div><div class="mtitle">早餐</div><div class="kc">360 kcal</div></div>
+            <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-egg"></use></svg></div><div class="dbody"><div class="dn">水煮蛋 ×2</div><div class="dd">140kcal · 蛋12g</div></div></div>
+            <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-bowl"></use></svg></div><div class="dbody"><div class="dn">燕麦牛奶碗</div><div class="dd">180kcal · 碳24g</div></div></div>
+          </div>
+          <div class="meal">
+            <div class="mh"><div class="mi" style="background:#E5FBF5"><svg class="svg-ico"><use href="#i-lunch"></use></svg></div><div class="mtitle">午餐</div><div class="kc">480 kcal</div></div>
+            <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-meat"></use></svg></div><div class="dbody"><div class="dn">糙米饭 + 煎鸡胸 + 西兰花</div><div class="dd">480kcal · 蛋42g</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5. 我的 ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">我的 <small>profile · 渐变头 + 数据条 + 菜单</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="profile-head guest">
+          <div class="av">衡</div>
+          <div class="ph-text"><div class="pn">欢迎使用 衡力健身记录</div><div class="ps">登录后完善个人健康档案</div></div>
+          <div class="login-btn">登录</div>
+        </div>
+
+        <div class="pstats">
+          <div class="pv"><div class="pv-n">0</div><div class="pv-k">总训练</div></div>
+          <div class="pv"><div class="pv-n">0</div><div class="pv-k">连续天</div></div>
+          <div class="pv"><div class="pv-n">0</div><div class="pv-k">收藏</div></div>
+        </div>
+
+        <div class="menu card">
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-plan"></use></svg></div><div class="mi-t">我的计划</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="mi-t">训练日报</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-goal"></use></svg></div><div class="mi-t">体重目标</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-info"></use></svg></div><div class="mi-t">关于 / 媒体署名</div><div class="mi-ar">›</div></div>
+        </div>
+
+        <div class="card">
+          <div class="section-title"><svg class="svg-ico"><use href="#i-goal"></use></svg>健康概览</div>
+          <div class="hg-grid">
+            <div class="hg-item">
+              <div class="hg-ic hg-ic-goal"><svg class="svg-ico"><use href="#i-goal"></use></svg></div>
+              <div class="hg-body"><div class="hg-v">未设置</div><div class="hg-k">当前目标</div></div>
+            </div>
+            <div class="hg-item">
+              <div class="hg-ic hg-ic-scale"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>
+              <div class="hg-body"><div class="hg-v">未记录</div><div class="hg-k">体重</div></div>
+            </div>
+            <div class="hg-item">
+              <div class="hg-ic hg-ic-user"><svg class="svg-ico"><use href="#i-user"></use></svg></div>
+              <div class="hg-body"><div class="hg-v">未设置</div><div class="hg-k">身高</div></div>
+            </div>
+            <div class="hg-item">
+              <div class="hg-ic hg-ic-bmi">BMI</div>
+              <div class="hg-body"><div class="hg-v">--</div><div class="hg-k">BMI 指数</div></div>
+            </div>
+          </div>
+          <div class="fit-days">健身天数 <span class="fd-num">0</span></div>
+        </div>
+
+        <div class="attribution">动作演示媒体 © Gym visual<br>https://gymvisual.com/</div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5.5 我的计划（plan） ============ -->
+  <div class="phone-wrap" id="planPhone">
+    <div class="phone-label">我的计划 <small>plan · 计划列表 + 动作管理</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="topbar">
+          <div class="tb-title">训练计划</div>
+          <div class="tb-add">+ 新建</div>
+        </div>
+
+        <div class="plan-list">
+          <div class="plan-row">
+            <div class="pl-main">
+              <div class="pl-name">练胸日</div>
+              <div class="pl-count">5 个动作</div>
+              <div class="pl-tag">当前</div>
+            </div>
+            <div class="pl-actions">
+              <div class="pl-btn on">使用中</div>
+              <div class="pl-btn primary">开始训练</div>
+              <div class="pl-btn">修改</div>
+              <div class="pl-btn danger">删除</div>
+            </div>
+          </div>
+          <div class="plan-row">
+            <div class="pl-main">
+              <div class="pl-name">全身循环</div>
+              <div class="pl-count">8 个动作</div>
+            </div>
+            <div class="pl-actions">
+              <div class="pl-btn">设为当前</div>
+              <div class="pl-btn primary">开始训练</div>
+              <div class="pl-btn">修改</div>
+              <div class="pl-btn danger">删除</div>
+            </div>
+          </div>
+          <div class="plan-row">
+            <div class="pl-main">
+              <div class="pl-name">下肢爆发</div>
+              <div class="pl-count">6 个动作</div>
+            </div>
+            <div class="pl-actions">
+              <div class="pl-btn">设为当前</div>
+              <div class="pl-btn primary">开始训练</div>
+              <div class="pl-btn">修改</div>
+              <div class="pl-btn danger">删除</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 6. 动作详情 ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">动作详情 <small>action-detail · 视频/图 + 三色标签 + 底部按钮</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="hero">
+          <div class="hero-emoji"><svg class="svg-ico"><use href="#i-train"></use></svg></div>
+          <div class="gif-badge">视频演示</div>
+          <div class="zoom-btn"><svg class="svg-ico"><use href="#i-zoom"></use></svg></div>
+        </div>
+
+        <div class="card">
+          <div class="d-name">哑铃划船</div>
+          <div class="d-tags">
+            <span class="tag tag-primary">背</span>
+            <span class="tag">哑铃</span>
+            <span class="tag tag-accent">增肌</span>
+          </div>
+          <div class="d-desc">双脚与肩同宽，屈膝微俯身，背部挺直，沿腿部将哑铃拉至腰侧，感受背阔肌收缩后缓慢下放。</div>
+          <div class="attribution" style="padding:12px 0 0;text-align:left">动作演示 © Gym visual</div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">动作步骤</div>
+          <div class="step"><div class="step-no">1</div><div class="step-text">俯身约 45°，核心收紧，双手持哑铃自然下垂。</div></div>
+          <div class="step"><div class="step-no">2</div><div class="step-text">呼气时将哑铃沿身体两侧拉至腰腹，肘部贴近躯干。</div></div>
+          <div class="step"><div class="step-no">3</div><div class="step-text">顶峰收缩 1 秒，吸气缓慢下放至手臂伸直。</div></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <div class="fav-btn">♡ 收藏</div>
+        <button class="add-today">加入今日训练</button>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 7. 饮食识别 ============ -->
+  <div class="phone-wrap">
+    <div class="phone-label">饮食识别 <small>food-vision · 虚线扫描框 + 今日饮食 + 合计</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen" style="padding:12px 16px;">
+        <div class="section-title">记录这一餐</div>
+        <div class="scan">
+          <div class="cam"><svg class="svg-ico"><use href="#i-camera"></use></svg></div>
+          <div class="stxt">拍照识别食物</div>
+          <div class="ssub">AI 自动估算卡路里与营养</div>
+        </div>
+        <div class="scan-alt"><svg class="svg-ico" style="width:16px;height:16px;margin-right:6px;vertical-align:-3px"><use href="#i-album"></use></svg>从相册选择图片</div>
+
+        <div class="mock-tip">演示数据（未配置视觉模型 key），接入真实模型后即替换为估算结果。</div>
+
+        <div class="section-title">识别结果</div>
+        <div class="card" style="margin:0 0 10px">
+          <div class="section-title" style="margin:0 0 8px">本餐合计</div>
+          <div class="macro-grid">
+            <div class="macro"><div class="m-num">520</div><div class="m-cap">千卡</div></div>
+            <div class="macro"><div class="m-num">38</div><div class="m-cap">蛋白 g</div></div>
+            <div class="macro"><div class="m-num">55</div><div class="m-cap">碳水 g</div></div>
+            <div class="macro"><div class="m-num">12</div><div class="m-cap">脂肪 g</div></div>
+          </div>
+        </div>
+
+        <div class="card food">
+          <div class="f-thumb"><svg class="svg-ico"><use href="#i-food-meat"></use></svg></div>
+          <div class="f-body"><div class="f-name">鸡胸肉</div><div class="f-meta">蛋白 31g · 碳水 0g · 脂肪 4g</div></div>
+          <div class="f-right"><div class="f-cal">165</div><div class="btn-record">记录</div></div>
+        </div>
+        <div class="card food">
+          <div class="f-thumb"><svg class="svg-ico"><use href="#i-food-rice"></use></svg></div>
+          <div class="f-body"><div class="f-name">糙米饭</div><div class="f-meta">蛋白 5g · 碳水 45g · 脂肪 2g</div></div>
+          <div class="f-right"><div class="f-cal">220</div><div class="btn-record">记录</div></div>
+        </div>
+        <div class="card food">
+          <div class="f-thumb"><svg class="svg-ico"><use href="#i-food-salad"></use></svg></div>
+          <div class="f-body"><div class="f-name">西兰花</div><div class="f-meta">蛋白 3g · 碳水 10g · 脂肪 0g</div></div>
+          <div class="f-right"><div class="f-cal">55</div><div class="btn-record">记录</div></div>
+        </div>
+
+        <div class="record-bar">
+          <div class="seg"><div class="seg-item">早餐</div><div class="seg-item on">午餐</div><div class="seg-item">晚餐</div><div class="seg-item">加餐</div></div>
+          <div class="btn-all">全部记录</div>
+        </div>
+
+        <div class="section-title">今日饮食</div>
+        <div class="card food">
+          <div class="f-thumb"><svg class="svg-ico"><use href="#i-food-bowl"></use></svg></div>
+          <div class="f-body"><div class="f-name">燕麦粥</div><div class="f-meta">早餐 · 180 千卡</div></div>
+          <div class="f-cal">180</div>
+        </div>
+        <div class="card food">
+          <div class="f-thumb"><svg class="svg-ico"><use href="#i-food-salad"></use></svg></div>
+          <div class="f-body"><div class="f-name">鸡胸肉沙拉</div><div class="f-meta">午餐 · 320 千卡</div></div>
+          <div class="f-cal">320</div>
+        </div>
+
+        <div class="card total-card">
+          <span class="tc-label">今日合计</span>
+          <span class="tc-value">1280 千卡</span>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // 分段切换（记录页 / 饮食建议页通用）：滑块滑动 + 内容淡入（演示用，工程侧由 WXSS 动画驱动）
+  document.querySelectorAll('.seg[data-seg]').forEach(function (seg) {
+    var btns = seg.querySelectorAll('.seg-btn');
+    var thumb = seg.querySelector('.seg-thumb');
+    var phone = seg.closest('.phone');
+    btns.forEach(function (b, i) {
+      b.addEventListener('click', function () {
+        var to = b.getAttribute('data-to');
+        btns.forEach(function (x) { x.classList.toggle('on', x === b); });
+        // 选择第二项时滑块滑到右侧
+        thumb.classList.toggle('right', i === 1);
+        // 切换面板：隐藏其他 .pane-*，显示对应 pane
+        phone.querySelectorAll('[class*="pane-"]').forEach(function (p) {
+          p.style.display = p.classList.contains('pane-' + to) ? '' : 'none';
+        });
+        // 重新触发淡入动画
+        var pane = phone.querySelector('.pane-' + to);
+        if (pane) { pane.classList.remove('tab-pane'); void pane.offsetWidth; pane.classList.add('tab-pane'); }
+      });
+    });
+  });
+
+  // 首页「快捷开始」四宫格：点击滚动到对应页面并高亮（演示用跳转）
+  document.querySelectorAll('.quick[data-jump]').forEach(function (q) {
+    q.addEventListener('click', function () {
+      var id = q.getAttribute('data-jump');
+      var target = document.getElementById(id);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.remove('flash');
+      void target.offsetWidth;
+      target.classList.add('flash');
+      setTimeout(function () { target.classList.remove('flash'); }, 1200);
+    });
+  });
+</script>
+</body>
+</html>

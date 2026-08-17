@@ -1,0 +1,290 @@
+<!-- pages/workout/workout.wxml —— 训练执行页（全部动作可滚动列表 + 单卡展开，参考 ui-workout-redesign.html） -->
+<view class="page" wx:if="{{!finished}}">
+
+  <!-- 顶部操作栏：计时器 + 播放/暂停 + 完成 -->
+  <view class="wo-top">
+    <view class="wo-timer-wrap">
+      <text class="wo-timer">{{workoutClock}}</text>
+      <view class="wo-clock-toggle" hover-class="press" bindtap="toggleClock">
+        <text class="wo-clock-ico">{{clockRunning ? '❚❚' : '▶'}}</text>
+      </view>
+    </view>
+    <view class="wo-done-btn" hover-class="press" bindtap="finishWorkout">完成</view>
+    <view class="wo-min-btn" hover-class="press" bindtap="minimizePage"><view class="wo-min-ico"></view></view>
+  </view>
+
+  <!-- 训练信息头 -->
+  <view class="wo-info">
+    <view class="wo-title-row">
+      <view class="wo-edit-ico" bindtap="editPlan">✎</view>
+      <text class="wo-name">{{planName}}</text>
+    </view>
+    <view class="wo-stats">
+      <view class="wo-stat">{{stats.doneSets}}/{{stats.totalSets}}组  {{stats.doneActions}}/{{stats.totalActions}}动作</view>
+      <view class="wo-stat">{{stats.doneVol}}/{{stats.totalVol}}容量</view>
+    </view>
+  </view>
+
+  <!-- 动作列表 -->
+  <view class="wo-ex-list">
+
+    <view class="wo-ex-card {{expandedId === item.id ? 'expanded' : 'collapsed'}}"
+          wx:for="{{actions}}" wx:key="id" wx:for-item="item" wx:for-index="ai">
+
+      <!-- 卡片头部 -->
+      <view class="wo-ex-head" bindtap="toggleEx" data-id="{{item.id}}">
+        <view class="wo-ex-thumb" catchtap="openHero" data-ai="{{ai}}">
+          <image wx:if="{{item.video}}" class="wo-ex-thumb-img" src="{{item.video}}" mode="aspectFill" />
+          <image wx:elif="{{item.image}}" class="wo-ex-thumb-img" src="{{item.image}}" mode="aspectFill" />
+          <icon wx:else name="train" size="56" />
+        </view>
+        <view class="wo-ex-body">
+          <view class="wo-ex-name">{{item.nameZh || item.name}}</view>
+          <view class="wo-ex-meta"><text class="wo-ex-vol">{{item.volText}}</text></view>
+          <view class="wo-ex-sets-label">{{item.sets.length}}组</view>
+          <view class="wo-dots">
+            <view class="wo-dot {{set.done ? 'done' : ''}} {{set.current ? 'active' : ''}}"
+                  wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si"></view>
+          </view>
+        </view>
+        <view class="wo-ex-gear" catchtap="replaceAction" data-ai="{{ai}}">⟳</view>
+      </view>
+
+      <!-- 展开内容 -->
+      <view class="wo-ex-expanded" wx:if="{{expandedId === item.id}}">
+        <view class="wo-note-ph" bindtap="editNote" data-ai="{{ai}}">点击输入备注</view>
+
+        <view class="wo-timer-toggle-row">
+          <view class="wo-timer-toggle" bindtap="togglePerSetTimer" data-ai="{{ai}}">
+            <view class="wo-checkbox {{item.perSetTimer ? 'checked' : ''}}"></view>
+            <text>每组计时</text>
+          </view>
+          <view class="wo-stopwatch-pill" wx:if="{{item.perSetTimer}}">
+            <text class="wo-sw-ico">⏱</text>
+            <text class="wo-sw-val">60</text>
+          </view>
+        </view>
+
+        <!-- 组行 -->
+        <view class="wo-set-row {{set.done ? 'done' : ''}} {{set.current ? 'current' : ''}}"
+              wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si">
+          <view class="wo-set-no {{set.warmup ? 'warmup' : 'normal'}}">{{set.warmup ? '热' : (si + 1)}}</view>
+          <view class="wo-input-wrap">
+            <text class="wo-input-unit">kg</text>
+            <input class="wo-set-input" type="digit" value="{{set.weight}}"
+              data-ai="{{ai}}" data-si="{{si}}" bindinput="onInputWeight" disabled="{{set.done}}" />
+          </view>
+          <view class="wo-input-wrap">
+            <text class="wo-input-unit">次</text>
+            <input class="wo-set-input" type="digit" value="{{set.reps}}"
+              data-ai="{{ai}}" data-si="{{si}}" bindinput="onInputReps" disabled="{{set.done}}" />
+          </view>
+          <!-- 每组计时开启时：⏱ 60 与 ✓ 合并在同一框内 + 已训练耗时 -->
+          <block wx:if="{{item.perSetTimer}}">
+            <view class="wo-set-check {{set.done ? 'checked' : ''}} wo-set-sw"
+                  data-ai="{{ai}}" data-si="{{si}}" catchtap="completeSetTap">
+              <block wx:if="{{!set.done}}">
+                <text class="wo-check-sw-ico">⏱</text>
+                <text class="wo-set-sw-sec">{{set.trainSec || 60}}</text>
+              </block>
+              <text wx:else>✓</text>
+            </view>
+            <text class="wo-set-rest" wx:if="{{set.restSec}}">{{set.restSec > 9 ? set.restSec : '0' + set.restSec}}</text>
+          </block>
+          <!-- 未开启每组计时：原始 ✓ + ⋯ -->
+          <block wx:else>
+            <view class="wo-set-check {{set.done ? 'checked' : ''}}"
+                  data-ai="{{ai}}" data-si="{{si}}" catchtap="completeSetTap">✓</view>
+          </block>
+        </view>
+
+        <!-- 展开底部操作 -->
+        <view class="wo-ex-actions">
+          <view class="wo-ex-btn primary" bindtap="addSet" data-ai="{{ai}}">+ 新增一组</view>
+          <view class="wo-ex-btn ghost" bindtap="openHistory">历史动作</view>
+        </view>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 底部操作条：添加动作 -->
+  <view class="wo-page-actions">
+    <view class="wo-add-btn" hover-class="press" bindtap="openAdd">＋ 添加动作</view>
+  </view>
+  <view class="bottom-gap" />
+
+  <!-- 放大覆盖层：点击缩略图弹出半透明全屏 GIF（gif 用 image 标签渲染，自动循环播放） -->
+  <view class="video-mask" wx:if="{{showVideoOverlay}}" bindtap="closeVideoOverlay">
+    <image class="video-mask-player" src="{{overlayVideo}}" mode="aspectFit" />
+    <cover-view class="video-mask-close" bindtap="closeVideoOverlay">✕</cover-view>
+  </view>
+</view>
+
+  <!-- 添加动作 overlay（从全量动作库选择动作，追加到当前训练计划） -->
+  <view class="repl-mask" wx:if="{{showAdd}}" catchtouchmove="noop">
+    <view class="repl-pop">
+      <view class="repl-head">
+        <text class="repl-title">添加动作</text>
+        <text class="repl-sub">已选 {{actions.length}} 个动作</text>
+        <view class="repl-close" bindtap="closeAdd">✕</view>
+      </view>
+      <view class="repl-search">
+        <input class="repl-search-input" placeholder="搜索动作名称" value="{{replKeyword}}" bindinput="onReplSearch" confirm-type="search" />
+      </view>
+      <scroll-view class="repl-cats" scroll-x>
+        <view class="repl-cat {{replCat === item ? 'on' : ''}}"
+              wx:for="{{replCats}}" wx:key="*this" data-cat="{{item}}" bindtap="onReplCat">{{item}}</view>
+      </scroll-view>
+      <scroll-view class="repl-body" scroll-y bindscrolltolower="loadMoreRepl">
+        <view class="repl-empty" wx:if="{{addFiltered.length === 0}}">没有匹配的动作</view>
+        <view class="repl-item"
+              wx:for="{{addFiltered}}" wx:key="id" wx:for-item="item"
+              bindtap="selectAdd" data-id="{{item.id}}">
+          <image wx:if="{{item.image}}" class="repl-img" src="{{item.image}}" mode="aspectFill" />
+          <icon wx:else name="train" size="48" />
+          <view class="repl-info">
+            <text class="repl-name">{{item.nameZh || item.name}}</text>
+            <text class="repl-cat">{{item.category}}</text>
+          </view>
+        </view>
+        <view class="repl-foot" wx:if="{{addFiltered.length < addFullLen}}">上拉加载更多（{{addFiltered.length}}/{{addFullLen}}）</view>
+        <view class="repl-foot done" wx:else>已加载全部</view>
+      </scroll-view>
+    </view>
+  </view>
+
+<!-- 训练计时 最小化悬浮球（可拖拽贴边，倒计时后台继续） -->
+<movable-area class="float-area" wx:if="{{showTrain && trainMinimized}}">
+  <movable-view class="mini-float" direction="all" damping="40" friction="6"
+    x="{{trainBall.x}}" y="{{trainBall.y}}"
+    bindtap="expandTrain" bindtouchend="onTrainBallEnd">
+    <view class="mini-inner">
+      <text class="mini-label">{{trainPhase === 'ready' ? '准备' : '训练'}}</text>
+      <text class="mini-num">{{trainLeft}}</text>
+    </view>
+  </movable-view>
+</movable-area>
+
+<!-- 训练计时 overlay（5秒准备 + 60秒训练）—— 复用休息计时弹窗 UI -->
+<view class="rest-mask" wx:if="{{showTrain && !trainMinimized}}" catchtouchmove="noop">
+  <view class="rest-pop">
+    <view class="rest-pop-mini" hover-class="press" bindtap="minimizeTrain"></view>
+    <view wx:if="{{trainPhase === 'ready'}}" class="rest-pop-emoji">🟡</view>
+    <icon wx:else name="flame" size="60"/>
+    <view class="rest-pop-title">{{trainPhase === 'ready' ? '准备' : '训练中'}}</view>
+    <view class="rest-pop-sub">{{trainPhase === 'ready' ? '即将开始 · 放轻松' : '保持节奏 · 还剩 ' + trainLeft}}</view>
+    <view class="rest-ring">
+      <text class="rest-num">{{trainLeft}}</text>
+    </view>
+    <view class="rest-track"><view class="rest-fill" style="width:{{trainFillWidth}}"></view></view>
+    <button class="rest-skip" hover-class="press" bindtap="cancelTrain">{{trainPhase === 'ready' ? '取消' : '结束训练'}}</button>
+  </view>
+</view>
+
+<!-- 组间休息 最小化悬浮球（可拖拽贴边，倒计时后台继续） -->
+<movable-area class="float-area" wx:if="{{showRest && restMinimized}}">
+  <movable-view class="mini-float" direction="all" damping="40" friction="6"
+    x="{{restBall.x}}" y="{{restBall.y}}"
+    bindtap="expandRest" bindtouchend="onRestBallEnd">
+    <view class="mini-inner">
+      <text class="mini-label">休息</text>
+      <text class="mini-num">{{restLeft}}</text>
+    </view>
+  </movable-view>
+</movable-area>
+
+<!-- 组间休息倒计时悬浮窗（三档切换 + ±微调 + 完成休息） -->
+<view class="rest-mask" wx:if="{{showRest && !restMinimized}}" catchtouchmove="noop">
+  <view class="rest-pop">
+    <view class="rest-pop-mini" hover-class="press" bindtap="minimizeRest"></view>
+    <view class="rest-pop-emoji"><icon name="train" size="60"/></view>
+    <view class="rest-pop-title">{{restKind === 'done' ? '训练完成' : (restKind === 'action' ? '动作间休息' : '组间休息')}}</view>
+    <view class="rest-pop-sub">{{restKind === 'done' ? '全部动作完成 · 点击保存' : '第 ' + (actNo + 1) + ' 组完成 · 放松一下'}}</view>
+    <view class="rest-ring">
+      <text class="rest-num">{{restLeft}}</text>
+    </view>
+    <view class="rest-opts">
+      <view class="rest-opt {{restSelected === idx ? 'on' : ''}}"
+            wx:for="{{restOptions}}" wx:for-index="idx" wx:key="*this"
+            data-sec="{{item}}" bindtap="changeRest">{{item}}</view>
+    </view>
+    <view class="rest-step">
+      <view class="rest-step-btn" data-delta="-10" bindtap="adjustRest">−10</view>
+      <view class="rest-step-btn" data-delta="10" bindtap="adjustRest">+10</view>
+    </view>
+    <view class="rest-track"><view class="rest-fill" style="width:{{restFillWidth}}"></view></view>
+    <view class="rest-vib" bindtap="toggleVibrate">
+      <text class="rest-vib-label">休息结束震动提示</text>
+      <view class="rest-vib-switch {{vibrateOn ? 'on' : ''}}"><view class="rest-vib-dot" /></view>
+    </view>
+    <button class="rest-skip" hover-class="press" bindtap="skipRest">{{restKind === 'done' ? '保存训练' : '完成休息，继续 ›'}}</button>
+  </view>
+</view>
+
+<!-- 动作历史 overlay（本次训练每组明细：动作/次数/重量/训练时长/休息时长） -->
+<view class="hist-mask" wx:if="{{showHistory}}" catchtouchmove="noop">
+  <view class="hist-pop">
+    <view class="hist-head">
+      <text class="hist-title">动作历史</text>
+      <view class="hist-close" bindtap="closeHistory">✕</view>
+    </view>
+    <scroll-view class="hist-body" scroll-y>
+      <block wx:for="{{actions}}" wx:key="id" wx:for-item="a">
+        <view class="hist-act-name">{{a.nameZh || a.name}}</view>
+        <view class="hist-set" wx:for="{{a.sets}}" wx:for-item="s" wx:for-index="si" wx:key="si">
+          <view class="hist-set-line1">
+            <text class="hist-set-no">第{{si + 1}}组</text>
+            <text class="hist-set-rep">{{s.reps || '-'}} 次 × {{s.weight || '-'}} kg</text>
+          </view>
+          <view class="hist-set-line2">
+            <text>训练 {{s.trainSec || '-'}}s</text>
+            <text class="hist-dot">·</text>
+            <text>休息 {{s.restSec || '-'}}s</text>
+          </view>
+        </view>
+      </block>
+    </scroll-view>
+  </view>
+</view>
+
+<!-- 替换动作 overlay（从动作库选择其他动作替换当前动作，保留已有组数据） -->
+<view class="repl-mask" wx:if="{{showReplace}}" catchtouchmove="noop">
+  <view class="repl-pop">
+    <view class="repl-head">
+      <text class="repl-title">替换动作</text>
+      <text class="repl-sub">当前：{{replaceTargetName}}</text>
+      <view class="repl-close" bindtap="closeReplace">✕</view>
+    </view>
+    <view class="repl-search">
+      <input class="repl-search-input" placeholder="搜索动作名称" value="{{replKeyword}}" bindinput="onReplSearch" confirm-type="search" />
+    </view>
+    <scroll-view class="repl-cats" scroll-x>
+      <view class="repl-cat {{replCat === item ? 'on' : ''}}"
+            wx:for="{{replCats}}" wx:key="*this" data-cat="{{item}}" bindtap="onReplCat">{{item}}</view>
+    </scroll-view>
+      <scroll-view class="repl-body" scroll-y bindscrolltolower="loadMoreRepl">
+        <view class="repl-empty" wx:if="{{replaceFiltered.length === 0}}">没有匹配的动作</view>
+        <view class="repl-item {{item.id === replaceTargetId ? 'current' : ''}}"
+              wx:for="{{replaceFiltered}}" wx:key="id" wx:for-item="item"
+              bindtap="selectReplacement" data-id="{{item.id}}">
+        <image wx:if="{{item.image}}" class="repl-img" src="{{item.image}}" mode="aspectFill" />
+        <icon wx:else name="train" size="48" />
+        <view class="repl-info">
+          <text class="repl-name">{{item.nameZh || item.name}}</text>
+          <text class="repl-cat">{{item.category}}</text>
+        </view>
+        <view class="repl-check" wx:if="{{item.id === replaceTargetId}}">✓</view>
+      </view>
+        <view class="repl-foot" wx:if="{{replaceFiltered.length < replaceFullLen}}">上拉加载更多（{{replaceFiltered.length}}/{{replaceFullLen}}）</view>
+        <view class="repl-foot done" wx:else>已加载全部</view>
+      </scroll-view>
+  </view>
+</view>
+
+<!-- 完成态 -->
+<view class="page finished" wx:if="{{finished}}">
+  <view class="done-emoji"><icon name="trophy" size="120"/></view>
+  <view class="done-title">训练完成</view>
+  <view class="done-sub">正在保存…</view>
+</view>

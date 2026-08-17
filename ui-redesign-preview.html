@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>衡力健身记录 · UI 重设计方案 v2（待确认）</title>
+<style>
+  :root{
+    --green:#00B86B; --green-d:#008F53; --green-s:#E6F9F1;
+    --orange:#FF7A3D; --orange-s:#FFEDE3;
+    --g50:#F7F8FA; --g100:#EEF1F5; --g200:#E2E8F0; --g300:#CBD5E1;
+    --g400:#94A3B8; --g500:#64748B; --g600:#475569; --g700:#334155; --g800:#1E293B;
+    --surface:#fff; --border:#E2E8F0;
+    --shadow-sm:0 2px 8px rgba(15,23,42,.08);
+    --shadow-md:0 8px 24px rgba(15,23,42,.10);
+    --shadow-lg:0 16px 40px rgba(15,23,42,.16);
+    --radius:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  body{
+    font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#0F172A 0%,#1E293B 100%);
+    color:var(--g800); padding:40px 24px 80px;
+  }
+  /* ---------- 顶部说明条 ---------- */
+  .intro{max-width:1100px;margin:0 auto 36px;color:#E2E8F0;text-align:center;}
+  .intro h1{font-size:30px;font-weight:700;letter-spacing:.5px;margin-bottom:10px;}
+  .intro h1 span{color:#34D399;}
+  .intro p{font-size:15px;line-height:1.7;color:#CBD5E1;max-width:760px;margin:0 auto;}
+  .intro .tag{display:inline-block;margin-top:14px;padding:6px 16px;border:1px solid #34D399;color:#34D399;border-radius:999px;font-size:13px;}
+
+  /* ---------- 设计系统条 ---------- */
+  .system{max-width:1100px;margin:0 auto 44px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:26px 30px;display:flex;flex-wrap:wrap;gap:34px;align-items:center;}
+  .sys-block{color:#E2E8F0;}
+  .sys-block h4{font-size:12px;letter-spacing:1px;color:#94A3B8;text-transform:uppercase;margin-bottom:12px;}
+  .swatches{display:flex;gap:10px;}
+  .sw{width:42px;height:42px;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);}
+  .type-demo{display:flex;flex-direction:column;gap:6px;}
+  .type-demo b{font-size:13px;color:#E2E8F0;}
+  .type-demo .t1{font-size:24px;font-weight:700;}
+  .type-demo .t2{font-size:15px;font-weight:600;color:#CBD5E1;}
+  .type-demo .t3{font-size:12px;color:#94A3B8;}
+
+  /* ---------- 手机画廊 ---------- */
+  .gallery{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:40px 36px;justify-items:center;}
+  @media(max-width:1080px){.gallery{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:720px){.gallery{grid-template-columns:1fr;}}
+
+  .phone-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .phone-label{color:#E2E8F0;font-size:14px;font-weight:600;letter-spacing:.5px;}
+  .phone-label small{display:block;color:#64748B;font-weight:400;font-size:11px;margin-top:3px;}
+
+  .phone{width:330px;height:700px;background:var(--g50);border-radius:42px;border:11px solid #0F172A;box-shadow:0 30px 60px rgba(0,0,0,.45);position:relative;overflow:hidden;flex:0 0 auto;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:130px;height:24px;background:#0F172A;border-radius:0 0 16px 16px;z-index:50;}
+  .screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;}
+  .screen::-webkit-scrollbar{display:none;}
+
+  /* ---------- 通用屏幕元素 ---------- */
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:600;color:var(--g800);}
+  .statusbar .icons{display:flex;gap:6px;align-items:center;}
+  .pad{padding:0 20px;}
+  .section{margin-top:24px;}
+  .section-title{font-size:13px;font-weight:700;color:var(--g500);letter-spacing:1px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;}
+  .section-title .more{font-size:12px;color:var(--green);font-weight:600;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
+  .btn-primary{background:var(--green);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;padding:15px;width:100%;}
+  .btn-row{display:flex;gap:12px;padding:16px 20px;background:#fff;border-top:1px solid var(--border);position:absolute;bottom:0;left:0;right:0;}
+
+  .tag{display:inline-flex;align-items:center;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:600;}
+  .tag-g{background:var(--green-s);color:var(--green-d);}
+  .tag-o{background:var(--orange-s);color:#C2410C;}
+  .tag-n{background:var(--g100);color:var(--g600);}
+
+  .tnum{font-feature-settings:"tnum" 1;font-variant-numeric:tabular-nums;}
+
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1px solid var(--border);display:flex;z-index:40;padding-bottom:6px;}
+  .tabbar .ti{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--g400);font-size:10px;}
+  .tabbar .ti.active{color:var(--green);font-weight:700;}
+  .tabbar .ti.active .dot{width:18px;height:3px;border-radius:2px;background:var(--green);margin-top:1px;}
+
+  /* ====== 首页 ====== */
+  .hero-grad{background:linear-gradient(135deg,#00B86B 0%,#00D98A 100%);padding:54px 20px 64px;border-radius:0 0 28px 28px;color:#fff;position:relative;overflow:hidden;}
+  .hero-grad:after{content:"";position:absolute;right:-30px;top:-30px;width:160px;height:160px;background:rgba(255,255,255,.12);border-radius:50%;}
+  .hero-grad .hi{font-size:14px;opacity:.9;}
+  .hero-grad .name{font-size:22px;font-weight:700;margin-top:4px;}
+  .hero-grad .date{font-size:12px;opacity:.85;margin-top:6px;}
+
+  .status-card{margin:-40px 20px 0;padding:20px;display:flex;align-items:center;gap:18px;position:relative;z-index:2;}
+  .ring{width:96px;height:96px;flex:0 0 auto;}
+  .ring .pct{font-size:24px;font-weight:700;fill:var(--g800);}
+  .ring .lbl{font-size:9px;fill:var(--g400);letter-spacing:.5px;}
+  .status-meta{flex:1;}
+  .status-meta .big{font-size:26px;font-weight:700;color:var(--g800);}
+  .status-meta .sub{font-size:12px;color:var(--g500);margin-top:2px;}
+  .mini-stats{display:flex;margin-top:14px;border-top:1px solid var(--g100);padding-top:12px;}
+  .mini{flex:1;text-align:center;}
+  .mini:not(:first-child){border-left:1px solid var(--border);}
+  .mini .v{font-size:17px;font-weight:700;color:var(--g800);}
+  .mini .k{font-size:10px;color:var(--g400);margin-top:2px;}
+
+  .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0;}
+  .quick{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 12px;}
+  .quick .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .quick .qt{font-size:14px;font-weight:600;color:var(--g700);text-align:center;}
+  .quick .qs{font-size:11px;color:var(--g400);margin-top:1px;text-align:center;}
+
+  .plan-item{display:flex;align-items:center;gap:12px;padding:14px;margin-bottom:10px;}
+  .plan-item .pi-thumb{width:46px;height:46px;border-radius:12px;background:var(--g100);flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+  .plan-item .pi-name{font-size:14px;font-weight:600;color:var(--g800);}
+  .plan-item .pi-meta{font-size:11px;color:var(--g400);margin-top:2px;}
+  .bar{height:6px;border-radius:999px;background:var(--g100);margin-top:8px;overflow:hidden;}
+  .bar i{display:block;height:100%;background:var(--green);border-radius:999px;}
+
+  /* ====== 训练 ====== */
+  .search{margin:14px 20px 0;background:#fff;border:1px solid var(--border);border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:8px;color:var(--g400);font-size:13px;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:14px 20px 4px;white-space:nowrap;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{padding:7px 16px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;color:var(--g600);font-weight:600;flex:0 0 auto;}
+  .chip.on{background:var(--green);color:#fff;border-color:var(--green);}
+
+  .ex{padding:14px;display:flex;gap:14px;margin:0 20px 12px;align-items:center;position:relative;}
+  .ex-thumb{width:84px;height:84px;border-radius:16px;background:linear-gradient(135deg,var(--green-s),#fff);flex:0 0 auto;display:flex;align-items:center;justify-content:center;position:relative;}
+  .ex-thumb .play{position:absolute;right:6px;bottom:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;}
+  .ex-body{flex:1;min-width:0;}
+  .ex-name{font-size:15px;font-weight:600;color:var(--g800);}
+  .ex-tags{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+  .ex-fav{position:absolute;top:12px;right:12px;}
+
+  /* 双排动作卡 */
+  .ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 20px;}
+  .ex2{background:#fff;border:1px solid var(--border);border-radius:16px;padding:10px;box-shadow:var(--shadow-sm);position:relative;}
+  .ex2-thumb{width:100%;aspect-ratio:1/1;border-radius:12px;background:linear-gradient(135deg,var(--green-s),#fff);display:flex;align-items:center;justify-content:center;font-size:30px;position:relative;margin-bottom:8px;}
+  .ex2-thumb .play{position:absolute;right:6px;bottom:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;}
+  .ex2 .ex-fav{position:absolute;top:14px;right:14px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45);font-size:15px;}
+  .ex2-name{font-size:13px;font-weight:600;color:var(--g800);line-height:1.3;}
+  .ex2-tags{margin-top:6px;}
+
+  /* ====== 列表 ====== */
+  .seg{display:flex;background:var(--g100);border-radius:14px;padding:4px;margin:14px 20px 0;}
+  .seg div{flex:1;text-align:center;padding:9px;font-size:13px;font-weight:600;color:var(--g500);border-radius:11px;}
+  .seg div.on{background:#fff;color:var(--green);box-shadow:var(--shadow-sm);}
+  .chart-card{padding:18px;margin:16px 20px 0;}
+  .chart-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;}
+  .chart-head .now{font-size:30px;font-weight:700;color:var(--g800);}
+  .chart-head .now small{font-size:13px;color:var(--g400);font-weight:500;}
+  .chart-head .delta{font-size:12px;font-weight:600;color:var(--green);}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--g500);}
+  .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;}
+
+  .hist{padding:14px;margin:0 20px 12px;display:flex;align-items:center;gap:14px;}
+  .hist .h-ic{width:44px;height:44px;border-radius:12px;background:var(--green-s);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .hist .h-name{font-size:14px;font-weight:600;color:var(--g800);}
+  .hist .h-meta{font-size:11px;color:var(--g400);margin-top:3px;}
+  .hist .h-cal{margin-left:auto;text-align:right;}
+  .hist .h-cal b{font-size:16px;color:var(--orange);font-weight:700;}
+  .hist .h-cal span{display:block;font-size:10px;color:var(--g400);}
+
+  /* ====== 建议 ====== */
+  .banner{margin:14px 20px 0;background:linear-gradient(120deg,#FF7A3D,#FF9A5C);border-radius:18px;padding:18px;color:#fff;display:flex;justify-content:space-between;align-items:center;}
+  .banner .bt{font-size:15px;font-weight:700;}
+  .banner .bs{font-size:11px;opacity:.9;margin-top:4px;}
+  .rec{padding:16px;margin:0 20px 12px;display:flex;gap:14px;align-items:center;}
+  .rec-thumb{width:70px;height:70px;border-radius:14px;background:var(--orange-s);flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+  .rec-body{flex:1;min-width:0;}
+  .rec-name{font-size:14px;font-weight:600;color:var(--g800);}
+  .rec-cal{font-size:20px;font-weight:700;color:var(--orange);margin-top:2px;}
+  .rec-cal small{font-size:11px;color:var(--g400);font-weight:500;}
+  .macros{display:flex;gap:6px;margin-top:8px;}
+  .macro{flex:1;height:6px;border-radius:999px;background:var(--g100);overflow:hidden;}
+  .macro i{display:block;height:100%;border-radius:999px;}
+
+  /* ====== 我的 ====== */
+  .profile-head{background:linear-gradient(135deg,#00B86B,#00D98A);padding:54px 20px 26px;color:#fff;}
+  .profile-head .av{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;}
+  .profile-head .pn{font-size:19px;font-weight:700;margin-top:12px;}
+  .profile-head .ps{font-size:12px;opacity:.9;margin-top:3px;}
+  .pstats{display:flex;margin:0 20px;margin-top:-18px;background:#fff;border-radius:16px;box-shadow:var(--shadow-sm);padding:16px;}
+  .pstats div{flex:1;text-align:center;position:relative;}
+  .pstats div:not(:last-child):after{content:"";position:absolute;right:0;top:6px;bottom:6px;width:1px;background:var(--border);}
+  .pstats .pv{font-size:20px;font-weight:700;color:var(--g800);}
+  .pstats .pk{font-size:11px;color:var(--g400);margin-top:3px;}
+  .menu{margin:16px 20px 0;padding:6px 0;overflow:hidden;}
+  .menu .mi{display:flex;align-items:center;gap:14px;padding:15px 14px;}
+  .menu .mi:not(:last-child){border-bottom:1px solid var(--g100);}
+  .menu .mi .mi-ic{width:34px;height:34px;border-radius:10px;background:var(--g100);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .menu .mi .mi-t{font-size:14px;font-weight:600;color:var(--g700);}
+  .menu .mi .mi-ar{margin-left:auto;color:var(--g300);}
+
+  /* ====== 动作详情 ====== */
+  .hero-media{margin:14px 20px 0;height:300px;border-radius:20px;overflow:hidden;background:#0F172A;position:relative;display:flex;align-items:center;justify-content:center;}
+  .hero-media .play-big{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;}
+  .hero-media .zoom{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;}
+  .ad-title{font-size:20px;font-weight:700;color:var(--g800);margin:16px 20px 0;}
+  .ad-tags{display:flex;gap:8px;margin:10px 20px 0;flex-wrap:wrap;}
+  .step{padding:14px;margin:0 20px 10px;display:flex;gap:14px;align-items:flex-start;}
+  .step .num{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .step .st{font-size:13px;line-height:1.6;color:var(--g600);}
+  .copyright{text-align:center;font-size:10px;color:var(--g400);margin:18px 20px 90px;line-height:1.6;}
+
+  /* ====== 饮食识别 ====== */
+  .scan{margin:16px 20px 0;height:220px;border:2px dashed var(--green);border-radius:20px;background:var(--green-s);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--green-d);}
+  .scan .cam{width:56px;height:56px;border-radius:18px;background:var(--green);display:flex;align-items:center;justify-content:center;}
+  .scan .stxt{font-size:14px;font-weight:600;}
+  .scan .ssub{font-size:11px;color:var(--g500);}
+  .food{padding:12px 14px;margin:0 20px 10px;display:flex;align-items:center;gap:12px;}
+  .food .f-thumb{width:50px;height:50px;border-radius:12px;background:var(--g100);flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+  .food .f-name{font-size:14px;font-weight:600;color:var(--g800);}
+  .food .f-meta{font-size:11px;color:var(--g400);margin-top:2px;}
+  .food .f-cal{margin-left:auto;font-size:15px;font-weight:700;color:var(--orange);}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>衡力健身记录 · <span>UI 重设计方案 v2</span></h1>
+  <p>针对当前「排版拥挤、视觉单调」的问题重做视觉与布局层级——渐变 hero、彩色图标磁贴、状态环、统一标签与留白体系。<b style="color:#34D399">功能模块与交互逻辑完全不变</b>，仅调整视觉与排版。以下为手机端预览原型，请确认方向。</p>
+  <div class="tag">纯预览原型 · 未修改任何 .wxml / .wxss 功能代码</div>
+</div>
+
+<!-- 设计系统 -->
+<div class="system">
+  <div class="sys-block">
+    <h4>Color · 配色</h4>
+    <div class="swatches">
+      <div class="sw" style="background:#00B86B"></div>
+      <div class="sw" style="background:#FF7A3D"></div>
+      <div class="sw" style="background:#F7F8FA"></div>
+      <div class="sw" style="background:#E2E8F0"></div>
+      <div class="sw" style="background:#1E293B"></div>
+    </div>
+  </div>
+  <div class="sys-block">
+    <h4>Type · 字体层级</h4>
+    <div class="type-demo">
+      <b class="t1">26px 700</b>
+      <b class="t2">15px 600 · 标题</b>
+      <b class="t3">12px 400 · 正文 / 元信息</b>
+    </div>
+  </div>
+  <div class="sys-block">
+    <h4>Component · 组件</h4>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <span class="tag tag-g">部位</span>
+      <span class="tag tag-o">卡路里</span>
+      <span class="tag tag-n">器械</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:var(--green-s);color:var(--green-d)">⬆</span>
+    </div>
+  </div>
+</div>
+
+<!-- 手机画廊 -->
+<div class="gallery">
+
+  <!-- 1. 首页 -->
+  <div class="phone-wrap">
+    <div class="phone-label">首页<small>Home · 渐变 hero + 状态环</small></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="hero-grad">
+          <div class="statusbar" style="color:#fff;padding-left:22px;padding-right:22px;"><span>9:41</span><span class="icons">●●● 5G ▮</span></div>
+          <div class="hi">早上好</div>
+          <div class="name">训练者 👋</div>
+          <div class="date">周一 · 8月10日 · 今日计划 3 项</div>
+        </div>
+
+        <div class="card status-card">
+          <svg class="ring" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="84" fill="none" stroke="#E2E8F0" stroke-width="16"/>
+            <circle cx="100" cy="100" r="84" fill="none" stroke="#00B86B" stroke-width="16" stroke-linecap="round" stroke-dasharray="527" stroke-dashoffset="184" transform="rotate(-90 100 100)"/>
+            <text x="100" y="96" text-anchor="middle" class="pct">65%</text>
+            <text x="100" y="118" text-anchor="middle" class="lbl">今日完成</text>
+          </svg>
+          <div class="status-meta">
+            <div class="big tnum">2<span style="font-size:14px;color:var(--g500)">/3 项</span></div>
+            <div class="sub">继续努力，还差 1 组训练</div>
+            <div class="mini-stats">
+              <div class="mini"><div class="v tnum">320</div><div class="k">千卡</div></div>
+              <div class="mini"><div class="v tnum">45</div><div class="k">分钟</div></div>
+              <div class="mini"><div class="v tnum">12</div><div class="k">组数</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section pad">
+          <div class="section-title">快捷开始</div>
+          <div class="quick-grid">
+            <div class="quick card"><div class="ic" style="background:var(--green-s);color:var(--green-d)">🏋</div><div><div class="qt">开始训练</div><div class="qs">今日计划</div></div></div>
+            <div class="quick card"><div class="ic" style="background:var(--orange-s);color:#C2410C">🍱</div><div><div class="qt">记录饮食</div><div class="qs">AI 识别</div></div></div>
+            <div class="quick card"><div class="ic" style="background:#E6F0FF;color:#3E8BFF">⚖️</div><div><div class="qt">记录体重</div><div class="qs">追踪趋势</div></div></div>
+            <div class="quick card"><div class="ic" style="background:#F3E8FF;color:#8B5CF6">📋</div><div><div class="qt">我的计划</div><div class="qs">查看安排</div></div></div>
+          </div>
+        </div>
+
+        <div class="section pad">
+          <div class="section-title">今日训练计划 <span class="more">全部</span></div>
+          <div class="card plan-item">
+            <div class="pi-thumb">💪</div>
+            <div style="flex:1">
+              <div class="pi-name">胸 + 三头</div>
+              <div class="pi-meta">6 个动作 · 约 35 分钟</div>
+              <div class="bar"><i style="width:60%"></i></div>
+            </div>
+            <span class="tag tag-g">进行中</span>
+          </div>
+          <div class="card plan-item">
+            <div class="pi-thumb">🦵</div>
+            <div style="flex:1">
+              <div class="pi-name">腿 + 核心</div>
+              <div class="pi-meta">8 个动作 · 约 40 分钟</div>
+              <div class="bar"><i style="width:0%"></i></div>
+            </div>
+            <span class="tag tag-n">未开始</span>
+          </div>
+        </div>
+        <div style="height:80px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="ti active">🏠<span>首页</span><div class="dot"></div></div>
+        <div class="ti">🏋<span>训练</span></div>
+        <div class="ti">📋<span>列表</span></div>
+        <div class="ti">💡<span>建议</span></div>
+        <div class="ti">👤<span>我的</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 训练 -->
+  <div class="phone-wrap">
+    <div class="phone-label">训练<small>Training · 双排动作卡</small></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="icons">●●● 5G ▮</span></div>
+        <div class="search">🔍 搜索动作、部位或器械</div>
+        <div class="chips">
+          <div class="chip on">全部</div>
+          <div class="chip">胸</div><div class="chip">背</div><div class="chip">腿</div>
+          <div class="chip">肩</div><div class="chip">臂</div><div class="chip">核心</div>
+        </div>
+        <div class="section-title pad" style="margin-top:18px">动作库 · 1324</div>
+
+        <div class="ex-grid">
+          <div class="ex2">
+            <div class="ex2-thumb">🏋<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--g300)">♡</div>
+            <div class="ex2-name">杠铃卧推</div>
+            <div class="ex2-tags"><span class="tag tag-g">胸</span></div>
+          </div>
+          <div class="ex2">
+            <div class="ex2-thumb">💪<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--orange)">♥</div>
+            <div class="ex2-name">引体向上</div>
+            <div class="ex2-tags"><span class="tag tag-g">背</span></div>
+          </div>
+          <div class="ex2">
+            <div class="ex2-thumb">🦵<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--g300)">♡</div>
+            <div class="ex2-name">深蹲</div>
+            <div class="ex2-tags"><span class="tag tag-g">腿</span></div>
+          </div>
+          <div class="ex2">
+            <div class="ex2-thumb">🤸<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--g300)">♡</div>
+            <div class="ex2-name">平板支撑</div>
+            <div class="ex2-tags"><span class="tag tag-g">核心</span></div>
+          </div>
+          <div class="ex2">
+            <div class="ex2-thumb">🧎<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--g300)">♡</div>
+            <div class="ex2-name">箭步蹲</div>
+            <div class="ex2-tags"><span class="tag tag-g">腿</span></div>
+          </div>
+          <div class="ex2">
+            <div class="ex2-thumb">💪<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--g300)">♡</div>
+            <div class="ex2-name">二头弯举</div>
+            <div class="ex2-tags"><span class="tag tag-g">臂</span></div>
+          </div>
+          <div class="ex2">
+            <div class="ex2-thumb">🏋<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--g300)">♡</div>
+            <div class="ex2-name">硬拉</div>
+            <div class="ex2-tags"><span class="tag tag-g">背</span></div>
+          </div>
+          <div class="ex2">
+            <div class="ex2-thumb">🤸<div class="play">▶</div></div>
+            <div class="ex-fav" style="color:var(--g300)">♡</div>
+            <div class="ex2-name">卷腹</div>
+            <div class="ex2-tags"><span class="tag tag-g">核心</span></div>
+          </div>
+        </div>
+        <div style="height:80px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="ti">🏠<span>首页</span></div>
+        <div class="ti active">🏋<span>训练</span><div class="dot"></div></div>
+        <div class="ti">📋<span>列表</span></div>
+        <div class="ti">💡<span>建议</span></div>
+        <div class="ti">👤<span>我的</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 列表 -->
+  <div class="phone-wrap">
+    <div class="phone-label">列表<small>List · 趋势图 + 历史</small></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="icons">●●● 5G ▮</span></div>
+        <div class="seg">
+          <div class="on">体重记录</div>
+          <div>训练历史</div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="chart-head">
+            <div><div class="now tnum">71.2<small> kg</small></div><div class="delta">▼ 1.8kg 本月</div></div>
+            <div style="text-align:right;font-size:11px;color:var(--g400)">记录 28 天<br>最低 71.0</div>
+          </div>
+          <svg viewBox="0 0 300 120" style="width:100%;height:120px">
+            <line x1="0" y1="30" x2="300" y2="30" stroke="#E2E8F0" stroke-width="1"/>
+            <line x1="0" y1="70" x2="300" y2="70" stroke="#E2E8F0" stroke-width="1"/>
+            <line x1="0" y1="110" x2="300" y2="110" stroke="#E2E8F0" stroke-width="1"/>
+            <polyline points="0,40 50,52 100,46 150,64 200,58 250,80 300,74" fill="none" stroke="#00B86B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="300" cy="74" r="4" fill="#00B86B"/>
+          </svg>
+          <div class="legend"><span><i style="background:#00B86B"></i>体重趋势</span><span><i style="background:#E2E8F0"></i>参考线</span></div>
+        </div>
+
+        <div class="section-title pad" style="margin-top:18px">近期记录</div>
+        <div class="card hist">
+          <div class="h-ic">⚖️</div>
+          <div><div class="h-name">71.2 kg</div><div class="h-meta">今天 08:20</div></div>
+          <div class="h-cal"><b class="tnum">▼0.4</b><span>较昨日</span></div>
+        </div>
+        <div class="card hist">
+          <div class="h-ic">⚖️</div>
+          <div><div class="h-name">71.6 kg</div><div class="h-meta">昨天 08:15</div></div>
+          <div class="h-cal"><b class="tnum">▲0.2</b><span>较前日</span></div>
+        </div>
+        <div style="height:80px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="ti">🏠<span>首页</span></div>
+        <div class="ti">🏋<span>训练</span></div>
+        <div class="ti active">📋<span>列表</span><div class="dot"></div></div>
+        <div class="ti">💡<span>建议</span></div>
+        <div class="ti">👤<span>我的</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 建议 -->
+  <div class="phone-wrap">
+    <div class="phone-label">建议<small>Advice · 能量卡 + 宏量</small></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="icons">●●● 5G ▮</span></div>
+        <div class="banner">
+          <div><div class="bt">今日建议摄入</div><div class="bs">基于你的目标体重计算</div></div>
+          <div style="font-size:26px;font-weight:700" class="tnum">2100</div>
+        </div>
+
+        <div class="section-title pad" style="margin-top:18px">推荐餐单</div>
+        <div class="card rec">
+          <div class="rec-thumb">🍗</div>
+          <div class="rec-body">
+            <div class="rec-name">香煎鸡胸沙拉</div>
+            <div class="rec-cal tnum">420<small> 千卡</small></div>
+            <div class="macros">
+              <div class="macro"><i style="width:70%;background:var(--green)"></i></div>
+              <div class="macro"><i style="width:40%;background:var(--orange)"></i></div>
+              <div class="macro"><i style="width:25%;background:#3E8BFF"></i></div>
+            </div>
+          </div>
+          <span class="tag tag-g">添加</span>
+        </div>
+        <div class="card rec">
+          <div class="rec-thumb">🥑</div>
+          <div class="rec-body">
+            <div class="rec-name">牛油果三明治</div>
+            <div class="rec-cal tnum">380<small> 千卡</small></div>
+            <div class="macros">
+              <div class="macro"><i style="width:45%;background:var(--green)"></i></div>
+              <div class="macro"><i style="width:60%;background:var(--orange)"></i></div>
+              <div class="macro"><i style="width:30%;background:#3E8BFF"></i></div>
+            </div>
+          </div>
+          <span class="tag tag-g">添加</span>
+        </div>
+        <div class="card rec">
+          <div class="rec-thumb">🍚</div>
+          <div class="rec-body">
+            <div class="rec-name">糙米鸡腿饭</div>
+            <div class="rec-cal tnum">560<small> 千卡</small></div>
+            <div class="macros">
+              <div class="macro"><i style="width:50%;background:var(--green)"></i></div>
+              <div class="macro"><i style="width:65%;background:var(--orange)"></i></div>
+              <div class="macro"><i style="width:20%;background:#3E8BFF"></i></div>
+            </div>
+          </div>
+          <span class="tag tag-g">添加</span>
+        </div>
+        <div style="height:80px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="ti">🏠<span>首页</span></div>
+        <div class="ti">🏋<span>训练</span></div>
+        <div class="ti">📋<span>列表</span></div>
+        <div class="ti active">💡<span>建议</span><div class="dot"></div></div>
+        <div class="ti">👤<span>我的</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 我的 -->
+  <div class="phone-wrap">
+    <div class="phone-label">我的<small>Profile · 渐变头 + 菜单</small></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="profile-head">
+          <div class="statusbar" style="color:#fff;padding:0"><span>9:41</span><span class="icons">●●● 5G ▮</span></div>
+          <div class="av">力</div>
+          <div class="pn">健身者</div>
+          <div class="ps">已坚持 28 天 · 连续 12 天 🔥</div>
+        </div>
+
+        <div class="pstats">
+          <div><div class="pv tnum">86</div><div class="pk">总训练</div></div>
+          <div><div class="pv tnum">12</div><div class="pk">连续天</div></div>
+          <div><div class="pv tnum">34</div><div class="pk">收藏</div></div>
+        </div>
+
+        <div class="menu card">
+          <div class="mi"><div class="mi-ic">📋</div><div class="mi-t">我的计划</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic">🎯</div><div class="mi-t">体重目标</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic">🏆</div><div class="mi-t">成就徽章</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic">⚙️</div><div class="mi-t">设置</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic">ℹ️</div><div class="mi-t">关于 / 媒体署名</div><div class="mi-ar">›</div></div>
+        </div>
+
+        <div class="card" style="margin:16px 20px 0;padding:16px;text-align:center;font-size:11px;color:var(--g400);line-height:1.6">
+          动作演示媒体 © Gym visual<br>https://gymvisual.com/
+        </div>
+        <div style="height:80px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="ti">🏠<span>首页</span></div>
+        <div class="ti">🏋<span>训练</span></div>
+        <div class="ti">📋<span>列表</span></div>
+        <div class="ti">💡<span>建议</span></div>
+        <div class="ti active">👤<span>我的</span><div class="dot"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 动作详情 -->
+  <div class="phone-wrap">
+    <div class="phone-label">动作详情<small>Action · 视频卡 + 步骤</small></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="icons">●●● 5G ▮</span></div>
+        <div class="hero-media">
+          <div class="play-big">▶</div>
+          <div class="zoom">⛶</div>
+        </div>
+        <div class="ad-title">杠铃卧推</div>
+        <div class="ad-tags">
+          <span class="tag tag-g">胸</span>
+          <span class="tag tag-n">杠铃</span>
+          <span class="tag tag-o">中高级</span>
+        </div>
+
+        <div class="section-title pad" style="margin-top:18px">动作步骤</div>
+        <div class="card step"><div class="num">1</div><div class="st">平躺在卧推凳上，双脚踩实地面，双手握距略宽于肩。</div></div>
+        <div class="card step"><div class="num">2</div><div class="st">缓慢下放杠铃至胸部上方，肘部与身体呈约 45°。</div></div>
+        <div class="card step"><div class="num">3</div><div class="st">用力推起至手臂伸直，顶峰收缩胸大肌后重复。</div></div>
+
+        <div class="copyright">动作演示媒体 © Gym visual<br>https://gymvisual.com/</div>
+        <div class="btn-row">
+          <button style="flex:1;background:#fff;border:1px solid var(--green);color:var(--green);border-radius:14px;font-weight:700;font-size:15px">♡ 收藏</button>
+          <button class="btn-primary" style="flex:2">加入今日训练</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 饮食识别 -->
+  <div class="phone-wrap">
+    <div class="phone-label">饮食识别<small>Food · AI 拍摄入口</small></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="statusbar"><span>9:41</span><span class="icons">●●● 5G ▮</span></div>
+        <div class="section-title pad" style="margin-top:14px">记录这一餐</div>
+        <div class="scan">
+          <div class="cam">📷</div>
+          <div class="stxt">拍照识别食物</div>
+          <div class="ssub">AI 自动估算卡路里与营养</div>
+        </div>
+
+        <div class="section-title pad" style="margin-top:18px">今日饮食</div>
+        <div class="card food">
+          <div class="f-thumb">🍗</div>
+          <div><div class="f-name">香煎鸡胸</div><div class="f-meta">午餐 · 蛋白质 35g</div></div>
+          <div class="f-cal tnum">420</div>
+        </div>
+        <div class="card food">
+          <div class="f-thumb">🥗</div>
+          <div><div class="f-name">蔬菜沙拉</div><div class="f-meta">午餐 · 纤维 8g</div></div>
+          <div class="f-cal tnum">150</div>
+        </div>
+        <div class="card food">
+          <div class="f-thumb">🍚</div>
+          <div><div class="f-name">糙米饭</div><div class="f-meta">午餐 · 碳水 45g</div></div>
+          <div class="f-cal tnum">220</div>
+        </div>
+
+        <div class="card" style="margin:14px 20px 0;padding:16px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;color:var(--g500)">今日合计</span>
+          <span class="tnum" style="font-size:22px;font-weight:700;color:var(--orange)">790 千卡</span>
+        </div>
+        <div style="height:80px"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="intro" style="margin-top:50px">
+  <p style="font-size:13px;color:#64748B">预览说明：本原型仅用于视觉与排版方向确认，未改动任何小程序功能代码。确认后我将按此方案改写对应页面的 .wxml / .wxss，并保持现有交互逻辑（含已实现的视频放大覆盖层、© Gym visual 署名、本地离线图等）不变。</p>
+</div>
+
+</body>
+</html>

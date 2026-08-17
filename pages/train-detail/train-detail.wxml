@@ -1,0 +1,55 @@
+<!-- pages/train-detail/train-detail.wxml -->
+<view class="page">
+  <block wx:if="{{log}}">
+    <!-- 当天训练概览 -->
+    <view class="card overview-card">
+      <view class="ov-date">{{date}}<text wx:if="{{sessionLabel}}" class="ov-session"> · {{sessionLabel}}</text></view>
+      <view class="ov-grid">
+        <view class="ov-item">
+          <view class="ov-num">{{summary.actions}}</view>
+          <view class="ov-cap">动作数</view>
+        </view>
+        <view class="ov-item">
+          <view class="ov-num">{{summary.sets}}</view>
+          <view class="ov-cap">总组数</view>
+        </view>
+        <view class="ov-item">
+          <view class="ov-num">{{summary.train}}</view>
+          <view class="ov-cap">训练时长</view>
+        </view>
+        <view class="ov-item">
+          <view class="ov-num accent">{{summary.rest}}</view>
+          <view class="ov-cap">休息时长</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 每个动作明细 -->
+    <view class="card act-card" wx:for="{{log.actions}}" wx:key="name" wx:for-item="act">
+      <view class="act-head">
+        <text class="act-name">{{act.name}}</text>
+        <text class="act-sets">{{act.sets}} 组</text>
+      </view>
+
+      <view class="set-row set-th">
+        <text class="col-idx">组数</text>
+        <text class="col-num">次数</text>
+        <text class="col-num">重量</text>
+        <text class="col-time">训练</text>
+        <text class="col-time">休息</text>
+      </view>
+
+      <view class="set-row" wx:for="{{act.setsDetail}}" wx:for-item="s" wx:for-index="si" wx:key="si">
+        <text class="col-idx">第{{si + 1}}组</text>
+        <text class="col-num">{{s.reps || '-'}}</text>
+        <text class="col-num">{{s.weight ? s.weight + 'kg' : '-'}}</text>
+        <text class="col-time">{{s.trainSec ? s.trainSec + 's' : '-'}}</text>
+        <text class="col-time rest">{{s.restSec ? s.restSec + 's' : '-'}}</text>
+      </view>
+    </view>
+
+    <view class="bottom-gap" />
+  </block>
+
+  <view wx:else class="empty">未找到该训练记录</view>
+</view>

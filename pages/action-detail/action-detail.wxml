@@ -1,0 +1,44 @@
+<!-- pages/action-detail/action-detail.wxml -->
+<view class="page" wx:if="{{act}}">
+
+  <view class="hero card {{act.video ? 'hero--video' : ''}}">
+    <image wx:if="{{act.video && !showVideoOverlay}}" class="hero-img" src="{{act.video}}" mode="aspectFill" lazy-load bindtap="openVideoOverlay" />
+    <image wx:elif="{{act.image && !showVideoOverlay}}" class="hero-img" src="{{act.image}}" mode="aspectFit" lazy-load bindtap="previewHero" data-url="{{act.image}}" />
+    <view wx:else class="hero-emoji">{{act.emoji}}</view>
+    <view wx:if="{{act.video}}" class="gif-badge">GIF 演示</view>
+    <cover-view wx:if="{{act.video}}" class="zoom-btn" bindtap="openVideoOverlay">⛶</cover-view>
+  </view>
+
+  <view class="card">
+    <view class="d-name">{{act.nameZh || act.name}}</view>
+    <view class="d-tags">
+      <text class="tag tag-primary">{{act.category}}</text>
+      <text class="tag">{{act.equip || '徒手'}}</text>
+      <text wx:if="{{act.target}}" class="tag tag-accent">{{act.target}}</text>
+    </view>
+    <view wx:if="{{act.desc}}" class="d-desc">{{act.desc}}</view>
+    <view wx:if="{{act.video}}" class="attr">动作演示 © Gym visual</view>
+  </view>
+
+  <view class="card" wx:if="{{act.steps && act.steps.length}}">
+    <view class="section-title">动作步骤</view>
+    <view class="step" wx:for="{{act.steps}}" wx:key="index">
+      <view class="step-no">{{index + 1}}</view>
+      <view class="step-text">{{item}}</view>
+    </view>
+  </view>
+
+  <view class="btn-row">
+    <view class="fav-btn {{favorited ? 'on' : ''}}" bindtap="toggleFav">{{favorited ? '♥ 已收藏' : '♡ 收藏'}}</view>
+    <view class="btn-primary add-today" bindtap="addToToday">加入今日训练</view>
+  </view>
+
+  <!-- 放大覆盖层：点击放大按钮弹出半透明全屏 GIF（gif 用 image 标签渲染，自动循环播放） -->
+  <view class="video-mask" wx:if="{{showVideoOverlay}}" bindtap="closeVideoOverlay">
+    <image class="video-mask-player" src="{{act.video}}" mode="aspectFit" />
+    <cover-view class="video-mask-close" bindtap="closeVideoOverlay">✕</cover-view>
+  </view>
+
+</view>
+
+<view wx:else class="empty">未找到动作信息</view>

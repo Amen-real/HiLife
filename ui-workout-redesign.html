@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HiLife · 训练中页面（重新设计）</title>
+<style>
+  :root{
+    --primary:#2ECFB0; --primary-deep:#1AA885; --primary-light:#3EDECA; --primary-tint:#E5FBF5;
+    --accent:#FF7A3D; --accent-deep:#E8652A; --accent-soft:#FFE7DA;
+    --info:#3E8BFF; --purple:#8B5CF6;
+    --bg:rgba(255,255,255,0.55); --card:rgba(255,255,255,0.78);
+    --glass:rgba(255,255,255,0.72); --glass-strong:rgba(255,255,255,0.86); --glass-border:rgba(255,255,255,0.85);
+    --app-bg:linear-gradient(180deg,#1AA885 0%,#2ECFB0 14%,#E5FBF5 40%,#FFF1E8 100%);
+    --text:#1E293B; --text-sub:#64748B; --text-weak:#94A3B8;
+    --line:#E2E8F0; --line-strong:#CBD5E1;
+    --shadow-mint:0 12px 30px rgba(46,207,176,0.30);
+    --shadow-card:0 8px 24px rgba(15,23,42,0.08);
+    --error:#F2545B; --success:#16C784;
+    --r:375px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:#0f1115; color:#e6e8ec;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+    line-height:1.5; padding:20px 0 60px;
+    display:flex;flex-direction:column;align-items:center;gap:24px;
+  }
+  h1{font-size:22px;font-weight:800;color:#fff;text-align:center;margin-bottom:4px;}
+  .sub{color:#9aa0a6;font-size:13px;text-align:center;margin-bottom:20px;}
+
+  /* ===== 手机框架 ===== */
+  .phone-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .phone-label{font-size:14px;font-weight:700;color:#cfd3da;}
+  .phone-label small{display:block;font-size:11px;font-weight:500;color:#7a828d;margin-top:2px;}
+  .phone{
+    width:var(--r);background:var(--app-bg);border-radius:42px;
+    box-shadow:0 24px 70px rgba(0,0,0,.45);
+    border:10px solid #0a0c10;position:relative;overflow:hidden;
+  }
+  .statusbar{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;color:#fff;font-weight:600;background:transparent;}
+  .statusbar .dots{letter-spacing:2px;}
+  .screen{height:780px;overflow-y:auto;background:var(--app-bg);position:relative;}
+
+  /* ==================== 训练中页面样式 ==================== */
+
+  /* ---- 顶部操作栏 ---- */
+  .wo-top{
+    display:flex;align-items:center;gap:10px;padding:12px 16px 8px;
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg,rgba(26,168,133,.92) 0%,rgba(26,168,133,.78) 100%);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  }
+  .wo-timer-wrap{flex:1;display:flex;align-items:center;gap:6px;}
+  .wo-timer{font-size:38px;font-weight:800;color:#fff;letter-spacing:-1px;line-height:1;font-feature-settings:"tnum";}
+  /* 播放/暂停按钮（倒计时后，手动控制全局计时） */
+  .wo-clock-toggle{width:32px;height:32px;border-radius:50%;flex-shrink:0;margin-left:12px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;user-select:none;}
+  .wo-clock-toggle:hover{background:rgba(255,255,255,.38);}
+  .wo-clock-ico{color:#fff;font-size:15px;line-height:1;font-weight:700;}
+  .wo-done-btn{
+    height:36px;padding:0 20px;border-radius:999px;
+    background:var(--primary);color:#fff;font-size:15px;font-weight:700;
+    cursor:pointer;box-shadow:var(--shadow-mint);
+    transition:opacity .15s;flex-shrink:0;border:none;line-height:36px;
+  }
+  .wo-done-btn:hover{opacity:.88;}
+
+  /* ---- 训练信息头 ---- */
+  .wo-info{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px 0;
+  }
+  .wo-title-row{display:flex;align-items:center;gap:6px;}
+  .wo-edit-ico{font-size:16px;color:var(--text-sub);}
+  .wo-name{font-size:17px;font-weight:700;color:var(--text);}
+  .wo-stats{text-align:right;}
+  .wo-stat{font-size:11px;color:var(--text-sub);line-height:1.6;font-feature-settings:"tnum";}
+
+  /* ---- 动作卡片容器（玻璃卡片） ---- */
+  .wo-ex-list{padding:10px 16px 0;}
+
+  .wo-ex-card{
+    background:var(--glass-strong);border:1px solid var(--glass-border);
+    border-radius:18px;padding:14px 16px;margin-bottom:12px;
+    box-shadow:var(--shadow-card);transition:transform .18s,box-shadow .18s;
+    position:relative;overflow:hidden;
+  }
+  .wo-ex-card:active{transform:scale(.99);}
+
+  /* 卡片头部：缩略图 + 名称 + 数据 + 设置 */
+  .wo-ex-head{display:flex;align-items:center;gap:12px;}
+  .wo-ex-thumb{
+    position:relative;
+    width:56px;height:56px;border-radius:12px;flex-shrink:0;
+    overflow:hidden;background:linear-gradient(135deg,var(--primary-tint),rgba(46,207,176,.12));
+    display:flex;align-items:center;justify-content:center;
+  }
+  .wo-ex-thumb img{width:100%;height:100%;object-fit:cover;}
+  .wo-ex-thumb .thumb-placeholder{font-size:28px;line-height:1;}
+  .wo-ex-body{flex:1;min-width:0;}
+  .wo-ex-name{font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wo-ex-meta{display:flex;align-items:center;gap:8px;margin-top:3px;}
+  .wo-ex-vol{font-size:12px;color:var(--text-weak);font-feature-settings:"tnum";}
+  .wo-ex-gear{
+    width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    background:var(--primary-tint);color:var(--primary-deep);
+    display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;
+    transition:background .15s;
+  }
+  .wo-ex-gear:hover{background:var(--primary-light);color:#fff;}
+
+  /* 组数副标题 */
+  .wo-ex-sets-label{font-size:13px;color:var(--text-sub);margin-top:6px;}
+
+  /* 组数圆点指示器 */
+  .wo-dots{display:flex;gap:5px;margin-top:6px;}
+  .wo-dot{width:7px;height:7px;border-radius:50%;background:var(--line-strong);transition:background .2s;}
+  .wo-dot.done{background:var(--primary);}
+  .wo-dot.active{background:var(--primary-deep);box-shadow:0 0 0 3px rgba(46,207,176,.25);}
+
+  /* ---- 展开态：备注 + 每组计时 + 组行 ---- */
+  .wo-ex-expanded{margin-top:12px;}
+  .wo-note-ph{font-size:13px;color:var(--text-weak);padding:8px 0;border-bottom:1px solid var(--line);cursor:text;}
+  .wo-timer-toggle{
+    display:flex;align-items:center;gap:8px;margin-top:10px;
+    font-size:13px;color:var(--text-sub);cursor:pointer;
+  }
+  .wo-checkbox{
+    width:20px;height:20px;border-radius:6px;border:2px solid var(--line-strong);
+    display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s,background .15s;flex-shrink:0;
+  }
+  .wo-checkbox.checked{border-color:var(--primary);background:var(--primary);}
+  .wo-checkbox.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:700;line-height:1;}
+
+  /* 组行：[组号] [kg] [次] [✓] [⋯] */
+  .wo-set-row{
+    display:flex;align-items:center;gap:8px;margin-top:10px;
+    padding:10px 12px;background:var(--bg);border-radius:14px;
+    border:1px solid transparent;transition:border-color .15s,background .15s;
+  }
+  .wo-set-row.current{border-color:var(--primary);background:var(--primary-tint);}
+  .wo-set-row.done{opacity:.55;}
+  .wo-set-no{
+    width:32px;height:32px;border-radius:10px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;line-height:1;
+  }
+  .wo-set-no.warmup{background:var(--accent-soft);color:var(--accent-deep);}
+  .wo-set-no.normal{background:var(--bg);color:var(--text-sub);border:1px solid var(--line);}
+  .wo-set-input{
+    width:60px;height:42px;border-radius:10px;text-align:center;padding-top:10px;
+    font-size:14px;font-weight:700;color:var(--text);font-feature-settings:"tnum";
+    background:var(--card);border:1px solid var(--line);outline:none;
+    transition:border-color .15s;
+  }
+  .wo-set-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(46,207,176,.15);}
+  .wo-input-wrap{position:relative;flex-shrink:0;}
+  .wo-input-unit{
+    position:absolute;top:3px;left:7px;font-size:9px;font-weight:500;
+    color:var(--text-weak);line-height:1;pointer-events:none;z-index:2;
+  }
+  .wo-set-check{
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    border:2px solid var(--line-strong);display:flex;align-items:center;justify-content:center;
+    font-size:17px;color:var(--text-weak);cursor:pointer;
+    transition:all .15s;
+  }
+  .wo-set-check.checked{border-color:var(--primary);background:var(--primary);color:#fff;}
+  .wo-set-more{
+    width:32px;height:32px;border-radius:8px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--info);font-size:18px;cursor:pointer;font-weight:700;
+  }
+
+  /* 展开底部操作按钮 */
+  .wo-ex-actions{display:flex;gap:10px;margin-top:14px;}
+  .wo-ex-btn{
+    flex:1;height:42px;border-radius:12px;border:none;cursor:pointer;
+    font-size:14px;font-weight:700;line-height:42px;transition:opacity .15s;
+  }
+  .wo-ex-btn.primary{background:var(--primary);color:#fff;box-shadow:var(--shadow-mint);}
+  .wo-ex-btn.primary:hover{opacity:.88;}
+  .wo-ex-btn.ghost{background:var(--bg);color:var(--primary-deep);border:1px solid var(--line);}
+  .wo-ex-btn.ghost:hover{background:var(--card);}
+
+  /* ---- 收起态：折叠卡片无组行 ---- */
+  .wo-ex-card.collapsed .wo-ex-expanded{display:none;}
+
+  /* ---- 切换按钮 ---- */
+  .view-switch{
+    display:flex;justify-content:center;gap:12px;padding:10px 16px 0;
+  }
+  .view-switch button{
+    padding:6px 18px;border-radius:999px;border:none;font-size:13px;font-weight:600;
+    cursor:pointer;transition:all .15s;
+  }
+  .view-switch .vs-on{background:var(--primary);color:#fff;}
+  .view-switch .vs-off{background:var(--bg);color:var(--text-sub);}
+</style>
+</head>
+<body>
+
+<h1>训练中页面 · 重新设计原型</h1>
+<p class="sub">参考截图的展开/折叠双状态 · Glass UI 令牌体系</p>
+
+<!-- ========== 屏幕 A：展开态（当前动作详情） ========== -->
+<div class="phone-wrap">
+  <div class="phone-label">展开态<small>当前动作详情 — 组数输入 + 计时</small></div>
+  <div class="phone">
+    <div class="statusbar"><span>19:49</span><span class="dots">&#9679;&#9679;&#9679;</span><span>5G 56%</span></div>
+    <div class="screen">
+
+      <!-- 顶部操作栏 -->
+      <div class="wo-top">
+        <div class="wo-timer-wrap">
+          <div class="wo-timer">00:00</div>
+          <div class="wo-clock-toggle" onclick="toggleClock(this)"><span class="wo-clock-ico">&#9654;</span></div>
+        </div>
+        <button class="wo-done-btn">完成</button>
+      </div>
+
+      <!-- 训练信息 -->
+      <div class="wo-info">
+        <div class="wo-title-row">
+          <span class="wo-edit-ico">&#9998;</span>
+          <span class="wo-name">腿&middot;肩</span>
+        </div>
+        <div class="wo-stats">
+          <div class="wo-stat">0/14组 &nbsp; 0/4动作</div>
+          <div class="wo-stat">0/2686容量</div>
+        </div>
+      </div>
+
+      <!-- 动作列表 -->
+      <div class="wo-ex-list">
+
+        <!-- 动作卡 1：展开态 -->
+        <div class="wo-ex-card expanded">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><img src="https://pub-d1c906fc65734d81a50cd8fabad52ca5.r2.dev/videos/0001-2gPfomN.gif" alt="" /></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">站姿杠铃推举</div>
+              <div class="wo-ex-meta">
+                <span class="wo-ex-vol">0.0/640.0</span>
+              </div>
+              <div class="wo-ex-sets-label">4组</div>
+              <div class="wo-dots">
+                <span class="wo-dot active"></span>
+                <span class="wo-dot"></span>
+                <span class="wo-dot"></span>
+                <span class="wo-dot"></span>
+                <span class="wo-dot"></span>
+                <span class="wo-dot"></span>
+                <span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+
+          <!-- 展开内容 -->
+          <div class="wo-ex-expanded">
+            <div class="wo-note-ph">点击输入备注</div>
+
+            <div class="wo-timer-toggle">
+              <div class="wo-checkbox checked"></div>
+              <span>每组计时</span>
+            </div>
+
+            <!-- 热身组 1 -->
+            <div class="wo-set-row">
+              <div class="wo-set-no warmup">热</div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">kg</span><input class="wo-set-input" value="10" readonly /></div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">次</span><input class="wo-set-input" value="10" readonly /></div>
+              <div class="wo-set-check checked">&#10003;</div>
+              <div class="wo-set-more">&#8943;</div>
+            </div>
+            <!-- 热身组 2 -->
+            <div class="wo-set-row done">
+              <div class="wo-set-no warmup">热</div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">kg</span><input class="wo-set-input" value="10" readonly /></div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">次</span><input class="wo-set-input" value="10" readonly /></div>
+              <div class="wo-set-check checked">&#10003;</div>
+              <div class="wo-set-more">&#8943;</div>
+            </div>
+            <!-- 正式组 3（当前） -->
+            <div class="wo-set-row current">
+              <div class="wo-set-no normal">3</div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">kg</span><input class="wo-set-input" value="15" /></div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">次</span><input class="wo-set-input" value="12" /></div>
+              <div class="wo-set-check">&#10003;</div>
+              <div class="wo-set-more">&#8943;</div>
+            </div>
+            <!-- 正式组 4 -->
+            <div class="wo-set-row">
+              <div class="wo-set-no normal">4</div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">kg</span><input class="wo-set-input" value="20" /></div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">次</span><input class="wo-set-input" value="8" /></div>
+              <div class="wo-set-check">&#10003;</div>
+              <div class="wo-set-more">&#8943;</div>
+            </div>
+            <!-- 正式组 5 -->
+            <div class="wo-set-row">
+              <div class="wo-set-no normal">5</div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">kg</span><input class="wo-set-input" value="15" /></div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">次</span><input class="wo-set-input" value="10" /></div>
+              <div class="wo-set-check">&#10003;</div>
+              <div class="wo-set-more">&#8943;</div>
+            </div>
+            <!-- 正式组 6 -->
+            <div class="wo-set-row">
+              <div class="wo-set-no normal">6</div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">kg</span><input class="wo-set-input" value="15" /></div>
+              <div class="wo-input-wrap"><span class="wo-input-unit">次</span><input class="wo-set-input" value="10" /></div>
+              <div class="wo-set-check">&#10003;</div>
+              <div class="wo-set-more">&#8943;</div>
+            </div>
+
+            <!-- 展开底部操作 -->
+            <div class="wo-ex-actions">
+              <button class="wo-ex-btn primary">+ 新增一组</button>
+              <button class="wo-ex-btn ghost">历史动作</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 其余动作以折叠态展示 -->
+        <div class="wo-ex-card collapsed">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><div class="thumb-placeholder">&#127939;</div></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">侧平举</div>
+              <div class="wo-ex-meta"><span class="wo-ex-vol">0.0/60.0</span></div>
+              <div class="wo-ex-sets-label">4组</div>
+              <div class="wo-dots">
+                <span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+        </div>
+
+        <div class="wo-ex-card collapsed">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><div class="thumb-placeholder">&#128170;</div></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">面拉</div>
+              <div class="wo-ex-meta"><span class="wo-ex-vol">0.0/1286.0</span></div>
+              <div class="wo-ex-sets-label">3组</div>
+              <div class="wo-dots">
+                <span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+        </div>
+
+        <div class="wo-ex-card collapsed">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><div class="thumb-placeholder">&#128170;</div></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">卷腹</div>
+              <div class="wo-ex-meta"><span class="wo-ex-vol">0.0/61.0</span></div>
+              <div class="wo-ex-sets-label">3组</div>
+              <div class="wo-dots">
+                <span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+        </div>
+
+      </div><!-- /wo-ex-list -->
+
+      <!-- 底部留白 -->
+      <div style="height:24px;"></div>
+
+    </div><!-- /screen -->
+
+  </div><!-- /phone -->
+</div>
+
+
+<!-- ========== 屏幕 B：折叠总览态 ========== -->
+<div class="phone-wrap">
+  <div class="phone-label">折叠总览态<small>全部动作列表 — 点击可展开</small></div>
+  <div class="phone">
+    <div class="statusbar"><span>18:49</span><span class="dots">&#9679;&#9679;&#9679;</span><span>5G 56%</span></div>
+    <div class="screen">
+
+      <!-- 顶部操作栏 -->
+      <div class="wo-top">
+        <div class="wo-timer-wrap">
+          <div class="wo-timer">00:09</div>
+          <div class="wo-clock-toggle" onclick="toggleClock(this)"><span class="wo-clock-ico">&#9654;</span></div>
+        </div>
+        <button class="wo-done-btn">完成</button>
+      </div>
+
+      <!-- 训练信息 -->
+      <div class="wo-info">
+        <div class="wo-title-row">
+          <span class="wo-edit-ico">&#9998;</span>
+          <span class="wo-name">腿&middot;肩</span>
+        </div>
+        <div class="wo-stats">
+          <div class="wo-stat">2/14组 &nbsp; 1/4动作</div>
+          <div class="wo-stat">320/2686容量</div>
+        </div>
+      </div>
+
+      <!-- 全部动作折叠列表 -->
+      <div class="wo-ex-list">
+
+        <div class="wo-ex-card collapsed">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><img src="https://pub-d1c906fc65734d81a50cd8fabad52ca5.r2.dev/videos/0001-2gPfomN.gif" alt="" /></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">站姿杠铃推举</div>
+              <div class="wo-ex-meta"><span class="wo-ex-vol">0.0/640.0</span></div>
+              <div class="wo-ex-sets-label">4组</div>
+              <div class="wo-dots">
+                <span class="wo-dot done"></span><span class="wo-dot done"></span>
+                <span class="wo-dot active"></span><span class="wo-dot"></span>
+                <span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+        </div>
+
+        <div class="wo-ex-card collapsed">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><div class="thumb-placeholder">&#127939;</div></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">侧平举</div>
+              <div class="wo-ex-meta"><span class="wo-ex-vol">0.0/60.0</span></div>
+              <div class="wo-ex-sets-label">4组</div>
+              <div class="wo-dots">
+                <span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+        </div>
+
+        <div class="wo-ex-card collapsed">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><div class="thumb-placeholder">&#128170;</div></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">面拉</div>
+              <div class="wo-ex-meta"><span class="wo-ex-vol">0.0/1286.0</span></div>
+              <div class="wo-ex-sets-label">3组</div>
+              <div class="wo-dots">
+                <span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+        </div>
+
+        <div class="wo-ex-card collapsed">
+          <div class="wo-ex-head">
+            <div class="wo-ex-thumb"><div class="thumb-placeholder">&#128170;</div></div>
+            <div class="wo-ex-body">
+              <div class="wo-ex-name">卷腹</div>
+              <div class="wo-ex-meta"><span class="wo-ex-vol">0.0/61.0</span></div>
+              <div class="wo-ex-sets-label">3组</div>
+              <div class="wo-dots">
+                <span class="wo-dot"></span><span class="wo-dot"></span><span class="wo-dot"></span>
+              </div>
+            </div>
+            <div class="wo-ex-gear">&#9881;</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="height:24px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // 全局训练计时（原型交互）：默认暂停，点播放/暂停按钮手动控制，点组 ✓ 自动启动
+  var woElapsed = 0, woRunning = false, woTimer = null;
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function renderTimers() {
+    var mm = pad(Math.floor(woElapsed / 60)), ss = pad(woElapsed % 60);
+    document.querySelectorAll('.wo-timer').forEach(function (el) { el.textContent = mm + ':' + ss; });
+  }
+  function renderIcons() {
+    document.querySelectorAll('.wo-clock-ico').forEach(function (el) {
+      el.textContent = woRunning ? '⏸' : '▶';
+    });
+  }
+  function startClock() {
+    if (woTimer) return;
+    woRunning = true; renderIcons();
+    woTimer = setInterval(function () { woElapsed++; renderTimers(); }, 1000);
+  }
+  function pauseClock() {
+    if (woTimer) { clearInterval(woTimer); woTimer = null; }
+    woRunning = false; renderIcons();
+  }
+  function toggleClock(btn) {
+    if (woRunning) pauseClock(); else startClock();
+  }
+  function ensureClockRunning() { if (!woRunning) startClock(); }
+  // 点任意组 ✓ 自动启动全局计时
+  document.querySelectorAll('.wo-set-check').forEach(function (el) {
+    el.addEventListener('click', function () { ensureClockRunning(); });
+  });
+</script>
+
+</body>
+</html>

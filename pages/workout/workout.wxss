@@ -1,0 +1,839 @@
+/* pages/workout/workout.wxss —— 训练执行页（全部动作可滚动列表 + 单卡展开） */
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 按钮点击态 */
+.press { opacity: 0.82; }
+.bottom-gap { height: 48rpx; }
+
+/* ==================== 训练中页面（对齐 ui-workout-redesign.html） ==================== */
+
+/* ---- 顶部操作栏 ---- */
+.wo-top {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 32rpx 16rpx;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: linear-gradient(180deg, rgba(26, 168, 133, 0.96) 0%, rgba(26, 168, 133, 0.90) 100%);
+}
+.wo-timer-wrap { flex: 1; display: flex; align-items: center; }
+.wo-timer {
+  font-size: 76rpx;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -2rpx;
+  line-height: 1;
+  font-feature-settings: "tnum";
+}
+/* 播放/暂停按钮（在倒计时后，手动控制全局计时） */
+.wo-clock-toggle {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 24rpx;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+.wo-clock-toggle:active { background: rgba(255, 255, 255, 0.38); }
+.wo-clock-ico {
+  color: #fff;
+  font-size: 30rpx;
+  line-height: 1;
+  font-weight: 700;
+}
+.wo-done-btn {
+  height: 72rpx;
+  padding: 0 40rpx;
+  border-radius: 999rpx;
+  background: var(--primary);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 72rpx;
+  box-shadow: var(--shadow-mint);
+  flex-shrink: 0;
+}
+.wo-done-btn::after { border: none; }
+
+/* ---- 训练信息头 ---- */
+.wo-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 32rpx 0;
+}
+.wo-title-row { display: flex; align-items: center; gap: 12rpx; min-width: 0; }
+.wo-edit-ico { font-size: 32rpx; color: var(--text-sub); flex-shrink: 0; }
+.wo-name { font-size: 34rpx; font-weight: 700; color: var(--text); }
+.wo-stats { text-align: right; flex-shrink: 0; }
+.wo-stat { font-size: 22rpx; color: var(--text-sub); line-height: 1.6; font-feature-settings: "tnum"; }
+
+/* ---- 动作列表 ---- */
+.wo-ex-list { padding: 16rpx 32rpx 0; }
+
+.wo-ex-card {
+  background: var(--glass-strong);
+  border: 1rpx solid var(--glass-border);
+  border-radius: 36rpx;
+  padding: 28rpx 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 卡片头部 */
+.wo-ex-head { display: flex; align-items: center; gap: 24rpx; }
+.wo-ex-thumb {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 24rpx;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--primary-tint), rgba(46, 207, 176, 0.12));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wo-ex-thumb-img { width: 100%; height: 100%; }
+.wo-ex-body { flex: 1; min-width: 0; }
+.wo-ex-name {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wo-ex-meta { display: flex; align-items: center; gap: 16rpx; margin-top: 6rpx; }
+.wo-ex-vol { font-size: 24rpx; color: var(--text-weak); font-feature-settings: "tnum"; }
+.wo-ex-sets-label { font-size: 26rpx; color: var(--text-sub); margin-top: 12rpx; }
+.wo-ex-gear {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 12rpx;
+  background: rgba(46, 207, 176, 0.16);
+  border: 2rpx solid rgba(46, 207, 176, 0.40);
+  color: var(--primary-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  box-shadow: 0 4rpx 12rpx rgba(46, 207, 176, 0.25);
+}
+
+/* 组数圆点指示器 */
+.wo-dots { display: flex; gap: 10rpx; margin-top: 12rpx; }
+.wo-dot { width: 14rpx; height: 14rpx; border-radius: 50%; background: var(--line-strong); }
+.wo-dot.done { background: var(--primary); }
+.wo-dot.active { background: var(--primary-deep); box-shadow: 0 0 0 6rpx rgba(46, 207, 176, 0.25); }
+
+/* ---- 展开态 ---- */
+.wo-ex-expanded { margin-top: 24rpx; }
+.wo-note-ph {
+  font-size: 26rpx;
+  color: var(--text-weak);
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.wo-timer-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+.wo-timer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 26rpx;
+  color: var(--text-sub);
+}
+.wo-checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 12rpx;
+  border: 4rpx solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wo-checkbox.checked { border-color: var(--primary); background: var(--primary); }
+.wo-checkbox.checked::after { content: '✓'; color: #fff; font-size: 26rpx; font-weight: 700; line-height: 1; }
+
+/* 每组计时开启后显示的秒表目标提示（⏱ 60，与开关同行） */
+.wo-stopwatch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: var(--primary-tint);
+  border: 1rpx solid rgba(46, 207, 176, 0.30);
+}
+.wo-sw-ico { font-size: 24rpx; line-height: 1; }
+.wo-sw-val {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--primary-deep);
+  font-feature-settings: "tnum";
+}
+
+/* 组行：[组号] [kg] [次] [✓] [⋯] */
+.wo-set-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  padding: 20rpx 24rpx;
+  background: var(--bg);
+  border: 1rpx solid transparent;
+  border-radius: 28rpx;
+}
+.wo-set-row.current { border-color: var(--primary); background: var(--primary-tint); }
+.wo-set-row.done { opacity: 0.55; }
+.wo-set-no {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 800;
+  line-height: 1;
+}
+.wo-set-no.warmup { background: rgba(255, 177, 153, 0.20); color: #E8743B; }
+.wo-set-no.normal { background: var(--bg); color: var(--text-sub); border: 1rpx solid var(--line); }
+
+.wo-input-wrap { position: relative; flex-shrink: 0; }
+.wo-input-unit {
+  position: absolute;
+  top: 6rpx;
+  left: 14rpx;
+  font-size: 18rpx;
+  font-weight: 500;
+  color: var(--text-weak);
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+}
+.wo-set-input {
+  width: 120rpx;
+  height: 84rpx;
+  border-radius: 20rpx;
+  text-align: center;
+  padding-top: 20rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text);
+  font-feature-settings: "tnum";
+  background: var(--card);
+  border: 1rpx solid var(--line);
+}
+.wo-set-check {
+  min-width: 88rpx;
+  height: 72rpx;
+  padding: 0 14rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+  border: 4rpx solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  font-size: 34rpx;
+  color: var(--text-weak);
+  position: relative;
+  box-sizing: border-box;
+}
+.wo-set-check.checked { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+/* ⏱ 60 与 ✓ 合并在同一框内（未完成显示 ⏱ 60，完成后显示 ✓） */
+.wo-check-sw-ico {
+  font-size: 22rpx;
+  line-height: 1;
+  color: var(--primary-deep);
+}
+.wo-set-sw-sec {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--primary-deep);
+  font-feature-settings: "tnum";
+}
+
+/* 每组休息时长（✓ 右侧显示，如 00:10） */
+.wo-set-rest {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--info);
+  font-feature-settings: "tnum";
+  flex-shrink: 0;
+  min-width: 80rpx;
+  text-align: center;
+}
+
+/* 展开底部操作按钮 */
+.wo-ex-actions { display: flex; gap: 20rpx; margin-top: 28rpx; }
+.wo-ex-btn {
+  flex: 1;
+  height: 84rpx;
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 84rpx;
+  text-align: center;
+}
+.wo-ex-btn.primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-mint); }
+.wo-ex-btn.ghost { background: var(--bg); color: var(--primary-deep); border: 1rpx solid var(--line); }
+
+/* ==================== 训练计时 / 休息 / 历史 / 视频 浮层（沿用原 UI） ==================== */
+
+/* ── 休息倒计时悬浮窗 ── */
+.rest-mask {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: rest-fade 0.2s ease;
+}
+.rest-pop {
+  position: relative;
+  width: 560rpx;
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 56rpx 40rpx 40rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 20rpx 60rpx rgba(15, 23, 42, 0.25);
+  animation: rest-pop 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.rest-pop-emoji { font-size: 80rpx; margin-bottom: 16rpx; }
+.rest-pop-title { font-size: 34rpx; font-weight: 600; color: #1f2a37; }
+.rest-pop-sub { font-size: 24rpx; color: #94a3b8; margin-top: 10rpx; }
+
+/* 倒计时圆环（橙色 = DESIGN.md 规定休息语义色） */
+.rest-ring {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  background: #fff1ea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 36rpx 0 28rpx;
+}
+.rest-num { font-size: 88rpx; font-weight: 700; color: #FF7A3D; line-height: 1; }
+.rest-unit { font-size: 32rpx; color: #FF7A3D; margin-left: 6rpx; }
+
+.rest-track {
+  width: 100%;
+  height: 12rpx;
+  background: #eef1f5;
+  border-radius: 999rpx;
+  overflow: hidden;
+}
+.rest-fill {
+  height: 100%;
+  background: #FF7A3D;
+  border-radius: 999rpx;
+  transition: width 1s linear;
+}
+.rest-opts { display: flex; justify-content: center; gap: 16rpx; margin: 8rpx 0 28rpx; }
+.rest-opt {
+  min-width: 110rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  text-align: center;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  color: #5b6472;
+  background: #f1f3f7;
+  border-radius: 999rpx;
+}
+.rest-opt.on { background: #fff1ea; color: #FF7A3D; font-weight: 600; }
+/* 休息时长 ±微调 */
+.rest-step { display: flex; justify-content: center; gap: 20rpx; margin: 4rpx 0 8rpx; }
+.rest-step-btn {
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 28rpx;
+  font-size: 26rpx;
+  color: #5b6472;
+  background: #f1f3f7;
+  border-radius: 999rpx;
+}
+.rest-skip {
+  margin-top: 36rpx;
+  width: 100%;
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2ECFB0;
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  border: none;
+  transition: opacity 0.15s ease;
+}
+.rest-skip::after { border: none; }
+
+/* 弹窗右上角「最小化到悬浮窗」图标按钮 */
+.rest-pop-mini {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #f1f3f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease;
+}
+.rest-pop-mini::before {
+  content: '';
+  width: 26rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: #94a3b8;
+}
+
+/* 可拖拽悬浮球外层 */
+.float-area {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 150;
+  pointer-events: none;
+}
+.mini-float {
+  pointer-events: auto;
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.32);
+  animation: mini-breathe 2.4s ease-in-out infinite;
+}
+.mini-float::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2rpx solid rgba(255, 122, 61, 0.6);
+  box-sizing: border-box;
+  pointer-events: none;
+  animation: mini-pulse 2.4s ease-out infinite;
+}
+.mini-inner {
+  position: relative;
+  z-index: 1;
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.mini-label { font-size: 18rpx; color: rgba(255, 255, 255, 0.7); line-height: 1.2; }
+.mini-num { font-size: 38rpx; font-weight: 700; color: #fff; line-height: 1.15; }
+.mini-unit { font-size: 16rpx; color: rgba(255, 255, 255, 0.6); }
+
+@keyframes mini-breathe {
+  0%, 100% { box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.32), 0 0 8rpx 0 rgba(255, 122, 61, 0.28); }
+  50%      { box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.32), 0 0 28rpx 6rpx rgba(255, 122, 61, 0.55); }
+}
+@keyframes mini-pulse {
+  0%   { transform: scale(1);    opacity: 0.6; }
+  100% { transform: scale(1.65); opacity: 0; }
+}
+
+/* 震动提示开关 */
+.rest-vib {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 28rpx;
+  padding: 0 8rpx;
+  box-sizing: border-box;
+}
+.rest-vib-label { font-size: 26rpx; color: #5b6472; }
+.rest-vib-switch {
+  width: 84rpx;
+  height: 48rpx;
+  border-radius: 999rpx;
+  background: #d8dde6;
+  position: relative;
+  transition: background 0.2s ease;
+}
+.rest-vib-switch.on { background: #2ECFB0; }
+.rest-vib-dot {
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s ease;
+}
+.rest-vib-switch.on .rest-vib-dot { left: 40rpx; }
+
+@keyframes rest-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rest-pop { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+
+/* ── 动作历史 overlay（底部上滑） ── */
+.hist-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 140;
+  animation: rest-fade 0.2s ease;
+}
+.hist-pop {
+  width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -10rpx 40rpx rgba(15, 23, 42, 0.2);
+  animation: hist-up 0.26s ease;
+}
+@keyframes hist-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.hist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 40rpx 16rpx;
+}
+.hist-title { font-size: 34rpx; font-weight: 600; color: #1f2a37; }
+.hist-close {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 36rpx;
+}
+.hist-body {
+  flex: 1;
+  padding: 0 40rpx 40rpx;
+  box-sizing: border-box;
+}
+.hist-act-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2a37;
+  margin: 24rpx 0 12rpx;
+}
+.hist-set {
+  background: var(--bg);
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 12rpx;
+}
+.hist-set-line1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hist-set-no { font-size: 26rpx; font-weight: 600; color: #2ECFB0; }
+.hist-set-rep { font-size: 26rpx; color: #5b6472; }
+.hist-set-line2 {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #94a3b8;
+}
+.hist-dot { margin: 0 12rpx; }
+
+/* ── 替换动作 overlay（底部上滑选择列表） ── */
+.repl-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 145;
+  animation: rest-fade 0.2s ease;
+}
+.repl-pop {
+  width: 100%;
+  max-height: 70vh;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -10rpx 40rpx rgba(15, 23, 42, 0.2);
+  animation: hist-up 0.26s ease;
+}
+.repl-head {
+  display: flex;
+  align-items: center;
+  padding: 32rpx 40rpx 16rpx;
+  position: relative;
+}
+.repl-title { font-size: 34rpx; font-weight: 600; color: #1f2a37; }
+.repl-sub {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  margin-left: 16rpx;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.repl-close {
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+.repl-body {
+  flex: 1;
+  padding: 0 40rpx 40rpx;
+  box-sizing: border-box;
+}
+/* 双排网格（对齐训练页动作库卡片） */
+.repl-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 20rpx;
+  margin-bottom: 12rpx;
+  background: var(--bg);
+  border: 2rpx solid transparent;
+  transition: border-color .15s;
+}
+.repl-item.current {
+  border-color: var(--primary);
+  background: var(--primary-tint);
+}
+.repl-img {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 18rpx;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary-tint), rgba(46,207,176,.12));
+}
+.repl-info { flex: 1; min-width: 0; }
+.repl-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.repl-cat {
+  font-size: 22rpx;
+  color: var(--text-sub);
+  margin-top: 4rpx;
+  display: block;
+}
+.repl-check {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* 浮层底部：上拉加载更多 / 已加载全部 提示 */
+.repl-foot {
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--text-weak);
+  padding: 24rpx 0 8rpx;
+}
+.repl-foot.done { color: var(--text-sub); }
+
+/* 完成态 */
+.page.finished {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+}
+.done-emoji { font-size: 120rpx; margin-bottom: 24rpx; }
+.done-title { font-size: 40rpx; font-weight: 500; color: #1f2a37; }
+.done-sub { font-size: 26rpx; color: #94a3b8; margin-top: 12rpx; }
+
+/* 视频放大覆盖层 */
+.video-mask {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-mask-player {
+  width: 92vw;
+  height: 92vw;
+  border-radius: 16rpx;
+  background-color: #000;
+}
+.video-mask-close {
+  position: absolute;
+  right: 48rpx;
+  top: 48rpx;
+  width: 76rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  text-align: center;
+  color: #fff;
+  font-size: 44rpx;
+  background-color: rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+}
+
+/* ==================== 训练中页：顶部最小化 / 底部添加动作 / 悬浮药丸 ==================== */
+
+/* 顶部最小化按钮：CSS 绘制「缩到悬浮窗」图标（圆角方框 + 底部横条），替代原 ▭ 文本 */
+.wo-min-btn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wo-min-btn:active { background: rgba(255, 255, 255, 0.40); }
+.wo-min-ico {
+  position: relative;
+  width: 30rpx;
+  height: 30rpx;
+  border: 3rpx solid #fff;
+  border-radius: 7rpx;
+  box-sizing: border-box;
+}
+.wo-min-ico::after {
+  content: '';
+  position: absolute;
+  left: 4rpx;
+  right: 4rpx;
+  bottom: 5rpx;
+  height: 3rpx;
+  background: #fff;
+}
+
+/* 底部操作条：添加动作（sticky 贴底，玻璃渐隐底） */
+.wo-page-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(255, 241, 232, 0) 0%, rgba(255, 241, 232, 0.96) 45%, #FFF1E8 100%);
+}
+.wo-add-btn {
+  height: 88rpx;
+  border-radius: 24rpx;
+  background: var(--primary);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 88rpx;
+  text-align: center;
+  box-shadow: var(--shadow-mint);
+}
+.wo-add-btn::after { border: none; }
+
+/* 浮层搜索框 + 分类筛选 */
+.repl-search {
+  padding: 8rpx 40rpx 4rpx;
+}
+.repl-search-input {
+  height: 72rpx;
+  line-height: 72rpx;
+  padding: 0 28rpx;
+  border-radius: 18rpx;
+  background: var(--bg);
+  border: 2rpx solid var(--line);
+  font-size: 28rpx;
+  color: var(--text);
+  box-sizing: border-box;
+}
+.repl-cats {
+  white-space: nowrap;
+  padding: 16rpx 32rpx 8rpx;
+  box-sizing: border-box;
+}
+.repl-cat {
+  display: inline-block;
+  padding: 10rpx 28rpx;
+  margin-right: 14rpx;
+  border-radius: 999rpx;
+  background: var(--bg);
+  border: 2rpx solid var(--line);
+  font-size: 26rpx;
+  color: var(--text-sub);
+  transition: all .15s;
+}
+.repl-cat.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+.repl-empty {
+  text-align: center;
+  color: var(--text-weak);
+  font-size: 26rpx;
+  padding: 48rpx 0;
+}

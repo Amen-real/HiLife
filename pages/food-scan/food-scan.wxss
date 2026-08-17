@@ -1,0 +1,201 @@
+/* pages/food-scan/food-scan.wxss —— 复用 app.wxss 设计变量 */
+
+.page { padding-bottom: 40rpx; }
+
+/* 说明卡 */
+.intro-title { font-size: 32rpx; font-weight: 700; color: var(--text); }
+.intro-sub { font-size: 26rpx; color: var(--text-sub); margin-top: 10rpx; line-height: 1.6; }
+
+/* 识别方式双按钮 */
+.actions { display: flex; gap: 20rpx; margin-bottom: 24rpx; }
+.act-btn {
+  flex: 1;
+  background: var(--primary-light);
+  border: 1rpx solid var(--line);
+  border-radius: 20rpx;
+  padding: 28rpx 20rpx;
+  text-align: center;
+}
+.act-hover { opacity: 0.85; }
+.act-ico { font-size: 52rpx; }
+.act-name { font-size: 28rpx; font-weight: 600; color: var(--text); margin-top: 8rpx; }
+.act-desc { font-size: 22rpx; color: var(--text-sub); margin-top: 4rpx; }
+
+/* 搜索行 */
+.search-row { display: flex; align-items: center; gap: 16rpx; }
+.search-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1rpx solid var(--line);
+  border-radius: 14rpx;
+  padding: 18rpx 22rpx;
+  font-size: 28rpx;
+}
+.search-go {
+  background: var(--primary);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 14rpx;
+  padding: 18rpx 30rpx;
+}
+
+.note {
+  margin-top: 20rpx;
+  font-size: 22rpx;
+  color: var(--text-weak);
+  line-height: 1.6;
+  background: #f8fafc;
+  border-radius: 12rpx;
+  padding: 16rpx 18rpx;
+}
+
+/* 搜索结果 */
+.res {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.res:last-child { border-bottom: none; }
+.res-img {
+  width: 88rpx; height: 88rpx;
+  border-radius: 14rpx;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.res-emoji { font-size: 44rpx; text-align: center; line-height: 88rpx; }
+.res-info { flex: 1; min-width: 0; }
+.res-name { font-size: 28rpx; color: var(--text); font-weight: 500; }
+.res-brand { font-size: 22rpx; color: var(--text-sub); margin-top: 4rpx; }
+.res .arrow { color: var(--text-weak); font-size: 30rpx; }
+
+/* 营养评分徽章 */
+.ns {
+  min-width: 44rpx; height: 44rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 10rpx;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 0 12rpx;
+}
+.ns-A { background: #1CA44D; }
+.ns-B { background: #8BC53F; }
+.ns-C { background: #F3C412; color: #5a4a00; }
+.ns-D { background: #EE8100; }
+.ns-E { background: #E63027; }
+
+/* 商品详情 */
+.detail-head { display: flex; gap: 24rpx; align-items: flex-start; margin-bottom: 8rpx; }
+.detail-img {
+  width: 180rpx; height: 180rpx;
+  border-radius: 18rpx;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.detail-emoji { font-size: 88rpx; text-align: center; line-height: 180rpx; }
+.detail-meta { flex: 1; min-width: 0; }
+.detail-name { font-size: 32rpx; font-weight: 700; color: var(--text); line-height: 1.4; }
+.detail-brand { font-size: 24rpx; color: var(--text-sub); margin-top: 6rpx; }
+.badges { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 14rpx; }
+.badges .tag { margin: 0; }
+
+/* 营养格 */
+.nutri {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-top: 4rpx;
+}
+.nutri-item {
+  background: var(--bg);
+  border-radius: 16rpx;
+  padding: 20rpx 12rpx;
+  text-align: center;
+}
+.nutri-val {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--accent); /* 卡路里/能量型数据用活力橙 */
+}
+.nutri-lab { font-size: 22rpx; color: var(--text-sub); margin-top: 4rpx; }
+
+/* 记录表单 */
+.form-row { display: flex; align-items: center; justify-content: space-between; padding: 18rpx 0; }
+.form-lab { font-size: 28rpx; color: var(--text); }
+.form-picker { flex: 1; text-align: right; }
+.form-picker-val { font-size: 28rpx; color: var(--primary-deep); font-weight: 600; }
+.form-input {
+  flex: 1;
+  text-align: right;
+  background: var(--bg);
+  border: 1rpx solid var(--line);
+  border-radius: 12rpx;
+  padding: 12rpx 20rpx;
+  font-size: 28rpx;
+  margin-left: 24rpx;
+}
+.form-preview {
+  margin: 16rpx 0 24rpx;
+  font-size: 26rpx;
+  color: var(--text-sub);
+  background: var(--accent-soft);
+  border-radius: 12rpx;
+  padding: 16rpx 18rpx;
+}
+.form-preview .hl { color: var(--accent); font-weight: 700; font-size: 30rpx; }
+
+.add-btn { width: 100%; }
+.go-advice {
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--text-sub);
+  margin-top: 18rpx;
+}
+
+.loading-tip { text-align: center; color: var(--text-weak); font-size: 26rpx; padding: 24rpx 0; }
+.bottom-gap { height: 20rpx; }
+
+/* 拍照识别按钮 */
+.cam-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  margin-top: 24rpx;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 16rpx;
+  padding: 22rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.cam-hover { opacity: 0.88; }
+.cam-ico { font-size: 34rpx; }
+
+/* 拍照识别结果 */
+.photo-name { font-size: 32rpx; font-weight: 700; color: var(--text); }
+.photo-kcal {
+  font-size: 72rpx;
+  font-weight: 800;
+  color: var(--accent); /* 卡路里用活力橙 */
+  margin: 8rpx 0;
+  line-height: 1.1;
+}
+.photo-kcal .unit { font-size: 30rpx; font-weight: 600; color: var(--text-sub); margin-left: 8rpx; }
+.photo-meta { font-size: 26rpx; color: var(--text-sub); }
+.conf-bar { height: 12rpx; background: var(--bg); border-radius: 8rpx; margin: 16rpx 0; overflow: hidden; }
+.conf-fill { height: 100%; background: var(--primary); border-radius: 8rpx; }
+.mock-tag {
+  display: inline-block;
+  font-size: 22rpx;
+  color: var(--warning);
+  background: #fff7e6;
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+  margin-bottom: 12rpx;
+}

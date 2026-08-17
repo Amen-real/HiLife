@@ -1,0 +1,188 @@
+<!-- pages/training/training.wxml —— 对齐 ui-redesign-preview.html v2（chips + 双排动作卡） -->
+<view class="page">
+
+  <!-- 动作库标题 + 创建（对齐预览：动作库 · N） -->
+  <view class="lib-head">
+    <text class="lib-title">动作库</text>
+    <view class="create-btn" bindtap="openCreate">+ 创建动作</view>
+  </view>
+
+  <!-- 分类胶囊 chips（对齐预览） -->
+  <scroll-view class="chips" scroll-x enable-flex>
+    <view
+      wx:for="{{categories}}"
+      wx:key="*this"
+      class="chip {{activeCat === item ? 'on' : ''}}"
+      data-cat="{{item}}"
+      bindtap="switchCat"
+    >{{item}}<text wx:if="{{catCounts[item]}}" class="chip-count">{{catCounts[item]}}</text></view>
+  </scroll-view>
+
+  <!-- 搜索 + 已选（对齐预览搜索条） -->
+  <view class="search-bar">
+    <view class="search-input">
+      <icon name="search" size="36"/>
+      <input
+        class="search-field"
+        placeholder="搜索动作、部位或器械"
+        value="{{keyword}}"
+        bindinput="onSearch"
+        confirm-type="search"
+      />
+      <text wx:if="{{keyword}}" class="search-clear" bindtap="clearSearch">✕</text>
+    </view>
+    <view class="sel-pill" hover-class="op-press" bindtap="openSelPanel">{{selectedCount}} 已选 ›</view>
+  </view>
+
+  <!-- 动作双排网格（对齐预览 ex-grid / ex2） -->
+  <view class="action-list">
+    <view
+      wx:for="{{list}}"
+      wx:key="id"
+      class="action-card"
+      hover-class="ac-press"
+      data-id="{{item.id}}"
+      bindtap="tapAction"
+    >
+      <view class="action-thumb">
+        <image wx:if="{{item.image}}" class="action-img" src="{{item.image}}" mode="aspectFill" lazy-load />
+        <text wx:else class="action-emoji">{{item.emoji}}</text>
+        <view wx:if="{{item.video}}" class="play">GIF</view>
+        <view
+          class="fav {{favoriteIds[item.id] ? 'on' : ''}}"
+          hover-class="fav-press"
+          catchtap="toggleFav"
+          data-id="{{item.id}}"
+        >{{favoriteIds[item.id] ? '♥' : '♡'}}</view>
+        <view
+          wx:if="{{item.custom}}"
+          class="del-btn"
+          hover-class="del-press"
+          catchtap="deleteCustom"
+          data-id="{{item.id}}"
+        >✕</view>
+      </view>
+      <view class="action-body">
+        <view class="action-name ellipsis">{{item.nameZh || item.name}}</view>
+        <view class="action-tags">
+          <text class="tag tag-primary">{{item.part || item.category}}</text>
+          <text wx:if="{{item.equip}}" class="tag">{{item.equip}}</text>
+        </view>
+      </view>
+      <view
+        class="add-btn {{selectedIds[item.id] ? 'added' : ''}}"
+        hover-class="add-press"
+        catchtap="toggleSelect"
+        data-id="{{item.id}}"
+      >{{selectedIds[item.id] ? '✓' : '+'}}</view>
+    </view>
+
+    <view wx:if="{{list.length === 0}}" class="empty">{{activeCat === '我的动作' ? '还没有自建动作，点右上角「+ 创建动作」添加' : '没有匹配的动作，换个关键词试试'}}</view>
+  </view>
+
+  <view class="attr">动作图片 © Gym visual</view>
+  <view class="bottom-gap" />
+</view>
+
+<!-- 底部固定行动栏 -->
+<view class="action-bar" style="display: flex;">
+    <view class="ab-count" hover-class="op-press" bindtap="openSelPanel">
+      <text class="ab-num">{{selectedCount}}</text>
+      <text class="ab-label">已选动作</text>
+    </view>
+  <button class="ab-start {{selectedCount ? '' : 'disabled'}}" bindtap="startTraining">开始训练</button>
+</view>
+
+<!-- 创建动作弹窗 -->
+<view wx:if="{{showCreate}}" class="modal-mask" bindtap="closeCreate">
+  <view class="modal" catchtap="noop">
+    <view class="modal-title">创建动作</view>
+    <input class="modal-input" placeholder="动作名称，如：单臂哑铃划船" value="{{newName}}" bindinput="onName" />
+
+    <view class="field-label">训练部位</view>
+    <picker class="part-picker" mode="selector" range="{{parts}}" value="{{partIndex}}" bindchange="onPart">
+      <view class="picker-display">{{parts[partIndex]}}</view>
+    </picker>
+
+    <view class="param-row">
+      <view class="param-cell">
+        <view class="field-label">重量(kg)</view>
+        <input class="modal-input sm" type="digit" placeholder="如 20" value="{{newWeight}}" bindinput="onWeight" />
+      </view>
+      <view class="param-cell">
+        <view class="field-label">次数</view>
+        <input class="modal-input sm" type="number" placeholder="如 12" value="{{newReps}}" bindinput="onReps" />
+      </view>
+      <view class="param-cell">
+        <view class="field-label">组数</view>
+        <input class="modal-input sm" type="number" placeholder="如 4" value="{{newSets}}" bindinput="onSets" />
+      </view>
+    </view>
+
+    <view class="modal-actions">
+      <button class="btn-secondary modal-cancel" bindtap="closeCreate">取消</button>
+      <button class="btn-primary modal-ok" bindtap="submitCreate">保存</button>
+    </view>
+    <button class="btn-use" bindtap="submitAndUse">保存并用于本次训练</button>
+  </view>
+</view>
+
+<!-- 已选动作编辑弹窗（层级需高于总览弹窗，避免被其遮罩压住） -->
+<view wx:if="{{showSelEdit}}" class="modal-mask sel-edit-mask" bindtap="closeSelEdit">
+  <view class="modal" catchtap="noop">
+    <view class="modal-title">修改训练参数</view>
+    <view class="param-row">
+      <view class="param-cell">
+        <view class="field-label">重量(kg)</view>
+        <input class="modal-input sm" type="digit" placeholder="如 20" value="{{editWeight}}" bindinput="onEditWeight" />
+      </view>
+      <view class="param-cell">
+        <view class="field-label">次数</view>
+        <input class="modal-input sm" type="number" placeholder="如 12" value="{{editReps}}" bindinput="onEditReps" />
+      </view>
+      <view class="param-cell">
+        <view class="field-label">组数</view>
+        <input class="modal-input sm" type="number" placeholder="如 4" value="{{editSets}}" bindinput="onEditSets" />
+      </view>
+    </view>
+    <view class="modal-actions">
+      <button class="btn-secondary modal-cancel" bindtap="closeSelEdit">取消</button>
+      <button class="btn-primary modal-ok" bindtap="saveSelEdit">保存</button>
+    </view>
+  </view>
+</view>
+
+<!-- 已选动作总览弹窗（可最小化） -->
+<view wx:if="{{showSelPanel}}" class="modal-mask sel-panel-mask" bindtap="closeSelPanel">
+  <view class="modal sel-panel" catchtap="noop">
+    <view class="sel-panel-head">
+      <text class="sel-panel-title">已选动作 ({{selList.length}})</text>
+      <view class="sel-panel-min" hover-class="op-press" catchtap="minimizeSelPanel">－</view>
+      <view class="sel-panel-close" hover-class="op-press" catchtap="closeSelPanel">✕</view>
+    </view>
+    <scroll-view class="sel-panel-list" scroll-y>
+      <view class="sel-item" wx:for="{{selList}}" wx:key="id">
+        <view class="sel-info">
+          <view class="sel-name ellipsis">{{item.name}}</view>
+          <view class="sel-meta">
+            <text class="tag tag-primary" wx:if="{{item.part}}">{{item.part}}</text>
+            <text class="sel-param">重量 {{item.weight || '—'}}kg</text>
+            <text class="sel-param">次数 {{item.reps || '—'}}</text>
+            <text class="sel-param">组数 {{item.setsCount}}</text>
+          </view>
+        </view>
+        <view class="sel-ops">
+          <view class="sel-op edit" hover-class="op-press" catchtap="editSelected" data-id="{{item.id}}">修改</view>
+          <view class="sel-op del" hover-class="op-press" catchtap="removeSelected" data-id="{{item.id}}">删除</view>
+        </view>
+      </view>
+      <view wx:if="{{selList.length === 0}}" class="empty">还没有选择动作，去动作库勾选吧</view>
+    </scroll-view>
+    <button class="sel-panel-add" bindtap="minimizeSelPanel">继续选择动作</button>
+  </view>
+</view>
+
+<!-- 最小化悬浮气泡 -->
+<view wx:if="{{selMinimized}}" class="sel-bubble" hover-class="bubble-press" catchtap="restoreSelPanel">
+  已选 {{selectedCount}} 个动作 ›
+</view>

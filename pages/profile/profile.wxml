@@ -1,0 +1,84 @@
+<!-- pages/profile/profile.wxml —— 对齐 ui-redesign-preview.html v2（渐变头 + pstats + 菜单） -->
+<view class="page">
+
+  <!-- 渐变头（对齐预览：头像 + 昵称 + 坚持天数；访客态加 guest 类切换居中竖向排版） -->
+  <view class="profile-head {{loggedIn ? '' : 'guest'}}">
+    <block wx:if="{{!loggedIn}}">
+      <view class="av">{{avatarText}}</view>
+      <view class="ph-text">
+        <view class="pn">欢迎使用 衡力健身记录</view>
+        <view class="ps">登录后完善个人健康档案</view>
+      </view>
+      <button class="login-btn" bindtap="wechatLogin">登录</button>
+    </block>
+    <block wx:else>
+      <view class="avatar-btn" bindtap="onChooseAvatar">
+        <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" class="avatar-img" mode="aspectFill" />
+        <view wx:else class="av">{{avatarText}}</view>
+      </view>
+      <view class="ph-text">
+        <input class="nick-input" type="nickname" placeholder="点击填写昵称" value="{{nickname}}" bindinput="onNicknameInput" bindblur="onNicknameBlur" />
+        <view class="ps">已坚持 {{profile.fitnessDays}} 天 · 连续 {{streak}} 天</view>
+      </view>
+      <view class="logout-link" bindtap="logout">退出</view>
+    </block>
+  </view>
+
+  <!-- 数据条（对齐预览 pstats：总训练 / 连续天 / 收藏） -->
+  <view class="pstats">
+    <view class="pv"><view class="pv-n tnum">{{profile.fitnessDays}}</view><view class="pv-k">总训练</view></view>
+    <view class="pv"><view class="pv-n tnum">{{streak}}</view><view class="pv-k">连续天</view></view>
+    <view class="pv"><view class="pv-n tnum">{{favCount}}</view><view class="pv-k">收藏</view></view>
+  </view>
+
+  <!-- 健康概览（当前目标 / 体重 / 身高 / BMI） -->
+  <view class="card health-card">
+    <view class="section-title"><icon name="goal" size="32"/>健康概览</view>
+    <view class="health-grid">
+      <view class="hg-item">
+        <view class="hg-ic hg-ic-goal"><icon name="goal" size="34"/></view>
+        <view class="hg-body">
+          <view class="hg-v">{{health.goal}}</view>
+          <view class="hg-k">当前目标</view>
+        </view>
+      </view>
+      <view class="hg-item">
+        <view class="hg-ic hg-ic-scale"><icon name="scale" size="34"/></view>
+        <view class="hg-body">
+          <view class="hg-v">{{health.weight}}<text class="hg-u" wx:if="{{health.weight !== '未记录'}}">kg</text></view>
+          <view class="hg-k">体重</view>
+        </view>
+      </view>
+      <view class="hg-item">
+        <view class="hg-ic hg-ic-user"><icon name="user" size="34"/></view>
+        <view class="hg-body">
+          <view class="hg-v">{{health.height}}<text class="hg-u" wx:if="{{health.height !== '未设置'}}">cm</text></view>
+          <view class="hg-k">身高</view>
+        </view>
+      </view>
+      <view class="hg-item">
+        <view class="hg-ic hg-ic-bmi">BMI</view>
+        <view class="hg-body">
+          <view class="hg-v">{{health.bmi}}</view>
+          <view class="hg-k">BMI 指数</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 菜单（我的计划 / 体重目标 / 关于） -->
+  <view class="menu card">
+    <view class="mi" bindtap="goPlan"><view class="mi-ic"><icon name="plan" size="40"/></view><view class="mi-t">我的计划</view><view class="mi-ar">›</view></view>
+    <view class="mi" bindtap="goTrainRecords"><view class="mi-ic"><icon name="train" size="40"/></view><view class="mi-t">训练日报</view><view class="mi-ar">›</view></view>
+    <view class="mi" bindtap="goSettings"><view class="mi-ic"><icon name="goal" size="40"/></view><view class="mi-t">体重目标</view><view class="mi-ar">›</view></view>
+    <view class="mi" bindtap="comingSoon" data-act="关于"><view class="mi-ic"><icon name="info" size="40"/></view><view class="mi-t">关于 / 媒体署名</view><view class="mi-ar">›</view></view>
+  </view>
+
+  <!-- 媒体署名 -->
+  <view class="attribution">
+    <text>动作演示媒体 © Gym visual</text>
+    <text>https://gymvisual.com/</text>
+  </view>
+
+  <view class="bottom-gap" />
+</view>

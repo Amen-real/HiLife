@@ -1,0 +1,19 @@
+# server/requirements.txt
+# 运行桥接服务（mock 模式即可跑通小程序链路）只需前 4 项。
+# 真实 CalorieScan 推理所需的重型依赖见下方「# 真实模型」分组，部署时再装。
+
+# 基础服务
+fastapi
+uvicorn[standard]
+python-multipart
+pillow
+
+# 真实模型（CalorieScan 推理）—— 部署真实模式时取消注释并安装
+# 注意：torch / ultralytics / segment-anything 体积大，建议用官方 CUDA 构建以发挥 GPU
+# torch
+# torchvision
+# numpy
+# opencv-python-headless
+# ultralytics            # YOLOv8
+# segment-anything       # SAM
+# 其它 CalorieScan 依赖以仓库 requirements.txt 为准
