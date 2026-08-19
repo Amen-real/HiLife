@@ -188,9 +188,9 @@ const store = {
       updatedAt: Date.now()
     }, plan);
     g().trainingPlans.push(p);
-    if (!g().activePlanId) g().activePlanId = p.id;
+    // 注意：创建计划不再自动设为“使用中”，交由用户在创建成功后确认（避免“创建即默认启用”）
     this.persist();
-    return g().trainingPlans;
+    return p;
   },
   updatePlan(id, patch) {
     const list = g().trainingPlans;

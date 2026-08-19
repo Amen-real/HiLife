@@ -184,11 +184,11 @@
             <text class="rep-delta {{report.time.up?'up':'down'}}">{{report.time.deltaText}}</text>
           </view>
           <view class="rep-sub">展示具体的训练时间（单位：分钟）</view>
-          <view class="rep-legend-inline">
-            <view class="lg"><view class="lg-dot prev"></view>上周</view>
-            <view class="lg"><view class="lg-dot cur time-cur"></view>本周</view>
-          </view>
-          <view class="bar-chart daily-chart">
+      <view class="rep-legend-inline">
+        <view class="lg"><view class="lg-dot prev"></view>上周</view>
+        <view class="lg"><view class="lg-dot cur time-cur"></view>本周</view>
+      </view>
+      <view class="bar-chart daily-chart">
             <view class="bar-group" wx:for="{{report.timeDaily}}" wx:key="day">
               <view class="bars">
                 <view class="bar bar-prev" style="height:{{item.prevH}}rpx" wx:if="{{item.prevMin>0}}">

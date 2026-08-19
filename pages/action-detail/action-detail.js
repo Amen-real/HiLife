@@ -1,7 +1,7 @@
 // pages/action-detail/action-detail.js
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
-const { media } = require('../../utils/media.js');
+const { media, resolveUrl } = require('../../utils/media.js');
 
 Page({
   data: {
@@ -37,7 +37,8 @@ Page({
   // 点击演示图全屏看原图（GIF 动图也完整显示）
   previewHero(e) {
     const url = e.currentTarget.dataset.url;
-    wx.previewImage({ current: url, urls: [url] });
+    // url 可能是 cloud:// 文件 ID，previewImage 只认 HTTPS，先解析
+    resolveUrl(url, (u) => wx.previewImage({ current: u, urls: [u] }));
   },
 
   // 自定义放大覆盖层：弹出半透明全屏 GIF（gif 用 image 标签渲染、自动循环播放，规避原生 video 在真机误退出的 bug）

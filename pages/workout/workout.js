@@ -5,7 +5,7 @@
 //   → 下一动作自动展开；全部完成保存入库。顶栏"完成"可随时结束并保存。
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
-const { media } = require('../../utils/media.js');
+const { media, resolveUrl } = require('../../utils/media.js');
 const exercises = require('../../utils/exercises.js');
 const workoutSession = require('../../utils/workoutSession.js');
 
@@ -94,6 +94,7 @@ Page({
     addFiltered: [],
     replaceFullLen: 0,
     addFullLen: 0,
+    replBodyH: 0,            // 浮层 scroll-view 确定高度(px)，真机用 JS 实测，避免 flex 高度对 scroll-view 失效导致只显示几项
     finished: false,
     // 添加动作
     showAdd: false,
@@ -493,9 +494,9 @@ Page({
         name: x.name,
         nameZh: x.nameZh || '',
         category: x.category || '',
-        image: x.image ? media(x.image) : ''
+        image: x.image ? media(x.image) : '',
+        video: x.video ? media(x.video) : ''   // 浮层缩略图优先用 GIF 演示
       }));
-    (store.get().favorites || []).forEach(id => { favs[id] = true; });
     this.setData({
       showReplace: true,
       replaceAi: ai,
@@ -504,6 +505,7 @@ Page({
       replKeyword: '',
       replCat: '全部'
     });
+    this.measureReplBody();
     this.applyReplFilter('replace');
   },
   closeReplace() { this.setData({ showReplace: false }); },
@@ -569,14 +571,29 @@ Page({
         name: x.name,
         nameZh: x.nameZh || '',
         category: x.category || '',
-        image: x.image ? media(x.image) : ''
+        image: x.image ? media(x.image) : '',
+        video: x.video ? media(x.video) : ''   // 浮层缩略图优先用 GIF 演示
       }));
-    (store.get().favorites || []).forEach(id => { favs[id] = true; });
     this.setData({ showAdd: true, replKeyword: '', replCat: '全部' });
+    this.measureReplBody();
     this.applyReplFilter('add');
   },
   closeAdd() { this.setData({ showAdd: false }); },
 
+  // 实测窗口高度，给浮层 scroll-view 一个确定的 px 高度。
+  // 真机上 scroll-view 用 flex:1 经常拿不到稳定高度 → 高度塌陷、只露几项且滚不动；
+  // 改为 JS 实测 windowHeight 按 70vh 减去头部估算高度，直接给 px 高度最可靠。
+  measureReplBody() {
+    let info;
+    try { info = (wx.getWindowInfo && wx.getWindowInfo()) || wx.getSystemInfoSync(); }
+    catch (e) { info = null; }
+    const winH = (info && (info.windowHeight || info.screenHeight)) || 0;
+    const winW = (info && info.windowWidth) || 375;
+    if (!winH) { this.setData({ replBodyH: 0 }); return; }
+    const headerPx = 260 * winW / 750;                 // 标题+搜索框+分类 chips 估算高度(rpx→px)
+    const bodyPx = Math.max(220, winH * 0.7 - headerPx); // 浮层整体 70vh 减去头部
+    this.setData({ replBodyH: Math.round(bodyPx) });
+  },
   // 浮层搜索框输入
   onReplSearch(e) {
     this.setData({ replKeyword: e.detail.value });
@@ -680,6 +697,37 @@ Page({
     });
   },
 
+  // 底部「删除训练」→ 放弃并清除本次训练（不保存）、清空全局计时、回到训练选择
+  deleteWorkout() {
+    wx.showModal({
+      title: '删除本次训练',
+      content: '将清空全部动作、训练进度与计时，且不会保存。确定删除？',
+      confirmText: '删除',
+      confirmColor: '#F2545B',
+      success: (r) => { if (r.confirm) this._doDeleteWorkout(); }
+    });
+  },
+  _doDeleteWorkout() {
+    // 1. 停止并清空全局训练计时（冻结计时 + 清 interval）
+    this.pauseWorkoutClock();
+    this._woElapsed = 0;
+    this.setData({ workoutClock: '00:00' });
+    // 2. 关闭可能存在的组间/训练计时弹窗并清其定时器
+    this.clearTrainTimer();
+    this.clearRest();
+    this.setData({ showTrain: false, showRest: false });
+    // 3. 清除全局会话（隐藏其它 tab 的悬浮计时窗）
+    workoutSession.clear();
+    // 4. 清空本次训练计划（selectedActions）
+    store.clearSelected();
+    // 5. 标记已结束，避免 onUnload/onHide 重新快照恢复会话
+    this._finished = true;
+    // 6. 回到训练选择页（与「完成」同样的退出路径）
+    wx.navigateBack({
+      fail: () => { wx.switchTab({ url: '/pages/training/training' }); }
+    });
+  },
+
   // 缩略图点击：有视频则放大播放，否则预览原图
   openHero(e) {
     const ai = Number(e.currentTarget.dataset.ai);
@@ -688,7 +736,8 @@ Page({
     if (a.video) {
       this.setData({ showVideoOverlay: true, overlayVideo: a.video, overlayPoster: a.image });
     } else if (a.image) {
-      wx.previewImage({ current: a.image, urls: [a.image] });
+      // a.image 可能是 cloud:// 文件 ID，previewImage 只认 HTTPS，先解析
+      resolveUrl(a.image, (u) => wx.previewImage({ current: u, urls: [u] }));
     }
   },
   closeVideoOverlay() { this.setData({ showVideoOverlay: false }); },

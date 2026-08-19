@@ -6,7 +6,7 @@
     <block wx:if="{{!loggedIn}}">
       <view class="av">{{avatarText}}</view>
       <view class="ph-text">
-        <view class="pn">欢迎使用 衡力健身记录</view>
+        <view class="pn">欢迎使用 衡砺健身记录</view>
         <view class="ps">登录后完善个人健康档案</view>
       </view>
       <button class="login-btn" bindtap="wechatLogin">登录</button>
@@ -28,7 +28,7 @@
   <view class="pstats">
     <view class="pv"><view class="pv-n tnum">{{profile.fitnessDays}}</view><view class="pv-k">总训练</view></view>
     <view class="pv"><view class="pv-n tnum">{{streak}}</view><view class="pv-k">连续天</view></view>
-    <view class="pv"><view class="pv-n tnum">{{favCount}}</view><view class="pv-k">收藏</view></view>
+    <view class="pv pv-tap" hover-class="pv-press" bindtap="goFavorites"><view class="pv-n tnum">{{favCount}}</view><view class="pv-k">收藏 ›</view></view>
   </view>
 
   <!-- 健康概览（当前目标 / 体重 / 身高 / BMI） -->
@@ -71,7 +71,8 @@
     <view class="mi" bindtap="goPlan"><view class="mi-ic"><icon name="plan" size="40"/></view><view class="mi-t">我的计划</view><view class="mi-ar">›</view></view>
     <view class="mi" bindtap="goTrainRecords"><view class="mi-ic"><icon name="train" size="40"/></view><view class="mi-t">训练日报</view><view class="mi-ar">›</view></view>
     <view class="mi" bindtap="goSettings"><view class="mi-ic"><icon name="goal" size="40"/></view><view class="mi-t">体重目标</view><view class="mi-ar">›</view></view>
-    <view class="mi" bindtap="comingSoon" data-act="关于"><view class="mi-ic"><icon name="info" size="40"/></view><view class="mi-t">关于 / 媒体署名</view><view class="mi-ar">›</view></view>
+    <view class="mi" bindtap="openDataMgr"><view class="mi-ic"><icon name="settings" size="40"/></view><view class="mi-t">数据管理</view><view class="mi-ar">›</view></view>
+    <view class="mi" bindtap="goPrivacy"><view class="mi-ic"><icon name="info" size="40"/></view><view class="mi-t">隐私政策</view><view class="mi-ar">›</view></view>
   </view>
 
   <!-- 媒体署名 -->
@@ -81,4 +82,36 @@
   </view>
 
   <view class="bottom-gap" />
+
+  <!-- 数据管理面板（底部弹出：导出 / 导入 / 清除，无图标） -->
+  <view class="dm-mask" wx:if="{{showDataMgr}}" bindtap="closeDataMgr">
+    <view class="dm-sheet" catchtap="stopTap">
+      <view class="dm-head">
+        <text class="dm-title">数据管理</text>
+        <view class="dm-close" bindtap="closeDataMgr">✕</view>
+      </view>
+      <view class="dm-list">
+        <view class="dm-item" bindtap="exportData"><text class="dm-t">导出训练数据</text><text class="dm-ar">›</text></view>
+        <view class="dm-item" bindtap="importData"><text class="dm-t">导入训练数据</text><text class="dm-ar">›</text></view>
+        <view class="dm-item danger" bindtap="clearLocalData"><text class="dm-t">清除本机数据</text><text class="dm-ar">›</text></view>
+      </view>
+      <view class="dm-hint">导出可生成备份文件，换设备后通过导入恢复全部数据</view>
+    </view>
+  </view>
+
+  <!-- 导出：转发文件面板（shareFileMessage 必须在用户 TAP 回调中调用） -->
+  <view class="dm-mask" wx:if="{{showExportShare}}" bindtap="closeExportShare">
+    <view class="dm-sheet export-share-sheet" catchtap="stopTap">
+      <view class="dm-head">
+        <text class="dm-title">备份已生成</text>
+        <view class="dm-close" bindtap="closeExportShare">✕</view>
+      </view>
+      <view class="export-share-body">
+        <view class="export-share-icon">📦</view>
+        <text class="export-share-name">hilife-backup.txt</text>
+        <text class="export-share-hint">点击下方按钮将备份文件发送给好友或文件传输助手</text>
+        <button class="export-share-btn" bindtap="doShareFile">转发文件</button>
+      </view>
+    </view>
+  </view>
 </view>

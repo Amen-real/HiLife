@@ -108,7 +108,10 @@
         <view class="cal-modal-head">
           <view class="cal-nav" bindtap="prevMonth">‹</view>
           <view class="cal-title">{{calTitle}}</view>
-          <view class="cal-nav" bindtap="nextMonth">›</view>
+          <view class="cal-head-right">
+            <view class="cal-nav" bindtap="nextMonth">›</view>
+            <view class="cal-close" catchtap="closeCalendar">✕</view>
+          </view>
         </view>
         <view class="cal-week">
           <text class="cal-wk">日</text><text class="cal-wk">一</text><text class="cal-wk">二</text><text class="cal-wk">三</text><text class="cal-wk">四</text><text class="cal-wk">五</text><text class="cal-wk">六</text>
@@ -181,10 +184,10 @@
     <view wx:else class="card plan-item plan-empty">
       <view class="pi-thumb"><icon name="plan" size="48"/></view>
       <view class="pi-body">
-        <view class="pi-name">还没有训练计划</view>
-        <view class="pi-meta">创建计划，首页一眼看到今天练什么</view>
+      <view class="pi-name">今天还没选训练</view>
+      <view class="pi-meta">去挑选或创建你的训练计划</view>
       </view>
-      <view class="btn-secondary plan-btn-sm" hover-class="btn-hover" bindtap="goPlan">去创建</view>
+      <view class="btn-secondary plan-btn-sm" hover-class="btn-hover" bindtap="goPlan">去选择</view>
     </view>
   </view>
 

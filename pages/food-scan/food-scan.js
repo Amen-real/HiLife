@@ -140,6 +140,7 @@ Page({
   },
 
   async analyzePhoto(tempFilePath) {
+    this.setData({ loading: true, mode: 'camera', photo: null });
     wx.showLoading({ title: '识别中...' });
     try {
       const raw = await cs.analyzeImage(tempFilePath);
@@ -165,6 +166,7 @@ Page({
         showCancel: false
       });
     } finally {
+      this.setData({ loading: false });
       wx.hideLoading();
     }
   },

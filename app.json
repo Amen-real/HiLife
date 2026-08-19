@@ -11,12 +11,14 @@
     "pages/workout/workout",
     "pages/train-detail/train-detail",
     "pages/food-vision/food-vision",
-    "pages/plan/plan"
+    "pages/plan/plan",
+    "pages/favorites/favorites",
+    "pages/privacy/privacy"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1AA885",
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "衡力健身记录",
+    "navigationBarTitleText": "衡砺健身记录",
     "backgroundColor": "#E5FBF5",
     "backgroundColorTop": "#1AA885",
     "backgroundColorBottom": "#FFF1E8"

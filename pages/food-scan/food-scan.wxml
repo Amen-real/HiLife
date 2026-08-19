@@ -121,6 +121,66 @@
     </view>
   </block>
 
-  <view wx:if="{{loading}}" class="loading-tip">加载中…</view>
+  <!-- 骨架屏：商品详情加载中 -->
+  <block wx:if="{{loading && mode === 'product'}}">
+    <view class="card detail">
+      <view class="detail-head">
+        <view class="sk sk-detail-img"></view>
+        <view class="detail-meta">
+          <view class="sk sk-line w70"></view>
+          <view class="sk sk-line w50"></view>
+          <view class="sk-badges">
+            <view class="sk sk-badge"></view>
+            <view class="sk sk-badge"></view>
+          </view>
+        </view>
+      </view>
+      <view class="section-title">每 100g 营养</view>
+      <view class="nutri">
+        <view class="nutri-item" wx:for="{{[1,2,3,4,5,6]}}" wx:key="*this">
+          <view class="sk sk-val"></view>
+          <view class="sk sk-lab"></view>
+        </view>
+      </view>
+      <view class="section-title">记录到今日饮食</view>
+      <view class="form-row">
+        <view class="sk sk-line w30"></view>
+        <view class="sk sk-picker"></view>
+      </view>
+      <view class="sk sk-btn"></view>
+    </view>
+  </block>
+
+  <!-- 骨架屏：拍照识别加载中 -->
+  <block wx:if="{{loading && mode === 'camera'}}">
+    <view class="card detail">
+      <view class="section-title">AI 拍照识别结果</view>
+      <view class="sk sk-photo-name"></view>
+      <view class="sk sk-photo-kcal"></view>
+      <view class="sk sk-line w50"></view>
+      <view class="sk sk-conf"></view>
+      <view class="section-title">记录到今日饮食</view>
+      <view class="form-row">
+        <view class="sk sk-line w30"></view>
+      </view>
+      <view class="sk sk-btn"></view>
+    </view>
+  </block>
+
+  <!-- 骨架屏：名称搜索加载中 -->
+  <block wx:if="{{loading && mode === 'search'}}">
+    <view class="card">
+      <view class="section-title">搜索结果（点选查看营养）</view>
+      <view class="res" wx:for="{{[1,2,3]}}" wx:key="*this">
+        <view class="sk sk-res-img"></view>
+        <view class="res-info">
+          <view class="sk sk-line w70"></view>
+          <view class="sk sk-line w50"></view>
+        </view>
+        <view class="sk sk-ns"></view>
+      </view>
+    </view>
+  </block>
+
   <view class="bottom-gap" />
 </view>

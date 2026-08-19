@@ -1,0 +1,48 @@
+<!-- pages/favorites/favorites.wxml —— 我的收藏：列出已收藏的动作，点击查看详情 / 可取消收藏 -->
+<view class="page">
+
+  <view class="head">
+    <text class="title">我的收藏</text>
+    <text class="sub">共 {{list.length}} 个动作</text>
+  </view>
+
+  <!-- 动作双排网格 -->
+  <view class="action-list">
+    <view
+      wx:for="{{list}}"
+      wx:key="id"
+      class="action-card"
+      hover-class="ac-press"
+      data-id="{{item.id}}"
+      bindtap="tapAction"
+    >
+      <view class="action-thumb">
+        <image wx:if="{{item.image}}" class="action-img" src="{{item.image}}" mode="aspectFill" lazy-load />
+        <text wx:else class="action-emoji">{{item.emoji}}</text>
+        <view wx:if="{{item.video}}" class="play">GIF</view>
+        <view
+          class="fav on"
+          hover-class="fav-press"
+          catchtap="toggleFav"
+          data-id="{{item.id}}"
+        >♥</view>
+      </view>
+      <view class="action-body">
+        <view class="action-name ellipsis">{{item.nameZh || item.name}}</view>
+        <view class="action-tags">
+          <text class="tag tag-primary">{{item.part || item.category}}</text>
+          <text wx:if="{{item.equip}}" class="tag">{{item.equip}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view wx:if="{{list.length === 0}}" class="empty">
+      <view class="empty-emoji">♡</view>
+      <view class="empty-title">还没有收藏动作</view>
+      <view class="empty-sub">在训练页的动作卡片上点亮 ♡，收藏的动作用会出现在这里</view>
+    </view>
+  </view>
+
+  <view class="bottom-gap" />
+</view>

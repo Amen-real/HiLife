@@ -22,7 +22,8 @@ App({
     },
 
     // 今日训练
-    selectedActions: [],   // 已选动作对象数组
+    selectedActions: [],   // 已选动作对象数组（用户每日自行选择的「今日计划」）
+    planDate: '',          // selectedActions 所属日期：跨天自动清空，保证每天重新选择
     restTimer: 90,         // 休息计时（秒）
 
     // 训练计划
@@ -77,9 +78,29 @@ App({
       Object.assign(this.globalData, saved);
     }
 
+    // 每日重置「今日训练计划」：跨天则清空上次选择的动作，要求用户每日自行选择（避免默认沿用上次）
+    const now = new Date();
+    const pad = n => (n < 10 ? '0' + n : '' + n);
+    const todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+    if (this.globalData.planDate !== todayStr) {
+      this.globalData.selectedActions = [];
+      this.globalData.planDate = todayStr;
+      this.persist();
+    }
+
     // 开程序提示登录：未登录时弹一次性引导（「我的」页可随时登录）
     // 关键：onLaunch 内 getApp() 不可靠，必须把已恢复登录态的 this 传入，否则已登录用户也会被误弹
     auth.promptLoginOnLaunch(this);
+
+    // 隐私授权（基础库 2.32.3+ 强制）：首次触发隐私相关接口前，微信弹官方授权窗。
+    // 需先在公众平台「设置 → 服务内容声明 → 用户隐私保护指引」填写并发布，否则可能不弹或报错。
+    if (wx.requirePrivacyAuthorize) {
+      wx.requirePrivacyAuthorize({
+        success: () => { console.log('[privacy] 用户已同意隐私政策'); },
+        fail: () => { console.warn('[privacy] 用户拒绝隐私授权'); },
+        complete: () => {}
+      });
+    }
   },
 
   // 统一持久化

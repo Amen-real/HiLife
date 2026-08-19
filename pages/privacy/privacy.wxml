@@ -1,0 +1,39 @@
+<!-- pages/privacy/privacy.wxml -->
+<view class="page">
+  <view class="sec">
+    <view class="h">一、我们收集的信息</view>
+    <view class="p">为了提供健身记录、饮食识别与体重追踪服务，本小程序会收集以下信息：</view>
+    <view class="p">· 身体数据：性别、身高、目标体重、当前体重，用于计算进度与营养建议；</view>
+    <view class="p">· 训练记录：你添加的动作、组数、次数与训练日志；</view>
+    <view class="p">· 饮食照片：你通过相册或摄像头选择的餐食图片，用于 AI 识别卡路里（图片仅用于识别）；</view>
+    <view class="p">· 收藏与自建动作：你标记收藏的动作及自定义动作；</view>
+    <view class="p">· 登录信息：若你使用微信登录，获取昵称与头像。</view>
+  </view>
+
+  <view class="sec">
+    <view class="h">二、信息的使用</view>
+    <view class="p">上述信息仅用于在本设备生成本人的健身与饮食记录、进度展示与建议，不会用于广告或营销。</view>
+  </view>
+
+  <view class="sec">
+    <view class="h">三、信息的存储与安全</view>
+    <view class="p">你的数据默认存储在你的微信账号本地及微信云开发环境中，仅你本人可访问。我们采取合理措施保护数据安全，请妥善保管你的设备。</view>
+  </view>
+
+  <view class="sec">
+    <view class="h">四、第三方服务</view>
+    <view class="p">饮食照片识别依赖微信云开发提供的视觉识别能力；媒体资源（动作图片 / 演示）由云存储或 CDN 提供。相关数据传输受对应服务商的安全保护。</view>
+  </view>
+
+  <view class="sec">
+    <view class="h">五、你的权利</view>
+    <view class="p">你可随时在「我的 → 数据管理」中导出、清除本机数据；可在微信「设置 → 隐私」中撤回授权、删除小程序使用记录。</view>
+  </view>
+
+  <view class="sec">
+    <view class="h">六、联系我们</view>
+    <view class="p">如对本政策有疑问，可通过小程序内反馈渠道联系开发者。</view>
+  </view>
+
+  <view class="updated">最近更新：2026-08-18</view>
+</view>

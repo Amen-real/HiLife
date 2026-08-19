@@ -36,7 +36,7 @@ function requireLogin() {
 function promptLoginOnLaunch(appInstance) {
   if (isLoggedIn(appInstance)) return;
   wx.showModal({
-    title: '欢迎使用 衡力健身记录',
+    title: '欢迎使用 衡砺健身记录',
     content: '登录后你的训练、饮食与健康数据将保存在本机，支持随时查看与回放。',
     confirmText: '去登录',
     cancelText: '先逛逛',

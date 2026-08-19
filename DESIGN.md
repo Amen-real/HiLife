@@ -1,4 +1,4 @@
-# DESIGN.md — 衡力健身记录 · 微信小程序设计系统
+# DESIGN.md — 衡砺健身记录 · 微信小程序设计系统
 
 > 运动健身类微信小程序设计规范。视觉语言基于真实数据集 `hasaneyldrm/exercises-dataset`（1324 条动作，180×180 缩略图，**媒体 © Gym visual 须保留署名**，教学文本 MIT）。
 > 本文件供 Cursor / Claude Code / Google Stitch 等 AI 代理直接消费，所有数值精确、可直接落地。

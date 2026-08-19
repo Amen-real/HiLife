@@ -153,10 +153,36 @@ Page({
     if (this._editId) {
       store.updatePlan(this._editId, { name, actions });
       wx.showToast({ title: '已更新', icon: 'success' });
+      this._finishCreate();
     } else {
-      store.addPlan({ name, actions });
-      wx.showToast({ title: '已创建', icon: 'success' });
+      const created = store.addPlan({ name, actions });
+      // 创建成功不直接默认为“使用中”，让用户确认是否作为今日计划
+      wx.showModal({
+        title: '创建成功',
+        content: '是否立即使用「' + name + '」作为今日训练计划？',
+        confirmText: '确认使用',
+        confirmColor: '#1AA885',
+        cancelText: '暂不',
+        success: (res) => {
+          if (res.confirm) this._confirmUse(created.id);
+          else this._finishCreate();
+        }
+      });
     }
+  },
+
+  // 确认使用：设为当前计划 + 注入今日训练（首页「今日训练计划」随即显示），再跳回首页
+  _confirmUse(id) {
+    const plan = store.get().trainingPlans.find(p => p.id === id);
+    if (!plan) { this._finishCreate(); return; }
+    store.setActivePlan(id);
+    store.applyPlanToSelected(plan);
+    this._finishCreate();
+    wx.switchTab({ url: '/pages/home/home' });
+  },
+
+  // 收尾：清空表单并回到列表（编辑/取消/确认共用，避免重复）
+  _finishCreate() {
     this._editId = null;
     this._planName = '';
     this._pickedDetails = {};
@@ -166,9 +192,16 @@ Page({
 
   setActive(e) {
     if (!auth.requireLogin()) return;
-    store.setActivePlan(e.currentTarget.dataset.id);
+    const id = e.currentTarget.dataset.id;
+    const plan = store.get().trainingPlans.find(p => p.id === id);
+    if (!plan) return;
+    store.setActivePlan(id);
+    // 关键修复：首页「今日训练计划」读取的是 selectedActions，仅 setActivePlan 不会在首页显示；
+    // 必须 applyPlanToSelected 把计划注入今日训练，首页才会显示动作
+    store.applyPlanToSelected(plan);
     this.loadPlans();
-    wx.showToast({ title: '已设为当前', icon: 'none' });
+    wx.showToast({ title: '已设为今日计划', icon: 'success' });
+    wx.switchTab({ url: '/pages/home/home' });
   },
   startPlan(e) {
     if (!auth.requireLogin()) return;

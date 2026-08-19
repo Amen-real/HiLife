@@ -2,7 +2,7 @@
 .page { padding: 24rpx 32rpx; }
 
 /* 区块标题沿用全局 .section-title（大写灰标）→ 覆盖为预览风格的中性小标题 */
-.section-title { font-size: 30rpx; font-weight: 700; color: var(--text); margin: 8rpx 0 18rpx; }
+.section-title { font-size: var(--fs-head); font-weight: 700; color: var(--text); margin: 8rpx 0 18rpx; }
 
 /* —— 虚线扫描框（对齐预览 .scan） —— */
 .scan {
@@ -17,20 +17,21 @@
 .scan .cam {
   width: 96rpx; height: 96rpx; border-radius: 24rpx;
   background: var(--primary); display: flex; align-items: center; justify-content: center;
-  font-size: 48rpx;
+  font-size: var(--fs-page);
 }
-.scan .stxt { font-size: 30rpx; font-weight: 700; color: var(--primary-deep); }
-.scan .ssub { font-size: 24rpx; color: var(--text-sub); }
+.scan .stxt { font-size: var(--fs-head); font-weight: 700; color: var(--primary-deep); }
+.scan .ssub { font-size: var(--fs-label); color: var(--text-sub); }
 .scan-alt {
-  text-align: center; font-size: 26rpx; color: var(--text-sub);
+  display: flex; align-items: center; justify-content: center; gap: 10rpx;
+  text-align: center; font-size: var(--fs-body); color: var(--text-sub);
   padding: 18rpx 0 8rpx;
 }
 
-.loading, .error { text-align: center; padding: 30rpx; font-size: 28rpx; color: var(--text-sub); }
+.loading, .error { text-align: center; padding: 30rpx; font-size: var(--fs-body); color: var(--text-sub); }
 .error { color: var(--error); }
 
 .mock-tip {
-  background: var(--accent-soft); color: #C2410C; font-size: 24rpx;
+  background: var(--accent-soft); color: #C2410C; font-size: var(--fs-label);
   padding: 16rpx 20rpx; border-radius: 16rpx; margin: 0 0 20rpx; line-height: 1.5;
 }
 
@@ -40,43 +41,43 @@
 /* 本餐合计 */
 .macro-grid { display: flex; margin-top: 8rpx; }
 .macro { flex: 1; text-align: center; }
-.m-num { font-size: 40rpx; font-weight: 700; color: var(--primary); font-feature-settings: "tnum" 1; }
-.m-cap { font-size: 22rpx; color: var(--text-sub); margin-top: 4rpx; }
+.m-num { font-size: var(--fs-section); font-weight: 700; color: var(--primary); font-feature-settings: "tnum" 1; }
+.m-cap { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 4rpx; }
 
 /* —— 食物行（对齐预览 .food：缩略图 + 名称/元信息 + 卡路里） —— */
 .food { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; }
 .f-thumb {
   width: 84rpx; height: 84rpx; border-radius: 20rpx; flex: 0 0 auto;
   background: var(--bg); display: flex; align-items: center; justify-content: center;
-  font-size: 44rpx;
+  font-size: var(--fs-page);
 }
 .f-body { flex: 1; min-width: 0; }
-.f-name { font-size: 30rpx; font-weight: 600; color: var(--text); }
-.f-meta { font-size: 22rpx; color: var(--text-sub); margin-top: 6rpx; }
+.f-name { font-size: var(--fs-head); font-weight: 600; color: var(--text); }
+.f-meta { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 6rpx; }
 .f-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10rpx; flex: 0 0 auto; }
-.f-cal { font-size: 32rpx; font-weight: 700; color: var(--accent); font-feature-settings: "tnum" 1; }
+.f-cal { font-size: var(--fs-head); font-weight: 700; color: var(--accent); font-feature-settings: "tnum" 1; }
 
 .btn-record {
-  background: var(--primary); color: #fff; font-size: 24rpx;
+  background: var(--primary); color: #fff; font-size: var(--fs-label);
   padding: 8rpx 26rpx; border-radius: 999rpx; font-weight: 600;
 }
 
 /* 批量记录条 */
 .record-bar { display: flex; align-items: center; gap: 16rpx; margin-bottom: 20rpx; }
 .seg { flex: 1; display: flex; background: var(--bg); border-radius: 999rpx; padding: 6rpx; }
-.seg-item { flex: 1; text-align: center; font-size: 24rpx; color: var(--text-sub); padding: 12rpx 0; border-radius: 999rpx; }
+.seg-item { flex: 1; text-align: center; font-size: var(--fs-label); color: var(--text-sub); padding: 12rpx 0; border-radius: 999rpx; }
 .seg-item.on { background: var(--glass-strong); color: var(--primary); font-weight: 700; box-shadow: var(--shadow-sm); }
-.btn-all { background: var(--text); color: #fff; font-size: 26rpx; padding: 16rpx 28rpx; border-radius: 999rpx; font-weight: 600; }
+.btn-all { background: var(--text); color: #fff; font-size: var(--fs-body); padding: 16rpx 28rpx; border-radius: 999rpx; font-weight: 600; }
 
-.note { font-size: 22rpx; color: var(--text-sub); padding: 8rpx 12rpx; line-height: 1.5; }
-.empty { text-align: center; color: var(--text-sub); font-size: 26rpx; padding: 30rpx; }
+.note { font-size: var(--fs-caption); color: var(--text-sub); padding: 8rpx 12rpx; line-height: 1.5; }
+.empty { text-align: center; color: var(--text-sub); font-size: var(--fs-body); padding: 30rpx; }
 
 /* 今日合计汇总卡（对齐预览） */
 .total-card {
   display: flex; justify-content: space-between; align-items: center;
   padding: 28rpx 32rpx;
 }
-.tc-label { font-size: 28rpx; color: var(--text-sub); }
-.tc-value { font-size: 40rpx; font-weight: 700; color: var(--accent); font-feature-settings: "tnum" 1; }
+.tc-label { font-size: var(--fs-body); color: var(--text-sub); }
+.tc-value { font-size: var(--fs-section); font-weight: 700; color: var(--accent); font-feature-settings: "tnum" 1; }
 
 .bottom-gap { height: 20rpx; }

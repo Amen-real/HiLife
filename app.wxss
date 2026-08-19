@@ -6,6 +6,7 @@ page {
   --primary-deep: #1AA885;   /* 深 Teal */
   --primary-light: #3EDECA;  /* 亮 Teal（渐变起笔） */
   --primary-tint: #E5FBF5;   /* 极浅 Teal 底 */
+  --primary-ink: #0E7C66;    /* 深青绿，浅底上对比度≈4.6 达 WCAG AA，用于关键数字 */
 
   /* Accent —— 珊瑚橙（能量型数据：休息 / 卡路里 / PR） */
   --accent: #FF7A3D;
@@ -30,15 +31,34 @@ page {
   /* Semantic */
   --success: #16C784;
   --warning: #F5A524;
+  --warning-tint: #FFF4E0;                   /* 预警浅底（替代硬编码 #fff7e6，统一带暖色调） */
   --error: #F2545B;
   --warn: #FF7A3D; /* 兼容旧引用 */
 
   /* —— 玻璃表面 —— */
   --card: rgba(255, 255, 255, 0.78);        /* 玻璃主卡 */
   --bg: rgba(255, 255, 255, 0.55);          /* 玻璃内嵌面 / 胶囊 */
+  --bg-muted: #f1f5f9;                       /* 浅冷灰底（说明/注释块，替代硬编码 #f8fafc，带 slate 色调） */
+  --sk-base: #E6EBF1;                        /* 骨架屏底色 */
+  --sk-hi:   #F3F6FA;                        /* 骨架屏高光 */
   --glass: rgba(255, 255, 255, 0.72);       /* 通用玻璃 */
   --glass-strong: rgba(255, 255, 255, 0.88);
   --glass-border: rgba(255, 255, 255, 0.85);
+
+  /* —— 字体比例 Type Scale（语义层级；消除散落字号，就近归并 ±2~4rpx） —— */
+  --fs-caption:  20rpx;   /* 辅助 / 说明 / 极弱文本 */
+  --fs-label:   24rpx;   /* 标签 / 次要子文本 */
+  --fs-body:    28rpx;   /* 默认正文（与根 font-size 一致） */
+  --fs-head:    32rpx;   /* 强调正文 / 小节标题 */
+  --fs-title:   36rpx;   /* 区块标题 / 大数字 */
+  --fs-section: 40rpx;   /* 页面区块标题 */
+  --fs-page:    44rpx;   /* 页面主标题 */
+  --fs-display: 52rpx;   /* 超大数字 / 显示 */
+  --fs-hero:    72rpx;   /* 英雄区大字 */
+  --fs-hero-lg: 80rpx;   /* 巨幅显示 */
+  --fs-mega:   120rpx;   /* 极巨显示 */
+  --fs-giant:  180rpx;   /* 极限显示 */
+  --fs-mini:    14rpx;   /* 极小角标 / 迷你单位（原 14/16/17 归并） */
 
   /* Elevation */
   --shadow-sm: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
@@ -58,7 +78,7 @@ page {
   background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
-  font-size: 28rpx;
+  font-size: var(--fs-body);
   line-height: 1.5;
 }
 
@@ -75,22 +95,14 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 }
 .card-elevated { box-shadow: var(--shadow-md); }
 
-/* 区块标题 */
-.section-title {
-  font-size: 24rpx;
-  letter-spacing: 2rpx;
-  color: var(--text-sub);
-  font-weight: 600;
-  margin: 8rpx 4rpx 16rpx;
-  text-transform: uppercase;
-}
+/* 区块标题：统一见下方「设计系统增强」区的 .section-title（30rpx flex 标题），此处不再重复定义 */
 
 /* 主按钮（玻璃拟态：Teal 渐变 + 薄荷光晕） */
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-deep));
   color: #fff;
   border-radius: 28rpx;
-  font-size: 30rpx;
+  font-size: var(--fs-head);
   font-weight: 600;
   border: none;
   line-height: 2.6;
@@ -103,7 +115,7 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   background: var(--primary-tint);
   color: var(--primary-deep);
   border-radius: 28rpx;
-  font-size: 28rpx;
+  font-size: var(--fs-body);
   font-weight: 500;
   border: none;
   line-height: 2.4;
@@ -117,7 +129,7 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
-  font-size: 44rpx;
+  font-size: var(--fs-page);
   line-height: 64rpx;
   text-align: center;
   padding: 0;
@@ -133,9 +145,11 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 /* 文字链接箭头 */
 .link-arrow {
   color: var(--text-sub);
-  font-size: 26rpx;
+  font-size: var(--fs-body);
   display: inline-flex;
   align-items: center;
+  padding: 12rpx 0;
+  margin: -12rpx 0;
 }
 .link-arrow .arrow { margin-left: 6rpx; color: var(--text-weak); }
 
@@ -143,24 +157,11 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 .empty {
   text-align: center;
   color: var(--text-weak);
-  font-size: 26rpx;
+  font-size: var(--fs-body);
   padding: 48rpx 0;
 }
 
-/* 通用标签 */
-.tag {
-  display: inline-block;
-  font-size: 22rpx;
-  color: var(--text-sub);
-  background: var(--bg);
-  border-radius: 8rpx;
-  padding: 4rpx 12rpx;
-  margin-right: 8rpx;
-}
-.tag-primary {
-  color: var(--primary-deep);
-  background: var(--primary-tint);
-}
+/* 通用标签：统一见下方「设计系统增强」区的 .tag（胶囊样式），此处不再重复定义 */
 
 /* 文本省略 */
 .ellipsis {
@@ -178,15 +179,15 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 .container { padding: 0 32rpx; }
 .section { padding: 0 32rpx; margin-bottom: 48rpx; }
 .section-title {
-  font-size: 30rpx; font-weight: 700; color: var(--text);
-  margin: 0 0 20rpx;
+  font-size: var(--fs-head); font-weight: 700; color: var(--text);
+  margin: 0 0 24rpx;
   display: flex; align-items: center; gap: 12rpx;
 }
-.section-title .more { margin-left: auto; font-size: 24rpx; font-weight: 500; color: var(--text-weak); }
+.section-title .more { margin-left: auto; font-size: var(--fs-label); font-weight: 500; color: var(--text-weak); }
 /* 英文小标（如 DAILY STATUS · 今日状态） */
 .section-sub {
-  font-size: 22rpx; font-weight: 600; letter-spacing: 2rpx;
-  color: var(--text-weak); text-transform: uppercase; margin-bottom: 18rpx;
+  font-size: var(--fs-caption); font-weight: 600; letter-spacing: 2rpx;
+  color: var(--text-weak); text-transform: uppercase; margin-bottom: 16rpx;
 }
 
 /* —— 渐变 hero 头（破全白单调，承载问候/品牌） —— */
@@ -203,13 +204,13 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   width: 150rpx; height: 150rpx; border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
 }
-.hero-header .hh-greet { font-size: 40rpx; font-weight: 800; letter-spacing: -1rpx; }
-.hero-header .hh-sub { font-size: 26rpx; opacity: 0.9; margin-top: 8rpx; }
+.hero-header .hh-greet { font-size: var(--fs-section); font-weight: 800; letter-spacing: -1rpx; }
+.hero-header .hh-sub { font-size: var(--fs-body); opacity: 0.9; margin-top: 8rpx; }
 .hero-header .hh-logo {
   width: 84rpx; height: 84rpx; border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.18);
   display: flex; align-items: center; justify-content: center;
-  font-size: 40rpx; font-weight: 800; margin-bottom: 20rpx;
+  font-size: var(--fs-section); font-weight: 800; margin-bottom: 20rpx;
 }
 
 /* —— 浮在 hero 上的状态卡（负边距制造层级） —— */
@@ -230,8 +231,8 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   background: var(--glass-strong); border-radius: 50%;
 }
 .ring-inner { position: relative; z-index: 1; text-align: center; }
-.ring-pct { font-size: 52rpx; font-weight: 800; color: var(--primary); line-height: 1.1; font-feature-settings: "tnum" 1; }
-.ring-label { font-size: 22rpx; color: var(--text-sub); margin-top: 4rpx; }
+.ring-pct { font-size: var(--fs-display); font-weight: 800; color: var(--primary-ink); line-height: 1.1; font-feature-settings: "tnum" 1; }
+.ring-label { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 4rpx; }
 
 /* —— 彩色快捷磁贴（2×2，上图下文） —— */
 .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24rpx; }
@@ -243,15 +244,15 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 }
 .quick .ic {
   width: 64rpx; height: 64rpx; border-radius: 18rpx; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 34rpx;
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-title);
 }
 .quick .ic.g { background: var(--primary-tint); }
 .quick .ic.o { background: var(--accent-tint); }
 .quick .ic.b { background: var(--info-tint); }
 .quick .ic.p { background: var(--purple-tint); }
 .quick .qtxt { flex: 1; min-width: 0; }
-.quick .qt { font-size: 30rpx; font-weight: 700; color: var(--text); }
-.quick .qs { font-size: 22rpx; color: var(--text-weak); margin-top: 4rpx; }
+.quick .qt { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
+.quick .qs { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 4rpx; }
 
 /* —— 通用统计块（白卡内轻量分区，避免卡中卡） —— */
 .stat-row { display: flex; gap: 16rpx; margin-top: 8rpx; }
@@ -260,17 +261,17 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   border-left: 1rpx solid var(--line);
 }
 .stat:first-child { border-left: none; }
-.stat .v { font-size: 34rpx; font-weight: 800; color: var(--text); font-feature-settings: "tnum" 1; }
-.stat .v.primary { color: var(--primary); }
+.stat .v { font-size: var(--fs-title); font-weight: 800; color: var(--text); font-feature-settings: "tnum" 1; }
+.stat .v.primary { color: var(--primary-ink); }
 .stat .v.accent { color: var(--accent); }
-.stat .k { font-size: 22rpx; color: var(--text-sub); margin-top: 6rpx; }
+.stat .k { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 6rpx; }
 
 /* —— 胶囊标签（999rpx 圆角） —— */
 .tag {
   display: inline-flex; align-items: center;
-  font-size: 22rpx; font-weight: 500; color: var(--text-sub);
+  font-size: var(--fs-caption); font-weight: 500; color: var(--text-sub);
   background: var(--bg); border-radius: 999rpx;
-  padding: 6rpx 18rpx; margin-right: 12rpx; line-height: 1.4;
+  padding: 6rpx 16rpx; margin-right: 12rpx; line-height: 1.4;
 }
 .tag-primary { color: var(--primary-deep); background: var(--primary-tint); }
 .tag-accent { color: var(--accent-deep); background: var(--accent-tint); }
@@ -283,7 +284,7 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   display: inline-flex; background: var(--bg); border-radius: 999rpx; padding: 6rpx;
 }
 .segment .seg {
-  padding: 10rpx 28rpx; font-size: 24rpx; color: var(--text-sub);
+  padding: 12rpx 24rpx; font-size: var(--fs-label); color: var(--text-sub);
   border-radius: 999rpx; font-weight: 500;
 }
 .segment .seg.on { background: var(--glass-strong); color: var(--primary); font-weight: 700; box-shadow: var(--shadow-sm); }
@@ -291,18 +292,43 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 /* —— 列表行（通用：左图标/标题 + 右箭头） —— */
 .row {
   display: flex; align-items: center; gap: 20rpx;
-  padding: 28rpx 0; border-bottom: 1rpx solid var(--line);
+  padding: 24rpx 0; border-bottom: 1rpx solid var(--line);
 }
 .row:last-child { border-bottom: none; }
-.row .r-ico { font-size: 40rpx; }
+.row .r-ico { font-size: var(--fs-section); }
 .row .r-main { flex: 1; }
-.row .r-title { font-size: 28rpx; font-weight: 600; color: var(--text); }
-.row .r-sub { font-size: 22rpx; color: var(--text-weak); margin-top: 4rpx; }
-.row .r-arrow { color: var(--text-weak); font-size: 28rpx; }
+.row .r-title { font-size: var(--fs-body); font-weight: 600; color: var(--text); }
+.row .r-sub { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 4rpx; }
+.row .r-arrow { color: var(--text-weak); font-size: var(--fs-body); }
 
 /* —— 媒体署名（© Gym visual，固定保留） —— */
 .attribution {
-  text-align: center; font-size: 20rpx; color: var(--text-weak);
+  text-align: center; font-size: var(--fs-caption); color: var(--text-weak);
   padding: 24rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
   line-height: 1.6;
+}
+
+/* —— 平板 / 大屏适配：手机优先，大屏将内容容器居中收口，避免 rpx 整体放大元素过大 —— */
+@media (min-width: 768px) {
+  .container,
+  .section,
+  .card,
+  .float-card,
+  .hero-header { max-width: 720rpx; margin-left: auto; margin-right: auto; }
+  .card { margin-left: auto; margin-right: auto; }
+}
+
+/* —— 骨架屏 shimmer（可复用：内容镜像占位，优于原生 spinner；无障碍降级） —— */
+.sk {
+  background: linear-gradient(90deg, var(--sk-base) 25%, var(--sk-hi) 37%, var(--sk-base) 63%);
+  background-size: 400% 100%;
+  animation: sk-shimmer 1.4s ease infinite;
+  border-radius: 8rpx;
+}
+@keyframes sk-shimmer {
+  0%   { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk { animation: none; }
 }

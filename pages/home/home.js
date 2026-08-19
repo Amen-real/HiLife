@@ -108,36 +108,38 @@ Page({
 
     const pct = Math.round((done / 3) * 100);
 
-    // 今日训练计划：取当前计划，并比对今天全部训练场次算「今日进度」
-    // 注意：同一天可能有多场训练（如"再练一次"），需聚合所有场次的动作名，不能只看第一场
+    // 今日训练计划：取用户「今日自行选择」的动作（selectedActions，即训练页「本次训练」），
+    // 并比对今天全部训练场次算「今日进度」。
+    // 注意：改为每日自选自后，不再默认沿用持久化的「活跃计划」——selectedActions 在跨天时被 app.js 清空，
+    // 每天需用户到训练页选择（或点首页「开始训练」一键套用活跃计划注入）后才显示。
+    // 同一天可能有多场训练（如"再练一次"），需聚合所有场次的动作名，不能只看第一场
     let planInfo = { has: false, name: '', actions: [], total: 0, done: 0, finishedToday: false };
     let todayPlan = { has: false, name: '', emoji: '🏋️', total: 0, done: 0, minutes: 0, actions: [] };
-    const active = store.getActivePlan();
-    if (active && active.actions && active.actions.length) {
+    const sel = store.get().selectedActions || [];
+    if (sel.length) {
       const todayLogs = g.trainingLogs.filter(l => l.date === today);
       const doneNames = new Set();
       todayLogs.forEach(l => (l.actions || []).forEach(a => doneNames.add(a.name)));
       // 构造首页「今日训练计划」动作卡片（对齐参考 .plan-item：缩略图 + 名称 + 元信息 + 进度条 + 状态标签）
-      const actCards = active.actions.map(pa => {
-        // 计划动作只存了 actionId/名称/部位/组数等，没有 image/emoji —— 必须回查原始动作库补全
-        const src = store.planActionToTrain(pa); // 内置库 / 自建动作优先查找，返回含 image/emoji 的完整动作
-        const name = pa.nameZh || pa.name;
-        const emoji = src.emoji || categoryEmoji[pa.part || pa.category] || '🏋️';
+      const actCards = sel.map(a => {
+        const name = a.nameZh || a.name;
+        const emoji = a.emoji || categoryEmoji[a.part || a.category] || '🏋️';
+        const sets = a.sets || [];
+        const first = sets[0] || {};
         const metaParts = [];
-        if (pa.setsCount) metaParts.push(pa.setsCount + ' 组');
-        if (pa.reps != null && pa.reps !== '') metaParts.push(pa.reps + ' 次');
-        if (pa.weight != null && pa.weight !== '') metaParts.push(pa.weight + 'kg');
+        if (sets.length) metaParts.push(sets.length + ' 组');
+        if (first.reps != null && first.reps !== '') metaParts.push(first.reps + ' 次');
+        if (first.weight != null && first.weight !== '') metaParts.push(first.weight + 'kg');
         const isDone = doneNames.has(name);
-        // 左侧缩略图接入 CDN（Cloudflare R2）：/images/<id>.jpg → upscaled/ 高清版（thumb 当前返回原图，缩略待后续开启 Image Resizing）
-        const img = thumb(src.image, 200, 200);
+        // 左侧缩略图接入 CDN（Cloudflare R2）：
+        const img = thumb(a.image, 200, 200);
         return {
-          ...pa,
-          id: pa.actionId,
+          id: a.id,
           name, emoji, img,
-          image: src.image, // 回查出的相对路径，供详情页 media() 拼 CDN 大图（否则详情页退化为 emoji）
-          video: media(src.video || ''),
-          // 缩略图优先用 GIF 动图（src.video 相对路径），无则回退静态图
-          thumb: (src.video || src.image) ? media(src.video || src.image) : '',
+          image: a.image, // 相对路径，供详情页 media() 拼 CDN 大图（否则详情页退化为 emoji）
+          video: media(a.video || ''),
+          // 缩略图优先用 GIF 动图（a.video 相对路径），无则回退静态图
+          thumb: (a.video || a.image) ? media(a.video || a.image) : '',
           meta: metaParts.join(' · '),
           done: isDone,
           pct: isDone ? 100 : 0,
@@ -148,7 +150,7 @@ Page({
       const done = actCards.filter(a => a.done).length;
       planInfo = {
         has: true,
-        name: active.name,
+        name: '今日训练',
         actions: actCards,
         total: actCards.length,
         done: done,
@@ -158,8 +160,8 @@ Page({
       };
       todayPlan = {
         has: true,
-        name: active.name,
-        emoji: categoryEmoji[active.category] || '🏋️',
+        name: '今日训练',
+        emoji: '🏋️',
         total: actCards.length,
         done: done,
         minutes: Math.max(10, actCards.length * 4),
@@ -173,7 +175,7 @@ Page({
     const greeting = h < 6 ? '凌晨好' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : '晚上好';
     const nickname = (g.userInfo && g.userInfo.nickname) || '训练者';
     const wkName = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()];
-    const dateLine = wkName + ' · ' + (now.getMonth() + 1) + '月' + now.getDate() + '日 · 今日计划 ' + (planInfo.total || 3) + ' 项';
+    const dateLine = wkName + ' · ' + (now.getMonth() + 1) + '月' + now.getDate() + '日 · 今日计划 ' + (planInfo.total || 0) + ' 项';
 
     // 今日三项待打卡提示
     const statusTip = done < 3 ? ('还差 ' + (3 - done) + ' 项待打卡') : '今日三项全部完成 🎉';
