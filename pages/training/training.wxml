@@ -7,6 +7,16 @@
     <view class="create-btn" bindtap="openCreate">+ 创建动作</view>
   </view>
 
+  <!-- 训练复盘入口（与「我的」页菜单互为双入口，提升可见性） -->
+  <view class="review-entry" hover-class="re-press" bindtap="goReview">
+    <view class="re-ico"><icon name="idea" size="40"/></view>
+    <view class="re-body">
+      <view class="re-t">训练复盘</view>
+      <view class="re-s">单次 / 滚动 / 周 · 自动分析训练进展</view>
+    </view>
+    <view class="re-ar">›</view>
+  </view>
+
   <!-- 分类胶囊 chips（对齐预览） -->
   <scroll-view class="chips" scroll-x enable-flex>
     <view

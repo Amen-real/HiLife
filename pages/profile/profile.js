@@ -166,6 +166,9 @@ Page({
   // 点击「隐私政策」→ 进入隐私政策页查看完整内容
   goPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); },
 
+  // 点击「训练复盘」→ 进入复盘页（按记录数+是否有周期自动分流模式）
+  goReview() { wx.navigateTo({ url: '/pages/review/review' }); },
+
   comingSoon(e) {
     const act = (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.act) || '该功能';
     wx.showToast({ title: act + ' 开发中', icon: 'none' });

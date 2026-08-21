@@ -38,13 +38,15 @@ function presetSets(a) {
       weight: s.weight != null ? String(s.weight) : '',
       trainSec: s.trainSec || 0,
       restSec: s.restSec || 0,
+      // 保留计划里已记录的 RPE（向后兼容，无则空）
+      rpe: (s.rpe != null && s.rpe !== '') ? String(s.rpe) : '',
       warmup: !!s.warmup
     }));
   }
   const n = Math.max(1, Number(a.setsCount) || 1);
   const reps = a.reps != null && a.reps !== '' ? String(a.reps) : '';
   const weight = a.weight != null && a.weight !== '' ? String(a.weight) : '';
-  return Array.from({ length: n }, () => ({ reps, weight, trainSec: 0, restSec: 0, warmup: false }));
+  return Array.from({ length: n }, () => ({ reps, weight, trainSec: 0, restSec: 0, rpe: '', warmup: false }));
 }
 
 Page({
@@ -256,12 +258,26 @@ Page({
     this.setData({ ['actions[' + ai + '].sets[' + si + '].weight']: e.detail.value });
   },
 
+  // 每组 RPE 步进（1–10，空记录从 7 起调）：记录自觉费力度，供复盘努力度维度
+  stepRpe(e) {
+    const ai = Number(e.currentTarget.dataset.ai);
+    const si = Number(e.currentTarget.dataset.si);
+    const d = Number(e.currentTarget.dataset.d);
+    const set = this.data.actions[ai] && this.data.actions[ai].sets[si];
+    if (!set || set.done) return;
+    const base = (set.rpe !== '' && set.rpe != null) ? Number(set.rpe) : 7;
+    let v = base + d;
+    if (v < 1) v = 1;
+    if (v > 10) v = 10;
+    this.setData({ ['actions[' + ai + '].sets[' + si + '].rpe']: String(v) });
+  },
+
   // 展开卡底部「+ 新增一组」
   addSet(e) {
     const ai = Number(e.currentTarget.dataset.ai);
     const actions = this.data.actions.slice();
     const a = Object.assign({}, actions[ai]);
-    a.sets = a.sets.concat([{ reps: '', weight: '', trainSec: 0, restSec: 0, warmup: false }]);
+    a.sets = a.sets.concat([{ reps: '', weight: '', trainSec: 0, restSec: 0, rpe: '', warmup: false }]);
     actions[ai] = a;
     const stats = this.decorate(actions);
     this.setData({ actions, stats });
@@ -770,7 +786,9 @@ Page({
         reps: Number(s.reps) || 0,
         weight: Number(s.weight) || 0,
         trainSec: s.trainSec || 0,
-        restSec: s.restSec || 0
+        restSec: s.restSec || 0,
+        // 保留自觉费力度 RPE（空字符串表示未记录，复盘据此降级）
+        rpe: (s.rpe != null && s.rpe !== '') ? Number(s.rpe) : ''
       }))
     }));
     store.saveTrainingLog({ date: todayStr(), actions: logActions });

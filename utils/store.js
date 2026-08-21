@@ -185,7 +185,9 @@ const store = {
     const p = Object.assign({
       id: 'plan_' + Date.now().toString(36) + Math.floor(Math.random() * 1000),
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      // 周期规划（Phase 2）：可选 cycle 字段，向后兼容旧计划（无 cycle 照常工作）
+      cycle: (plan && plan.cycle) || null
     }, plan);
     g().trainingPlans.push(p);
     // 注意：创建计划不再自动设为“使用中”，交由用户在创建成功后确认（避免“创建即默认启用”）
@@ -224,7 +226,8 @@ const store = {
     const reps = pa.reps != null && pa.reps !== '' ? String(pa.reps) : '';
     const weight = pa.weight != null && pa.weight !== '' ? String(pa.weight) : '';
     const n = Math.max(1, Number(pa.setsCount) || 1);
-    const sets = Array.from({ length: n }, () => ({ reps, weight, trainSec: 0, restSec: 0 }));
+    // 预置 rpe 字段（默认空），供训练结束记录自觉费力度（RPE）——复盘/滚动对比的数据前提，向后兼容
+    const sets = Array.from({ length: n }, () => ({ reps, weight, trainSec: 0, restSec: 0, rpe: '' }));
     return {
       id: pa.actionId,
       name: pa.name,

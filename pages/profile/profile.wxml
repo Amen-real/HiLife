@@ -70,6 +70,7 @@
   <view class="menu card">
     <view class="mi" bindtap="goPlan"><view class="mi-ic"><icon name="plan" size="40"/></view><view class="mi-t">我的计划</view><view class="mi-ar">›</view></view>
     <view class="mi" bindtap="goTrainRecords"><view class="mi-ic"><icon name="train" size="40"/></view><view class="mi-t">训练日报</view><view class="mi-ar">›</view></view>
+    <view class="mi" bindtap="goReview"><view class="mi-ic"><icon name="idea" size="40"/></view><view class="mi-t">训练复盘</view><view class="mi-ar">›</view></view>
     <view class="mi" bindtap="goSettings"><view class="mi-ic"><icon name="goal" size="40"/></view><view class="mi-t">体重目标</view><view class="mi-ar">›</view></view>
     <view class="mi" bindtap="openDataMgr"><view class="mi-ic"><icon name="settings" size="40"/></view><view class="mi-t">数据管理</view><view class="mi-ar">›</view></view>
     <view class="mi" bindtap="goPrivacy"><view class="mi-ic"><icon name="info" size="40"/></view><view class="mi-t">隐私政策</view><view class="mi-ar">›</view></view>

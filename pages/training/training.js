@@ -355,5 +355,8 @@ Page({
       wx.showToast({ title: '已自动选好 ' + picks.length + ' 个动作', icon: 'none' });
     }
     wx.navigateTo({ url: '/pages/workout/workout' });
-  }
+  },
+
+  // 训练复盘入口（与「我的」页菜单互为双入口）
+  goReview() { wx.navigateTo({ url: '/pages/review/review' }); }
 });

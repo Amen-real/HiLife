@@ -65,38 +65,52 @@
           </view>
         </view>
 
-        <!-- 组行 -->
-        <view class="wo-set-row {{set.done ? 'done' : ''}} {{set.current ? 'current' : ''}}"
-              wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si">
-          <view class="wo-set-no {{set.warmup ? 'warmup' : 'normal'}}">{{set.warmup ? '热' : (si + 1)}}</view>
-          <view class="wo-input-wrap">
-            <text class="wo-input-unit">kg</text>
-            <input class="wo-set-input" type="digit" value="{{set.weight}}"
-              data-ai="{{ai}}" data-si="{{si}}" bindinput="onInputWeight" disabled="{{set.done}}" />
-          </view>
-          <view class="wo-input-wrap">
-            <text class="wo-input-unit">次</text>
-            <input class="wo-set-input" type="digit" value="{{set.reps}}"
-              data-ai="{{ai}}" data-si="{{si}}" bindinput="onInputReps" disabled="{{set.done}}" />
-          </view>
-          <!-- 每组计时开启时：⏱ 60 与 ✓ 合并在同一框内 + 已训练耗时 -->
-          <block wx:if="{{item.perSetTimer}}">
-            <view class="wo-set-check {{set.done ? 'checked' : ''}} wo-set-sw"
-                  data-ai="{{ai}}" data-si="{{si}}" catchtap="completeSetTap">
-              <block wx:if="{{!set.done}}">
-                <text class="wo-check-sw-ico">⏱</text>
-                <text class="wo-set-sw-sec">{{set.trainSec || 60}}</text>
-              </block>
-              <text wx:else>✓</text>
+        <!-- 组行 + 每组 RPE 录入（自觉费力度 1–10） -->
+        <block wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si">
+          <view class="wo-set-row {{set.done ? 'done' : ''}} {{set.current ? 'current' : ''}}">
+            <view class="wo-set-no {{set.warmup ? 'warmup' : 'normal'}}">{{set.warmup ? '热' : (si + 1)}}</view>
+            <view class="wo-input-wrap">
+              <text class="wo-input-unit">kg</text>
+              <input class="wo-set-input" type="digit" value="{{set.weight}}"
+                data-ai="{{ai}}" data-si="{{si}}" bindinput="onInputWeight" disabled="{{set.done}}" />
             </view>
-            <text class="wo-set-rest" wx:if="{{set.restSec}}">{{set.restSec > 9 ? set.restSec : '0' + set.restSec}}</text>
-          </block>
-          <!-- 未开启每组计时：原始 ✓ + ⋯ -->
-          <block wx:else>
-            <view class="wo-set-check {{set.done ? 'checked' : ''}}"
-                  data-ai="{{ai}}" data-si="{{si}}" catchtap="completeSetTap">✓</view>
-          </block>
-        </view>
+            <view class="wo-input-wrap">
+              <text class="wo-input-unit">次</text>
+              <input class="wo-set-input" type="digit" value="{{set.reps}}"
+                data-ai="{{ai}}" data-si="{{si}}" bindinput="onInputReps" disabled="{{set.done}}" />
+            </view>
+            <!-- 每组计时开启时：⏱ 60 与 ✓ 合并在同一框内 + 已训练耗时 -->
+            <block wx:if="{{item.perSetTimer}}">
+              <view class="wo-set-check {{set.done ? 'checked' : ''}} wo-set-sw"
+                    data-ai="{{ai}}" data-si="{{si}}" catchtap="completeSetTap">
+                <block wx:if="{{!set.done}}">
+                  <text class="wo-check-sw-ico">⏱</text>
+                  <text class="wo-set-sw-sec">{{set.trainSec || 60}}</text>
+                </block>
+                <text wx:else>✓</text>
+              </view>
+              <text class="wo-set-rest" wx:if="{{set.restSec}}">{{set.restSec > 9 ? set.restSec : '0' + set.restSec}}</text>
+            </block>
+            <!-- 未开启每组计时：原始 ✓ + ⋯ -->
+            <block wx:else>
+              <view class="wo-set-check {{set.done ? 'checked' : ''}}"
+                    data-ai="{{ai}}" data-si="{{si}}" catchtap="completeSetTap">✓</view>
+            </block>
+          </view>
+
+          <!-- 每组 RPE 步进器：− / 数值 / ＋（空记录显示 —，点 ＋ 从 7 起） -->
+          <view class="wo-rpe {{set.done ? 'done' : ''}}">
+            <view class="wo-rpe-l">
+              <text class="wo-rpe-label">RPE</text>
+              <text class="wo-rpe-cap">自觉费力度 {{si + 1}}</text>
+            </view>
+            <view class="wo-rpe-ctrl">
+              <view class="wo-rpe-btn" data-ai="{{ai}}" data-si="{{si}}" data-d="-1" catchtap="stepRpe">−</view>
+              <text class="wo-rpe-val {{(set.rpe !== '' && set.rpe != null) ? 'set' : ''}} {{(set.rpe !== '' && set.rpe != null && Number(set.rpe) >= 9) ? 'high' : ''}}">{{set.rpe !== '' && set.rpe != null ? set.rpe : '—'}}</text>
+              <view class="wo-rpe-btn" data-ai="{{ai}}" data-si="{{si}}" data-d="1" catchtap="stepRpe">＋</view>
+            </view>
+          </view>
+        </block>
 
         <!-- 展开底部操作 -->
         <view class="wo-ex-actions">

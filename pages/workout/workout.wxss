@@ -288,6 +288,62 @@
   text-align: center;
 }
 
+/* 每组 RPE 录入行（自觉费力度 1–10，供复盘努力度维度） */
+.wo-rpe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10rpx;
+  padding: 12rpx 24rpx;
+  background: rgba(46, 207, 176, 0.06);
+  border: 1rpx solid rgba(46, 207, 176, 0.18);
+  border-radius: 20rpx;
+}
+.wo-rpe.done { opacity: 0.55; }
+.wo-rpe-l { display: flex; align-items: baseline; gap: 12rpx; min-width: 0; }
+.wo-rpe-label {
+  font-size: var(--fs-body);
+  font-weight: 800;
+  color: var(--primary-deep);
+  line-height: 1;
+}
+.wo-rpe-cap {
+  font-size: var(--fs-caption);
+  color: var(--text-weak);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wo-rpe-ctrl { display: flex; align-items: center; gap: 14rpx; flex-shrink: 0; }
+.wo-rpe-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: var(--primary-tint);
+  border: 1rpx solid rgba(46, 207, 176, 0.40);
+  color: var(--primary-deep);
+  font-size: var(--fs-head);
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.wo-rpe-btn:active { transform: scale(0.90); background: rgba(46, 207, 176, 0.30); }
+.wo-rpe-val {
+  min-width: 56rpx;
+  text-align: center;
+  font-size: var(--fs-title);
+  font-weight: 800;
+  color: var(--text-weak);
+  font-feature-settings: "tnum";
+  line-height: 1;
+}
+.wo-rpe-val.set { color: var(--primary-deep); }
+.wo-rpe-val.high { color: #E8743B; }
+
 /* 展开底部操作按钮 */
 .wo-ex-actions { display: flex; gap: 20rpx; margin-top: 28rpx; }
 .wo-ex-btn {

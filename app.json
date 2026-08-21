@@ -12,6 +12,8 @@
     "pages/train-detail/train-detail",
     "pages/food-vision/food-vision",
     "pages/plan/plan",
+    "pages/cycle/cycle",
+    "pages/review/review",
     "pages/favorites/favorites",
     "pages/privacy/privacy"
   ],

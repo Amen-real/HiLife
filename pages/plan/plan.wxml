@@ -7,6 +7,53 @@
       <view class="tb-add" bindtap="goCreate">+ 新建</view>
     </view>
 
+    <!-- 周期规划入口 -->
+    <view class="cyc-entry" bindtap="goCycle">
+      <view class="cyc-entry-l">
+        <view class="cyc-entry-t">周期规划</view>
+        <view class="cyc-entry-s">循证周期化 · 跨周进阶与处方对比</view>
+      </view>
+      <view class="cyc-entry-ar">›</view>
+    </view>
+
+    <!-- 推荐方案（循证训练模板） -->
+    <view class="rec">
+      <view class="rec-head">
+        <view class="rec-title">推荐方案</view>
+        <view class="rec-sub">循证训练模板 · 一键导入</view>
+      </view>
+      <view class="rec-card" wx:for="{{programs}}" wx:key="id">
+        <view class="rec-top" bindtap="toggleProgram" data-id="{{item.id}}" hover-class="rec-hover">
+          <view class="rec-meta">
+            <view class="rec-name">{{item.name}}</view>
+            <view class="rec-tags">
+              <text class="rec-tag">{{item.goal}}</text>
+              <text class="rec-tag">{{item.level}}</text>
+              <text class="rec-tag">{{item.daysPerWeek}}天/周</text>
+            </view>
+          </view>
+          <view class="rec-arrow">{{expandedId === item.id ? '▾' : '▸'}}</view>
+        </view>
+        <view wx:if="{{expandedId === item.id}}">
+          <view class="rec-desc">{{item.desc}}</view>
+          <view class="rec-days">
+            <view class="day-card" wx:for="{{item.days}}" wx:for-item="day" wx:key="name">
+              <view class="day-head">
+                <view class="day-info">
+                  <view class="day-name">{{day.name}}</view>
+                  <view class="day-focus">{{day.focus}} · {{day.actions.length}}个动作</view>
+                </view>
+                <view class="day-import" catchtap="importDay" data-pid="{{item.id}}" data-di="{{index}}">导入今日</view>
+              </view>
+              <view class="day-acts">
+                <text class="day-act" wx:for="{{day.actions}}" wx:for-item="act" wx:key="exerciseId">{{act.nameZh}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <view wx:if="{{plans.length}}" class="plan-list">
       <view class="plan-item" wx:for="{{plans}}" wx:key="id">
         <view class="pi-main">

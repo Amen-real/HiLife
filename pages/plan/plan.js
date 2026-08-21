@@ -2,6 +2,32 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const exercises = require('../../utils/exercises.js');
+const presets = require('../../presets/plans.js');
+
+// 把预设训练日的动作展开为 store 计划动作（回查 exercises 补全展示字段）
+function buildPlanActions(day) {
+  const lib = exercises.library;
+  const find = (id) => {
+    for (const k in lib) {
+      const f = (lib[k] || []).find(a => a.id === id);
+      if (f) return f;
+    }
+    return null;
+  };
+  return day.actions.map(a => {
+    const s = find(a.exerciseId) || {};
+    return {
+      actionId: a.exerciseId,
+      name: s.name || '',
+      nameZh: s.nameZh || s.name || '',
+      part: s.category || '',
+      category: s.category || '',
+      setsCount: a.setsCount || 0,
+      reps: a.reps || '',
+      weight: ''
+    };
+  });
+}
 
 const CATEGORIES = ['我的动作', '全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心'];
 
@@ -28,11 +54,29 @@ Page({
     pickedMap: {},         // 已选动作 id -> true（仅驱动样式，详情存实例变量）
     pickedCount: 0,
     planName: '',          // 编辑模式回填到 name input 的受控值（仅初始显示，输入走实例变量 _planName）
-    isEdit: false          // true=编辑已有计划，false=新建
+    isEdit: false,         // true=编辑已有计划，false=新建
+    // 推荐方案（预设计划库）
+    programs: [],
+    expandedId: ''
+  },
+
+  onLoad() {
+    // 预设计划库一次性映射进 data（纯展示，无需每次 onShow 重算）
+    this.setData({
+      programs: (presets.PROGRAMS || []).map(p => ({
+        id: p.id, name: p.name, goal: p.goal, level: p.level,
+        daysPerWeek: p.daysPerWeek, desc: p.desc, days: p.days
+      }))
+    });
   },
 
   onShow() {
     this.loadPlans();
+  },
+
+  // 跳转到周期规划页（Phase 2）
+  goCycle() {
+    wx.navigateTo({ url: '/pages/cycle/cycle' });
   },
 
   loadPlans() {
@@ -90,6 +134,30 @@ Page({
     }, () => this.loadActions());
   },
   backToList() { this.loadPlans(); this.setData({ mode: 'list' }); },
+
+  // 展开/收起推荐方案详情
+  toggleProgram(e) {
+    const id = e.currentTarget.dataset.id;
+    this.setData({ expandedId: this.data.expandedId === id ? '' : id });
+  },
+  // 把某方案的某训练日导入为「今日训练计划」
+  importDay(e) {
+    if (!auth.requireLogin()) return;
+    const pid = e.currentTarget.dataset.pid;
+    const di = Number(e.currentTarget.dataset.di);
+    const program = (presets.PROGRAMS || []).find(p => p.id === pid);
+    if (!program) return;
+    const day = program.days[di];
+    if (!day) return;
+    const created = store.addPlan({
+      name: program.name + ' · ' + day.name,
+      actions: buildPlanActions(day)
+    });
+    store.setActivePlan(created.id);
+    store.applyPlanToSelected(created);
+    wx.showToast({ title: '已导入今日训练', icon: 'success' });
+    wx.switchTab({ url: '/pages/home/home' });
+  },
 
   // 动作选择器：按分类加载，单分类渲染（避坑：不一次渲染千条）；'全部' 合并所有部位
   loadActions() {

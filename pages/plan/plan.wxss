@@ -6,6 +6,23 @@
 .tb-back { font-size: var(--fs-head); color: var(--text-sub); }
 .tb-save { font-size: var(--fs-body); color: var(--primary); font-weight: 600; }
 
+/* 周期规划入口（Phase 2） */
+.cyc-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 32rpx 8rpx;
+  padding: 24rpx 28rpx;
+  background: var(--glass-strong);
+  border: 1rpx solid var(--glass-border);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow-card);
+}
+.cyc-entry-l { min-width: 0; }
+.cyc-entry-t { font-size: var(--fs-head); font-weight: 800; color: var(--text); }
+.cyc-entry-s { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 6rpx; }
+.cyc-entry-ar { font-size: var(--fs-section); color: var(--primary-deep); font-weight: 700; flex-shrink: 0; margin-left: 16rpx; }
+
 /* 列表 */
 .plan-list { display: flex; flex-direction: column; gap: 20rpx; padding: 0 32rpx; }
 .plan-item { background: var(--card); border: 1rpx solid var(--glass-border); border-radius: 28rpx; padding: 28rpx; box-shadow: var(--shadow-card); }
@@ -63,3 +80,27 @@
   display: flex; align-items: center; justify-content: center; font-size: var(--fs-body);
 }
 .pool-item.picked .pool-check { background: var(--primary); color: #fff; }
+
+/* 推荐方案（循证训练模板） */
+.rec { padding: 8rpx 32rpx 0; }
+.rec-head { display: flex; align-items: baseline; gap: 16rpx; margin: 28rpx 0 16rpx; }
+.rec-title { font-size: var(--fs-title); font-weight: 800; color: var(--text); }
+.rec-sub { font-size: var(--fs-caption); color: var(--text-weak); }
+.rec-card { background: var(--card); border: 1rpx solid var(--glass-border); border-radius: 28rpx; padding: 24rpx 28rpx; box-shadow: var(--shadow-card); margin-bottom: 18rpx; }
+.rec-top { display: flex; align-items: center; justify-content: space-between; }
+.rec-hover { background: var(--bg); }
+.rec-meta { display: flex; flex-direction: column; gap: 10rpx; flex: 1; }
+.rec-name { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
+.rec-tags { display: flex; gap: 10rpx; }
+.rec-tag { font-size: var(--fs-caption); color: var(--primary-deep); background: var(--primary-light); border-radius: 999rpx; padding: 4rpx 16rpx; }
+.rec-arrow { font-size: var(--fs-head); color: var(--text-sub); margin-left: 16rpx; }
+.rec-desc { font-size: var(--fs-label); color: var(--text-sub); line-height: 1.6; margin: 18rpx 0; }
+.rec-days { display: flex; flex-direction: column; gap: 14rpx; }
+.day-card { background: var(--bg); border-radius: 20rpx; padding: 20rpx 22rpx; }
+.day-head { display: flex; align-items: center; justify-content: space-between; }
+.day-info { display: flex; flex-direction: column; gap: 6rpx; flex: 1; }
+.day-name { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
+.day-focus { font-size: var(--fs-caption); color: var(--text-weak); }
+.day-import { font-size: var(--fs-body); color: #fff; background: var(--primary); border-radius: 999rpx; padding: 12rpx 26rpx; }
+.day-acts { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 14rpx; }
+.day-act { font-size: var(--fs-caption); color: var(--text-sub); background: var(--card); border: 1rpx solid var(--glass-border); border-radius: 10rpx; padding: 6rpx 14rpx; }

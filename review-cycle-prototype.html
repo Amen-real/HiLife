@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>衡砺 · 训练复盘(四模式) & 周期规划 原型</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --primary:#2ECFB0; --primary-ink:#0E7C66; --primary-soft:#E1F5EE;
+    --peach:#FF9E80; --peach-2:#FFC4A3;
+    --bg:#F4F7FA; --card:#FFFFFF;
+    --text:#1F2A37; --text-2:#5B6472; --text-3:#9AA0A6;
+    --line:#EEF1F5; --line-2:#E2E8F0;
+    --warn:#FF7A3D; --warn-soft:#FFF1EA;
+    --danger:#E24B4A; --danger-soft:#FCEBEB;
+    --info:#378ADD; --info-soft:#E6F1FB;
+    --radius:22px; --radius-sm:14px;
+  }
+  html,body{margin:0;padding:0;background:#E9EDF2;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);}
+  .stage{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;padding:28px 16px 60px;}
+  .phone{width:390px;height:844px;background:var(--bg);border-radius:46px;box-shadow:0 30px 70px rgba(20,40,60,.22),0 0 0 11px #11161c,0 0 0 13px #2a313a;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#11161c;border-radius:18px;z-index:30;}
+  .scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 96px;}
+  .scroll::-webkit-scrollbar{display:none;}
+
+  .hero{background:linear-gradient(135deg,var(--peach) 0%,#FFB49A 38%,#7FD8C2 78%,var(--primary) 100%);padding:54px 20px 22px;color:#fff;position:relative;}
+  .hero .greet{font-size:13px;opacity:.92;font-weight:500;}
+  .hero h1{margin:4px 0 2px;font-size:23px;font-weight:800;letter-spacing:.5px;}
+  .hero .sub{font-size:12px;opacity:.9;}
+  .hero .seg{margin-top:16px;display:flex;background:rgba(255,255,255,.22);border-radius:14px;padding:4px;backdrop-filter:blur(6px);}
+  .hero .seg button{flex:1;border:0;background:transparent;color:#fff;font-size:13px;font-weight:600;padding:9px 0;border-radius:11px;cursor:pointer;transition:.2s;}
+  .hero .seg button.on{background:#fff;color:var(--primary-ink);box-shadow:0 4px 10px rgba(0,0,0,.12);}
+
+  .pad{padding:16px;}
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 6px 18px rgba(20,40,60,.05);}
+  .card h2{margin:0 0 12px;font-size:16px;font-weight:800;display:flex;align-items:center;gap:7px;}
+  .card h2 .tag{font-size:11px;font-weight:700;color:var(--primary-ink);background:var(--primary-soft);padding:2px 8px;border-radius:20px;}
+  .muted{color:var(--text-3);font-size:12px;line-height:1.6;}
+
+  /* mode tabs (二级) */
+  .modetab{display:flex;gap:6px;background:#fff;border:1.5px solid var(--line-2);border-radius:14px;padding:4px;margin-bottom:14px;}
+  .modetab button{flex:1;border:0;background:transparent;color:var(--text-2);font-size:12px;font-weight:700;padding:8px 0;border-radius:10px;cursor:pointer;transition:.18s;}
+  .modetab button.on{background:var(--primary-soft);color:var(--primary-ink);}
+
+  .chips{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .chips button{border:1.5px solid var(--line-2);background:#fff;color:var(--text-2);font-size:13px;font-weight:700;padding:8px 14px;border-radius:12px;cursor:pointer;transition:.18s;}
+  .chips button.on{border-color:var(--primary);background:var(--primary-soft);color:var(--primary-ink);}
+
+  /* ring */
+  .ringwrap{display:flex;align-items:center;gap:18px;}
+  .ring{position:relative;width:96px;height:96px;flex-shrink:0;}
+  .ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .num b{font-size:26px;font-weight:800;color:var(--primary-ink);}
+  .ring .num span{font-size:10px;color:var(--text-3);}
+  .ringinfo{flex:1;}
+  .ringinfo .row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px dashed var(--line);}
+  .ringinfo .row:last-child{border-bottom:0;}
+  .ringinfo .row b{color:var(--text);}
+
+  .ex{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .ex:last-child{border-bottom:0;}
+  .ex .nm{font-size:13px;font-weight:700;width:64px;flex-shrink:0;}
+  .ex .sp{flex:1;}
+  .ex .sp svg{width:100%;height:30px;display:block;}
+  .ex .d{font-size:12px;font-weight:800;width:54px;text-align:right;flex-shrink:0;}
+  .up{color:var(--primary-ink);} .flat{color:var(--text-3);} .down{color:var(--danger);}
+
+  .rpe{display:flex;align-items:flex-end;gap:6px;height:64px;}
+  .rpe .b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;}
+  .rpe .b .bar{width:100%;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,var(--primary),#7FD8C2);}
+  .rpe .b span{font-size:10px;color:var(--text-3);}
+
+  .decision{border-radius:var(--radius-sm);padding:14px;font-size:13px;line-height:1.6;}
+  .decision.keep{background:var(--primary-soft);}
+  .decision.adj{background:var(--warn-soft);}
+  .decision.adv{background:var(--info-soft);}
+  .decision .dh{font-weight:800;font-size:14px;margin-bottom:4px;}
+  .decision.keep .dh{color:var(--primary-ink);}
+  .decision.adj .dh{color:var(--warn);}
+  .decision.adv .dh{color:var(--info);}
+  .flag{display:flex;gap:8px;margin-top:10px;}
+  .flag .f{flex:1;text-align:center;font-size:11px;color:var(--text-2);background:var(--bg);border-radius:10px;padding:8px 4px;}
+  .flag .f b{display:block;font-size:15px;color:var(--text);margin-bottom:2px;}
+
+  /* single session */
+  .judge{display:inline-block;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px;}
+  .judge.done{background:var(--primary-soft);color:var(--primary-ink);}
+  .judge.ok{background:var(--info-soft);color:var(--info);}
+  .judge.light{background:var(--warn-soft);color:var(--warn);}
+  .judge.heavy{background:var(--danger-soft);color:var(--danger);}
+  .aj{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:flex-start;}
+  .aj:last-child{border-bottom:0;}
+  .aj .nm{font-size:13px;font-weight:700;width:72px;flex-shrink:0;}
+  .aj .det{font-size:12px;color:var(--text-2);flex:1;}
+  .aj .j{font-size:11px;color:var(--text-3);margin-top:2px;}
+  .next{font-size:13px;line-height:1.9;color:var(--text);}
+  .next div{padding-left:16px;position:relative;}
+  .next div:before{content:"›";position:absolute;left:2px;color:var(--primary);font-weight:800;}
+
+  /* rolling */
+  .rec{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .rec:last-child{border-bottom:0;}
+  .rec .d{font-size:12px;color:var(--text-3);width:46px;flex-shrink:0;}
+  .rec .w{font-size:13px;font-weight:700;width:78px;flex-shrink:0;}
+  .rec .rpe2{font-size:12px;color:var(--text-2);width:54px;text-align:right;flex-shrink:0;}
+  .rec .tr{flex:1;height:6px;border-radius:6px;background:var(--line);overflow:hidden;}
+  .rec .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),#7FD8C2);}
+
+  /* baseline */
+  .basebig{text-align:center;padding:10px 0 4px;}
+  .basebig .n{font-size:40px;font-weight:800;color:var(--primary-ink);}
+  .basebig .t{font-size:12px;color:var(--text-3);}
+
+  .cta{display:block;width:100%;border:0;background:var(--primary);color:#fff;font-size:15px;font-weight:800;padding:14px 0;border-radius:16px;cursor:pointer;box-shadow:0 8px 18px rgba(46,207,176,.35);}
+  .cta.ghost{background:#fff;color:var(--primary-ink);border:1.5px solid var(--primary);box-shadow:none;margin-top:10px;}
+  .cta.warn{background:var(--warn);box-shadow:0 8px 18px rgba(255,122,61,.3);}
+
+  /* cycle */
+  .cyc{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;}
+  .cyc .c{flex:0 0 150px;background:#fff;border:1.5px solid var(--line-2);border-radius:var(--radius-sm);padding:13px;cursor:pointer;transition:.18s;}
+  .cyc .c.on{border-color:var(--primary);background:var(--primary-soft);}
+  .cyc .c .t{font-size:14px;font-weight:800;color:var(--text);}
+  .cyc .c .d{font-size:11px;color:var(--text-3);margin-top:3px;}
+  .cyc .c .meta{margin-top:9px;font-size:11px;color:var(--text-2);}
+  .phases{display:flex;align-items:stretch;gap:0;margin:4px 0 14px;}
+  .phases .ph{flex:1;text-align:center;position:relative;padding-top:18px;}
+  .phases .ph .dot{position:absolute;top:0;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;background:var(--line-2);border:2px solid #fff;box-shadow:0 0 0 2px var(--line-2);}
+  .phases .ph.cur .dot{background:var(--primary);box-shadow:0 0 0 2px var(--primary);}
+  .phases .ph.done .dot{background:var(--primary-ink);box-shadow:0 0 0 2px var(--primary-ink);}
+  .phases .ph .ln{position:absolute;top:6px;left:50%;width:100%;height:2px;background:var(--line-2);z-index:-1;}
+  .phases .ph:last-child .ln{display:none;}
+  .phases .ph .lab{font-size:12px;font-weight:700;color:var(--text-2);}
+  .phases .ph.cur .lab{color:var(--primary-ink);}
+  .phases .ph .wk{font-size:10px;color:var(--text-3);}
+  .tbl{width:100%;border-collapse:collapse;font-size:11.5px;}
+  .tbl th{text-align:left;color:var(--text-3);font-weight:700;padding:7px 6px;border-bottom:1.5px solid var(--line-2);}
+  .tbl td{padding:8px 6px;border-bottom:1px solid var(--line);color:var(--text-2);vertical-align:top;}
+  .tbl tr.cur td{background:var(--primary-soft);color:var(--primary-ink);font-weight:700;}
+  .tbl .wk{font-weight:800;color:var(--text);white-space:nowrap;}
+  .chartcard{background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:0 6px 18px rgba(20,40,60,.05);}
+  .chartcard .lg{display:flex;gap:14px;font-size:11px;color:var(--text-2);margin-top:6px;}
+  .chartcard .lg i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:middle;}
+
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:78px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding:8px 6px 18px;z-index:20;}
+  .tabbar .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-3);font-size:10px;font-weight:600;cursor:pointer;}
+  .tabbar .tb.on{color:var(--primary-ink);}
+  .tabbar .tb .ic{width:24px;height:24px;border-radius:8px;background:var(--line-2);display:flex;align-items:center;justify-content:center;}
+  .tabbar .tb.on .ic{background:var(--primary-soft);}
+  .tabbar .tb .ic svg{width:15px;height:15px;}
+  .hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(20,30,45,.86);color:#fff;font-size:11px;padding:7px 14px;border-radius:20px;z-index:50;white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="scroll">
+      <div class="hero">
+        <div class="greet">周四 · 8月20日</div>
+        <h1>训练复盘</h1>
+        <div class="sub">四模式 · 循证决策建议</div>
+        <div class="seg">
+          <button class="on" data-screen="review">复盘</button>
+          <button data-screen="cycle">周期规划</button>
+        </div>
+      </div>
+
+      <!-- ============ 复盘屏 ============ -->
+      <div class="pad" id="reviewScreen">
+        <div class="modetab" id="modeTab">
+          <button class="on" data-m="single">单次</button>
+          <button data-m="rolling">滚动</button>
+          <button data-m="baseline">基准</button>
+          <button data-m="weekly">周</button>
+        </div>
+
+        <!-- 单次 -->
+        <div class="mode" id="m-single">
+          <div class="chips" id="sessChips"></div>
+          <div class="card">
+            <h2>执行判断 <span class="tag" id="sDate">8/18</span></h2>
+            <div style="margin-bottom:10px"><span class="judge done" id="sJudge">完成</span></div>
+            <div class="muted">训练结束后的单次复盘：判定完成度，列出动作表现，给出下一次明确处方。</div>
+          </div>
+          <div class="card">
+            <h2>动作判断</h2>
+            <div id="sActions"></div>
+          </div>
+          <div class="card">
+            <h2>下一次处方</h2>
+            <div class="next" id="sNext"></div>
+          </div>
+        </div>
+
+        <!-- 滚动 -->
+        <div class="mode" id="m-rolling" style="display:none">
+          <div class="chips" id="exChips"></div>
+          <div class="card">
+            <h2>可比记录 <span class="tag" id="rEx">卧推</span></h2>
+            <div id="rRecs"></div>
+            <div class="muted" style="margin-top:8px">滚动复盘：无周期时，取≥2 次<span style="color:var(--primary-ink);font-weight:700">同动作/同器械/同标准</span>的可比记录再判断。</div>
+          </div>
+          <div class="card">
+            <h2>调整建议</h2>
+            <div class="decision keep" id="rAdvice"></div>
+          </div>
+        </div>
+
+        <!-- 基准 -->
+        <div class="mode" id="m-baseline" style="display:none">
+          <div class="card">
+            <h2>基准状态 <span class="tag">baseline</span></h2>
+            <div class="basebig"><div class="n">1</div><div class="t">条可靠记录（卧推）</div></div>
+            <div class="muted">基准复盘：仅有 0–1 次可靠记录时，不推算精确公斤数，先安排 <b style="color:var(--primary-ink)">RPE 校准训练</b> 建立第二个可比样本。</div>
+          </div>
+          <div class="card">
+            <h2>下一步</h2>
+            <div class="muted">按仓库规则：用 RPE 选重完成一次训练，记录重量/次数/末组 RPE，形成可比基线后再进入滚动复盘。</div>
+            <button class="cta warn">开始 RPE 校准训练 ›</button>
+          </div>
+        </div>
+
+        <!-- 周 -->
+        <div class="mode" id="m-weekly" style="display:none">
+          <div class="chips" id="weekChips">
+            <button data-w="0">W1</button>
+            <button class="on" data-w="1">W2</button>
+            <button data-w="2">W3</button>
+          </div>
+          <div class="card">
+            <h2>本周完成度 <span class="tag" id="weekTag">W2</span></h2>
+            <div class="ringwrap">
+              <div class="ring">
+                <svg width="96" height="96" viewBox="0 0 96 96">
+                  <circle cx="48" cy="48" r="40" fill="none" stroke="#EEF1F5" stroke-width="10"/>
+                  <circle id="ringFg" cx="48" cy="48" r="40" fill="none" stroke="#2ECFB0" stroke-width="10" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="60" transform="rotate(-90 48 48)"/>
+                </svg>
+                <div class="num"><b id="ringNum">100%</b><span>目标 4 次</span></div>
+              </div>
+              <div class="ringinfo">
+                <div class="row"><span>实际训练</span><b id="riSess">4 / 4 次</b></div>
+                <div class="row"><span>训练天数</span><b id="riDays">4 天</b></div>
+                <div class="row"><span>平均 RPE</span><b id="riRpe">7.8</b></div>
+                <div class="row"><span>疼痛信号</span><b id="riPain">无</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>力量进展 <span class="tag">逐动作</span></h2>
+            <div id="exList"></div>
+          </div>
+          <div class="card">
+            <h2>努力度趋势 <span class="tag">RPE</span></h2>
+            <div class="rpe" id="rpeBars"></div>
+            <div class="muted" style="margin-top:8px">逐周平均 RPE（7≈还能做3次，9≈还能做1次）。连续上升需关注。</div>
+          </div>
+          <div class="card">
+            <h2>系统判断 <span class="tag">决策规则</span></h2>
+            <div id="decisionBox"></div>
+            <div class="flag">
+              <div class="f"><b id="fgComp">达标</b>完成率</div>
+              <div class="f"><b id="fgRpe">平稳</b>努力度</div>
+              <div class="f"><b id="fgTech">良好</b>技术</div>
+            </div>
+          </div>
+          <button class="cta ghost">生成完整周复盘 ›</button>
+        </div>
+      </div>
+
+      <!-- ============ 周期屏 ============ -->
+      <div class="pad" id="cycleScreen" style="display:none">
+        <div class="card">
+          <h2>专项周期模板 <span class="tag">预设</span></h2>
+          <div class="cyc" id="cycCards"></div>
+        </div>
+        <div class="card">
+          <h2 id="cycTitle">8周卧推力量周期</h2>
+          <div class="phases" id="phaseBar"></div>
+          <table class="tbl" id="weekTbl"></table>
+        </div>
+        <div class="chartcard">
+          <h2 style="margin:0 0 4px;font-size:15px;font-weight:800" id="chartTitle">强度 / 容量 逐周走势</h2>
+          <svg id="chart" width="100%" height="170" viewBox="0 0 320 170"></svg>
+          <div class="lg">
+            <span><i style="background:#2ECFB0"></i>强度负荷(kg)</span>
+            <span><i style="background:#FF7A3D"></i>容量(kg×组×次)</span>
+          </div>
+        </div>
+        <button class="cta">导入该周期 ›</button>
+      </div>
+    </div>
+
+    <div class="tabbar">
+      <div class="tb"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>首页</div>
+      <div class="tb"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>训练</div>
+      <div class="tb on"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#0E7C66" stroke-width="2"><path d="M4 19V9m6 10V5m6 14v-7"/></svg></div>复盘</div>
+      <div class="tb"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg></div>我的</div>
+    </div>
+  </div>
+
+</div>
+<div class="hint">复盘屏内点「单次 / 滚动 / 基准 / 周」切换四模式 · 周期屏点模板卡片</div>
+
+<script>
+/* ============ 数据 ============ */
+/* 单次训练复盘：每次 trainingLog 一条 */
+const sessions = [
+  { date:'8/18', judge:'完成', jc:'done',
+    actions:[ {nm:'卧推',det:'65×5',j:'末组 @8 略吃力，动作标准'},
+              {nm:'上斜卧推',det:'50×8',j:'顺畅，余力约 2 次'},
+              {nm:'三头下压',det:'30×12',j:'完成，泵感明显'} ],
+    next:['卧推 保持 65×5，下次尝试 67.5','上斜卧推 保持 50×8','三头下压 +2.5kg → 32.5×12'] },
+  { date:'8/16', judge:'合适', jc:'ok',
+    actions:[ {nm:'高位下拉',det:'55×10',j:'@7 合适'},
+              {nm:'坐姿划船',det:'50×12',j:'@7 标准'},
+              {nm:'面拉',det:'25×15',j:'后链激活充分'} ],
+    next:['高位下拉 保持 55×10','坐姿划船 保持 50×12','面拉 可 +2.5kg'] },
+  { date:'8/13', judge:'偏轻', jc:'light',
+    actions:[ {nm:'深蹲',det:'80×5',j:'@6 偏轻，余力多'},
+              {nm:'罗马尼亚硬拉',det:'70×8',j:'@7 合适'},
+              {nm:'腿弯举',det:'35×12',j:'@7'} ],
+    next:['深蹲 加重至 85×5（仍应 @7–8）','罗马尼亚硬拉 保持 70×8','腿弯举 保持'] }
+];
+
+/* 滚动复盘：同动作可比记录 */
+const rolling = {
+  '卧推':[{d:'8/18',w:'65×5',rpe:8},{d:'8/15',w:'62.5×5',rpe:7.5},{d:'8/11',w:'60×5',rpe:7},{d:'8/07',w:'57.5×5',rpe:7}],
+  '深蹲':[{d:'8/18',w:'85×5',rpe:8},{d:'8/14',w:'82.5×5',rpe:7.5},{d:'8/10',w:'80×5',rpe:7}],
+  '硬拉':[{d:'8/17',w:'110×3',rpe:8},{d:'8/12',w:'105×3',rpe:7.5},{d:'8/08',w:'100×3',rpe:7}]
+};
+const rollingAdvice = {
+  '卧推':'重量连续 4 次上升且 RPE 平稳（7→8），按双重渐进维持；下次只 +2.5kg 或 +1 次，<b>一次只改一个变量</b>。',
+  '深蹲':'3 次记录稳定上升、RPE 未超标，维持节奏；下次可加重至 87.5×5。',
+  '硬拉':'强度负荷为主，RPE 可控；保持当前，关注下一周是否需减量周。'
+};
+
+/* 周复盘 */
+const reviews = [
+  { week:'W1', target:4, sess:3, days:3, rpe:7.5, pain:'无',
+    ex:[{nm:'卧推',p:[58,60,62.5],d:'+2.5'},{nm:'深蹲',p:[78,80,82.5],d:'+2.5'},{nm:'硬拉',p:[95,100,105],d:'+5'}],
+    rpeTrend:[7.4,7.5,7.6], decision:'adj',
+    reasons:['完成率 3/4，缺 1 次训练','末组 RPE 接近上限，维持负荷','技术稳定，无疼痛'], flags:['待提升','平稳','良好'] },
+  { week:'W2', target:4, sess:4, days:4, rpe:7.8, pain:'无',
+    ex:[{nm:'卧推',p:[60,62.5,65],d:'+2.5'},{nm:'深蹲',p:[80,82.5,85],d:'+2.5'},{nm:'硬拉',p:[100,105,110],d:'+5'}],
+    rpeTrend:[7.6,7.8,7.9], decision:'keep',
+    reasons:['完成率达标 4/4','RPE 在目标区间(7–8)，按计推进','重量稳定上升，保持节奏'], flags:['达标','平稳','良好'] },
+  { week:'W3', target:4, sess:2, days:2, rpe:8.2, pain:'右肩轻微',
+    ex:[{nm:'卧推',p:[62.5,65,65],d:'0'},{nm:'深蹲',p:[82.5,85,85],d:'0'},{nm:'硬拉',p:[105,110,110],d:'0'}],
+    rpeTrend:[7.9,8.2,8.4], decision:'adj',
+    reasons:['出勤下降到 2/4，先恢复节奏','RPE 连续两周上升约一级，触调整阈值','右肩轻微不适，卧推降量观察'], flags:['下降','上升','关注'] }
+];
+
+/* 周期 */
+const cycles = [
+  { id:'bench', title:'8周卧推力量周期', meta:'虚构示例 · 每周2次暴露',
+    phases:[{lab:'积累',wk:'W1–3',st:0,en:2},{lab:'强度',wk:'W4–6',st:3,en:5},{lab:'减量验证',wk:'W7–8',st:6,en:7}], cur:4,
+    rows:[
+      ['W1 积累','70kg×6 @7','57.5kg 4×8 @6→7','动作标准完整'],
+      ['W2 积累','72.5kg×6 @7.5','60kg 4×8 @6→7.5','末组不超目标RPE'],
+      ['W3 积累','75kg×5 @8','62.5kg 4×7 @6.5→8','无明显技术退化'],
+      ['W4 强度','77.5kg×4 @8','65kg 4×6 @6.5→8','完成全部正式组'],
+      ['W5 强度','80kg×3 @8','67.5kg 4×5 @7→8','顶组速度可接受'],
+      ['W6 强度','82.5kg×2 @8.5','70kg 3×4 @7→8','不出现力竭'],
+      ['W7 减量','72.5kg×3 @6','57.5kg 2×5 @5→6','主动降低疲劳'],
+      ['W8 验证','按RPE建新基准','50kg 2×5 @5→6','验证后停追高强度']
+    ],
+    strength:[70,72.5,75,77.5,80,82.5,72.5,85], volume:[1840,1920,1750,1560,1350,840,575,500] },
+  { id:'general', title:'12周综合力量周期', meta:'虚构示例 · 全身三大项',
+    phases:[{lab:'积累',wk:'W1–5',st:0,en:4},{lab:'强度',wk:'W6–9',st:5,en:8},{lab:'减量验证',wk:'W10–12',st:9,en:11}], cur:6,
+    rows:[
+      ['W1 积累','三大项 5×5 @7','辅助 3×10 @6','建立容量'],
+      ['W3 积累','三大项 5×5 @8','辅助 3×10 @7','容量峰值'],
+      ['W6 强度','三大项 3×3 @8','辅助 2×8 @7','提升负荷'],
+      ['W9 强度','三大项 1×1 @9','辅助 2×6 @7','接近峰值'],
+      ['W11 减量','三大项 3×3 @6','辅助 2×6 @5','降疲劳'],
+      ['W12 验证','测 1RM','轻量激活','建立新基准']
+    ],
+    strength:[100,105,110,112,115,118,120,122,124,120,115,128], volume:[3000,3100,3200,3100,3000,2400,2200,2000,1800,1500,1200,800] }
+];
+
+/* ============ 渲染：单次 ============ */
+function renderSingle(i){
+  const s=sessions[i];
+  document.getElementById('sDate').textContent=s.date;
+  const j=document.getElementById('sJudge'); j.textContent=s.judge; j.className='judge '+s.jc;
+  document.getElementById('sActions').innerHTML=s.actions.map(a=>
+    `<div class="aj"><div class="nm">${a.nm}</div><div class="det">${a.det}<div class="j">${a.j}</div></div></div>`).join('');
+  document.getElementById('sNext').innerHTML=s.next.map(x=>`<div>${x}</div>`).join('');
+}
+
+/* ============ 渲染：滚动 ============ */
+function renderRolling(ex){
+  document.getElementById('rEx').textContent=ex;
+  const recs=rolling[ex];
+  const maxRpe=Math.max(...recs.map(r=>r.rpe));
+  document.getElementById('rRecs').innerHTML=recs.map(r=>
+    `<div class="rec"><div class="d">${r.d}</div><div class="w">${r.w}</div><div class="tr"><i style="width:${r.rpe/maxRpe*100}%"></i></div><div class="rpe2">@${r.rpe}</div></div>`).join('');
+  document.getElementById('rAdvice').innerHTML=rollingAdvice[ex];
+}
+
+/* ============ 渲染：周 ============ */
+function spark(p){
+  const w=120,h=30,max=Math.max(...p),min=Math.min(...p),rg=max-min||1;
+  const pts=p.map((v,i)=>`${(i/(p.length-1))*w},${h-4-((v-min)/rg)*(h-10)}`).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#2ECFB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${w}" cy="${h-4-((p[p.length-1]-min)/rg)*(h-10)}" r="3" fill="#0E7C66"/></svg>`;
+}
+function renderReview(i){
+  const r=reviews[i];
+  document.getElementById('weekTag').textContent=r.week;
+  const pct=Math.round(r.sess/r.target*100);
+  document.getElementById('ringNum').textContent=pct+'%';
+  document.getElementById('ringFg').setAttribute('stroke-dashoffset', 251.2*(1-pct/100));
+  document.getElementById('riSess').textContent=`${r.sess} / ${r.target} 次`;
+  document.getElementById('riDays').textContent=r.days+' 天';
+  document.getElementById('riRpe').textContent=r.rpe;
+  document.getElementById('riPain').textContent=r.pain;
+  document.getElementById('exList').innerHTML=r.ex.map(e=>{
+    const cls=e.d.startsWith('+')?'up':(e.d==='0'?'flat':'down');
+    return `<div class="ex"><div class="nm">${e.nm}</div><div class="sp">${spark(e.p)}</div><div class="d ${cls}">${e.d==='0'?'持平':e.d}</div></div>`;
+  }).join('');
+  document.getElementById('rpeBars').innerHTML=r.rpeTrend.map(v=>{
+    const hgt=Math.max(18,(v/10)*60);
+    return `<div class="b"><div class="bar" style="height:${hgt}px"></div><span>${v}</span></div>`;
+  }).join('');
+  const box=document.getElementById('decisionBox');
+  box.className='decision '+(r.decision==='keep'?'keep':r.decision==='adj'?'adj':'adv');
+  box.innerHTML=`<div class="dh">${r.decision==='keep'?'维持当前计划':r.decision==='adj'?'建议调整':'可进阶'}</div><div>${r.reasons.map(x=>`<div style="margin:2px 0">· ${x}</div>`).join('')}</div>`;
+  document.getElementById('fgComp').textContent=r.flags[0];
+  document.getElementById('fgRpe').textContent=r.flags[1];
+  document.getElementById('fgTech').textContent=r.flags[2];
+}
+
+/* ============ 渲染：周期 ============ */
+function renderCycle(idx){
+  const c=cycles[idx];
+  document.getElementById('cycTitle').textContent=c.title;
+  document.getElementById('chartTitle').textContent=c.title+' · 强度/容量走势';
+  document.getElementById('phaseBar').innerHTML=c.phases.map(p=>{
+    const cls=c.cur>=p.st&&c.cur<=p.en?'cur':(c.cur>p.en?'done':'');
+    return `<div class="ph ${cls}"><div class="ln"></div><div class="dot"></div><div class="lab">${p.lab}</div><div class="wk">${p.wk}</div></div>`;
+  }).join('');
+  document.getElementById('weekTbl').innerHTML=
+    `<tr><th>周次 / 阶段</th><th>强度职责</th><th>容量职责</th><th>完成标准</th></tr>`+
+    c.rows.map((row,ri)=>`<tr class="${ri===c.cur?'cur':''}"><td class="wk">${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td></tr>`).join('');
+  drawChart(c);
+}
+function drawChart(c){
+  const W=320,H=170,pad=24,maxS=Math.max(...c.strength)*1.05,maxV=Math.max(...c.volume)*1.1;
+  const n=c.strength.length, x=i=>pad+(i/(n-1))*(W-pad*1.5);
+  const yS=v=>H-pad-(v/maxS)*(H-pad*1.7), yV=v=>H-pad-(v/maxV)*(H-pad*1.7);
+  let g=`<line x1="${pad}" y1="${H-pad}" x2="${W-8}" y2="${H-pad}" stroke="#E2E8F0"/><line x1="${pad}" y1="14" x2="${pad}" y2="${H-pad}" stroke="#E2E8F0"/>`;
+  c.strength.forEach((v,i)=>{ if(i%2===0) g+=`<text x="${x(i)}" y="${H-pad+14}" font-size="9" fill="#9AA0A6" text-anchor="middle">W${i+1}</text>`; });
+  g+=`<polyline points="${c.volume.map((v,i)=>`${x(i)},${yV(v)}`).join(' ')}" fill="none" stroke="#FF7A3D" stroke-width="2" stroke-dasharray="4 3"/>`;
+  g+=`<polyline points="${c.strength.map((v,i)=>`${x(i)},${yS(v)}`).join(' ')}" fill="none" stroke="#2ECFB0" stroke-width="2.5" stroke-linecap="round"/>`;
+  c.strength.forEach((v,i)=>{ g+=`<circle cx="${x(i)}" cy="${yS(v)}" r="3" fill="#0E7C66"/>`; });
+  document.getElementById('chart').innerHTML=g;
+}
+
+/* ============ 交互 ============ */
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const s=b.dataset.screen;
+  document.getElementById('reviewScreen').style.display=s==='review'?'block':'none';
+  document.getElementById('cycleScreen').style.display=s==='cycle'?'block':'none';
+});
+document.querySelectorAll('#modeTab button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modeTab button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  ['single','rolling','baseline','weekly'].forEach(m=>document.getElementById('m-'+m).style.display=(m===b.dataset.m)?'block':'none');
+});
+
+/* 单次 chips */
+document.getElementById('sessChips').innerHTML=sessions.map((s,i)=>`<button class="${i===0?'on':''}" data-i="${i}">${s.date}</button>`).join('');
+document.querySelectorAll('#sessChips button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#sessChips button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); renderSingle(+b.dataset.i);
+});
+
+/* 滚动 chips */
+document.getElementById('exChips').innerHTML=Object.keys(rolling).map((ex,i)=>`<button class="${i===0?'on':''}" data-ex="${ex}">${ex}</button>`).join('');
+document.querySelectorAll('#exChips button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#exChips button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); renderRolling(b.dataset.ex);
+});
+
+/* 周 chips */
+document.querySelectorAll('#weekChips button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#weekChips button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); renderReview(+b.dataset.w);
+});
+
+/* 周期 cards */
+let cycIdx=0;
+document.getElementById('cycCards').innerHTML=cycles.map((c,i)=>
+  `<div class="c ${i===0?'on':''}" data-i="${i}"><div class="t">${c.title}</div><div class="d">${c.meta}</div><div class="meta">${c.phases.length} 阶段 · ${c.strength.length} 周</div></div>`).join('');
+document.querySelectorAll('#cycCards .c').forEach(card=>card.onclick=()=>{
+  document.querySelectorAll('#cycCards .c').forEach(x=>x.classList.remove('on'));
+  card.classList.add('on'); cycIdx=+card.dataset.i; renderCycle(cycIdx);
+});
+
+/* init */
+renderSingle(0);
+renderRolling('卧推');
+renderReview(1);
+renderCycle(0);
+</script>
+</body>
+</html>

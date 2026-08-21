@@ -1,0 +1,84 @@
+<!-- pages/cycle/cycle.wxml —— 周期规划页（Phase 2） -->
+<view class="page">
+  <view class="topbar">
+    <view class="tb-title">周期规划</view>
+    <view class="tb-sub">循证周期化 · 跨周进阶</view>
+  </view>
+
+  <!-- 当前激活周期进度 -->
+  <view wx:if="{{hasActiveCycle && progress}}" class="prog">
+    <view class="prog-top">
+      <view class="prog-name">{{progress.name}}</view>
+      <view class="prog-week">第 {{progress.curWeek}} / {{progress.weeks}} 周</view>
+    </view>
+    <view class="prog-phase">
+      <text class="prog-phase-label">当前阶段 · {{progress.phaseLabel}}</text>
+      <text wx:if="{{progress.phaseIntent}}" class="prog-phase-intent">{{progress.phaseIntent}}</text>
+    </view>
+    <view class="prog-rx">
+      <view class="prog-rx-item">
+        <view class="prog-rx-v">{{progress.rpeTarget != null ? progress.rpeTarget : '—'}}</view>
+        <view class="prog-rx-k">处方 RPE</view>
+      </view>
+      <view class="prog-rx-item">
+        <view class="prog-rx-v">{{progress.setsTarget != null ? progress.setsTarget : '—'}}</view>
+        <view class="prog-rx-k">处方组数</view>
+      </view>
+      <view class="prog-rx-item">
+        <view class="prog-rx-v">{{progress.trainedDays}}</view>
+        <view class="prog-rx-k">本周已练</view>
+      </view>
+      <view class="prog-rx-item">
+        <view class="prog-rx-v">{{progress.avgRpe != null ? progress.avgRpe : '—'}}</view>
+        <view class="prog-rx-k">本周 RPE</view>
+      </view>
+    </view>
+    <view class="prog-go" bindtap="goReview">查看「实际 vs 处方」复盘 ›</view>
+  </view>
+
+  <!-- 周期模板列表 -->
+  <view class="rec-head">
+    <view class="rec-title">周期模板</view>
+    <view class="rec-sub">选择后导入为带周处方的计划</view>
+  </view>
+
+  <view class="cyc-card" wx:for="{{cycles}}" wx:key="id">
+    <view class="cyc-top">
+      <view class="cyc-meta">
+        <view class="cyc-name">{{item.name}}</view>
+        <view class="cyc-tags">
+          <text class="cyc-tag">{{item.goal}}</text>
+          <text class="cyc-tag">{{item.level}}</text>
+          <text class="cyc-tag">{{item.weeks}}周</text>
+        </view>
+      </view>
+    </view>
+    <view class="cyc-desc">{{item.desc}}</view>
+
+    <!-- 阶段时间轴 -->
+    <view class="cyc-phases">
+      <view class="cyc-phase" wx:for="{{item.phases}}" wx:for-item="ph" wx:key="label">
+        <view class="cyc-phase-dot" />
+        <view class="cyc-phase-body">
+          <view class="cyc-phase-label">{{ph.label}}</view>
+          <view class="cyc-phase-week">第 {{ph.start_week}}–{{ph.end_week}} 周</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 处方 RPE 走势（迷你 sparkline） -->
+    <view class="cyc-spark">
+      <text class="cyc-spark-label">处方 RPE 走势</text>
+      <view class="cyc-spark-bars">
+        <view class="cyc-spark-col" wx:for="{{item.rpeChart}}" wx:for-item="rv" wx:key="*this">
+          <view class="cyc-spark-bar" style="height:{{rv * 10}}%"></view>
+          <view class="cyc-spark-val">{{rv}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="cyc-import" bindtap="importCycle" data-id="{{item.id}}" hover-class="cyc-import-press">导入为计划</view>
+  </view>
+
+  <view class="bottom-gap" />
+</view>

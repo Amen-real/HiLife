@@ -15,6 +15,27 @@
 }
 .create-btn:active { opacity: 0.7; }
 
+/* ===== 训练复盘入口（双入口，提升可见性） ===== */
+.review-entry {
+  display: flex; align-items: center; gap: 18rpx;
+  margin: 4rpx 28rpx 18rpx;
+  padding: 22rpx 24rpx;
+  background: var(--card);
+  border: 1rpx solid var(--line);
+  border-radius: 22rpx;
+  box-shadow: 0 4rpx 14rpx rgba(15,23,42,.08);
+}
+.review-entry:active { transform: scale(0.985); }
+.re-ico {
+  flex: 0 0 auto; width: 72rpx; height: 72rpx; border-radius: 18rpx;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary-light); color: var(--primary-deep);
+}
+.re-body { flex: 1; min-width: 0; }
+.re-t { font-size: var(--fs-body); font-weight: 800; color: var(--text); }
+.re-s { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 4rpx; }
+.re-ar { flex: 0 0 auto; color: var(--text-weak); font-size: var(--fs-head); font-weight: 700; }
+
 /* ===== 分类胶囊 chips ===== */
 .chips { white-space: nowrap; display: flex; padding: 2rpx 28rpx 20rpx; }
 .chips::-webkit-scrollbar { display: none; }
