@@ -1,51 +1,108 @@
-// pages/list/list.js
+// pages/list/list.js —— 严格对齐 06-records.html（训练记录）
 const store = require('../../utils/store.js');
-const report = require('../../utils/report.js');
-const RANGES = [7, 30, 90, 0]; // 0 = 全部
+const { library } = require('../../utils/exercises.js');
+const { media } = require('../../utils/media.js');
+const theme = require('../../utils/theme.js');
+
+// 动作名（中文 nameZh / 英文 name）→ 动作库条目。
+// 训练日志只存 name（见 workout.js saveWorkout），靠此映射出真实 GIF 与详情页数据。
+const LIB_BY_NAME = {};
+Object.keys(library).forEach(cat => (library[cat] || []).forEach(e => {
+  if (e.nameZh) LIB_BY_NAME[e.nameZh] = e;
+  if (e.name) LIB_BY_NAME[e.name] = e;
+}));
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
-function todayStr() {
-  const d = new Date();
+function fmtDate(d) {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
-function shiftDate(ds, delta) {
-  const p = ds.split('-');
-  const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+function todayStr() {
+  return fmtDate(new Date());
+}
+function parseISO(iso) {
+  const p = iso.split('-');
+  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+}
+// 当前日期所在周的周一
+function startOfWeek(iso) {
+  const d = parseISO(iso);
+  const dow = d.getDay(); // 0=Sun..6=Sat
+  // 一周从周一开始：周日(dow=0) 退 6 天；其他退 dow-1 天
+  const back = dow === 0 ? 6 : dow - 1;
+  d.setDate(d.getDate() - back);
+  return d;
+}
+function shiftISO(iso, delta) {
+  const d = parseISO(iso);
   d.setDate(d.getDate() + delta);
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  return fmtDate(d);
+}
+function fmtMonthLabel(iso) {
+  const d = parseISO(iso);
+  return d.getFullYear() + '年' + (d.getMonth() + 1) + '月';
+}
+function fmtDateSlash(iso) {
+  return iso.replace(/-/g, '/');
+}
+// 秒数 → MM:SS（不足 1 小时）
+function fmtDuration(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return pad(m) + ':' + pad(s);
+}
+// 简易卡路里估算：8 kcal/分钟（中等强度训练通用值）
+function estKcal(sec) {
+  return Math.round((sec / 60) * 8);
+}
+
+// 动作名 → emoji 缩略图（06 设计用线性 SVG 图标，小程序内用 emoji 兜底，省得拖 4 个 SVG）
+function pickThumbEmoji(name) {
+  const n = String(name || '');
+  if (/卧推|飞鸟|胸|夹胸|俯卧撑|卧推/.test(n)) return '🏋️';
+  if (/划船|引体|下拉|背/.test(n)) return '🚣';
+  if (/卷腹|仰卧|腹|平板|举腿/.test(n)) return '🧘';
+  if (/深蹲|蹲|腿|腿屈|腿伸|弓步|臀/.test(n)) return '🦵';
+  if (/推举|侧平举|前平举|肩|耸肩/.test(n)) return '💪';
+  if (/弯举|臂屈|三头|臂/.test(n)) return '💪';
+  if (/硬拉|罗马尼亚/.test(n)) return '🏋️';
+  if (/跑步|有氧|跳绳|划船机|单车|椭圆/.test(n)) return '🏃';
+  return '🏋️';
 }
 
 Page({
   data: {
-    tab: 'weight',
-    rangeIdx: 1,
-    ranges: ['7天', '30天', '90天', '全部'],
-    stats: { latest: '--', change: '暂无', trend: 'none', max: '--', min: '--', days: 0 },
-    weightList: [],
-    // 历史记录日期筛选
-    filterStart: '',
-    filterEnd: '',
-    filteredWeightList: [],
-    // 训练记录日期筛选（今日 / 昨日 / 选择日期），默认只显示今日一天
-    trainQuick: 'today',     // 'today' | 'yesterday' | 'custom'
-    trainCustomDate: '',
+    // 'theme-light' | 'theme-dark'，由「我的 → 深色主题」开关控制，onShow 同步
+    theme: 'theme-light',
+    tab: 'records',  // 'records' | 'review'
+    monthLabel: '2024年8月',
+    weekdays: ['一', '二', '三', '四', '五', '六', '日'],
+    weekDates: [],   // 7 天单元格
     todayStr: todayStr(),
-    filteredTrainGroups: [],
-    trainGroups: [],
-    hasWeight: false,
-    // 训练详细报表（组数 / 锻炼时间 / 容量与次数）：对比周期固定为「周」
-    // 报表三大类 banner 切换：默认显示「组数对比」，点击切换
-    reportTab: 'sets',
-    reportTabs: ['sets', 'time'],
-    reportTabLabels: { sets: '组数对比', time: '锻炼时间' },
-    report: { hasData: false, periodLabel: '本周', prevLabel: '上周' }
+    selectedDate: '',
+    // 选中日期的训练记录卡
+    record: {
+      hasData: false,
+      dateLabel: '',
+      duration: '--',
+      calories: '--',
+      actionCount: 0,
+      actions: []
+    },
+    showExSheet: false,
+    exSheet: { name: '', gif: '', count: 0, maxWeight: 0, totalSets: 0, avgRpe: '', history: [] }
   },
 
+  _touchStartX: 0,
+  _touchStartY: 0,
+  _swiping: false,
+
   onShow() {
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 2 });
+      this.getTabBar().setData({ selected: 3, theme: themeCls });
     }
-    // 来自「我的」页「查看全部训练记录」时，直接落在训练记录 tab
+    // 来自「我的」页的 pendingListTab（保留旧入口兼容）
     const app = getApp();
     if (app && app.globalData && app.globalData.pendingListTab) {
       const target = app.globalData.pendingListTab;
@@ -53,218 +110,203 @@ Page({
       this.setData({ tab: target });
     }
     this.setData({ todayStr: todayStr() });
-    this.loadWeight();
-    this.loadTraining();
-    this.loadReport();
+    // 默认选中今天；若已选过日期则保持
+    const sel = this.data.selectedDate || this.data.todayStr;
+    this._buildWeek(sel);
+    this._loadRecord(sel);
   },
 
-  switchTab(e) {
-    this.setData({ tab: e.currentTarget.dataset.tab });
+  onLoad() {
+    // 首次进入默认今天
+    this.setData({ selectedDate: todayStr() });
   },
 
-  switchRange(e) {
-    const idx = Number(e.currentTarget.dataset.idx);
-    this.setData({ rangeIdx: idx }, () => this.loadWeight());
+  // ============== HEADER ==============
+  switchTitle(e) {
+    const tab = e.currentTarget.dataset.tab;
+    if (tab === this.data.tab) return;
+    // 训练复盘 → 当前页内嵌组件显示（不再跳独立页）；组件 wx:if 创建时自行 rebuild
+    this.setData({ tab });
   },
 
-  /* ---------- 历史记录日期筛选 ---------- */
-  onFilterStart(e) {
-    this.setData({ filterStart: e.detail.value }, () => this._applyFilter());
+  // ============== MONTH ==============
+  onPickMonth(e) {
+    // picker mode=date fields=month 返回 'YYYY-MM'，需要补成 'YYYY-MM-01'
+    const v = e.detail.value;
+    if (!v) return;
+    // 跳到这个月 1 号
+    const iso = v + '-01';
+    this._buildWeek(iso);
+    this.setData({ selectedDate: iso });
+    this._loadRecord(iso);
   },
-  onFilterEnd(e) {
-    this.setData({ filterEnd: e.detail.value }, () => this._applyFilter());
+
+  // ============== DATE ROW ==============
+  selectDate(e) {
+    const iso = e.currentTarget.dataset.iso;
+    if (!iso || iso === this.data.selectedDate) return;
+    this._buildWeek(iso);
+    this.setData({ selectedDate: iso });
+    this._loadRecord(iso);
   },
-  clearFilter() {
-    this.setData({ filterStart: '', filterEnd: '' }, () => this._applyFilter());
+
+  // 滑动手势：左右滑切周
+  onDateTouchStart(e) {
+    const t = (e.touches && e.touches[0]) || {};
+    this._touchStartX = t.clientX || 0;
+    this._touchStartY = t.clientY || 0;
+    this._swiping = false;
   },
-  _applyFilter() {
-    const { weightList, filterStart, filterEnd } = this.data;
-    if (!filterStart && !filterEnd) {
-      this.setData({ filteredWeightList: weightList });
+  onDateTouchEnd(e) {
+    const t = (e.changedTouches && e.changedTouches[0]) || {};
+    const dx = (t.clientX || 0) - this._touchStartX;
+    const dy = (t.clientY || 0) - this._touchStartY;
+    // 横向滑动 > 50rpx 且 横向位移 > 纵向位移 ×1.5 → 切周
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      const delta = dx < 0 ? 7 : -7;
+      const sel = this.data.selectedDate;
+      const next = shiftISO(sel, delta);
+      this._buildWeek(next);
+      this.setData({ selectedDate: next });
+      this._loadRecord(next);
+    }
+  },
+
+  // ============== WEEK BUILD ==============
+  _buildWeek(iso) {
+    const mon = startOfWeek(iso);
+    const logs = store.get().trainingLogs || [];
+    const recordSet = new Set(logs.map(l => l.date));
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(mon);
+      d.setDate(d.getDate() + i);
+      const dIso = fmtDate(d);
+      weekDates.push({
+        day: d.getDate(),
+        iso: dIso,
+        muted: false,
+        hasRecord: recordSet.has(dIso),
+        isActive: dIso === iso
+      });
+    }
+    this.setData({
+      weekDates,
+      monthLabel: fmtMonthLabel(iso)
+    });
+  },
+
+  // ============== RECORD CARD ==============
+  _loadRecord(iso) {
+    const logs = store.get().trainingLogs || [];
+    const log = logs.filter(l => l.date === iso);
+    if (!log.length) {
+      this.setData({
+        record: {
+          hasData: false,
+          dateLabel: fmtDateSlash(iso),
+          duration: '--',
+          calories: '--',
+          actionCount: 0,
+          actions: []
+        }
+      });
       return;
     }
-    const filtered = weightList.filter(item => {
-      if (filterStart && item.date < filterStart) return false;
-      if (filterEnd && item.date > filterEnd) return false;
-      return true;
+    // 同日可能多场，合并所有 actions
+    const allActions = [];
+    let totalSec = 0;
+    log.forEach(l => {
+      (l.actions || []).forEach(a => {
+        // a.setsDetail 里 trainSec 累加
+        const sec = (a.setsDetail || []).reduce((s, sd) => s + (sd.trainSec || 0), 0);
+        totalSec += sec;
+        allActions.push({
+          name: a.name,
+          meta: (a.sets || 0) + '组 × ' + (a.reps || 0) + '次',
+          value: String(a.weight || 0),
+          unit: 'kg',
+          // GIF 缩略图：命中动作库则走 cloud:// 真实演示动图；否则回退 emoji
+          gif: (LIB_BY_NAME[a.name] && LIB_BY_NAME[a.name].video) ? media(LIB_BY_NAME[a.name].video) : '',
+          thumbEmoji: pickThumbEmoji(a.name)
+        });
+      });
     });
-    this.setData({ filteredWeightList: filtered });
-  },
-
-  /* ---------- 训练记录日期筛选：今日 / 昨日 / 选择日期（默认今日） ---------- */
-  // 点击「今日 / 昨日」切换查看的当天
-  onTrainQuick(e) {
-    const mode = e.currentTarget.dataset.mode;
-    this.setData({ trainQuick: mode, trainCustomDate: '' }, () => this._applyTrainFilter());
-  },
-  // 选择日期：原生日期选择器选完即筛选该天
-  onTrainCustomDate(e) {
-    this.setData({ trainQuick: 'custom', trainCustomDate: e.detail.value }, () => this._applyTrainFilter());
-  },
-  // 回到默认（今日）
-  clearTrainFilter() {
-    this.setData({ trainQuick: 'today', trainCustomDate: '' }, () => this._applyTrainFilter());
-  },
-  _applyTrainFilter() {
-    const { trainGroups, trainQuick, trainCustomDate } = this.data;
-    let filtered = trainGroups;
-    if (trainQuick === 'today') {
-      const t = todayStr();
-      filtered = trainGroups.filter(g => g.date === t);
-    } else if (trainQuick === 'yesterday') {
-      const y = shiftDate(todayStr(), -1);
-      filtered = trainGroups.filter(g => g.date === y);
-    } else if (trainQuick === 'custom') {
-      filtered = trainCustomDate ? trainGroups.filter(g => g.date === trainCustomDate) : [];
-    }
-    this.setData({ filteredTrainGroups: filtered });
-  },
-
-  loadWeight() {
-    const range = RANGES[this.data.rangeIdx];
-    const s = store.getWeightStats(range || null);
-    const changeVal = s.change != null ? Number(s.change) : null;
-    const trend = changeVal == null ? 'none' : (changeVal < 0 ? 'down' : (changeVal > 0 ? 'up' : 'flat'));
     this.setData({
-      stats: {
-          latest: s.latest || '--',
-          change: s.change != null ? s.change : '暂无',
-          trend,
-          max: s.max || '--',
-          min: s.min || '--',
-          days: s.days,
-          down: !!s.down
-        },
-      weightList: s.list,
-      hasWeight: s.list.length > 0
-    }, () => {
-      this._applyFilter();
-      if (this.data.hasWeight) this.drawChart();
-    });
-  },
-
-  loadTraining() {
-    const logs = store.get().trainingLogs.slice();
-    // 同日多场训练：按 createdAt 升序计算每场是第几练（最早=第1练）
-    const asc = logs.slice().sort((a, b) =>
-      a.date === b.date ? (a.createdAt || 0) - (b.createdAt || 0) : a.date.localeCompare(b.date)
-    );
-    const sessionOf = {};
-    const cnt = {};
-    asc.forEach(l => { cnt[l.date] = (cnt[l.date] || 0) + 1; sessionOf[l.sid] = cnt[l.date]; });
-    // 统计每个日期的场次数
-    const perDate = {};
-    logs.forEach(l => { perDate[l.date] = (perDate[l.date] || 0) + 1; });
-    // 拍平每条场次，带 sessionNo / multi / key
-    const flat = logs.map(l => Object.assign({}, l, {
-      key: l.sid || (l.date + '_' + (l.createdAt || '')),
-      sessionNo: sessionOf[l.sid] || 1,
-      multi: (perDate[l.date] || 0) > 1
-    }));
-    // 按日期分组（折叠式布局）：同一天多场聚合为一个分组，组内按场次升序
-    const groupsMap = {};
-    const order = [];
-    flat.forEach(l => {
-      if (!groupsMap[l.date]) { groupsMap[l.date] = []; order.push(l.date); }
-      groupsMap[l.date].push(l);
-    });
-    const trainGroups = order.map(date => {
-      const sessions = groupsMap[date].slice().sort((a, b) => a.sessionNo - b.sessionNo);
-      return {
-        date,
-        key: 'g_' + date,
-        multi: sessions.length > 1,
-        sessions,
-        collapsed: false
-      };
-    });
-    this.setData({ trainGroups }, () => this._applyTrainFilter());
-  },
-
-  /* ---------- 训练详细报表 ---------- */
-  loadReport() {
-    const logs = store.get().trainingLogs;
-    const rep = report.computeReport(logs, 'week', this.data.todayStr);
-    this.setData({ report: rep });
-  },
-  // 切换报表大类（组数对比 / 锻炼时间 / 容量与次数）
-  switchReportTab(e) {
-    const tab = e.currentTarget.dataset.tab;
-    if (tab === this.data.reportTab) return;
-    this.setData({ reportTab: tab });
-  },
-
-  // 折叠/展开某日期分组
-  toggleGroup(e) {
-    const idx = Number(e.currentTarget.dataset.idx);
-    const groups = this.data.filteredTrainGroups;
-    if (!groups[idx]) return;
-    const patch = {};
-    patch['filteredTrainGroups[' + idx + '].collapsed'] = !groups[idx].collapsed;
-    this.setData(patch);
-  },
-
-  goRecordWeight() {
-    wx.navigateTo({ url: '/pages/weight-record/weight-record?from=list' });
-  },
-
-  openTrainDetail(e) {
-    const date = e.currentTarget.dataset.date;
-    const sid = e.currentTarget.dataset.sid;
-    wx.navigateTo({ url: '/pages/train-detail/train-detail?date=' + date + (sid ? '&sid=' + sid : '') });
-  },
-
-  drawChart() {
-    let dpr = 2;
-    try { dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2; } catch (e) {}
-    const query = wx.createSelectorQuery();
-    query.select('#wc').fields({ node: true, size: true }).exec(res => {
-      if (!res[0] || !res[0].node) return;
-      const canvas = res[0].node;
-      const ctx = canvas.getContext('2d');
-      const w = res[0].width;
-      const h = res[0].height;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, w, h);
-
-      const list = this.data.weightList;
-      const vals = list.map(r => r.weight);
-      const min = Math.min(...vals);
-      const max = Math.max(...vals);
-      const pad = 44;
-      const cw = w - pad * 2;
-      const ch = h - pad * 2;
-      const range = (max - min) || 1;
-      const pts = list.map((r, i) => ({
-        x: pad + (list.length === 1 ? cw / 2 : cw * i / (list.length - 1)),
-        y: pad + ch * (1 - (r.weight - min) / range)
-      }));
-
-      // 网格
-      ctx.strokeStyle = '#eef0f3';
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= 3; i++) {
-        const y = pad + ch * i / 3;
-        ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+      record: {
+        hasData: true,
+        dateLabel: fmtDateSlash(iso),
+        duration: fmtDuration(totalSec),
+        calories: String(estKcal(totalSec)),
+        actionCount: allActions.length,
+        actions: allActions
       }
-      // 折线
-      ctx.strokeStyle = '#07c160';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
-      ctx.stroke();
-      // 数据点
-      ctx.fillStyle = '#07c160';
-      pts.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
-      // 极值标注
-      ctx.fillStyle = '#8a9099';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(max.toFixed(1), 4, pad - 8);
-      ctx.fillText(min.toFixed(1), 4, h - pad + 18);
     });
   },
+
+  // 点按动作：弹出【当前选中日期】该动作的训练明细（逐组：重量 / 次数 / RPE / 训练时间 / 休息时间）
+  // 仅取 this.data.selectedDate 当天日志，不再跨日期汇总
+  openExercise(e) {
+    const name = e.currentTarget.dataset.name || '';
+    const entry = LIB_BY_NAME[name];
+    const selDate = this.data.selectedDate;
+    const logs = store.get().trainingLogs || [];
+    const rows = [];
+    let totalSets = 0, maxWeight = 0, rpeSum = 0, rpeCnt = 0, setNo = 0;
+    logs.forEach(l => {
+      if (l.date !== selDate) return;            // 只看当前选中日期
+      (l.actions || []).forEach(a => {
+        if (a.name !== name) return;
+        const detail = a.setsDetail || [];
+        if (detail.length) {
+          detail.forEach(s => {
+            setNo++;
+            const weight = Number(s.weight) || 0;
+            const reps = Number(s.reps) || 0;
+            const rpe = (s.rpe !== '' && s.rpe != null) ? Number(s.rpe) : null;
+            const trainSec = Number(s.trainSec) || 0;
+            const restSec = Number(s.restSec) || 0;
+            totalSets++;
+            if (weight > maxWeight) maxWeight = weight;
+            if (rpe != null) { rpeSum += rpe; rpeCnt++; }
+            rows.push({
+              setNo,
+              weight, reps,
+              rpe, rpeText: rpe != null ? String(rpe) : '—',
+              train: fmtDuration(trainSec),
+              rest: fmtDuration(restSec)
+            });
+          });
+        } else {
+          // 旧日志无 setsDetail：用顶层字段退化为 1 行
+          setNo++;
+          const weight = Number(a.weight) || 0;
+          const reps = Number(a.reps) || 0;
+          totalSets++;
+          if (weight > maxWeight) maxWeight = weight;
+          rows.push({ setNo, weight, reps, rpe: null, rpeText: '—', train: '0:00', rest: '0:00' });
+        }
+      });
+    });
+    // 同一天多次训练同一动作会出现重复 setNo，补唯一键避免 wx:key 冲突
+    rows.forEach((r, i) => { r.k = i; });
+    const avgRpe = rpeCnt ? (Math.round(rpeSum / rpeCnt * 10) / 10) : '—';
+    if (entry) store.get().currentAction = entry;
+    this.setData({
+      showExSheet: true,
+      exSheet: {
+        name,
+        gif: entry && entry.video ? media(entry.video) : '',
+        count: rows.length,
+        maxWeight,
+        totalSets,
+        avgRpe,
+        history: rows
+      }
+    });
+  },
+  closeExSheet() { this.setData({ showExSheet: false }); },
+  noop() {},
 
   onShareAppMessage() {}
 });

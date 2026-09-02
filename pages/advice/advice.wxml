@@ -1,166 +1,227 @@
-<!-- pages/advice/advice.wxml -->
+<!-- pages/advice/advice.wxml —— 对齐 07-diet.html（HiLiLife 饮食建议 · 浅色 + 荧光绿） -->
 <view class="page">
 
-  <!-- 分段控件：饮食建议 / 饮食记录（吸顶药丸 + 滑动指示条） -->
-  <view class="seg">
-    <view class="seg-thumb {{tab==='record' ? 'right' : ''}}"></view>
-    <view class="seg-btn {{tab==='suggest' ? 'on' : ''}}" data-tab="suggest" bindtap="switchTab">饮食建议</view>
-    <view class="seg-btn {{tab==='record' ? 'on' : ''}}" data-tab="record" bindtap="switchTab">饮食记录</view>
-  </view>
-
-  <!-- ============ 饮食建议 ============ -->
-  <view wx:if="{{tab==='suggest'}}" class="tab-pane">
-
-    <!-- 餐次 chips -->
-    <scroll-view scroll-x class="chips">
-      <view
-        wx:for="{{mealTypes}}"
-        wx:key="*this"
-        class="chip {{mealType===item?'on':''}}"
-        data-type="{{item}}"
-        bindtap="switchMeal"
-      >{{item}}</view>
-    </scroll-view>
-
-    <!-- 餐次推荐块：头部（彩色图标 + X推荐 + 总热量）+ 菜式列表 -->
-    <view class="meal" wx:if="{{mealHead}}">
-      <view class="mh">
-        <view class="mi" style="background:{{mealHead.bg}}"><icon name="{{mealHead.icon}}" size="40"/></view>
-        <view class="mtitle">{{mealHead.name}}推荐</view>
-        <view class="kc">{{mealHead.kcalText}}</view>
-      </view>
-
-      <view class="dish" wx:for="{{recommends}}" wx:key="id">
-        <view class="emo {{item.image ? 'has-img' : ''}}">
-          <image wx:if="{{item.image}}" class="emo-img" src="{{item.image}}" mode="aspectFill" lazy-load />
-          <text wx:else>{{item.emoji}}</text>
-        </view>
-        <view class="dbody">
-          <view class="dn">{{item.name}}</view>
-          <view class="dd">{{item.desc}}</view>
-        </view>
-        <view class="dk">~{{item.calories}}</view>
-        <view class="dadd" data-id="{{item.id}}" bindtap="addMeal">添加</view>
-      </view>
-
-      <view wx:if="{{recommends.length===0}}" class="empty">该餐别暂无推荐</view>
+  <!-- 顶部切换：饮食建议 | 饮食记录 -->
+  <view class="topbar">
+    <view class="seg-top">
+      <view class="seg-top-item {{view==='advice'?'on':''}}" bindtap="switchView" data-view="advice" hover-class="btn-hover">饮食建议</view>
+      <view class="seg-top-item {{view==='record'?'on':''}}" bindtap="switchView" data-view="record" hover-class="btn-hover">饮食记录</view>
     </view>
   </view>
 
-  <!-- ============ 饮食记录 ============ -->
-  <view wx:else class="tab-pane">
-    <!-- 日期筛选 -->
-    <view class="date-filter">
-      <picker mode="date" value="{{dietDate}}" bindchange="onDietDateChange">
-        <view class="df-picker {{dietDate ? 'has-val' : ''}}">{{dietDate || '选择日期'}}</view>
-      </picker>
-      <text wx:if="{{!isToday}}" class="df-sep" bindtap="resetDietDate">回到今天</text>
+  <!-- ============ 饮食建议视图 ============ -->
+  <block wx:if="{{view==='advice'}}">
+
+    <!-- 今日目标 + 完成度环 -->
+    <view class="goal-card" aria-label="今日热量目标">
+      <view class="info">
+        <view class="label">今日目标</view>
+        <view class="kcal">{{intakeTarget}}<text class="unit">kcal</text></view>
+        <view class="sub">建议摄入</view>
+      </view>
+      <view class="ring goal-ring" style="{{ringStyle}}" role="img" aria-label="已完成 {{intakePct}}%">
+        <text class="ring-span">{{intakePct}}%</text>
+      </view>
     </view>
 
-    <!-- 摄入汇总：环形进度 + 三大营养素 -->
-    <view class="kcal-ring">
-      <view class="kr">
-        <view class="kr-donut" style="background: conic-gradient(#FF7A3D {{ringPct}}%, #FFD9C8 0);">
-          <view class="kr-hole">
-            <view class="kr-pct">{{ringPct}}<text class="kr-pct-u">%</text></view>
-            <view class="kr-lab">已摄入</view>
+    <!-- 营养概览（3 列） -->
+    <view class="nutrition-overview" aria-label="营养概览">
+      <view class="item" wx:for="{{nutrients}}" wx:key="key">
+        <view class="head">
+          <view class="swatch" style="{{item.swatchStyle}}"></view>
+          <text>{{item.key}}</text>
+        </view>
+        <view class="val">{{item.goal}}<text class="unit">g</text></view>
+      </view>
+    </view>
+
+    <!-- 推荐分类筛选（早/中/晚/加餐/蔬果） -->
+    <view class="cat-pills" role="tablist" aria-label="推荐分类">
+      <view wx:for="{{categoryKeys}}" wx:key="*this"
+            class="cat-pill {{currentCategory===item?'on':''}}"
+            bindtap="switchCategory" data-key="{{item}}"
+            hover-class="btn-hover" role="tab"
+            aria-selected="{{currentCategory===item}}"
+            aria-label="{{item}}">{{item}}</view>
+    </view>
+
+    <!-- 推荐食物（垂直卡片列表） -->
+    <view class="food-list" aria-label="{{currentCategory}}推荐食物">
+      <view class="food-row card" wx:for="{{currentFoods}}" wx:key="id"
+            aria-label="{{item.name}} · 约 {{item.calories}} kcal">
+        <view class="food-thumb">
+          <image class="food-img" src="{{item.img}}" mode="aspectFill" lazy-load></image>
+        </view>
+        <view class="food-info">
+          <view class="food-name">{{item.name}}</view>
+          <view class="food-kcal">约 {{item.calories}} kcal</view>
+          <view class="food-macros">蛋白质 {{item.protein}}g  碳水 {{item.carb}}g  脂肪 {{item.fat}}g</view>
+          <view class="food-desc">{{item.desc}}</view>
+        </view>
+        <view class="food-add" bindtap="addFood" data-id="{{item.id}}"
+              hover-class="btn-hover" role="button" aria-label="添加{{item.name}}">+</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ============ 饮食记录视图 ============ -->
+  <block wx:if="{{view==='record'}}">
+
+    <!-- 今日摄入 Hero（日期可点击筛选） -->
+    <view class="rec-hero card" aria-label="摄入">
+      <view class="rh-row">
+        <text class="rh-label">{{intakeLabel}}</text>
+        <picker mode="date" value="{{selectedDate}}" end="{{todayDate}}" bindchange="onDateChange">
+          <view class="rh-date" hover-class="rh-date-hover" role="button" aria-label="选择日期筛选">{{selectedDate}}<text class="rh-caret">▾</text></view>
+        </picker>
+      </view>
+      <view class="rh-main">
+        <text class="rh-val">{{intakeSum.cal}}</text>
+        <text class="rh-unit"> / -- kcal</text>
+      </view>
+      <view class="macro-rows">
+        <view class="macro-row" wx:for="{{macros}}" wx:key="key">
+          <text class="mr-name mr-name-{{index}}">{{item.key}}</text>
+          <view class="mr-bar"><view class="mr-fill mr-fill-{{index}}" style="{{item.fillStyle}}"></view></view>
+          <text class="mr-val">{{item.val}} / {{item.goal}}g</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="meal-group card" wx:for="{{mealGroups}}" wx:key="type">
+      <view class="meal-head">
+        <view class="meal-name">{{item.type}}</view>
+        <view class="meal-meta">{{item.meals.length}}条 · {{item.total}}<text class="unit">kcal</text></view>
+      </view>
+
+      <view wx:if="{{item.meals.length === 0}}" class="meal-empty">暂无记录</view>
+      <view wx:else>
+        <view class="meal-item" wx:for="{{item.meals}}" wx:for-item="m" wx:key="id">
+          <view class="mi-body">
+            <view class="mi-name">{{m.name}}</view>
+            <view class="mi-portion">{{m.portion}}份</view>
+            <view class="mi-macros">{{m.calories}}kcal · 蛋白质{{m.protein}}g · 碳水{{m.carb}}g · 脂肪{{m.fat}}g</view>
+          </view>
+          <view class="mi-actions">
+            <view class="mi-edit" bindtap="editMeal" data-id="{{m.id}}"
+                  hover-class="btn-hover" role="button" aria-label="编辑{{m.name}}">修改</view>
+            <view class="mi-del" bindtap="deleteMeal" data-id="{{m.id}}"
+                  hover-class="btn-hover" role="button" aria-label="删除{{m.name}}">删除</view>
           </view>
         </view>
       </view>
-      <view class="kt">
-        <view class="kt-cap">{{isToday ? '今日摄入总热量' : dietDate + ' 摄入总热量'}}</view>
-        <view class="kt-big tnum">{{dietSummary.cal}}<text class="kt-u"> / {{intakeTarget}} 千卡</text></view>
-        <view class="kt-sub">还可摄入 {{remain}} 千卡</view>
+
+      <view class="add-row" bindtap="openAdd" data-type="{{item.type}}"
+            hover-class="btn-hover" role="button" aria-label="添加{{item.type}}食物">
+        <view class="add-ico" aria-hidden="true"></view>
+        <text>添加{{item.type}}</text>
       </view>
     </view>
+  </block>
 
-    <view class="macros">
-      <view class="m">
-        <view class="dot" style="background:#3E8BFF"></view>
-        <view class="v tnum" style="color:#3E8BFF">{{dietSummary.p}}<text class="mu">g</text></view>
-        <view class="l">蛋白质</view>
-      </view>
-      <view class="m">
-        <view class="dot" style="background:#F4B740"></view>
-        <view class="v tnum" style="color:#B07C09">{{dietSummary.c}}<text class="mu">g</text></view>
-        <view class="l">碳水</view>
-      </view>
-      <view class="m">
-        <view class="dot" style="background:#FF7A3D"></view>
-        <view class="v tnum" style="color:#FF7A3D">{{dietSummary.f}}<text class="mu">g</text></view>
-        <view class="l">脂肪</view>
-      </view>
-    </view>
-
-    <!-- 今日饮食明细（按餐别分组） -->
-    <view class="meal" wx:for="{{mealSections}}" wx:key="key" wx:if="{{item.items.length}}">
-      <view class="mh">
-        <view class="mi" style="background:{{item.bg}}"><icon name="{{item.icon}}" size="40"/></view>
-        <view class="mtitle">{{item.key}}</view>
-        <view class="kc">{{item.subCal}} kcal</view>
-      </view>
-      <view class="dish" wx:for="{{item.items}}" wx:key="id" wx:for-item="food">
-        <view class="emo"><icon name="food-bowl" size="40"/></view>
-        <view class="dbody">
-          <view class="dn">{{food.name}}</view>
-          <view class="dd">
-            <text wx:if="{{food.portion}}">{{food.portion}} · </text>{{food.calories}}kcal<text wx:if="{{food.protein>0}}"> · 蛋{{food.protein}}g</text><text wx:if="{{food.carb>0}}"> · 碳{{food.carb}}g</text><text wx:if="{{food.fat>0}}"> · 脂{{food.fat}}g</text>
-          </view>
-          <view wx:if="{{food.note}}" class="dnote">{{food.note}}</view>
+  <!-- ============ 添加方式选择 sheet ============ -->
+  <view wx:if="{{showAddSheet}}" class="mask" bindtap="closeAdd">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">添加食物到「{{addType}}」</view>
+      <view class="sheet-opt" bindtap="chooseAdd" data-way="ai" hover-class="opt-hover" role="button" aria-label="AI识别拍照">
+        <view class="opt-ico"><view class="ico ico-camera ico--ink" style="width:40rpx;height:40rpx"></view></view>
+        <view class="opt-main">
+          <view class="opt-name">AI 识别拍照</view>
+          <view class="opt-desc">拍照识别并记录到「{{addType}}」</view>
         </view>
-        <view class="dacts">
-          <view class="dact-edit" catchtap="editRecord" data-id="{{food.id}}">改</view>
-          <view class="dact-del" catchtap="deleteRecord" data-id="{{food.id}}">✕</view>
-        </view>
+        <text class="opt-arrow">›</text>
       </view>
+      <view class="sheet-opt" bindtap="chooseAdd" data-way="manual" hover-class="opt-hover" role="button" aria-label="手动输入">
+        <view class="opt-ico"><view class="ico ico-food-bowl ico--ink" style="width:40rpx;height:40rpx"></view></view>
+        <view class="opt-main">
+          <view class="opt-name">手动输入</view>
+          <view class="opt-desc">填写食物、份量、营养数据</view>
+        </view>
+        <text class="opt-arrow">›</text>
+      </view>
+      <view class="sheet-cancel" bindtap="closeAdd" hover-class="btn-hover" role="button" aria-label="取消">取消</view>
     </view>
-
-    <view wx:if="{{totalItems===0}}" class="empty">还没有饮食记录，去「添加」吧</view>
   </view>
 
-  <!-- 添加饮食记录弹窗 -->
-  <view wx:if="{{showAdd}}" class="modal-mask" bindtap="closeAdd">
-    <view class="modal" catchtap="noop">
-      <view class="modal-title">{{editingId ? '修改饮食记录' : '添加' + addType + '记录'}}</view>
-
-      <view class="rec-cam {{recognizing ? 'loading' : ''}}" bindtap="takePhoto">
-        <view class="cam-ic"><icon name="camera" size="36"/></view>
-        <view class="cam-tx">{{recognizing ? '识别中...' : 'AI 拍照识别'}}</view>
-      </view>
-
-      <view class="param-row">
-        <view class="param-cell name-cell">
-          <view class="field-label">食物名称</view>
-          <input class="modal-input" placeholder="如：鸡胸肉" value="{{recName}}" data-field="recName" bindinput="onRecInput" />
+  <!-- ============ 手动输入 modal ============ -->
+  <view wx:if="{{showManual}}" class="mask" bindtap="closeManual">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">{{editingMealId ? '编辑' : '手动记录'}} · {{addType}}</view>
+      <view class="form">
+        <view class="f-row">
+          <text class="f-lab">食物名称</text>
+          <input class="f-input" placeholder="如：鸡胸肉" value="{{form.name}}" bindinput="onForm" data-field="name" />
         </view>
-        <view class="param-cell portion-cell">
-          <view class="field-label">份量</view>
-          <input class="modal-input sm" placeholder="1份" value="{{recPortion}}" data-field="recPortion" bindinput="onRecInput" />
+        <view class="f-row">
+          <text class="f-lab">份数</text>
+          <input class="f-input" type="number" placeholder="1" value="{{form.portion}}" bindinput="onForm" data-field="portion" />
+        </view>
+        <view class="f-row">
+          <text class="f-lab">热量(kcal)</text>
+          <input class="f-input" type="digit" placeholder="0" value="{{form.calories}}" bindinput="onForm" data-field="calories" />
+        </view>
+        <view class="f-grid3">
+          <view class="f-cell">
+            <text class="f-lab">蛋白(g)</text>
+            <input class="f-input sm" type="digit" placeholder="0" value="{{form.protein}}" bindinput="onForm" data-field="protein" />
+          </view>
+          <view class="f-cell">
+            <text class="f-lab">碳水(g)</text>
+            <input class="f-input sm" type="digit" placeholder="0" value="{{form.carb}}" bindinput="onForm" data-field="carb" />
+          </view>
+          <view class="f-cell">
+            <text class="f-lab">脂肪(g)</text>
+            <input class="f-input sm" type="digit" placeholder="0" value="{{form.fat}}" bindinput="onForm" data-field="fat" />
+          </view>
         </view>
       </view>
-
-      <view class="param-row">
-        <view class="param-cell"><view class="field-label">热量(kcal) <text class="opt">选填</text></view>
-          <input class="modal-input sm" type="digit" placeholder="0" value="{{recCalories}}" data-field="recCalories" bindinput="onRecInput" /></view>
-        <view class="param-cell"><view class="field-label">蛋白质(g) <text class="opt">选填</text></view>
-          <input class="modal-input sm" type="digit" placeholder="0" value="{{recProtein}}" data-field="recProtein" bindinput="onRecInput" /></view>
-      </view>
-      <view class="param-row">
-        <view class="param-cell"><view class="field-label">碳水(g) <text class="opt">选填</text></view>
-          <input class="modal-input sm" type="digit" placeholder="0" value="{{recCarb}}" data-field="recCarb" bindinput="onRecInput" /></view>
-        <view class="param-cell"><view class="field-label">脂肪(g) <text class="opt">选填</text></view>
-          <input class="modal-input sm" type="digit" placeholder="0" value="{{recFat}}" data-field="recFat" bindinput="onRecInput" /></view>
-      </view>
-
-      <view class="field-label">备注</view>
-      <input class="modal-input" placeholder="可选，如：少油少盐" value="{{recNote}}" data-field="recNote" bindinput="onRecInput" />
-
       <view class="modal-actions">
-        <button class="btn-secondary modal-cancel" bindtap="cancelAdd">取消</button>
-        <button class="btn-primary modal-ok" bindtap="saveRecord">保存记录</button>
+        <view class="btn-cancel" bindtap="closeManual" hover-class="btn-hover" role="button" aria-label="取消">取消</view>
+        <view class="btn-save" bindtap="saveManual" hover-class="btn-hover" role="button" aria-label="保存">保存</view>
       </view>
     </view>
   </view>
 
-  <view class="bottom-gap" />
+  <!-- ============ AI 识别中 ============ -->
+  <view wx:if="{{recognizing}}" class="mask">
+    <view class="rec-loading">
+      <view class="spinner"></view>
+      <view class="rec-loading-txt">AI 识别中…</view>
+    </view>
+  </view>
+
+  <!-- ============ AI 识别结果 ============ -->
+  <view wx:if="{{recResult}}" class="mask" bindtap="closeRec">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">AI 识别结果 · {{addType}}</view>
+      <view wx:if="{{recResult.mock}}" class="mock-tip">演示数据（未配置视觉模型 key），接入真实模型后即替换为估算结果。</view>
+
+      <view class="rec-total" wx:if="{{recResult.total}}">
+        <text class="rt-k">本餐合计</text>
+        <text class="rt-v">{{recResult.total.calories}} 千卡 · 蛋白 {{recResult.total.protein}}g · 碳水 {{recResult.total.carb}}g · 脂肪 {{recResult.total.fat}}g</text>
+      </view>
+
+      <view wx:if="{{recResult.foods.length === 0}}" class="meal-empty">未能识别到食物，请换一张更清晰的图。</view>
+
+      <view class="rec-list" wx:else>
+        <view class="rec-item" wx:for="{{recResult.foods}}" wx:key="name">
+          <view class="rec-thumb">{{item.emoji || '🍽️'}}</view>
+          <view class="rec-body">
+            <view class="rec-name">{{item.name}}</view>
+            <view class="rec-meta">蛋白 {{item.protein}}g · 碳水 {{item.carb}}g · 脂肪 {{item.fat}}g</view>
+          </view>
+          <view class="rec-right">
+            <view class="rec-cal">{{item.calories}}</view>
+            <view class="btn-record" bindtap="recRecordOne" data-idx="{{index}}" hover-class="opt-hover" role="button" aria-label="记录{{item.name}}">记录</view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{recResult.foods.length > 0}}" class="rec-record-all" bindtap="recRecordAll" hover-class="btn-hover" role="button" aria-label="全部记录">全部记录到{{addType}}</view>
+      <view wx:if="{{recResult.note}}" class="note">{{recResult.note}}</view>
+      <view class="sheet-cancel" bindtap="closeRec" hover-class="btn-hover" role="button" aria-label="关闭">关闭</view>
+    </view>
+  </view>
+
+  <view class="bottom-gap"></view>
 </view>

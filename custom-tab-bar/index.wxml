@@ -1,5 +1,6 @@
-<!-- custom-tab-bar/index.wxml -->
-<view class="tab-bar">
+<!-- custom-tab-bar/index.wxml
+     theme-light / theme-dark 由各 tab 页 onShow 通过 getTabBar().setData({ theme }) 注入 -->
+<view class="tab-bar {{theme}}">
   <view
     wx:for="{{list}}"
     wx:key="text"
@@ -7,14 +8,14 @@
     data-index="{{index}}"
     bindtap="switchTab"
   >
-    <view class="tab-icon"><image wx:if="{{item.iconSrc}}" class="tab-icon-img" src="{{item.iconSrc}}" mode="aspectFit" /></view>
+    <view class="tab-icon"><view class="ico ico-{{item.icon}}"></view></view>
     <view class="tab-text">{{item.text}}</view>
   </view>
 </view>
 
 <!-- 全局训练计时悬浮窗：训练中页最小化/离开后仍可在 tab 页显示，点击返回/恢复训练。
      用 movable-area + movable-view 实现可拖拽（松手自动贴左右边），浮于所有 tab 页之上。 -->
-<movable-area class="wo-float-area" wx:if="{{showWo}}">
+<movable-area class="wo-float-area {{theme}}" wx:if="{{showWo}}">
   <movable-view class="wo-float {{woRunning ? 'running' : ''}}" direction="all" damping="30" friction="6"
     x="{{woX}}" y="{{woY}}" bindtouchstart="onWoFloatStart" bindchange="onWoFloatChange" bindtouchend="onWoFloatEnd" catchtap="openWorkout">
     <text class="wo-float-ico">⏱</text>

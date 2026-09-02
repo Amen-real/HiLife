@@ -1,106 +1,233 @@
-/* pages/plan/plan.wxss */
-.page { padding: 24rpx 0 60rpx; }
-.topbar { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 32rpx 24rpx; }
-.tb-title { font-size: var(--fs-title); font-weight: 800; color: var(--text); }
-.tb-add { font-size: var(--fs-body); color: #fff; background: var(--primary); border-radius: 999rpx; padding: 12rpx 28rpx; }
-.tb-back { font-size: var(--fs-head); color: var(--text-sub); }
-.tb-save { font-size: var(--fs-body); color: var(--primary); font-weight: 600; }
+/* pages/plan/plan.wxss —— 严格对齐 03-plan.html（HiLiLife 设计系统：暖白底 + 荧光绿） */
+.page { width: 100vw; box-sizing: border-box; padding-bottom: calc(40rpx + env(safe-area-inset-bottom)); }
 
-/* 周期规划入口（Phase 2） */
-.cyc-entry {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 32rpx 8rpx;
-  padding: 24rpx 28rpx;
-  background: var(--glass-strong);
-  border: 1rpx solid var(--glass-border);
-  border-radius: 28rpx;
+/* ============== HEADER：我的计划 / 模板推荐 双标题（对齐数据页 .header） ============== */
+.header {
+  flex: none;
+  padding: 16rpx 32rpx 24rpx;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header .lead { display: flex; align-items: center; gap: 48rpx; }
+.header .title {
+  font-size: 44rpx; font-weight: 500;
+  color: var(--n-500);
+  letter-spacing: -0.01em;
+  padding-bottom: 8rpx;
+  border-bottom: 4rpx solid transparent;
+}
+.header .title.active {
+  color: var(--n-900); font-weight: 800;
+  border-bottom-color: var(--primary);
+}
+
+/* ============== SCROLL ============== */
+.scroll { width: 100%; box-sizing: border-box; height: calc(100vh - 260rpx); padding: 0 0 32rpx; overflow-x: hidden; }
+.section { width: 100%; box-sizing: border-box; padding: 16rpx 0 32rpx; }
+.section-label {
+  font-size: 30rpx; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900);
+  margin: 0 32rpx 20rpx;
+}
+
+/* ============== 我的计划：计划卡片（对齐 03 .plan） ============== */
+.plans { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 24rpx; }
+.plan {
+  width: calc(100vw - 64rpx); margin: 0 auto;
+  box-sizing: border-box;
+  background: var(--white);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 32rpx;
   box-shadow: var(--shadow-card);
 }
-.cyc-entry-l { min-width: 0; }
-.cyc-entry-t { font-size: var(--fs-head); font-weight: 800; color: var(--text); }
-.cyc-entry-s { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 6rpx; }
-.cyc-entry-ar { font-size: var(--fs-section); color: var(--primary-deep); font-weight: 700; flex-shrink: 0; margin-left: 16rpx; }
+.plan-hover { transform: scale(0.99); box-shadow: 0 6rpx 18rpx rgba(0,0,0,0.08); }
 
-/* 列表 */
-.plan-list { display: flex; flex-direction: column; gap: 20rpx; padding: 0 32rpx; }
-.plan-item { background: var(--card); border: 1rpx solid var(--glass-border); border-radius: 28rpx; padding: 28rpx; box-shadow: var(--shadow-card); }
-.pi-main { display: flex; align-items: center; gap: 16rpx; }
-.pi-name { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
-.pi-count { font-size: var(--fs-label); color: var(--text-sub); }
-.pi-tag { font-size: var(--fs-caption); color: #fff; background: var(--primary); border-radius: 999rpx; padding: 4rpx 14rpx; }
-.pi-actions { display: flex; gap: 14rpx; margin-top: 22rpx; }
-.pi-btn {
-  flex: 1; text-align: center; font-size: var(--fs-body); padding: 16rpx 0;
-  border-radius: 12rpx; background: var(--bg); color: var(--text);
+.plan .row-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 24rpx; margin-bottom: 20rpx;
 }
-.pi-btn.on { background: var(--primary-light); color: var(--primary-deep); }
-.pi-btn.primary { background: var(--primary); color: #fff; }
-.pi-btn.danger { background: #fdecec; color: #E53E3E; }
+.plan .title {
+  font-size: 32rpx; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900); line-height: 1.4;
+}
+.plan .chev {
+  width: 48rpx; height: 48rpx; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--n-500); font-size: 40rpx; margin-top: 2rpx;
+}
+.plan .meta { font-size: 24rpx; color: var(--n-700); margin-bottom: 24rpx; }
+.plan .meta .label { font-weight: 600; }
 
-/* 空态 */
+/* 进度条（对齐 03 .progress-row / .progress） */
+.plan .progress-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24rpx; margin-bottom: 12rpx;
+}
+.plan .progress-label {
+  font-size: 24rpx; font-weight: 600;
+  color: var(--n-700); letter-spacing: 0;
+}
+.plan .progress-pct {
+  font-family: var(--f-en);
+  font-size: 28rpx; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--n-900); font-variant-numeric: tabular-nums;
+}
+.plan .progress {
+  height: 12rpx; background: var(--n-100);
+  border-radius: 999rpx; overflow: hidden;
+}
+.plan .progress > i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #0A0A0A 0%, #2A3310 55%, #A6C24A 100%);
+  border-radius: 999rpx;
+  transition: width 600ms var(--ease-out);
+}
+.plan .progress > i.on { width: 100%; }
+
+/* level 标签（03 定义，标题区可选） */
+.plan .level {
+  display: inline-flex; align-items: center;
+  height: 44rpx; padding: 0 16rpx;
+  background: var(--primary-tint);
+  color: var(--success);
+  border-radius: var(--r-s);
+  font-size: 22rpx; font-weight: 800;
+  margin-right: 12rpx; letter-spacing: 0;
+}
+
+/* ============== 模板推荐：rec 卡片（对齐 03 .rec，缩略图用深色渐变块+emoji 模拟 SVG 插画） ============== */
+.recs { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 24rpx; }
+.rec {
+  width: calc(100vw - 64rpx); margin: 0 auto;
+  box-sizing: border-box;
+  background: var(--white);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 24rpx;
+  box-shadow: var(--shadow-card);
+  display: flex; align-items: center; gap: 28rpx;
+}
+.rec-hover { transform: scale(0.99); box-shadow: 0 6rpx 18rpx rgba(0,0,0,0.08); }
+
+.rec .photo {
+  width: 144rpx; height: 144rpx; flex: none;
+  border-radius: var(--r-m); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.rec .photo-emoji { font-size: 64rpx; line-height: 1; }
+.rec .photo-accent {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 4rpx; opacity: 0.65;
+}
+.rec .body { flex: 1 1 auto; min-width: 0; }
+.rec .body .t {
+  font-size: 30rpx; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900); line-height: 1.4; margin-bottom: 8rpx;
+}
+.rec .body .sub {
+  font-size: 24rpx; font-weight: 600;
+  color: var(--n-600);
+}
+.rec .chev-wrap {
+  width: 48rpx; height: 48rpx; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--n-500); font-size: 40rpx;
+}
+
+/* ============== 空态 ============== */
 .empty { display: flex; flex-direction: column; align-items: center; padding: 100rpx 40rpx; }
-.empty-ico { font-size: var(--fs-hero-lg); opacity: 0.7; }
-.empty-title { font-size: var(--fs-head); font-weight: 600; margin-top: 20rpx; }
-.empty-hint { font-size: var(--fs-label); color: var(--text-weak); margin-top: 8rpx; }
+.empty-ico { font-size: 80rpx; opacity: 0.7; }
+.empty-title { font-size: 32rpx; font-weight: 600; margin-top: 20rpx; }
+.empty-hint { font-size: 24rpx; color: var(--text-weak); margin-top: 8rpx; }
 .empty-btn { margin-top: 36rpx; width: 60%; display: flex; align-items: center; justify-content: center; padding: 20rpx 0; border-radius: 999rpx; }
 
-/* 新建表单 */
-.field-label { font-size: var(--fs-body); color: var(--text-sub); margin-bottom: 16rpx; }
+/* ============== 新建表单（create 模式） ============== */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 32rpx 24rpx; }
+.tb-title { font-size: 36rpx; font-weight: 800; color: var(--n-900); }
+.tb-back { font-size: 32rpx; color: var(--text-sub); }
+.tb-save { font-size: 28rpx; color: var(--success); font-weight: 600; }
+
+.field-label { font-size: 28rpx; color: var(--text-sub); margin-bottom: 16rpx; }
 .name-input {
-  width: 100%;
-  height: 72rpx;
-  line-height: 72rpx;
-  padding: 0 24rpx;
-  background: var(--bg); border-radius: 14rpx;
-  font-size: var(--fs-body); color: var(--text);
+  width: 100%; height: 88rpx; line-height: 88rpx;
+  padding: 0 24rpx; background: var(--bg); border-radius: 16rpx;
+  font-size: 28rpx; color: var(--text);
 }
 .cat-tabs { white-space: nowrap; margin-bottom: 16rpx; }
 .cat-tab {
-  display: inline-block; font-size: var(--fs-body); color: var(--text-sub);
+  display: inline-block; font-size: 28rpx; color: var(--text-sub);
   padding: 12rpx 28rpx; margin-right: 14rpx; background: var(--bg); border-radius: 999rpx;
 }
-.cat-tab.on { background: var(--primary); color: #fff; }
+.cat-tab.on { background: var(--primary); color: #0A0A0A; font-weight: 700; }
 .search-box { margin-bottom: 16rpx; }
-.search-input { width: 100%; height: 72rpx; line-height: 72rpx; padding: 0 24rpx; background: var(--bg); border-radius: 14rpx; font-size: var(--fs-body); color: var(--text); }
+.search-input { width: 100%; height: 88rpx; line-height: 88rpx; padding: 0 24rpx; background: var(--bg); border-radius: 16rpx; font-size: 28rpx; color: var(--text); }
 .act-pool { display: flex; flex-direction: column; gap: 12rpx; }
 .pool-item {
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--card); border: 1rpx solid var(--glass-border); border-radius: 28rpx; padding: 22rpx 24rpx; box-shadow: var(--shadow-sm);
+  background: var(--card); border: 1rpx solid var(--n-200); border-radius: 32rpx; padding: 22rpx 24rpx; box-shadow: var(--shadow-sm);
 }
-.pool-item.picked { background: var(--primary-light); border-color: var(--primary); }
+.pool-item.picked { background: var(--primary-tint); border-color: var(--primary); }
 .pool-hover { background: var(--bg); }
 .pool-main { display: flex; flex-direction: column; }
-.pool-name { font-size: var(--fs-body); font-weight: 600; color: var(--text); }
-.pool-cat { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 4rpx; }
+.pool-name { font-size: 28rpx; font-weight: 600; color: var(--text); }
+.pool-cat { font-size: 20rpx; color: var(--text-weak); margin-top: 4rpx; }
 .pool-check {
   width: 40rpx; height: 40rpx; border-radius: 50%;
   background: #fff; color: var(--primary); border: 1rpx solid var(--primary);
-  display: flex; align-items: center; justify-content: center; font-size: var(--fs-body);
+  display: flex; align-items: center; justify-content: center; font-size: 28rpx;
 }
-.pool-item.picked .pool-check { background: var(--primary); color: #fff; }
+.pool-item.picked .pool-check { background: var(--primary); color: #0A0A0A; }
 
-/* 推荐方案（循证训练模板） */
-.rec { padding: 8rpx 32rpx 0; }
-.rec-head { display: flex; align-items: baseline; gap: 16rpx; margin: 28rpx 0 16rpx; }
-.rec-title { font-size: var(--fs-title); font-weight: 800; color: var(--text); }
-.rec-sub { font-size: var(--fs-caption); color: var(--text-weak); }
-.rec-card { background: var(--card); border: 1rpx solid var(--glass-border); border-radius: 28rpx; padding: 24rpx 28rpx; box-shadow: var(--shadow-card); margin-bottom: 18rpx; }
-.rec-top { display: flex; align-items: center; justify-content: space-between; }
-.rec-hover { background: var(--bg); }
-.rec-meta { display: flex; flex-direction: column; gap: 10rpx; flex: 1; }
-.rec-name { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
-.rec-tags { display: flex; gap: 10rpx; }
-.rec-tag { font-size: var(--fs-caption); color: var(--primary-deep); background: var(--primary-light); border-radius: 999rpx; padding: 4rpx 16rpx; }
-.rec-arrow { font-size: var(--fs-head); color: var(--text-sub); margin-left: 16rpx; }
-.rec-desc { font-size: var(--fs-label); color: var(--text-sub); line-height: 1.6; margin: 18rpx 0; }
-.rec-days { display: flex; flex-direction: column; gap: 14rpx; }
-.day-card { background: var(--bg); border-radius: 20rpx; padding: 20rpx 22rpx; }
-.day-head { display: flex; align-items: center; justify-content: space-between; }
-.day-info { display: flex; flex-direction: column; gap: 6rpx; flex: 1; }
-.day-name { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
-.day-focus { font-size: var(--fs-caption); color: var(--text-weak); }
-.day-import { font-size: var(--fs-body); color: #fff; background: var(--primary); border-radius: 999rpx; padding: 12rpx 26rpx; }
-.day-acts { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 14rpx; }
-.day-act { font-size: var(--fs-caption); color: var(--text-sub); background: var(--card); border: 1rpx solid var(--glass-border); border-radius: 10rpx; padding: 6rpx 14rpx; }
+/* ============================================================
+   深色主题（.page.theme-dark 变量重定义，向下继承自动翻转）
+   ============================================================ */
+.page.theme-dark {
+  --n-950: #FFFFFF;
+  --n-900: #FFFFFF;
+  --n-700: rgba(255,255,255,.70);
+  --n-600: rgba(255,255,255,.55);
+  --n-500: rgba(255,255,255,.42);
+  --n-400: rgba(255,255,255,.32);
+  --n-300: rgba(255,255,255,.22);
+  --n-200: rgba(255,255,255,.10);
+  --n-100: #1E1E1E;
+  --n-50: #0A0A0A;
+  --white: #161616;
+  --card-gray: #1E1E1E;
+
+  --text: #FFFFFF;
+  --text-sub: rgba(255,255,255,.70);
+  --text-weak: rgba(255,255,255,.45);
+  --line: rgba(255,255,255,.10);
+  --line-strong: rgba(255,255,255,.20);
+
+  --success: #C8FF00;
+
+  --card: #161616;
+  --bg: rgba(255,255,255,.06);
+  --bg-muted: #1E1E1E;
+  --glass: #161616;
+  --glass-strong: #1E1E1E;
+  --glass-border: rgba(255,255,255,.10);
+
+  --primary-tint: rgba(200,255,0,.12);
+  --accent-soft: rgba(255,149,0,.14);
+  --accent-tint: rgba(255,149,0,.14);
+  --info-tint: rgba(62,139,255,.14);
+  --purple-tint: rgba(139,92,246,.16);
+  --warning-tint: rgba(255,176,32,.14);
+
+  --shadow-card: 0 4rpx 16rpx rgba(0,0,0,.35);
+  --shadow-sm: 0 4rpx 16rpx rgba(0,0,0,.30);
+  --shadow-md: 0 10rpx 30rpx rgba(0,0,0,.40);
+  --shadow-lg: 0 16rpx 44rpx rgba(0,0,0,.50);
+  --shadow-xs: 0 2rpx 8rpx rgba(0,0,0,.30);
+
+  background: var(--n-50);
+  color: var(--text);
+}
+
+/* 深色下的硬编码色单独覆盖 */
+.page.theme-dark .plan .progress > i { background: linear-gradient(90deg, #E4FF6E 0%, #C8FF00 55%, #7CB800 100%); }
+.page.theme-dark .pool-check { background: #161616; }

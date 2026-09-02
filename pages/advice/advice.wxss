@@ -1,196 +1,420 @@
-/* pages/advice/advice.wxss —— 对齐参考文件「建议页」排版（餐次块 + 菜式卡 + 环形汇总） */
-/* 竖直渐变底（顶部青绿→底部桃色），与首页/我的/训练执行页统一；
-   端点精确对齐 app.json 的 backgroundColorTop(#2ECFB0)/Bottom(#FFF1E8)，上拉/下拉无可见断缝；
-   min-height:100vh 保证内容短时渐变仍铺满视口，底部桃色对齐视口底 */
-.page { padding: 24rpx 0 calc(130rpx + env(safe-area-inset-bottom)); position: relative; min-height: 100vh; background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%); }
+/* pages/advice/advice.wxss —— 对齐 07-diet.html（HiLiLife 饮食建议 · 浅色暖白底 + 荧光绿）
+   覆盖旧版青绿→桃色渐变主题，统一为 HiLife 浅色设计系统。 */
 
-/* ===== 分段控件（吸顶药丸 + 滑动指示条） ===== */
-.seg {
-  display: flex; gap: 8rpx; margin: 20rpx 28rpx 0;
-  padding: 8rpx; background: var(--card); border-radius: 999rpx;
-  border: 1rpx solid var(--line); box-shadow: var(--shadow-sm);
-  position: sticky; top: 0; z-index: 10;
-}
-/* 滑动药丸：绝对定位，根据选中态 translateX 平滑滑动 */
-.seg-thumb {
-  position: absolute; left: 8rpx; top: 8rpx; bottom: 8rpx;
-  width: calc(50% - 12rpx);
-  background: var(--primary); border-radius: 999rpx;
-  box-shadow: 0 4rpx 14rpx rgba(46,207,176, 0.30);
-  transform: translateX(0);
-  transition: transform 0.28s var(--ease-out, ease);
-  z-index: 0;
-}
-.seg-thumb.right { transform: translateX(calc(100% + 8rpx)); }
-.seg-btn {
-  flex: 1; text-align: center; font-size: var(--fs-head); color: var(--text-sub);
-  font-weight: 700; padding: 18rpx 0; border-radius: 999rpx;
-  position: relative; z-index: 1;
-  transition: color 0.22s var(--ease-out, ease);
-}
-.seg-btn.on { color: #fff; }
-
-/* 内容切换：淡入 + 轻微上滑 */
-.tab-pane { animation: paneIn 0.30s var(--ease-out, ease); }
-@keyframes paneIn {
-  from { opacity: 0; transform: translateY(16rpx); }
-  to { opacity: 1; transform: translateY(0); }
+.page {
+  min-height: 100vh;
+  background: var(--n-50);
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 }
 
-/* ===== 餐次 chips（横向滚动） ===== */
-.chips { white-space: nowrap; padding: 22rpx 28rpx 6rpx; }
-.chip {
-  display: inline-block; font-size: var(--fs-body); color: var(--text-sub);
-  background: var(--bg); border: 1rpx solid var(--line);
-  border-radius: 999rpx; padding: 12rpx 30rpx; font-weight: 600;
-  margin-right: 14rpx; transition: all 0.18s var(--ease-out, ease);
+/* ===== 顶部视图切换 ===== */
+.topbar { padding: 16rpx 32rpx 8rpx; }
+.seg-top {
+  display: flex; height: 80rpx;
+  background: var(--bg); border-radius: var(--r-pill); padding: 6rpx;
 }
-.chip:active { transform: scale(0.95); }
-.chip.on {
-  background: var(--primary); color: #fff; border-color: var(--primary);
-  box-shadow: 0 4rpx 14rpx rgba(46,207,176, 0.28); font-weight: 700;
+.seg-top-item {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 700; color: var(--n-600);
+  border-radius: var(--r-pill);
+  transition: background 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+.seg-top-item.on {
+  background: var(--primary); color: var(--n-900);
+  box-shadow: var(--shadow-xs);
 }
 
-/* ===== 餐次推荐块（参考 .meal） ===== */
-.meal { margin: 22rpx 28rpx 0; }
-.meal .mh { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
-.meal .mi {
-  width: 72rpx; height: 72rpx; border-radius: 22rpx; flex: 0 0 72rpx;
-  display: flex; align-items: center; justify-content: center; font-size: var(--fs-title);
+/* ===== Hero：今日目标 + 完成度环 ===== */
+.goal-card {
+  display: flex; align-items: center; gap: 32rpx;
+  margin: 8rpx 32rpx 28rpx;
+  padding: 32rpx 36rpx;
+  background: var(--card); border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l); box-shadow: var(--shadow-card);
 }
-.meal .mtitle { flex: 1; font-size: var(--fs-head); font-weight: 800; color: var(--text); }
-.meal .kc { font-size: var(--fs-label); font-weight: 700; color: #D9531F; }
+.goal-card .info { flex: 1; min-width: 0; }
+.goal-card .label {
+  font-size: 24rpx; font-weight: 700; color: var(--n-700); letter-spacing: 0.04em;
+}
+.goal-card .kcal {
+  font-family: var(--f-en, sans-serif);
+  font-size: 60rpx; font-weight: 800; color: var(--n-900);
+  letter-spacing: -0.03em; line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: baseline; margin-top: 8rpx;
+}
+.goal-card .kcal .unit {
+  font-size: 32rpx; font-weight: 700; color: var(--n-700); margin-left: 8rpx;
+}
+.goal-card .sub {
+  margin-top: 8rpx; font-size: 24rpx; font-weight: 600; color: var(--n-500);
+}
+/* 小号完成度环（76px），复用全局 .ring 渐变，仅覆写尺寸 */
+.goal-ring { --size: 152rpx; --w: 16rpx; }
 
-/* ===== 菜式卡（参考 .dish） ===== */
-.dish {
-  display: flex; align-items: center; gap: 20rpx;
-  background: var(--card); border: 1rpx solid var(--line);
-  border-radius: 22rpx; padding: 20rpx 22rpx; margin-bottom: 14rpx;
-  box-shadow: var(--shadow-sm); transition: transform 0.15s var(--ease-out, ease);
+/* ===== 营养概览（3 列） ===== */
+.nutrition-overview {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20rpx;
+  margin: 0 32rpx 36rpx;
 }
-.dish:active { transform: scale(0.99); }
-.dish .emo {
-  width: 80rpx; height: 80rpx; flex: 0 0 80rpx; border-radius: 18rpx;
-  background: var(--bg); display: flex; align-items: center; justify-content: center;
-  font-size: var(--fs-section); overflow: hidden;
+.nutrition-overview .item {
+  background: var(--card); border: 1rpx solid var(--n-200);
+  border-radius: var(--r-m); padding: 24rpx 24rpx 20rpx;
+  display: flex; flex-direction: column; gap: 12rpx; box-shadow: var(--shadow-card);
 }
-.dish .emo.has-img { padding: 0; }
-.dish .emo-img { width: 100%; height: 100%; }
-.dish .dbody { flex: 1; min-width: 0; }
-.dish .dn { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
-.dish .dd { font-size: var(--fs-label); color: var(--text-sub); margin-top: 4rpx; line-height: 1.5; }
-.dish .dk { font-size: var(--fs-body); font-weight: 700; color: var(--text-sub); flex: 0 0 auto; font-feature-settings: "tnum" 1; }
-.dish .dadd {
-  flex: 0 0 auto; font-size: var(--fs-label); font-weight: 700;
-  color: var(--primary-deep); background: var(--primary-light);
-  border-radius: 999rpx; padding: 12rpx 26rpx; transition: opacity 0.15s;
+.nutrition-overview .head {
+  display: flex; align-items: center; gap: 12rpx;
+  font-size: 24rpx; font-weight: 700; color: var(--n-700);
 }
-.dish .dadd:active { opacity: 0.7; }
-.dish .dacts { flex: 0 0 auto; display: flex; align-items: center; gap: 10rpx; }
-.dact-edit {
-  font-size: var(--fs-caption); color: var(--primary-deep); background: var(--primary-light);
-  border-radius: 999rpx; padding: 8rpx 18rpx; font-weight: 600; transition: opacity 0.15s;
+.nutrition-overview .swatch { width: 16rpx; height: 16rpx; border-radius: 50%; flex: none; }
+.nutrition-overview .val {
+  font-family: var(--f-en, sans-serif);
+  font-size: 40rpx; font-weight: 800; color: var(--n-900);
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: baseline; line-height: 1;
 }
-.dact-edit:active { opacity: 0.7; }
-.dact-del {
-  flex: 0 0 auto; width: 44rpx; height: 44rpx; border-radius: 50%;
-  background: var(--bg); color: var(--error); font-size: var(--fs-body);
-  display: flex; align-items: center; justify-content: center; transition: opacity 0.15s;
+.nutrition-overview .val .unit {
+  font-size: 24rpx; font-weight: 700; color: var(--n-700); margin-left: 6rpx;
 }
-.dact-del:active { opacity: 0.7; }
-.dish .dnote { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 6rpx; }
+
+/* ===== 区块标题 ===== */
+.section-label {
+  font-size: 28rpx; font-weight: 800; color: var(--n-900);
+  letter-spacing: 0.02em; margin: 12rpx 36rpx 20rpx;
+}
+
+/* ===== 推荐分类 pills ===== */
+.cat-pills {
+  display: flex; gap: 12rpx;
+  margin: 0 32rpx 28rpx;
+  white-space: nowrap;
+}
+.cat-pill {
+  flex: none;
+  padding: 14rpx 28rpx;
+  border-radius: var(--r-pill);
+  background: var(--card); border: 1rpx solid var(--n-200);
+  font-size: 26rpx; font-weight: 700; color: var(--n-700);
+  transition: background 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+.cat-pill.on {
+  background: var(--n-900); color: var(--white);
+  border-color: var(--n-900);
+}
+
+/* ===== 推荐食物（垂直卡片列表） ===== */
+.food-list {
+  display: flex; flex-direction: column;
+  margin: 0 32rpx 28rpx; gap: 20rpx;
+}
+.food-row {
+  display: flex; gap: 20rpx;
+  padding: 20rpx; border-radius: var(--r-l);
+  /* 覆写全局 .card 的 margin: 24rpx 32rpx，避免食物卡被第二次右缩进；
+     卡片宽度由 .food-list 的 32rpx 外边距统一控制，与 .goal-card 对齐 */
+  margin: 0;
+}
+.food-thumb {
+  flex: none; width: 180rpx; height: 180rpx;
+  border-radius: var(--r-m); overflow: hidden;
+  background: var(--card-gray);
+}
+.food-img { width: 100%; height: 100%; display: block; }
+.food-info {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 8rpx;
+  padding: 4rpx 0;
+}
+.food-name {
+  font-size: 28rpx; font-weight: 800; color: var(--n-900);
+  letter-spacing: 0.02em; line-height: 1.2;
+}
+.food-kcal {
+  font-size: 24rpx; font-weight: 700; color: var(--n-700);
+  font-variant-numeric: tabular-nums;
+}
+.food-macros {
+  font-size: 22rpx; color: var(--n-500);
+  font-variant-numeric: tabular-nums; line-height: 1.4;
+}
+.food-desc {
+  font-size: 22rpx; color: var(--n-500);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.food-add {
+  flex: none;
+  align-self: center;
+  width: 56rpx; height: 56rpx;
+  border-radius: var(--r-m);
+  background: var(--primary);
+  color: var(--n-900);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40rpx; font-weight: 800;
+  line-height: 1;
+}
+
+/* ============================================================
+   饮食记录视图
+   ============================================================ */
+
+/* 今日摄入 Hero（kcal + 三大营养素进度条） */
+.rec-hero {
+  margin: 8rpx 32rpx 24rpx;
+  padding: 28rpx 32rpx 32rpx;
+}
+.rh-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+.rh-label {
+  font-size: 24rpx; font-weight: 700; color: var(--n-700);
+  letter-spacing: 0.04em;
+}
+.rh-date {
+  font-family: var(--f-en, sans-serif);
+  font-size: 22rpx; font-weight: 700; color: var(--n-900);
+  background: var(--primary); border-radius: var(--r-pill);
+  padding: 6rpx 18rpx; font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; gap: 6rpx;
+}
+.rh-date-hover { opacity: 0.6; }
+.rh-caret {
+  font-size: 18rpx; color: var(--n-900); line-height: 1;
+  margin-left: 2rpx;
+}
+.rh-main {
+  display: flex; align-items: baseline;
+  margin-bottom: 20rpx;
+}
+.rh-val {
+  font-family: var(--f-en, sans-serif);
+  font-size: 64rpx; font-weight: 800; color: var(--n-900);
+  letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.rh-unit {
+  font-size: 30rpx; font-weight: 700; color: var(--n-500);
+  margin-left: 6rpx;
+}
+.macro-rows { display: flex; flex-direction: column; gap: 14rpx; }
+.macro-row {
+  display: flex; align-items: center; gap: 16rpx;
+}
+.mr-name {
+  flex: none; width: 96rpx;
+  font-size: 24rpx; font-weight: 700; color: var(--n-700);
+}
+.mr-bar {
+  flex: 1; min-width: 0; height: 8rpx;
+  background: var(--n-100); border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.mr-fill {
+  height: 100%; background: var(--primary);
+  border-radius: var(--r-pill);
+}
+.mr-val {
+  flex: none;
+  font-family: var(--f-en, sans-serif);
+  font-size: 22rpx; font-weight: 700; color: var(--n-700);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+}
+/* 三大营养素按语义着色（蛋白绿 / 碳水橙 / 脂肪琥珀），与营养概览 swatch 同色系 */
+.mr-fill-0 { background: #6F9F00; }
+.mr-fill-1 { background: #FF9500; }
+.mr-fill-2 { background: #FFB020; }
+.mr-name-0 { color: #6F9F00; }
+.mr-name-1 { color: #FF9500; }
+.mr-name-2 { color: #FFB020; }
+
+.meal-group { padding: 28rpx 32rpx 32rpx; }
+.meal-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+.meal-name { font-size: 32rpx; font-weight: 800; color: var(--n-900); letter-spacing: 0.02em; }
+.meal-meta {
+  font-size: 24rpx; font-weight: 700; color: var(--n-500);
+  font-variant-numeric: tabular-nums;
+}
+.meal-meta .unit { font-size: 22rpx; font-weight: 600; color: var(--n-500); margin-left: 2rpx; }
+.meal-empty {
+  font-size: 24rpx; color: var(--n-500);
+  text-align: center; padding: 12rpx 0 8rpx;
+}
+.meal-item {
+  display: flex; align-items: flex-start; gap: 16rpx;
+  padding: 20rpx 0; border-bottom: 1rpx solid var(--n-100);
+}
+.meal-item:last-of-type { border-bottom: none; }
+.mi-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
+.mi-name { font-size: 28rpx; font-weight: 700; color: var(--n-900); line-height: 1.3; }
+.mi-portion {
+  font-size: 22rpx; font-weight: 700; color: var(--n-500);
+  font-variant-numeric: tabular-nums;
+}
+.mi-macros {
+  font-size: 22rpx; color: var(--n-500);
+  font-variant-numeric: tabular-nums; line-height: 1.4;
+}
+.mi-actions {
+  flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 8rpx;
+  align-self: center;
+}
+.mi-edit {
+  font-size: 24rpx; font-weight: 700; color: var(--n-700);
+  padding: 6rpx 12rpx;
+}
+.mi-del {
+  font-size: 24rpx; font-weight: 700; color: #E54848;
+  padding: 6rpx 12rpx;
+}
+.add-row {
+  margin-top: 20rpx; height: 76rpx;
+  display: flex; align-items: center; justify-content: center; gap: 10rpx;
+  border: 2rpx solid var(--primary); border-radius: var(--r-m);
+  font-size: 26rpx; font-weight: 700; color: var(--n-900);
+  background: var(--primary);
+}
+/* 添加图标：用 CSS 画 +（plus 图标源文件 glyph 偏左上、aspectFit 后显示不全，故自绘保证居中完整） */
+.add-ico {
+  position: relative;
+  width: 26rpx; height: 26rpx;
+  flex: none;
+}
+.add-ico::before,
+.add-ico::after {
+  content: '';
+  position: absolute;
+  background: var(--n-900);
+  border-radius: 2rpx;
+}
+.add-ico::before { left: 0; right: 0; top: 50%; height: 4rpx; transform: translateY(-50%); }
+.add-ico::after { top: 0; bottom: 0; left: 50%; width: 4rpx; transform: translateX(-50%); }
+
+/* ============================================================
+   底部抽屉 sheet（添加方式 / 手动输入共用）
+   ============================================================ */
+.mask {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(10, 10, 10, 0.45);
+  display: flex; align-items: flex-end; z-index: 100;
+}
+.sheet {
+  width: 100%;
+  background: var(--card);
+  border-radius: var(--r-l) var(--r-l) 0 0;
+  padding: 16rpx 32rpx calc(36rpx + env(safe-area-inset-bottom));
+}
+.sheet-title {
+  text-align: center; font-size: 28rpx; font-weight: 700; color: var(--n-700);
+  padding: 24rpx 0 16rpx;
+}
+
+/* 添加方式选项 */
+.sheet-opt {
+  display: flex; align-items: center; gap: 24rpx;
+  padding: 28rpx 24rpx; margin: 12rpx 0;
+  background: var(--n-50); border-radius: var(--r-m);
+  box-shadow: var(--shadow-card);
+}
+.opt-ico {
+  width: 76rpx; height: 76rpx; border-radius: 50%;
+  background: var(--white); display: flex; align-items: center; justify-content: center;
+  flex: none; box-shadow: var(--shadow-xs);
+}
+.opt-main { flex: 1; min-width: 0; }
+.opt-name { font-size: 30rpx; font-weight: 800; color: var(--n-900); }
+.opt-desc { font-size: 24rpx; color: var(--n-500); margin-top: 4rpx; }
+.opt-arrow { font-size: 40rpx; color: var(--n-400); }
+.opt-hover { background: var(--n-100); }
+.sheet-cancel {
+  margin-top: 16rpx; height: 88rpx;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx; font-weight: 700; color: var(--n-700);
+  background: var(--n-100); border-radius: var(--r-m);
+}
+
+/* 手动输入表单 */
+.form { padding: 8rpx 0 12rpx; }
+.f-row { display: flex; align-items: center; gap: 20rpx; padding: 16rpx 0; }
+.f-lab { width: 160rpx; flex: none; font-size: 26rpx; font-weight: 700; color: var(--n-700); }
+.f-input {
+  flex: 1; min-width: 0; height: 76rpx; padding: 0 24rpx;
+  background: var(--n-50); border: 1rpx solid var(--n-200); border-radius: var(--r-m);
+  font-size: 28rpx; color: var(--n-900);
+}
+.f-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16rpx; margin-top: 8rpx; }
+.f-cell { display: flex; flex-direction: column; gap: 10rpx; }
+.f-cell .f-lab { width: auto; font-size: 22rpx; color: var(--n-500); }
+.f-input.sm { padding: 0 16rpx; font-size: 26rpx; }
+.modal-actions { display: flex; gap: 20rpx; margin-top: 24rpx; }
+.btn-cancel, .btn-save {
+  flex: 1; height: 88rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-m); font-size: 30rpx; font-weight: 800;
+}
+.btn-cancel { background: var(--n-100); color: var(--n-700); }
+.btn-save { background: var(--primary); color: #0A0A0A; box-shadow: var(--shadow-mint); }
+
+/* AI 识别中 */
+.rec-loading { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 24rpx; }
+.spinner {
+  width: 72rpx; height: 72rpx; border-radius: 50%;
+  border: 6rpx solid var(--n-200); border-top-color: var(--primary);
+  animation: spin 0.8s linear infinite;
+}
+.rec-loading-txt { font-size: 26rpx; color: var(--n-600); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* AI 识别结果 */
+.mock-tip {
+  font-size: 22rpx; color: var(--warning); background: var(--warning-tint);
+  border-radius: var(--r-s); padding: 12rpx 16rpx; margin-bottom: 12rpx; line-height: 1.5;
+}
+.rec-total {
+  display: flex; flex-direction: column; gap: 6rpx;
+  background: var(--n-50); border-radius: var(--r-m); padding: 20rpx 24rpx; margin-bottom: 12rpx;
+}
+.rec-total .rt-k { font-size: 22rpx; font-weight: 700; color: var(--n-500); }
+.rec-total .rt-v { font-size: 26rpx; font-weight: 700; color: var(--n-900); }
+.note { font-size: 22rpx; color: var(--n-500); margin-top: 12rpx; line-height: 1.5; }
+.rec-list { display: flex; flex-direction: column; }
+.rec-item {
+  display: flex; align-items: center; gap: 16rpx;
+  padding: 16rpx 0; border-bottom: 1rpx solid var(--n-100);
+}
+.rec-item:last-child { border-bottom: none; }
+.rec-thumb {
+  width: 64rpx; height: 64rpx; border-radius: 16rpx; flex: none;
+  background: var(--card-gray); display: flex; align-items: center; justify-content: center; font-size: 36rpx;
+}
+.rec-body { flex: 1; min-width: 0; }
+.rec-name { font-size: 28rpx; font-weight: 700; color: var(--n-900); }
+.rec-meta { font-size: 22rpx; color: var(--n-500); margin-top: 4rpx; }
+.rec-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8rpx; flex: none; }
+.rec-cal {
+  font-family: var(--f-en, sans-serif); font-size: 28rpx; font-weight: 800; color: var(--n-900);
+  font-variant-numeric: tabular-nums;
+}
+.btn-record {
+  font-size: 24rpx; font-weight: 800; color: #0A0A0A;
+  background: var(--primary); border-radius: var(--r-pill);
+  padding: 8rpx 24rpx; box-shadow: var(--shadow-mint);
+}
+.rec-record-all {
+  margin-top: 16rpx; height: 88rpx;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx; font-weight: 800; color: var(--n-900);
+  background: var(--primary); border-radius: var(--r-m); box-shadow: var(--shadow-mint);
+}
 
 .bottom-gap { height: 20rpx; }
 
-/* ===== 饮食记录：日期筛选 ===== */
-.date-filter {
-  display: flex; align-items: center; gap: 12rpx;
-  margin: 14rpx 28rpx 0; padding: 10rpx 18rpx;
-  background: var(--bg); border-radius: 18rpx;
+/* 尊重「减少动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .seg-top-item, .sheet-opt { transition: none; }
+  .spinner { animation: none; }
 }
-.df-picker {
-  font-size: var(--fs-label); color: var(--text-weak);
-  background: var(--card); border-radius: 12rpx;
-  padding: 10rpx 22rpx; border: 1rpx solid var(--line);
-  white-space: nowrap; font-weight: 500;
-}
-.df-picker.has-val { color: var(--text); font-weight: 600; }
-.df-sep { font-size: var(--fs-label); color: var(--primary); font-weight: 600; padding: 10rpx 18rpx; margin-left: auto; }
-
-/* ===== 摄入汇总：环形 + 文字（参考 .kcal-ring） ===== */
-.kcal-ring {
-  display: flex; align-items: center; gap: 28rpx;
-  background: linear-gradient(135deg, #FFF4EE, #FFE9DF);
-  border: 1rpx solid #FFD9C8; border-radius: 28rpx;
-  padding: 28rpx 32rpx; margin: 16rpx 28rpx 0;
-  box-shadow: var(--shadow-sm);
-}
-.kr { width: 168rpx; height: 168rpx; flex: 0 0 168rpx; border-radius: 50%; position: relative; }
-.kr-donut {
-  width: 100%; height: 100%; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-}
-.kr-hole {
-  width: 124rpx; height: 124rpx; border-radius: 50%; background: #fff;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  box-shadow: var(--shadow-sm);
-}
-.kr-pct { font-size: var(--fs-page); font-weight: 800; color: #FF7A3D; line-height: 1; font-feature-settings: "tnum" 1; }
-.kr-pct-u { font-size: var(--fs-caption); font-weight: 700; }
-.kr-lab { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 4rpx; }
-.kt { flex: 1; min-width: 0; }
-.kt-cap { font-size: var(--fs-label); color: var(--text-sub); font-weight: 600; }
-.kt-big { font-size: var(--fs-page); font-weight: 800; color: #FF7A3D; font-feature-settings: "tnum" 1; margin: 6rpx 0; line-height: 1.1; }
-.kt-u { font-size: var(--fs-caption); color: var(--text-sub); font-weight: 600; }
-.kt-sub { font-size: var(--fs-caption); color: #B5613C; font-weight: 600; }
-
-/* ===== 三大营养素（参考 .macros） ===== */
-.macros { display: flex; gap: 16rpx; margin: 16rpx 28rpx 0; }
-.macros .m {
-  flex: 1; background: var(--card); border: 1rpx solid var(--line);
-  border-radius: 20rpx; padding: 24rpx 12rpx; box-shadow: var(--shadow-sm); text-align: center;
-}
-.macros .dot { width: 18rpx; height: 18rpx; border-radius: 50%; margin: 0 auto 14rpx; }
-.macros .v { font-size: var(--fs-title); font-weight: 800; line-height: 1; font-feature-settings: "tnum" 1; }
-.macros .mu { font-size: var(--fs-caption); color: var(--text-sub); font-weight: 600; }
-.macros .l { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 8rpx; font-weight: 500; }
-
-/* ===== 添加弹窗（底部 sheet，保持不变） ===== */
-.modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.50); display: flex; align-items: flex-end; z-index: 100; }
-.modal {
-  width: 100%; box-sizing: border-box;
-  background: #fff; border-radius: 32rpx 32rpx 0 0;
-  padding: 32rpx 28rpx;
-  padding-bottom: calc(32rpx + 110rpx + env(safe-area-inset-bottom));
-  animation: slideUp2 0.24s var(--ease-out, ease);
-}
-@keyframes slideUp2 { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.modal-title { font-size: var(--fs-title); font-weight: 800; text-align: center; margin-bottom: 22rpx; color: var(--text); }
-.modal-input { width: 100%; box-sizing: border-box; height: 88rpx; background: var(--bg); border-radius: 18rpx; padding: 0 24rpx; font-size: var(--fs-body); margin-bottom: 12rpx; border: 1rpx solid var(--line); }
-.modal-input:focus { border-color: var(--primary); }
-.modal-actions { display: flex; gap: 20rpx; margin-top: 28rpx; }
-.modal-cancel, .modal-ok { flex: 1; height: 88rpx; font-size: var(--fs-head); font-weight: 700; border: none; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 18rpx; transition: opacity 0.15s; }
-.modal-cancel { background: var(--bg); color: var(--text-sub); }
-.modal-cancel::after, .modal-ok::after { border: none; }
-
-.field-label { font-size: var(--fs-label); color: var(--text-sub); margin: 18rpx 0 10rpx; font-weight: 600; }
-.field-label .opt { font-size: var(--fs-caption); color: var(--text-weak); margin-left: 6rpx; font-weight: 400; }
-.param-row { display: flex; gap: 14rpx; }
-.param-cell { flex: 1; }
-.name-cell { flex: 2; }
-.portion-cell { flex: 1; }
-.modal-input.sm { margin-bottom: 0; font-size: var(--fs-body); padding: 0 16rpx; text-align: center; }
-.portion-cell .modal-input { text-align: left; }
-
-/* AI 拍照识别 */
-.rec-cam {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10rpx;
-  height: 152rpx; background: var(--primary-light);
-  border: 2rpx dashed var(--primary); border-radius: 20rpx;
-  color: var(--primary); margin-bottom: 16rpx;
-  transition: opacity 0.2s;
-}
-.rec-cam:active { opacity: 0.7; }
-.rec-cam.loading { opacity: 0.55; }
-.cam-ico { font-size: var(--fs-display); line-height: 1; }
-.cam-tx { font-size: var(--fs-body); font-weight: 700; }

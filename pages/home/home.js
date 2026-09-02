@@ -1,77 +1,70 @@
-// pages/home/home.js
+// pages/home/home.js —— 对齐 01-home.html（HiLiLife 设计系统）
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
-const mock = require('../../utils/mock.js');
-const { media, thumb } = require('../../utils/media.js');
-const categoryEmoji = mock.categoryEmoji;
+const theme = require('../../utils/theme.js');
 
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function fmtDate(d) {
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
 function todayStr() {
   const d = new Date();
-  const p = n => (n < 10 ? '0' + n : n);
-  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
-}
-function monthPrefix() {
-  const d = new Date();
-  const p = n => (n < 10 ? '0' + n : n);
-  return d.getFullYear() + '-' + p(d.getMonth() + 1);
+  return fmtDate(d);
 }
 // 时间戳是否落在今天（用于饮食打卡判断）
 function isToday(ts) {
   const d = new Date(ts);
-  const p = n => (n < 10 ? '0' + n : n);
-  const s = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
-  return s === todayStr();
+  return fmtDate(d) === todayStr();
 }
 
-// 秒 -> 友好文案（例：90 -> "1分30秒"，45 -> "45s"）
-function fmtSec(sec) {
-  sec = Number(sec) || 0;
-  if (!sec) return '0s';
-  if (sec < 60) return sec + 's';
-  const m = Math.floor(sec / 60);
-  const s2 = sec % 60;
-  return s2 ? (m + '分' + s2 + '秒') : (m + '分');
+// 连续打卡天数：从今天往前数连续活跃（训练/体重/饮食任一）的天数
+function computeStreak(activeSet) {
+  let streak = 0;
+  const d = new Date(todayStr() + 'T00:00:00');
+  while (activeSet.has(fmtDate(d))) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
 }
 
 Page({
   data: {
-    slogan: '每一次训练，都算数',
-    checkins: { weight: false, train: false, diet: false, done: 0, total: 3, pct: 0 },
+    // 'theme-light' | 'theme-dark'，由「我的 → 主题」开关控制，onShow 时同步
+    theme: 'theme-light',
     greeting: '你好',
-    nickname: '训练者',
-    dateLine: '',
-    statusTip: '',
-    calendar: { month: 0, total: 0 },
-    recentLogs: [],
-    calExpanded: false,
-    calYear: 0,
-    calMonth: 0,
-    calTitle: '',
-    calCells: [],
-    weekCells: [],
-    calSelected: '',
-    calDetail: null,
-    // 今日训练计划：取当前计划 + 今日完成进度
-    planInfo: { has: false, name: '', actions: [], total: 0, done: 0, finishedToday: false },
-    // 首页底部「今日训练计划」动作卡片数据（对齐参考 .plan-item 样式）
-    todayPlan: { has: false, name: '', emoji: '🏋️', total: 0, done: 0, minutes: 0, actions: [] }
+    nickname: '健身用户',
+    sub: '',
+    checkin: { done: 0, total: 3, pct: 0 },
+    fitnessDays: 0,
+    streak: 0,
+    suggest: { title: '全身训练 · 中级', sub: '预计 45 分钟 · 320 kcal' },
+    diet: {
+      intake: 0, target: 2100, pct: 0,
+      protein: { now: 0, goal: 140 },
+      carb: { now: 0, goal: 220 },
+      fat: { now: 0, goal: 70 }
+    },
+    weight: { current: '--', delta: '0.0', down: true },
+    // 饮食进度条宽度（注意：wxml 行内 style 禁 Mustache，width 通过完整 style 字符串注入）
+    fillStyle: 'width: 0%'
   },
 
   onShow() {
+    // 主题：先同步自身（可能刚在「我的」页切换），再同步隔离组件 custom-tab-bar
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 0 });
+      this.getTabBar().setData({ selected: 0, theme: themeCls });
     }
     this.refresh();
-  },
-
-  onHide() {
-    if (this.data.calExpanded) this.setData({ calExpanded: false, calDetail: null });
   },
 
   refresh() {
     const g = store.get();
     const today = todayStr();
 
+    // —— 今日三项打卡（体重 / 训练 / 饮食） ——
     const weightDone = g.weightRecords.some(r => r.date === today);
     const trainingDone = g.trainingLogs.some(l => l.date === today);
     const dietDone = g.meals.some(m => isToday(m.time));
@@ -79,123 +72,138 @@ Page({
     if (weightDone) done++;
     if (trainingDone) done++;
     if (dietDone) done++;
+    const total = 3;
+    const pct = Math.round((done / total) * 100);
 
-    const mp = monthPrefix();
-    const trainDates = g.trainingLogs.map(l => l.date);
-    const weightDates = g.weightRecords.map(r => r.date);
-    const allDates = Array.from(new Set(trainDates.concat(weightDates)));
-    const monthDays = allDates.filter(d => d.indexOf(mp) === 0).length;
-
-    // 本周一~周日迷你日历（对齐参考样式：今日绿底、记录日珊瑚点）
-    const wdLabels = ['一', '二', '三', '四', '五', '六', '日'];
-    const now0 = new Date();
-    const curDow = now0.getDay(); // 0=周日
-    const monOff = curDow === 0 ? -6 : -(curDow - 1);
-    const mon = new Date(now0.getFullYear(), now0.getMonth(), now0.getDate() + monOff);
-    const pad2 = n => (n < 10 ? '0' + n : '' + n);
-    const tSet = new Set(g.trainingLogs.map(l => l.date));
-    const weekCells = [];
-    for (let i = 0; i < 7; i++) {
-      const dd = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
-      const ds = dd.getFullYear() + '-' + pad2(dd.getMonth() + 1) + '-' + pad2(dd.getDate());
-      weekCells.push({ wd: wdLabels[i], day: dd.getDate(), dateStr: ds, isToday: ds === today, hasRecord: tSet.has(ds) });
-    }
-
-    const recent = g.trainingLogs.slice(0, 5).map(l => ({
-      date: l.date,
-      count: (l.actions || []).length
-    }));
-
-    const pct = Math.round((done / 3) * 100);
-
-    // 今日训练计划：取用户「今日自行选择」的动作（selectedActions，即训练页「本次训练」），
-    // 并比对今天全部训练场次算「今日进度」。
-    // 注意：改为每日自选自后，不再默认沿用持久化的「活跃计划」——selectedActions 在跨天时被 app.js 清空，
-    // 每天需用户到训练页选择（或点首页「开始训练」一键套用活跃计划注入）后才显示。
-    // 同一天可能有多场训练（如"再练一次"），需聚合所有场次的动作名，不能只看第一场
-    let planInfo = { has: false, name: '', actions: [], total: 0, done: 0, finishedToday: false };
-    let todayPlan = { has: false, name: '', emoji: '🏋️', total: 0, done: 0, minutes: 0, actions: [] };
-    const sel = store.get().selectedActions || [];
-    if (sel.length) {
-      const todayLogs = g.trainingLogs.filter(l => l.date === today);
-      const doneNames = new Set();
-      todayLogs.forEach(l => (l.actions || []).forEach(a => doneNames.add(a.name)));
-      // 构造首页「今日训练计划」动作卡片（对齐参考 .plan-item：缩略图 + 名称 + 元信息 + 进度条 + 状态标签）
-      const actCards = sel.map(a => {
-        const name = a.nameZh || a.name;
-        const emoji = a.emoji || categoryEmoji[a.part || a.category] || '🏋️';
-        const sets = a.sets || [];
-        const first = sets[0] || {};
-        const metaParts = [];
-        if (sets.length) metaParts.push(sets.length + ' 组');
-        if (first.reps != null && first.reps !== '') metaParts.push(first.reps + ' 次');
-        if (first.weight != null && first.weight !== '') metaParts.push(first.weight + 'kg');
-        const isDone = doneNames.has(name);
-        // 左侧缩略图接入 CDN（Cloudflare R2）：
-        const img = thumb(a.image, 200, 200);
-        return {
-          id: a.id,
-          name, emoji, img,
-          image: a.image, // 相对路径，供详情页 media() 拼 CDN 大图（否则详情页退化为 emoji）
-          video: media(a.video || ''),
-          // 缩略图优先用 GIF 动图（a.video 相对路径），无则回退静态图
-          thumb: (a.video || a.image) ? media(a.video || a.image) : '',
-          meta: metaParts.join(' · '),
-          done: isDone,
-          pct: isDone ? 100 : 0,
-          pctWidth: (isDone ? 100 : 0) + '%',
-          tag: isDone ? '已练' : '未练'
-        };
-      });
-      const done = actCards.filter(a => a.done).length;
-      planInfo = {
-        has: true,
-        name: '今日训练',
-        actions: actCards,
-        total: actCards.length,
-        done: done,
-        finishedToday: done >= actCards.length,
-        minutes: Math.max(10, actCards.length * 4),
-        emoji: '🏋️'
-      };
-      todayPlan = {
-        has: true,
-        name: '今日训练',
-        emoji: '🏋️',
-        total: actCards.length,
-        done: done,
-        minutes: Math.max(10, actCards.length * 4),
-        actions: actCards
-      };
-    }
-
-    // 预览同款：问候语 / 昵称 / 日期行（今日计划 X 项）
+    // —— 问候 / 昵称 / 副标题 ——
     const now = new Date();
     const h = now.getHours();
     const greeting = h < 6 ? '凌晨好' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : '晚上好';
-    const nickname = (g.userInfo && g.userInfo.nickname) || '训练者';
-    const wkName = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()];
-    const dateLine = wkName + ' · ' + (now.getMonth() + 1) + '月' + now.getDate() + '日 · 今日计划 ' + (planInfo.total || 0) + ' 项';
+    const nickname = (g.userInfo && g.userInfo.nickname) || '健身用户';
+    const sub = done < total ? '今天也要加油完成训练！' : '今日目标已全部完成！';
 
-    // 今日三项待打卡提示
-    const statusTip = done < 3 ? ('还差 ' + (3 - done) + ' 项待打卡') : '今日三项全部完成 🎉';
+    // —— 活跃日期集合（连续打卡 / 健身天数） ——
+    const activeSet = new Set();
+    g.trainingLogs.forEach(l => activeSet.add(l.date));
+    g.weightRecords.forEach(r => activeSet.add(r.date));
+    g.meals.forEach(m => activeSet.add(fmtDate(new Date(m.time))));
+    const streak = computeStreak(activeSet);
+    const fitnessDays = g.profile.fitnessDays || 0;
+
+    // —— 今日饮食（真实数据） ——
+    const todays = g.meals.filter(m => isToday(m.time));
+    let intake = 0, pNow = 0, cNow = 0, fNow = 0;
+    todays.forEach(m => {
+      intake += (m.calories || 0);
+      pNow += (m.protein || 0);
+      cNow += (m.carb || 0);
+      fNow += (m.fat || 0);
+    });
+    const dietTarget = 2100;
+    const dietPct = intake > 0 ? Math.min(100, Math.round((intake / dietTarget) * 100)) : 0;
+
+    // —— 体重趋势（最新 + 涨跌 + sparkline 数据） ——
+    const wlist = g.weightRecords || [];
+    let wCurrent = '--', wDelta = '0.0', wDown = true;
+    if (wlist.length) {
+      const last = wlist[wlist.length - 1];
+      wCurrent = (Math.round(last.weight * 10) / 10).toFixed(1);
+      if (wlist.length >= 2) {
+        const prev = wlist[wlist.length - 2].weight;
+        const d = Math.round((last.weight - prev) * 10) / 10;
+        wDelta = (d > 0 ? '+' : '') + d.toFixed(1);
+        wDown = d < 0;
+      }
+    }
+    this._sparkData = wlist.slice(-8).map(r => r.weight);
 
     this.setData({
-      checkins: { weight: weightDone, train: trainingDone, diet: dietDone, done, total: 3, pct },
-      checkPctWidth: pct + '%',
-      greeting,
-      nickname,
-      dateLine,
-      statusTip,
-      calendar: { month: monthDays, total: allDates.length },
-      recentLogs: recent,
-      weekCells: weekCells,
-      planInfo: planInfo,
-      todayPlan: todayPlan
+      greeting, nickname, sub,
+      checkin: { done, total, pct },
+      fitnessDays, streak,
+      diet: {
+        intake: Math.round(intake),
+        target: dietTarget,
+        pct: dietPct,
+        protein: { now: Math.round(pNow), goal: 140 },
+        carb: { now: Math.round(cNow), goal: 220 },
+        fat: { now: Math.round(fNow), goal: 70 }
+      },
+      weight: { current: wCurrent, delta: wDelta, down: wDown },
+      fillStyle: 'width: ' + dietPct + '%'
+    }, () => {
+      // setData 完成后绘制折线图（canvas 节点已就绪）
+      wx.nextTick(() => this.drawSpark());
     });
   },
 
-  // 开始训练计划：把当前计划注入「本次训练」并进入训练页（无计划则跳管理页）
+  // 用 canvas 2d 绘制体重趋势折线图（对齐 01-home.html：荧光绿线 + 渐变填充 + 末点）
+  drawSpark() {
+    const weights = this._sparkData || [];
+    if (!weights || weights.length < 2) return;
+    const query = wx.createSelectorQuery().in(this);
+    query.select('#weightSpark').fields({ node: true, size: true }).exec(res => {
+      if (!res || !res[0] || !res[0].node) return;
+      const canvas = res[0].node;
+      const width = res[0].width;
+      const height = res[0].height;
+      if (!width || !height) return;
+      const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
+      const dpr = info.pixelRatio || 2;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const W = width, H = height;
+      ctx.clearRect(0, 0, W, H);
+
+      const min = Math.min.apply(null, weights);
+      const max = Math.max.apply(null, weights);
+      const range = (max - min) || 1;
+      const n = weights.length;
+      const pt = i => ({
+        x: 5 + i * ((W - 10) / (n - 1)),
+        y: H - 6 - ((weights[i] - min) / range) * (H - 18)
+      });
+      const pts = weights.map((_, i) => pt(i));
+
+      // area fill
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, 'rgba(200,255,0,0.35)');
+      grad.addColorStop(1, 'rgba(200,255,0,0)');
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < n; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.lineTo(pts[n - 1].x, H);
+      ctx.lineTo(pts[0].x, H);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // line
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < n; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.strokeStyle = '#C8FF00';
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // active point
+      const lp = pts[n - 1];
+      ctx.beginPath();
+      ctx.arc(lp.x, lp.y, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#C8FF00';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#0A0A0A';
+      ctx.stroke();
+    });
+  },
+
+  // 开始训练计划：注入「本次训练」并进入训练页（无计划则跳计划管理）
   startPlan() {
     if (!auth.requireLogin()) return;
     const plan = store.getActivePlan();
@@ -207,153 +215,6 @@ Page({
     wx.switchTab({ url: '/pages/training/training' });
   },
 
-  goPlan() { wx.navigateTo({ url: '/pages/plan/plan' }); },
-
-  // 缩略图加载失败回退链：GIF 失败 → 静态图；静态图也失败 → 隐藏并显示 emoji
-  onPlanThumbError(e) {
-    const id = e.currentTarget.dataset.id;
-    if (!id) return;
-    const actions = this.data.todayPlan.actions.map(a => {
-      if (a.id !== id) return a;
-      const next = Object.assign({}, a);
-      if (next.video && next.thumb === next.video && next.img) {
-        next.thumb = next.img; // 动图失败 → 回退静态图
-      } else {
-        next.thumbFail = true; // 静态图也失败 → 隐藏，显示 emoji
-      }
-      return next;
-    });
-    this.setData({ 'todayPlan.actions': actions });
-  },
-
-  openCamera() {
-    if (!auth.requireLogin()) return;
-    // 跳转食物识别页：拍照 / 选图 → 多模态大模型识别宏量营养素
-    wx.navigateTo({ url: '/pages/food-vision/food-vision' });
-  },
-
-  goSettings() { wx.switchTab({ url: '/pages/profile/profile' }); },
-  goList() { wx.switchTab({ url: '/pages/list/list' }); },
-
-  toggleCalendar() {
-    const open = !this.data.calExpanded;
-    if (open) {
-      const now = new Date();
-      this.setData({
-        calYear: now.getFullYear(),
-        calMonth: now.getMonth(),
-        calSelected: todayStr(),
-        calDetail: null,
-        calExpanded: true
-      }, () => this.buildCalendar());
-    } else {
-      this.setData({ calExpanded: false, calDetail: null });
-    }
-  },
-
-  // 构建月历网格：含训练记录的日期标亮，今日与选中态区分
-  buildCalendar() {
-    const y = this.data.calYear;
-    const m = this.data.calMonth; // 0-based
-    const pad = n => (n < 10 ? '0' + n : '' + n);
-    const g = store.get();
-    const recordSet = new Set(g.trainingLogs.map(l => l.date));
-    const today = todayStr();
-    const first = new Date(y, m, 1).getDay();           // 0=周日
-    const days = new Date(y, m + 1, 0).getDate();
-    const cells = [];
-    for (let i = 0; i < first; i++) cells.push({ empty: true });
-    for (let d = 1; d <= days; d++) {
-      const ds = y + '-' + pad(m + 1) + '-' + pad(d);
-      cells.push({
-        empty: false,
-        day: d,
-        dateStr: ds,
-        hasRecord: recordSet.has(ds),
-        isToday: ds === today,
-        isSelected: ds === this.data.calSelected
-      });
-    }
-    while (cells.length % 7 !== 0) cells.push({ empty: true });
-    this.setData({ calCells: cells, calTitle: y + '年' + (m + 1) + '月' });
-  },
-
-  prevMonth() {
-    let y = this.data.calYear, m = this.data.calMonth;
-    if (m === 0) { y--; m = 11; } else { m--; }
-    this.setData({ calYear: y, calMonth: m }, () => this.buildCalendar());
-  },
-  nextMonth() {
-    let y = this.data.calYear, m = this.data.calMonth;
-    if (m === 11) { y++; m = 0; } else { m++; }
-    this.setData({ calYear: y, calMonth: m }, () => this.buildCalendar());
-  },
-
-  // 选择日期：有记录→在弹窗内联展示当日训练详情（零跳转，避免页面切换延迟）；无记录→提示
-  onSelectDate(e) {
-    const ds = e.currentTarget.dataset.date;
-    if (!ds) return; // 空白格
-    const has = store.get().trainingLogs.some(l => l.date === ds);
-    if (has) {
-      this.showDetail(ds);
-    } else {
-      this.setData({ calDetail: null });
-      wx.showToast({ title: '当天暂无训练记录', icon: 'none' });
-    }
-  },
-
-  // 点击本周迷你日历的某天：打开月历弹窗并定位到该天，有记录则直接展示详情
-  onSelectWeekDay(e) {
-    const ds = e.currentTarget.dataset.date;
-    if (!ds) return;
-    const d = new Date(ds);
-    this.setData({
-      calYear: d.getFullYear(),
-      calMonth: d.getMonth(),
-      calSelected: ds,
-      calDetail: null,
-      calExpanded: true
-    }, () => {
-      this.buildCalendar();
-      if (store.get().trainingLogs.some(l => l.date === ds)) this.showDetail(ds);
-    });
-  },
-
-  // 内联展示某日训练明细：该日可能有多场训练，取最新一场（按 createdAt 倒序）
-  showDetail(ds) {
-    const dayLogs = store.get().trainingLogs.filter(l => l.date === ds);
-    const log = dayLogs.length
-      ? dayLogs.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0]
-      : null;
-    if (!log) { this.setData({ calDetail: null }); return; }
-    let totalSets = 0, totalTrain = 0, totalRest = 0;
-    log.actions.forEach(a => {
-      totalSets += (a.sets || 0);
-      (a.setsDetail || []).forEach(s => {
-        totalTrain += Number(s.trainSec) || 0;
-        totalRest += Number(s.restSec) || 0;
-      });
-    });
-    this.setData({
-      calSelected: ds,
-      calDetail: {
-        date: ds,
-        actions: log.actions,
-        summary: {
-          actions: log.actions.length,
-          sets: totalSets,
-          train: fmtSec(totalTrain),
-          rest: fmtSec(totalRest)
-        }
-      }
-    }, () => this.buildCalendar());
-  },
-
-  // 收起内联详情，回到纯日历
-  closeDetail() { this.setData({ calDetail: null }); },
-
-  closeCalendar() { this.setData({ calExpanded: false, calDetail: null }); },
-  stopProp() {},
-
-  goWeight() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/weight-record/weight-record?from=home' }); }
+  goWeight() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/weight-record/weight-record?from=home' }); },
+  goDiet() { wx.navigateTo({ url: '/pages/advice/advice' }); }
 });

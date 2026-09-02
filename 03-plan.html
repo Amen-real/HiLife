@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 计划 · HiLiLife 衡力健身记录</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =========================================
+   DESIGN TOKENS (来源: Design.md, 与 01/02 同步)
+   ========================================= */
+:root {
+  --primary:      #C8FF00;
+  --primary-ink:  #0A0A0A;
+  --primary-dim:  #ECFFC2;
+
+  --n-950: #0A0A0A;
+  --n-900: #111111;
+  --n-700: #444444;
+  --n-600: #707070;
+  --n-500: #A0A0A0;
+  --n-400: #C7C7C2;
+  --n-300: #D9D9D5;
+  --n-200: #E8E8E4;
+  --n-100: #F1F1EE;
+  --n-50:  #F7F7F5;
+  --white: #FFFFFF;
+
+  --success: #6F9F00;
+  --warning: #FFB020;
+  --orange:  #FF9500;
+  --card-gray: #EFEFEB;
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-7: 32px;
+
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-pill: 999px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+
+  --f-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --f-en: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+}
+
+/* RESET */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: var(--f-zh); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+/* PAGE BACKGROUND */
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 50% -10%, #ececea 0%, transparent 60%),
+    var(--n-50);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 16px 48px;
+}
+.preview-meta {
+  position: fixed; top: 16px; left: 16px;
+  font-family: var(--f-en); font-size: 12px; color: var(--n-600);
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-meta .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+.preview-meta .name { font-weight: 700; color: var(--n-900); }
+
+/* PHONE FRAME 390×844 */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--n-50);
+  border-radius: 36px;
+  border: 1px solid var(--n-200);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+
+.status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+  font-family: var(--f-en); font-weight: 600; font-size: 15px;
+  color: var(--n-900);
+}
+.status-bar .right { display: flex; align-items: center; gap: 6px; }
+.status-bar .right svg { width: 16px; height: 16px; }
+
+/* =========================================
+   HEADER   我的计划
+   ========================================= */
+.header {
+  padding: 4px 20px 12px;
+  flex: none;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.header h1 {
+  font-size: 26px; font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--n-900);
+}
+.header .actions { display: flex; gap: 8px; flex: none; }
+.header .ic-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  display: grid; place-items: center;
+  color: var(--n-700);
+  transition: background 200ms cubic-bezier(0.16,1,0.3,1), transform 150ms;
+}
+.header .ic-btn:hover { background: var(--n-100); }
+.header .ic-btn:active { transform: scale(0.95); }
+.header .ic-btn svg { width: 16px; height: 16px; }
+
+/* =========================================
+   SEGMENT SWITCH   我的计划 / 模板推荐
+   Active = 荧光绿胶囊背景 + 黑字
+   Inactive = 透明 + 灰字
+   ========================================= */
+.segment {
+  padding: 4px 16px 14px;
+  flex: none;
+}
+.segment-inner {
+  display: flex; gap: 4px;
+  background: var(--n-100);
+  padding: 4px;
+  border-radius: var(--r-pill);
+}
+.seg-tab {
+  flex: 1;
+  height: 36px;
+  display: grid; place-items: center;
+  border-radius: var(--r-pill);
+  font-size: 14px; font-weight: 700;
+  color: var(--n-600);
+  transition: background 200ms cubic-bezier(0.16,1,0.3,1), color 200ms, transform 150ms;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+}
+.seg-tab:active { transform: scale(0.97); }
+.seg-tab.active {
+  background: var(--primary);
+  color: var(--primary-ink);
+  box-shadow: 0 2px 8px rgba(200,255,0,0.35);
+}
+
+/* =========================================
+   SCROLL
+   ========================================= */
+.scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 0 16px;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+.section { padding: 8px 16px 16px; }
+.section-label {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900);
+  margin: 0 4px 10px;
+}
+
+/* =========================================
+   CURRENT PLANS  (我的计划 列表)
+   ========================================= */
+.plans { display: flex; flex-direction: column; gap: 12px; }
+
+.plan {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.16,1,0.3,1), box-shadow 200ms;
+}
+.plan:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.plan:active { transform: scale(0.99); }
+
+.plan .row-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.plan .title {
+  font-size: 16px; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900);
+  line-height: 1.4;
+}
+.plan .chev {
+  width: 24px; height: 24px; flex: none;
+  display: grid; place-items: center;
+  color: var(--n-500);
+  margin-top: 2px;
+}
+.plan .chev svg { width: 14px; height: 14px; }
+
+.plan .meta {
+  display: flex; gap: 12px;
+  font-size: 12px;
+  color: var(--n-700);
+  margin-bottom: 12px;
+}
+.plan .meta .label { font-weight: 600; }
+.plan .meta .dot {
+  display: inline-block; width: 2px; height: 2px;
+  background: var(--n-400); border-radius: 50%;
+  margin-top: 7px;
+}
+
+/* progress */
+.plan .progress-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.plan .progress-label {
+  font-size: 12px; font-weight: 600;
+  color: var(--n-700);
+  letter-spacing: 0;
+}
+.plan .progress-pct {
+  font-family: var(--f-en);
+  font-size: 14px; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.plan .progress {
+  height: 6px;
+  background: var(--n-100);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.plan .progress > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #0A0A0A 0%, #2A3310 55%, #A6C24A 100%);
+  border-radius: var(--r-pill);
+  transition: width 600ms cubic-bezier(0.16,1,0.3,1);
+}
+
+/* level tag inside plan title area - subtle */
+.plan .level {
+  display: inline-flex; align-items: center;
+  height: 22px; padding: 0 8px;
+  background: var(--primary-dim);
+  color: var(--success);
+  border-radius: var(--r-s);
+  font-size: 11px; font-weight: 800;
+  margin-right: 6px;
+  letter-spacing: 0;
+}
+
+/* =========================================
+   RECOMMEND TEMPLATES (推荐模板)
+   ========================================= */
+.recs { display: flex; flex-direction: column; gap: 12px; }
+
+.rec {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 12px;
+  box-shadow: var(--shadow-card);
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.16,1,0.3,1), box-shadow 200ms;
+}
+.rec:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.rec:active { transform: scale(0.99); }
+
+.rec .photo {
+  width: 72px; height: 72px; flex: none;
+  border-radius: var(--r-m);
+  overflow: hidden;
+  position: relative;
+}
+.rec .photo svg { width: 100%; height: 100%; display: block; }
+.rec .body { flex: 1 1 auto; min-width: 0; }
+.rec .body .t {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+.rec .body .sub {
+  font-size: 12px; font-weight: 600;
+  color: var(--n-600);
+}
+.rec .chev-wrap {
+  width: 24px; height: 24px; flex: none;
+  display: grid; place-items: center;
+  color: var(--n-500);
+}
+.rec .chev-wrap svg { width: 14px; height: 14px; }
+
+/* =========================================
+   TAB BAR  (与 02 一致; 计划 active)
+   ========================================= */
+.tab-bar {
+  flex: none;
+  height: 64px;
+  background: var(--white);
+  border-top: 1px solid var(--n-200);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 8px;
+}
+.tab {
+  flex: 1;
+  height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  color: var(--n-500);
+  cursor: pointer;
+  transition: color 200ms cubic-bezier(0.16,1,0.3,1), transform 150ms;
+  font-size: 11px; font-weight: 600;
+}
+.tab:active { transform: scale(0.92); }
+.tab .ic {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+}
+.tab .ic svg { width: 22px; height: 22px; stroke-width: 2.2; }
+.tab.active {
+  color: var(--primary);
+}
+.tab.active .ic svg { fill: rgba(200,255,0,0.12); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="preview-meta">
+  <span class="dot"></span>
+  <span class="name">03 · 计划</span>
+  <span>·</span>
+  <span>390 × 844 · Light</span>
+</div>
+
+<div class="phone" role="application" aria-label="HiLiLife 衡力健身记录 · 计划">
+
+  <!-- ============== STATUS BAR ============== -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="right">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 22h2V11H2v11zm5 0h2V14H7v8zm4 0h2V8h-2v14zm4 0h2V5h-2v17zm4 0h2V2h-2v20z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5 13a10 10 0 0 1 14 0l-1.5 1.5a8 8 0 0 0-11 0L5 13zm-3-3a14 14 0 0 1 20 0l-1.5 1.5a12 12 0 0 0-17 0L2 10zm-3-3a18 18 0 0 1 26 0l-1.5 1.5a16 16 0 0 0-23 0L-1 7z"/></svg>
+      <svg viewBox="0 0 28 14" fill="none" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="23" height="13" rx="3" stroke="currentColor" stroke-opacity="0.5"/>
+        <rect x="2" y="2" width="20" height="10" rx="2" fill="currentColor"/>
+        <rect x="25" y="4" width="2" height="6" rx="1" fill="currentColor" fill-opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ============== HEADER ============== -->
+  <header class="header">
+    <h1>我的计划</h1>
+    <div class="actions">
+      <button class="ic-btn" aria-label="更多">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+        </svg>
+      </button>
+      <button class="ic-btn" aria-label="添加计划">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============== SEGMENT  我的计划 / 模板推荐 ============== -->
+  <div class="segment">
+    <div class="segment-inner" role="tablist" aria-label="计划视图切换">
+      <div class="seg-tab active" role="tab" aria-selected="true" tabindex="0" id="tab-mine">我的计划</div>
+      <div class="seg-tab" role="tab" aria-selected="false" tabindex="0" id="tab-tpl">模板推荐</div>
+    </div>
+  </div>
+
+  <!-- ============== SCROLL CONTENT ============== -->
+  <div class="scroll" id="viewMine">
+
+    <!-- CURRENT PLANS -->
+    <section class="section">
+      <div class="plans">
+
+        <!-- Plan 1: 上下肢分化训练 -->
+        <article class="plan" tabindex="0" role="button" aria-label="上下肢分化训练（4天）">
+          <div class="row-top">
+            <div class="title">上下肢分化训练（4天）</div>
+            <div class="chev" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="label">中级 · 4 周计划</span>
+          </div>
+          <div class="progress-row">
+            <span class="progress-label">进度：第2周/共4周</span>
+            <span class="progress-pct">50%</span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+            <i style="width:50%"></i>
+          </div>
+        </article>
+
+        <!-- Plan 2: Push Pull Legs -->
+        <article class="plan" tabindex="0" role="button" aria-label="Push Pull Legs（6天）">
+          <div class="row-top">
+            <div class="title">Push Pull Legs（6天）</div>
+            <div class="chev" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="label">高级 · 6 周计划</span>
+          </div>
+          <div class="progress-row">
+            <span class="progress-label">进度：第1周/共6周</span>
+            <span class="progress-pct">16%</span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuenow="16" aria-valuemin="0" aria-valuemax="100">
+            <i style="width:16%"></i>
+          </div>
+        </article>
+
+        <!-- Plan 3: 新手全身计划 -->
+        <article class="plan" tabindex="0" role="button" aria-label="新手全身计划（3天）">
+          <div class="row-top">
+            <div class="title">新手全身计划（3天）</div>
+            <div class="chev" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="label">初级 · 3 周计划</span>
+          </div>
+          <div class="progress-row">
+            <span class="progress-label">进度：第1周/共3周</span>
+            <span class="progress-pct">33%</span>
+          </div>
+          <div class="progress" role="progressbar" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100">
+            <i style="width:33%"></i>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- RECOMMEND TEMPLATES -->
+    <section class="section" aria-label="推荐模板">
+      <h2 class="section-label">推荐模板</h2>
+      <div class="recs">
+
+        <!-- 增肌训练计划 -->
+        <article class="rec" tabindex="0" role="button" aria-label="增肌训练计划（5天）">
+          <div class="photo" aria-hidden="true">
+            <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="rg1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#2C2C2C"/>
+                  <stop offset="1" stop-color="#0A0A0A"/>
+                </linearGradient>
+              </defs>
+              <rect width="72" height="72" fill="url(#rg1)"/>
+              <!-- gym floor -->
+              <rect x="0" y="58" width="72" height="14" fill="#1A1A1A"/>
+              <rect x="0" y="58" width="72" height="2" fill="#C8FF00" fill-opacity="0.65"/>
+              <!-- dumbbell left arm -->
+              <rect x="6" y="35" width="22" height="5" rx="2" fill="#C8FF00"/>
+              <rect x="2" y="31" width="6" height="13" rx="2" fill="#0A0A0A" stroke="#C8FF00" stroke-width="1.5"/>
+              <!-- body silhouette (muscular) -->
+              <circle cx="36" cy="22" r="6" fill="#0A0A0A"/>
+              <!-- shoulders + chest -->
+              <path d="M28 28 Q24 30 22 38 L20 52 L34 52 L34 38 Q34 30 36 28 Q38 30 38 38 L38 52 L52 52 L50 38 Q48 30 44 28 Z" fill="#0A0A0A"/>
+              <!-- arms holding dumbbell up -->
+              <path d="M22 38 Q14 36 12 38" stroke="#0A0A0A" stroke-width="6" stroke-linecap="round" fill="none"/>
+              <path d="M50 38 Q58 36 60 38" stroke="#0A0A0A" stroke-width="6" stroke-linecap="round" fill="none"/>
+              <!-- headband highlight -->
+              <rect x="29" y="17" width="14" height="2" fill="#C8FF00"/>
+              <!-- leg shadow -->
+              <path d="M30 52 L29 64 L36 64 L35 52 Z" fill="#1F1F1F"/>
+              <path d="M37 52 L36 64 L43 64 L42 52 Z" fill="#1F1F1F"/>
+            </svg>
+          </div>
+          <div class="body">
+            <div class="t">增肌训练计划（5天）</div>
+            <div class="sub">中级 · 6 周</div>
+          </div>
+          <div class="chev-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+          </div>
+        </article>
+
+        <!-- 减脂燃脂计划 -->
+        <article class="rec" tabindex="0" role="button" aria-label="减脂燃脂计划（4天）">
+          <div class="photo" aria-hidden="true">
+            <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="rg2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#3A1F1F"/>
+                  <stop offset="1" stop-color="#1A0A0A"/>
+                </linearGradient>
+              </defs>
+              <rect width="72" height="72" fill="url(#rg2)"/>
+              <!-- horizon line / road -->
+              <rect x="0" y="48" width="72" height="24" fill="#2A1212"/>
+              <path d="M0 48 L72 48" stroke="#FF9500" stroke-width="2" stroke-dasharray="6 4"/>
+              <!-- runner silhouette -->
+              <circle cx="36" cy="20" r="5" fill="#0A0A0A"/>
+              <!-- lean torso -->
+              <path d="M34 24 L31 38 L41 38 L38 24 Z" fill="#0A0A0A"/>
+              <!-- forward arm -->
+              <path d="M38 26 L48 22 L50 26" stroke="#0A0A0A" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+              <!-- back arm -->
+              <path d="M31 28 L24 32" stroke="#0A0A0A" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+              <!-- forward leg (lifted) -->
+              <path d="M37 38 L46 50 L42 52 L34 42 Z" fill="#0A0A0A"/>
+              <!-- back leg (push) -->
+              <path d="M32 38 L24 50 L22 46 L28 36 Z" fill="#0A0A0A"/>
+              <!-- speed / motion accents -->
+              <path d="M8 30 L18 30" stroke="#FF9500" stroke-width="2" stroke-linecap="round"/>
+              <path d="M5 38 L14 38" stroke="#FF9500" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10 22 L17 22" stroke="#FF9500" stroke-width="2" stroke-linecap="round"/>
+              <!-- shoe accent -->
+              <rect x="44" y="50" width="8" height="3" rx="1" fill="#FF9500"/>
+              <rect x="20" y="48" width="8" height="3" rx="1" fill="#FF9500"/>
+            </svg>
+          </div>
+          <div class="body">
+            <div class="t">减脂燃脂计划（4天）</div>
+            <div class="sub">中级 · 6 周</div>
+          </div>
+          <div class="chev-wrap" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ============== BOTTOM TAB BAR (计划 active) ============== -->
+  <nav class="tab-bar" aria-label="底部导航">
+    <a class="tab">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 10.5 12 3l9 7.5V21H3z"/>
+        </svg>
+      </span>
+      <span>首页</span>
+    </a>
+    <a class="tab">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="9" width="4" height="6" rx="1"/>
+          <rect x="18" y="9" width="4" height="6" rx="1"/>
+          <rect x="6" y="7" width="3" height="10" rx="1"/>
+          <rect x="15" y="7" width="3" height="10" rx="1"/>
+          <rect x="9" y="5" width="6" height="14" rx="1"/>
+        </svg>
+      </span>
+      <span>训练</span>
+    </a>
+    <a class="tab active" aria-current="page">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="17" rx="2"/>
+          <path d="M8 2v4M16 2v4M3 10h18"/>
+        </svg>
+      </span>
+      <span>计划</span>
+    </a>
+    <a class="tab">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3v18h18"/>
+          <path d="m7 14 4-4 4 4 5-5"/>
+        </svg>
+      </span>
+      <span>数据</span>
+    </a>
+    <a class="tab">
+      <span class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21a8 8 0 0 1 16 0"/>
+        </svg>
+      </span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+</div>
+
+<script>
+  (function () {
+    var tabs = document.querySelectorAll('.seg-tab');
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (x) {
+          x.classList.remove('active');
+          x.setAttribute('aria-selected', 'false');
+        });
+        t.classList.add('active');
+        t.setAttribute('aria-selected', 'true');
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>衡砺健身 · BOLD 高对比重排版预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ===== 衡砺 BOLD 设计系统：近黑画布 + 单一电光薄荷强调 ===== */
+    --ink:#0E0F0D;            /* 画布（手机内容底） */
+    --surface:#171A17;        /* 卡面 */
+    --surface-2:#1E221E;      /* 抬升卡面 */
+    --line:#2B302C;           /* 描边（暗场可见） */
+    --line-soft:#222622;
+    --text:#F4F6F2;           /* 主文字（白） */
+    --text-2:#C5CDC6;         /* 正文 */
+    --text-3:#7E877F;         /* 弱文字 */
+    /* ★ 唯一强调色：电光薄荷 —— 面积严格受限，仅用于焦点 */
+    --accent:#1FF0A8;
+    --accent-press:#13C98B;
+    --accent-ink:#0A2E22;     /* 强调色上的深色字 */
+    --accent-tint:rgba(31,240,168,.12);
+    --danger:#FF5C5C;
+    --shadow:0 18px 50px rgba(0,0,0,.55);
+    --font-display:'Barlow Condensed','PingFang SC','Microsoft YaHei',sans-serif;
+    --font-body:'Barlow',-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;
+    --ease:cubic-bezier(.22,.8,.28,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:#070807;color:var(--text-2);
+    font-family:var(--font-body);line-height:1.5;padding:0 0 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ===== 文档头 ===== */
+  .doc-header{max-width:1180px;margin:0 auto;padding:48px 32px 8px;}
+  .doc-kicker{display:inline-block;font-family:var(--font-display);font-weight:800;letter-spacing:2px;text-transform:uppercase;font-size:13px;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;padding:5px 14px;}
+  .doc-header h1{font-family:var(--font-display);font-weight:900;color:#fff;font-size:46px;line-height:1.02;letter-spacing:-1px;margin-top:16px;}
+  .doc-header p{color:var(--text-3);font-size:15px;margin-top:14px;max-width:780px;line-height:1.7;}
+  .doc-header b{color:var(--text);}
+  .tokens{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;}
+  .token{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;}
+  .token .sw{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.1);}
+  .token .meta{font-size:12px;line-height:1.3;}
+  .token .meta b{color:#fff;font-weight:700;display:block;font-family:var(--font-display);letter-spacing:.5px;}
+  .token .meta span{color:var(--text-3);}
+
+  /* ===== 画廊 ===== */
+  .gallery{max-width:1180px;margin:0 auto;padding:36px 32px;display:flex;flex-wrap:wrap;gap:34px;justify-content:center;}
+  .phone-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .phone-label{font-size:14px;font-weight:700;color:#cfd3da;font-family:var(--font-display);letter-spacing:.5px;text-transform:uppercase;}
+  .phone-label small{display:block;font-family:var(--font-body);font-size:11px;font-weight:500;color:#6b746c;margin-top:3px;text-transform:none;letter-spacing:0;}
+  .phone{width:375px;background:var(--ink);border-radius:42px;box-shadow:var(--shadow);border:10px solid #050605;position:relative;overflow:hidden;}
+  .statusbar{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;color:#fff;font-weight:600;}
+  .statusbar .dots{letter-spacing:2px;}
+  .screen{height:720px;overflow-y:auto;background:var(--ink);padding-bottom:64px;}
+  .screen::-webkit-scrollbar{width:0;}
+
+  /* ===== 通用组件 ===== */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 16px;}
+  .section{padding:0 16px;margin-bottom:22px;}
+  .section-title{font-family:var(--font-display);font-weight:800;font-size:20px;color:#fff;letter-spacing:.3px;display:flex;align-items:center;gap:8px;margin:0 0 12px;}
+  .section-title .bar{width:4px;height:18px;background:var(--accent);border-radius:2px;}
+  .section-title .more{margin-left:auto;font-family:var(--font-body);font-size:12px;color:var(--text-3);font-weight:600;}
+  .tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;color:var(--text-3);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;margin-right:6px;letter-spacing:.5px;}
+  .tag-primary{color:var(--accent);background:var(--accent-tint);border-color:transparent;}
+  .link-arrow{color:var(--text-3);font-size:13px;font-family:var(--font-body);display:inline-flex;align-items:center;font-weight:600;cursor:pointer;}
+
+  /* HOME —— 粗体 hero + 焦点数字 */
+  .hero{padding:18px 16px 10px;position:relative;}
+  .hero .hi{font-family:var(--font-body);font-size:13px;color:var(--text-3);font-weight:600;}
+  .hero .name{font-family:var(--font-display);font-weight:900;color:#fff;font-size:34px;letter-spacing:-.5px;line-height:1;margin-top:6px;}
+  .hero .date{font-size:12px;color:var(--text-3);margin-top:6px;font-weight:500;}
+  .status-card{margin:4px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:16px;}
+  .sc-head{display:flex;align-items:flex-end;justify-content:space-between;}
+  .sc-title{font-family:var(--font-display);font-weight:800;font-size:18px;color:#fff;letter-spacing:.5px;}
+  .sc-pct{font-family:var(--font-display);font-size:52px;font-weight:900;color:var(--accent);line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-1px;}
+  .sc-pct-sign{font-size:22px;font-weight:800;}
+  .pbar{position:relative;height:10px;border-radius:999px;background:#0c0f0c;border:1px solid var(--line);margin-top:12px;overflow:hidden;}
+  .pbar-fill{height:100%;border-radius:999px;background:var(--accent);}
+  .sc-tip{font-size:12px;color:var(--text-3);margin-top:10px;font-weight:500;}
+  .checkins{display:flex;margin-top:14px;gap:8px;}
+  .checkin{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border-radius:12px;background:var(--surface);border:1px solid var(--line);}
+  .checkin .ci-ico{position:relative;width:38px;height:38px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;}
+  .checkin .ci-name{font-size:13px;font-weight:700;color:var(--text-2);}
+  .checkin .ci-state{font-size:10px;color:var(--text-3);font-weight:600;}
+  .checkin.on{border-color:var(--accent);background:var(--accent-tint);}
+  .checkin.on .ci-name{color:var(--accent);}
+  .checkin.on .ci-state{color:var(--accent);font-weight:700;}
+
+  .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .quick{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:row;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s var(--ease),transform .14s var(--ease);}
+  .quick:hover{border-color:var(--accent);}
+  .quick:active{transform:scale(.97);}
+  .quick .ic{width:40px;height:40px;border-radius:11px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .quick .qt{font-family:var(--font-display);font-weight:800;font-size:17px;color:#fff;letter-spacing:.3px;}
+  .quick .qs{font-size:11px;color:var(--text-3);margin-top:2px;font-weight:500;}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;}
+  .wk{display:flex;gap:5px;margin-top:10px;}
+  .wk-d{flex:1;display:flex;flex-direction:column;align-items:center;}
+  .wk-wd{font-size:10px;color:var(--text-3);font-weight:700;}
+  .wk-box{position:relative;width:38px;height:42px;margin-top:4px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--text-2);background:var(--surface);border:1px solid var(--line);border-radius:10px;}
+  .wk-d.today .wk-box{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .wk-dot{position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:var(--accent);}
+  .wk-d.today .wk-dot{background:var(--accent-ink);}
+  .attribution{text-align:center;font-size:10px;color:var(--text-3);padding:16px;line-height:1.6;}
+
+  /* 今日计划动作卡 */
+  .plan-item{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:0 0 10px;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;}
+  .plan-item.on{border-left:3px solid var(--accent);}
+  .pi-thumb{width:42px;height:42px;border-radius:11px;flex:0 0 auto;background:var(--surface-2);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .pi-body{flex:1;min-width:0;}
+  .pi-name{font-family:var(--font-display);font-weight:800;font-size:17px;color:#fff;letter-spacing:.3px;}
+  .pi-meta{font-size:11px;color:var(--text-3);margin-top:3px;font-weight:500;}
+  .bar{height:6px;border-radius:999px;background:#0c0f0c;border:1px solid var(--line);margin-top:8px;overflow:hidden;}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:999px;}
+  .plan-item .tag{flex:0 0 auto;margin-right:0;font-family:var(--font-body);}
+  .empty{text-align:center;color:var(--text-3);font-size:13px;padding:30px;}
+
+  /* TRAINING */
+  .lib-head{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 6px;}
+  .lib-title{font-family:var(--font-display);font-weight:900;font-size:26px;color:#fff;letter-spacing:-.5px;}
+  .create-btn{border:1.5px solid var(--accent);color:var(--accent);font-family:var(--font-display);font-weight:800;font-size:14px;border-radius:999px;padding:6px 14px;cursor:pointer;}
+  .chips{white-space:nowrap;display:flex;padding:10px 16px;overflow:hidden;}
+  .chip{flex:0 0 auto;padding:6px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:13px;color:var(--text-3);font-weight:700;margin-right:6px;font-family:var(--font-body);}
+  .chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .chip-count{margin-left:4px;font-size:11px;opacity:.7;}
+  .search-bar{display:flex;align-items:center;gap:8px;padding:0 16px;margin-bottom:12px;}
+  .search-input{flex:1;display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:0 14px;height:40px;}
+  .search-field{flex:1;font-size:13px;color:var(--text-3);font-family:var(--font-body);}
+  .sel-pill{font-size:12px;color:var(--accent);background:var(--accent-tint);border-radius:999px;padding:7px 12px;font-weight:700;font-family:var(--font-body);}
+  .action-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;}
+  .action-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .action-thumb{position:relative;width:100%;aspect-ratio:1/1;background:var(--surface-2);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .action-emoji{font-size:42px;}
+  .play{position:absolute;right:6px;bottom:6px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .fav{position:absolute;top:7px;right:8px;color:var(--text-3);font-size:18px;}.fav.on{color:var(--accent);}
+  .action-body{padding:9px 10px 38px;}
+  .action-name{font-family:var(--font-display);font-weight:800;font-size:15px;color:#fff;letter-spacing:.3px;}
+  .action-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+  .add-btn{position:absolute;right:8px;bottom:8px;width:32px;height:32px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .add-btn.added{background:var(--surface-2);color:var(--text-3);border:1px solid var(--line);}
+  .action-bar{position:absolute;left:0;right:0;bottom:55px;display:flex;align-items:center;gap:12px;background:var(--surface-2);border-top:1px solid var(--line);padding:8px 14px;}
+  .ab-count{display:flex;flex-direction:column;align-items:center;}
+  .ab-num{font-family:var(--font-display);font-size:22px;font-weight:900;color:var(--accent);line-height:1;}
+  .ab-label{font-size:11px;color:var(--text-3);font-weight:600;}
+  .ab-start{flex:1;display:flex;align-items:center;justify-content:center;height:42px;background:var(--accent);color:var(--accent-ink);border-radius:12px;font-family:var(--font-display);font-weight:900;font-size:17px;letter-spacing:1px;}
+
+  /* LIST / RECORDS */
+  .seg{display:flex;gap:4px;margin:14px 16px 0;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;position:sticky;top:0;z-index:4;}
+  .seg-thumb{position:absolute;left:5px;top:5px;bottom:5px;width:calc(50% - 8px);background:var(--accent);border-radius:999px;transform:translateX(0);transition:transform .26s var(--ease);z-index:0;}
+  .seg-thumb.right{transform:translateX(calc(100% + 6px));}
+  .seg-btn{flex:1;text-align:center;font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--text-3);padding:9px 0;border-radius:999px;position:relative;z-index:1;letter-spacing:.5px;cursor:pointer;}
+  .seg-btn.on{color:var(--accent-ink);}
+  .tab-pane{animation:paneIn .26s var(--ease);}
+  @keyframes paneIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .rec-btn{width:100%;background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:12px;height:44px;font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.5px;cursor:pointer;}
+  .overview{display:flex;gap:10px;margin-top:12px;}
+  .ov-item{flex:1;text-align:center;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 4px;}
+  .ov-num{font-family:var(--font-display);font-weight:900;font-size:26px;color:#fff;line-height:1;font-variant-numeric:tabular-nums;}
+  .ov-num.down{color:var(--text-2);}
+  .ov-unit{font-size:12px;color:var(--text-3);font-weight:600;margin-left:2px;}
+  .ov-cap{font-size:11px;color:var(--text-3);margin-top:4px;font-weight:500;}
+  .ranges{display:flex;gap:6px;margin-bottom:12px;}
+  .range{font-size:12px;color:var(--text-3);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-weight:600;font-family:var(--font-body);}
+  .range.active{background:var(--accent-tint);color:var(--accent);border-color:transparent;}
+  .chart-wrap{width:100%;height:170px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .stats-row{display:flex;gap:8px;padding:0 16px;}
+  .stat-card{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 0;text-align:center;}
+  .stat-num{font-family:var(--font-display);font-weight:900;font-size:20px;color:#fff;}
+  .stat-cap{font-size:11px;color:var(--text-3);margin-top:3px;font-weight:500;}
+  .his-row{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-bottom:1px solid var(--line);font-size:13px;}
+  .his-row:last-child{border-bottom:none;}
+  .his-date{color:var(--text-3);font-weight:500;}
+  .his-weight{font-family:var(--font-display);font-weight:800;font-size:16px;color:#fff;}
+  .date-filter{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;}
+  .df-picker{font-size:12px;color:var(--text-3);background:var(--surface-2);border-radius:10px;padding:8px 14px;border:1px solid var(--line);white-space:nowrap;font-weight:600;font-family:var(--font-body);}
+  .df-picker.has-val{color:var(--text);font-weight:700;border-color:var(--accent);}
+  .df-clear{font-size:12px;color:var(--accent);font-weight:700;margin-left:auto;font-family:var(--font-body);}
+  .qf{font-size:12px;color:var(--text-3);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-weight:600;font-family:var(--font-body);}
+  .qf.active{background:var(--accent-tint);color:var(--accent);border-color:transparent;}
+  .train-group{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:10px;overflow:hidden;}
+  .tg-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface-2);}
+  .tg-date{font-family:var(--font-display);font-weight:800;font-size:14px;color:#fff;}
+  .tg-meta{display:flex;align-items:center;gap:10px;}
+  .tg-count{font-size:12px;color:var(--text-3);font-weight:600;}
+  .tg-arrow{font-size:12px;color:var(--text-3);}
+  .tg-sessions{padding:0 14px 10px;}
+  .tg-session{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+  .tg-session:first-child{border-top:none;}
+  .tl-session{font-size:11px;color:var(--accent-ink);background:var(--accent);border-radius:8px;padding:3px 9px;flex:0 0 auto;font-weight:800;font-family:var(--font-body);}
+  .tl-actions{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:6px;}
+  .tl-act{font-size:13px;color:var(--text-2);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:3px 9px;font-family:var(--font-body);}
+  .tl-arrow{color:var(--line);font-size:16px;flex:0 0 auto;}
+
+  /* DIET / ADVICE */
+  .meal{margin:12px 16px 0;}
+  .meal .mh{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .meal .mi{width:36px;height:36px;border-radius:11px;flex:0 0 36px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);}
+  .meal .mtitle{font-family:var(--font-display);font-weight:800;font-size:17px;color:#fff;flex:1;letter-spacing:.3px;}
+  .meal .kc{font-family:var(--font-display);font-weight:800;font-size:14px;color:var(--text-2);}
+  .dish{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:8px;}
+  .dish .emo{width:42px;height:42px;flex:0 0 42px;border-radius:11px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;}
+  .dish .dbody{flex:1;min-width:0;}
+  .dish .dn{font-family:var(--font-display);font-weight:800;font-size:16px;color:#fff;}
+  .dish .dd{font-size:11px;color:var(--text-3);margin-top:2px;line-height:1.5;font-weight:500;}
+  .dish .dk{font-family:var(--font-display);font-weight:800;font-size:14px;color:var(--text-2);flex:0 0 auto;}
+  .dish .dadd{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--accent);background:var(--accent-tint);border-radius:999px;padding:6px 13px;font-family:var(--font-body);}
+  .kcal-ring{display:flex;align-items:center;gap:16px;background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:16px;padding:16px;margin:12px 16px 0;}
+  .kr{width:84px;height:84px;flex:0 0 84px;border-radius:50%;position:relative;background:conic-gradient(var(--accent) 0 72%, #2a2f2b 72% 100%);display:flex;align-items:center;justify-content:center;}
+  .kr-hole{width:62px;height:62px;border-radius:50%;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .kr-pct{font-family:var(--font-display);font-weight:900;font-size:24px;color:var(--accent);line-height:1;}
+  .kr-pct-u{font-size:11px;font-weight:700;color:var(--text-3);}
+  .kt{flex:1;min-width:0;}
+  .kt-cap{font-size:12px;color:var(--text-3);font-weight:600;}
+  .kt-big{font-family:var(--font-display);font-weight:900;font-size:24px;color:#fff;margin:3px 0;line-height:1.1;}
+  .kt-u{font-size:11px;color:var(--text-3);font-weight:600;}
+  .kt-sub{font-size:11px;color:var(--text-3);font-weight:600;margin-top:3px;}
+  .macros{display:flex;gap:8px;margin:12px 16px 0;}
+  .macros .m{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 6px;text-align:center;}
+  .macros .dot{width:9px;height:9px;border-radius:50%;margin:0 auto 7px;background:var(--text-3);}
+  .macros .m:first-child .dot{background:var(--accent);}
+  .macros .v{font-family:var(--font-display);font-weight:900;font-size:20px;color:#fff;line-height:1;}
+  .macros .mu{font-size:10px;color:var(--text-3);font-weight:600;}
+  .macros .l{font-size:11px;color:var(--text-3);margin-top:4px;font-weight:500;}
+
+  /* MY (我的) */
+  .profile-head{margin:14px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:22px;padding:18px 16px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;}
+  .profile-head:after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,var(--accent-tint),transparent 70%);pointer-events:none;}
+  .av{width:58px;height:58px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-family:var(--font-display);font-weight:900;font-size:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ph-text{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .pn{font-family:var(--font-display);font-weight:800;font-size:19px;color:#fff;}
+  .ps{font-size:12px;color:var(--text-3);}
+  .logout-link{font-size:12px;color:var(--accent);padding:5px 10px;border-radius:14px;background:var(--accent-tint);flex-shrink:0;font-weight:700;font-family:var(--font-body);}
+  .login-btn{background:var(--accent);color:var(--accent-ink);border-radius:999px;font-family:var(--font-display);font-weight:900;font-size:17px;padding:0 36px;height:46px;line-height:46px;border:none;letter-spacing:1px;width:100%;max-width:220px;margin:0 auto;cursor:pointer;}
+  .pstats{margin:14px 16px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;}
+  .pv{flex:1;text-align:center;position:relative;}
+  .pv:not(:last-child):after{content:"";position:absolute;right:0;top:4px;bottom:4px;width:1px;background:var(--line);}
+  .pv-n{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--accent);}
+  .pv-k{font-size:11px;color:var(--text-3);margin-top:4px;font-weight:500;}
+  .menu{margin:12px 16px 0;padding:4px 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .mi{display:flex;align-items:center;gap:10px;padding:14px 14px;}
+  .mi:not(:last-child){border-bottom:1px solid var(--line);}
+  .mi-ic{width:32px;height:32px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .mi-t{flex:1;font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text);letter-spacing:.3px;}
+  .mi-ar{color:var(--text-3);font-size:18px;}
+  .hg-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .hg-item{width:calc(50% - 4px);box-sizing:border-box;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 10px;}
+  .hg-ic{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--surface-2);}
+  .hg-v{font-family:var(--font-display);font-weight:900;font-size:19px;color:#fff;line-height:1.15;}
+  .hg-k{font-size:11px;color:var(--text-3);margin-top:2px;}
+
+  /* ACTION DETAIL */
+  .hero-detail{position:relative;aspect-ratio:1/1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--surface-2);}
+  .hero-emoji{font-size:90px;}
+  .gif-badge{position:absolute;right:10px;bottom:10px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;font-family:var(--font-body);}
+  .zoom-btn{position:absolute;right:8px;top:8px;width:30px;height:30px;line-height:30px;text-align:center;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .d-name{font-family:var(--font-display);font-weight:900;font-size:26px;color:#fff;letter-spacing:-.5px;}
+  .d-tags{margin:10px 0 0;display:flex;flex-wrap:wrap;gap:5px;}
+  .d-desc{font-size:14px;color:var(--text-2);line-height:1.7;margin-top:10px;font-weight:500;}
+  .step{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;}
+  .step-no{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--accent-tint);color:var(--accent);font-family:var(--font-display);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .step-text{flex:1;font-size:14px;line-height:1.7;color:var(--text-2);font-weight:500;}
+  .btn-row{position:absolute;left:0;right:0;bottom:55px;padding:10px 16px;background:var(--surface-2);display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);}
+  .fav-btn{flex:1;height:46px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line);color:var(--text-2);font-weight:800;font-family:var(--font-display);font-size:15px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;cursor:pointer;}
+  .fav-btn.on{color:var(--accent);border-color:var(--accent);background:var(--accent-tint);}
+  .add-today{flex:2;height:46px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:12px;font-family:var(--font-display);font-weight:900;font-size:15px;letter-spacing:1px;cursor:pointer;}
+
+  /* TAB BAR（粗体激活指示） */
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:55px;background:var(--surface-2);display:flex;border-top:1px solid var(--line);z-index:10;}
+  .tabbar-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-3);font-size:11px;font-weight:600;position:relative;cursor:pointer;}
+  .tabbar-item.active{color:var(--accent);}
+  .tabbar-item.active:before{content:"";position:absolute;top:0;left:25%;right:25%;height:3px;background:var(--accent);border-radius:0 0 3px 3px;}
+  .tabbar-item .ti-icon{font-size:0;line-height:1;margin-bottom:3px;display:flex;align-items:center;justify-content:center;}
+  .tabbar-item .ti-icon .svg-ico{width:23px;height:23px;}
+
+  /* 图标：统一单色白（去噪），激活态用强调色 —— 严格收口配色 */
+  .svg-ico{display:inline-block;width:22px;height:22px;overflow:visible;filter:grayscale(1) brightness(2.4) contrast(1.05);}
+  .tabbar-item.active .ti-icon .svg-ico{filter:grayscale(1) brightness(.55) sepia(1) hue-rotate(110deg) saturate(6);}
+  .ci-ico .svg-ico{width:21px;height:21px;}
+  .quick .ic .svg-ico{width:22px;height:22px;}
+  .meal .mi .svg-ico{width:20px;height:20px;}
+  .dish .emo .svg-ico{width:24px;height:24px;}
+  .mi-ic .svg-ico{width:20px;height:20px;}
+  .hg-ic .svg-ico{width:20px;height:20px;}
+  .zoom-btn .svg-ico{width:17px;height:17px;color:var(--text);}
+  .search-ico{margin-right:8px;display:inline-flex;align-items:center;}.search-ico .svg-ico{width:16px;height:16px;}
+
+  /* 图标总览 */
+  .icon-showcase{max-width:1180px;margin:0 auto;padding:8px 32px 0;}
+  .icon-showcase h2{font-family:var(--font-display);font-weight:900;font-size:24px;color:#fff;letter-spacing:-.5px;}
+  .icon-showcase>p{font-size:13px;color:var(--text-3);margin-top:6px;font-weight:500;}
+  .ico-grid{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px;}
+  .ico-cell{display:flex;flex-direction:column;align-items:center;gap:6px;width:86px;}
+  .ico-chip{width:58px;height:58px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);}
+  .ico-chip .svg-ico{width:30px;height:30px;}
+  .ico-cell b{font-size:13px;color:#e6e8ec;font-weight:700;font-family:var(--font-display);letter-spacing:.5px;}
+  .ico-cell small{font-size:11px;color:#6b746c;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标精灵（复用原工程，重排版下统一单色） ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.6 12 4.6 20 11.6a1 1 0 0 1-1 1.1H5a1 1 0 0 1-1-1.1Z" fill="url(#gh-roof)"/><rect x="5.6" y="12.2" width="12.8" height="7.4" rx="1.8" fill="url(#gh-body)"/><path d="M10 19.6v-4.6a1.1 1.1 0 0 1 1.1-1.1h1.8a1.1 1.1 0 0 1 1.1 1.1v4.6" fill="#fff" opacity=".92"/><circle cx="8.3" cy="15.4" r="1.3" fill="#fff" opacity=".92"/><linearGradient id="gh-roof" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9BE3C4"/><stop offset="1" stop-color="#5FCFA0"/></linearGradient><linearGradient id="gh-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CDE7FB"/><stop offset="1" stop-color="#A6D4F5"/></linearGradient></symbol>
+    <symbol id="i-train" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="2.4" rx="1.2" fill="url(#gt-bar)"/><rect x="3" y="7.2" width="3" height="9.6" rx="1.5" fill="url(#gt-plate)"/><rect x="6.6" y="8.8" width="2.2" height="6.4" rx="1.1" fill="url(#gt-plate2)"/><rect x="15.2" y="8.8" width="2.2" height="6.4" rx="1.1" fill="url(#gt-plate2)"/><rect x="18" y="7.2" width="3" height="9.6" rx="1.5" fill="url(#gt-plate)"/><linearGradient id="gt-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBD0A8"/><stop offset="1" stop-color="#F4A988"/></linearGradient><linearGradient id="gt-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB39E"/><stop offset="1" stop-color="#FF8F7A"/></linearGradient><linearGradient id="gt-plate2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD0C0"/><stop offset="1" stop-color="#FFB39E"/></linearGradient></symbol>
+    <symbol id="i-diet" viewBox="0 0 24 24"><path d="M4 11.5h16a8 8 0 0 1-16 0Z" fill="url(#gd-bowl)"/><ellipse cx="12" cy="11.5" rx="9" ry="2.2" fill="#fff" opacity=".85"/><circle cx="9" cy="10.2" r="1.5" fill="#A8E6CF"/><circle cx="13" cy="10.6" r="1.3" fill="#FBC7A8"/><circle cx="15.6" cy="9.9" r="1.1" fill="#FFE3A0"/><linearGradient id="gd-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><rect x="11.2" y="4" width="1.6" height="15.2" rx=".8" fill="url(#gs-post)"/><rect x="3.4" y="4.3" width="17.2" height="2.4" rx="1.2" fill="url(#gs-beam)"/><rect x="8" y="18.4" width="8" height="2.4" rx="1.2" fill="url(#gs-post)"/><path d="M5 6.8 3.4 11.6a2.1 2.1 0 0 0 3.8 0Z" fill="url(#gs-pan)"/><path d="M19 6.8 17.4 11.6a2.1 2.1 0 0 0 3.8 0Z" fill="url(#gs-pan)"/><linearGradient id="gs-post" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9C9F2"/><stop offset="1" stop-color="#B79FE8"/></linearGradient><linearGradient id="gs-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C9B8F0"/><stop offset="1" stop-color="#A98FE0"/></linearGradient><linearGradient id="gs-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9B8F0"/><stop offset="1" stop-color="#A98FE0"/></linearGradient></symbol>
+    <symbol id="i-plan" viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="13" height="16" rx="3.2" fill="url(#gp-board)"/><rect x="9" y="2.8" width="6" height="3.6" rx="1.6" fill="#fff" stroke="#EFE2FB" stroke-width="1"/><rect x="8" y="9" width="8" height="1.6" rx=".8" fill="#fff" opacity=".85"/><rect x="8" y="12.2" width="8" height="1.6" rx=".8" fill="#fff" opacity=".85"/><circle cx="12" cy="16.6" r="2.6" fill="#fff"/><path d="M10.6 16.6l1.1 1.1 2-2.2" stroke="url(#gp-board)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><linearGradient id="gp-board" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCE3A0"/><stop offset="1" stop-color="#FBC98C"/></linearGradient></symbol>
+    <symbol id="i-idea" viewBox="0 0 24 24"><path d="M12 3.2a6 6 0 0 0-3.6 10.8c.6.5.9 1.2.9 2h5.4c0-.8.3-1.5.9-2A6 6 0 0 0 12 3.2Z" fill="url(#gi-bulb)"/><rect x="9.4" y="16.4" width="5.2" height="3.2" rx="1.4" fill="#C9B8F0"/><rect x="10.2" y="19.4" width="3.6" height="1.9" rx=".9" fill="#B79FE0"/><linearGradient id="gi-bulb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE6A0"/><stop offset="1" stop-color="#FBC98C"/></linearGradient></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M5 20.4c.4-3.8 3.2-6 7-6s6.6 2.2 7 6a.6.6 0 0 1-.6.6H5.6a.6.6 0 0 1-.6-.6Z" fill="url(#gu-body)"/><circle cx="12" cy="9" r="4.3" fill="url(#gu-head)"/><linearGradient id="gu-head" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCD7E6"/><stop offset="1" stop-color="#F4A9C8"/></linearGradient><linearGradient id="gu-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E0D6F7"/><stop offset="1" stop-color="#C9B8F0"/></linearGradient></symbol>
+    <symbol id="i-breakfast" viewBox="0 0 24 24"><path d="M6 11h10v3.6A4.4 4.4 0 0 1 11.6 19H10.4A4.4 4.4 0 0 1 6 14.6Z" fill="url(#gb-cup)"/><path d="M16 12.2a2.4 2.4 0 0 1 0 4.6" stroke="#FBC98C" stroke-width="1.6" fill="none" stroke-linecap="round"/><rect x="5" y="19" width="12" height="2" rx="1" fill="#E7C9A0"/><linearGradient id="gb-cup" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBD0A8"/><stop offset="1" stop-color="#F4A988"/></linearGradient></symbol>
+    <symbol id="i-lunch" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.6" fill="url(#gl-sun)"/><g fill="#FFD98A"><circle cx="12" cy="3.4" r="1.6"/><circle cx="12" cy="20.6" r="1.6"/><circle cx="3.4" cy="12" r="1.6"/><circle cx="20.6" cy="12" r="1.6"/><circle cx="5.6" cy="5.6" r="1.2"/><circle cx="18.4" cy="5.6" r="1.2"/><circle cx="5.6" cy="18.4" r="1.2"/><circle cx="18.4" cy="18.4" r="1.2"/></g><linearGradient id="gl-sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE6A0"/><stop offset="1" stop-color="#FBC98C"/></linearGradient></symbol>
+    <symbol id="i-dinner" viewBox="0 0 24 24"><path d="M16.5 3.2a8.2 8.2 0 1 0 4.3 15.2 6.6 6.6 0 0 1-4.3-15.2Z" fill="url(#gd-moon)"/><linearGradient id="gd-moon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A9C4F2"/><stop offset="1" stop-color="#7E9BE8"/></linearGradient></symbol>
+    <symbol id="i-snack" viewBox="0 0 24 24"><path d="M13.5 3 6 13.2h3.8L10.2 21 18 10.4h-3.8Z" fill="url(#gs-bolt)" stroke="#FFE3A0" stroke-width=".6" stroke-linejoin="round"/><linearGradient id="gs-bolt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE6A0"/><stop offset="1" stop-color="#F6B35A"/></linearGradient></symbol>
+    <symbol id="i-veg" viewBox="0 0 24 24"><path d="M5 19c-.4-7.5 5-13.5 14.5-14.2-1.2 9.2-7 14.2-14.5 14.2Z" fill="url(#gv-leaf)"/><linearGradient id="gv-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A8E6CF"/><stop offset="1" stop-color="#5FCFA0"/></linearGradient></symbol>
+    <symbol id="i-food-meat" viewBox="0 0 24 24"><g transform="rotate(-22 12 12)"><ellipse cx="13" cy="9.3" rx="6" ry="6.6" fill="url(#gfm-meat)"/><rect x="9.6" y="14.4" width="3.2" height="7.2" rx="1.6" fill="url(#gfm-bone)"/><circle cx="9.4" cy="21.2" r="2" fill="#fff"/><circle cx="13.2" cy="21.6" r="2" fill="#fff"/></g><linearGradient id="gfm-meat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC2A8"/><stop offset="1" stop-color="#F6917A"/></linearGradient><linearGradient id="gfm-bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF7EE"/><stop offset="1" stop-color="#F0E2CF"/></linearGradient></symbol>
+    <symbol id="i-food-noodle" viewBox="0 0 24 24"><path d="M4 12.8h16a8 8 0 0 1-16 0Z" fill="url(#gfn-bowl)"/><ellipse cx="12" cy="12.8" rx="9" ry="2.1" fill="#fff" opacity=".82"/><path d="M7 11.6c1-2 9-2 10 0" stroke="url(#gfn-noodle)" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="14.6" cy="10.6" r="1.5" fill="#FBC7A8"/><linearGradient id="gfn-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6B7A0"/><stop offset="1" stop-color="#E98E78"/></linearGradient><linearGradient id="gfn-noodle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF0CF"/><stop offset="1" stop-color="#F4D592"/></linearGradient></symbol>
+    <symbol id="i-food-fish" viewBox="0 0 24 24"><path d="M5 12c0-3.2 3.4-5.5 7.5-5.5 4 0 7.2 2.3 7.2 5.5s-3.2 5.5-7.2 5.5C8.4 17.5 5 15.2 5 12Z" fill="url(#gff-body)"/><path d="M5 12 1.4 8.4c1.2 1.6 1.2 5.6 0 7.2Z" fill="url(#gff-tail)"/><circle cx="16.4" cy="10.8" r="1.3" fill="#fff"/><linearGradient id="gff-body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A9D8F5"/><stop offset="1" stop-color="#6FB6EC"/></linearGradient><linearGradient id="gff-tail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7FC0EE"/><stop offset="1" stop-color="#5AA6E0"/></linearGradient></symbol>
+    <symbol id="i-food-egg" viewBox="0 0 24 24"><path d="M12 4.2c4 0 7 3 7 6.4 0 3.6-3.2 6.4-7 6.4S5 14.2 5 10.6C5 7.2 8 4.2 12 4.2Z" fill="url(#gfe-white)"/><circle cx="12.6" cy="11" r="3.3" fill="url(#gfe-yolk)"/><linearGradient id="gfe-white" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F4F6FA"/></linearGradient><linearGradient id="gfe-yolk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE39A"/><stop offset="1" stop-color="#FFC94D"/></linearGradient></symbol>
+    <symbol id="i-food-bowl" viewBox="0 0 24 24"><path d="M4 11.5h16a8 8 0 0 1-16 0Z" fill="url(#gfb-bowl)"/><ellipse cx="12" cy="11.5" rx="9" ry="2.2" fill="url(#gfb-oat)"/><circle cx="9" cy="11.1" r="1.2" fill="#C99A6A"/><circle cx="13" cy="11.7" r="1" fill="#D9AE7E"/><linearGradient id="gfb-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient><linearGradient id="gfb-oat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E2C6"/><stop offset="1" stop-color="#E4CC9F"/></linearGradient></symbol>
+    <symbol id="i-food-rice" viewBox="0 0 24 24"><path d="M4 12.5h16a8 8 0 0 1-16 0Z" fill="url(#gfr-bowl)"/><path d="M6.5 12.5c0-3 2.7-5.2 5.5-5.2s5.5 2.2 5.5 5.2Z" fill="url(#gfr-rice)"/><linearGradient id="gfr-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CDE7FB"/><stop offset="1" stop-color="#9CC9F0"/></linearGradient><linearGradient id="gfr-rice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F1F4F8"/></linearGradient></symbol>
+    <symbol id="i-food-salad" viewBox="0 0 24 24"><path d="M4 12.5h16a8 8 0 0 1-16 0Z" fill="url(#gfs-bowl)"/><ellipse cx="12" cy="12.5" rx="9" ry="2.2" fill="#fff" opacity=".8"/><path d="M9 12c-1-3 1-5 3-5s3 1 2.5 3.5c2-1 3.5.5 3 2.5-3 1-8 1-8.5-1Z" fill="url(#gfs-leaf)"/><linearGradient id="gfs-bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient><linearGradient id="gfs-leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B6E8B0"/><stop offset="1" stop-color="#6FC97A"/></linearGradient></symbol>
+    <symbol id="i-goal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="url(#gm-goal-o)"/><circle cx="12" cy="12" r="5.4" fill="#fff"/><circle cx="12" cy="12" r="2.7" fill="url(#gm-goal-i)"/><linearGradient id="gm-goal-o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB199"/><stop offset="1" stop-color="#FF7E6B"/></linearGradient><linearGradient id="gm-goal-i" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9E88"/><stop offset="1" stop-color="#F26B57"/></linearGradient></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 4h12v4a6 6 0 0 1-12 0Z" fill="url(#gm-tr-cup)"/><path d="M6.2 5H3.6a2 2 0 0 0 2.1 4" fill="none" stroke="url(#gm-tr-cup)" stroke-width="2"/><path d="M17.8 5h2.6a2 2 0 0 1-2.1 4" fill="none" stroke="url(#gm-tr-cup)" stroke-width="2"/><rect x="10.5" y="13" width="3" height="3" fill="url(#gm-tr-cup)"/><rect x="7.4" y="16" width="9.2" height="3" rx="1.2" fill="url(#gm-tr-base)"/><linearGradient id="gm-tr-cup" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD98A"/><stop offset="1" stop-color="#F4B54E"/></linearGradient><linearGradient id="gm-tr-base" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E7A94A"/><stop offset="1" stop-color="#C98A33"/></linearGradient></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><g fill="url(#gm-set)"><rect x="10.6" y="2.4" width="2.8" height="4.4" rx="1.1"/><rect x="10.6" y="17.2" width="2.8" height="4.4" rx="1.1"/><rect x="2.4" y="10.6" width="4.4" height="2.8" rx="1.1"/><rect x="17.2" y="10.6" width="4.4" height="2.8" rx="1.1"/><rect x="4.8" y="4.8" width="4.4" height="2.8" rx="1.1" transform="rotate(45 7 6.2)"/><rect x="14.8" y="4.8" width="4.4" height="2.8" rx="1.1" transform="rotate(-45 17 6.2)"/><rect x="4.8" y="16.4" width="4.4" height="2.8" rx="1.1" transform="rotate(-45 7 17.8)"/><rect x="14.8" y="16.4" width="4.4" height="2.8" rx="1.1" transform="rotate(45 17 17.8)"/></g><circle cx="12" cy="12" r="5" fill="url(#gm-set)"/><circle cx="12" cy="12" r="2.1" fill="#fff"/><linearGradient id="gm-set" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9C2D6"/><stop offset="1" stop-color="#8E9AB6"/></linearGradient></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="url(#gm-info)"/><rect x="10.7" y="10.4" width="2.6" height="7.2" rx="1.3" fill="#fff"/><circle cx="12" cy="7.4" r="1.7" fill="#fff"/><linearGradient id="gm-info" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#8FC8F2"/></linearGradient></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1.6 3-1.1 4.6-1.1 7.2 0 1 .8 1.8 1.8 1.8 1.7 0 2.5-1.4 2.3-3.2 2.2 1.5 3.2 4 3.2 6.2A7 7 0 1 1 6 15.4c0-2.7 1.7-4.6 3.4-6.2C10.7 7.6 10.3 5 12 3Z" fill="url(#gm-flame)"/><linearGradient id="gm-flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC58A"/><stop offset="1" stop-color="#FF7A4D"/></linearGradient></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="3.5" fill="url(#gm-cam-body)"/><path d="M9 7l1.3-2h3.4L15 7Z" fill="url(#gm-cam-body)"/><circle cx="12" cy="13.6" r="3.6" fill="#fff"/><circle cx="12" cy="13.6" r="2.3" fill="url(#gm-cam-lens)"/><linearGradient id="gm-cam-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9E8D2"/><stop offset="1" stop-color="#6FC9A6"/></linearGradient><linearGradient id="gm-cam-lens" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FCFA0"/><stop offset="1" stop-color="#2E9E78"/></linearGradient></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.2" fill="#fff"/><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="url(#gm-src)" stroke-width="2.4"/><path d="M15 15l5 5" stroke="url(#gm-src)" stroke-width="2.8" stroke-linecap="round"/><linearGradient id="gm-src" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9BE3C4"/><stop offset="1" stop-color="#5FCFA0"/></linearGradient></symbol>
+    <symbol id="i-zoom" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4" fill="none" stroke="url(#gm-zoom)" stroke-width="2.2" stroke-linecap="round"/><linearGradient id="gm-zoom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9C2D6"/><stop offset="1" stop-color="#8E9AB6"/></linearGradient></symbol>
+    <symbol id="i-album" viewBox="0 0 24 24"><rect x="3.5" y="5" width="14" height="13" rx="3" fill="url(#gm-alb-a)"/><rect x="6.5" y="8" width="14" height="13" rx="3" fill="url(#gm-alb-b)"/><circle cx="12.5" cy="14" r="3" fill="#fff" opacity=".9"/><linearGradient id="gm-alb-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD0B0"/><stop offset="1" stop-color="#F4A988"/></linearGradient><linearGradient id="gm-alb-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9E8D2"/><stop offset="1" stop-color="#6FC9A6"/></linearGradient></symbol>
+  </defs>
+</svg>
+
+<div class="doc-header">
+  <span class="doc-kicker">衡砺 BOLD · 高对比重排版</span>
+  <h1>更醒目，更有力量。</h1>
+  <p>在保留原有信息架构与全部功能模块的前提下，将视觉语言重构为 <b>近黑画布 + 单一电光薄荷强调色</b>。所有标题改为 <b>Barlow Condensed 900 粗体</b>，强调色面积被严格收口到「关键数字 / 主行动 / 进度 / 激活态 / 已完成」五类焦点，其余一律黑白灰——页面因此<b>醒目但不嘈杂</b>。下方为各页面在真机（375pt）下的重排效果。</p>
+  <div class="tokens">
+    <div class="token"><span class="sw" style="background:#0E0F0D"></span><span class="meta"><b>--ink</b><span>#0E0F0D 近黑画布</span></span></div>
+    <div class="token"><span class="sw" style="background:#1FF0A8"></span><span class="meta"><b>--accent</b><span>#1FF0A8 电光薄荷（唯一强调）</span></span></div>
+    <div class="token"><span class="sw" style="background:#F4F6F2"></span><span class="meta"><b>--text</b><span>#F4F6F2 主文字（白）</span></span></div>
+    <div class="token"><span class="sw" style="background:#2B302C"></span><span class="meta"><b>--line</b><span>#2B302C 暗场可见描边</span></span></div>
+    <div class="token"><span class="sw" style="background:#7E877F"></span><span class="meta"><b>--text-3</b><span>#7E877F 弱文字（灰）</span></span></div>
+  </div>
+</div>
+
+<section class="icon-showcase">
+  <h2>图标总览 · 单色化处理</h2>
+  <p>原多彩渐变图标经 grayscale + brightness 滤镜统一为单色白，仅在 tabBar 激活态映射为强调色——彻底去除配色噪点。</p>
+  <div class="ico-grid">
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-home"></use></svg></span><b>首页</b><small>i-home</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-train"></use></svg></span><b>训练</b><small>i-train</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-diet"></use></svg></span><b>饮食</b><small>i-diet</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-scale"></use></svg></span><b>体重</b><small>i-scale</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-plan"></use></svg></span><b>计划</b><small>i-plan</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-idea"></use></svg></span><b>建议</b><small>i-idea</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-user"></use></svg></span><b>我的</b><small>i-user</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-breakfast"></use></svg></span><b>早餐</b><small>i-breakfast</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-lunch"></use></svg></span><b>午餐</b><small>i-lunch</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-dinner"></use></svg></span><b>晚餐</b><small>i-dinner</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-snack"></use></svg></span><b>加餐</b><small>i-snack</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-veg"></use></svg></span><b>蔬果</b><small>i-veg</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-goal"></use></svg></span><b>目标</b><small>i-goal</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-trophy"></use></svg></span><b>成就</b><small>i-trophy</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-flame"></use></svg></span><b>打卡</b><small>i-flame</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-camera"></use></svg></span><b>识别</b><small>i-camera</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-search"></use></svg></span><b>搜索</b><small>i-search</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-zoom"></use></svg></span><b>放大</b><small>i-zoom</small></div>
+    <div class="ico-cell"><span class="ico-chip"><svg class="svg-ico"><use href="#i-album"></use></svg></span><b>相册</b><small>i-album</small></div>
+  </div>
+</section>
+
+<div class="gallery">
+
+  <!-- 1. 首页 -->
+  <div class="phone-wrap">
+    <div class="phone-label">首页 <small>home · 粗体 hero + 焦点完成率 + 周历</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="hero">
+          <div class="hi">早上好</div>
+          <div class="name">健身小达人</div>
+          <div class="date">8月11日 周二</div>
+        </div>
+
+        <div class="status-card">
+          <div class="sc-head">
+            <div class="sc-title">今日打卡</div>
+            <div class="sc-pct">33<span class="sc-pct-sign">%</span></div>
+          </div>
+          <div class="pbar"><div class="pbar-fill" style="width:33%"></div></div>
+          <div class="sc-tip">还差 2 项待打卡</div>
+          <div class="checkins">
+            <div class="checkin on"><div class="ci-ico"><svg class="svg-ico"><use href="#i-scale"></use></svg></div><div class="ci-name">体重</div><div class="ci-state">已打卡</div></div>
+            <div class="checkin"><div class="ci-ico"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="ci-name">训练</div><div class="ci-state">待记录</div></div>
+            <div class="checkin"><div class="ci-ico"><svg class="svg-ico"><use href="#i-diet"></use></svg></div><div class="ci-name">饮食</div><div class="ci-state">待记录</div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title"><span class="bar"></span>快捷开始</div>
+          <div class="quick-grid">
+            <div class="quick"><div class="ic"><svg class="svg-ico"><use href="#i-train"></use></svg></div><div class="qtxt"><div class="qt">开始训练</div><div class="qs">今日计划</div></div></div>
+            <div class="quick"><div class="ic"><svg class="svg-ico"><use href="#i-diet"></use></svg></div><div class="qtxt"><div class="qt">记录饮食</div><div class="qs">AI 识别</div></div></div>
+            <div class="quick"><div class="ic"><svg class="svg-ico"><use href="#i-scale"></use></svg></div><div class="qtxt"><div class="qt">记录体重</div><div class="qs">追踪趋势</div></div></div>
+            <div class="quick"><div class="ic"><svg class="svg-ico"><use href="#i-plan"></use></svg></div><div class="qtxt"><div class="qt">我的计划</div><div class="qs">查看安排</div></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cal-head">
+            <div class="section-title" style="margin:0"><span class="bar"></span>训练记录日历</div>
+            <div class="link-arrow">查看日历 ›</div>
+          </div>
+          <div class="wk">
+            <div class="wk-d"><div class="wk-wd">一</div><div class="wk-box">10<div class="wk-dot"></div></div></div>
+            <div class="wk-d today"><div class="wk-wd">二</div><div class="wk-box">11</div></div>
+            <div class="wk-d"><div class="wk-wd">三</div><div class="wk-box">12</div></div>
+            <div class="wk-d"><div class="wk-wd">四</div><div class="wk-box">13</div></div>
+            <div class="wk-d"><div class="wk-wd">五</div><div class="wk-box">14</div></div>
+            <div class="wk-d"><div class="wk-wd">六</div><div class="wk-box">15</div></div>
+            <div class="wk-d"><div class="wk-wd">日</div><div class="wk-box">16</div></div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:22px">
+          <div class="section-title" style="margin:0 0 12px"><span class="bar"></span>今日训练计划 <span class="more">全部 ›</span></div>
+          <div class="card plan-item on">
+            <div class="pi-thumb"><svg class="svg-ico" style="width:24px;height:24px"><use href="#i-train"></use></svg></div>
+            <div class="pi-body"><div class="pi-name">杠铃卧推</div><div class="pi-meta">4 组 · 12 次 · 20kg</div><div class="bar"><i style="width:100%"></i></div></div>
+            <span class="tag tag-primary">已练</span>
+          </div>
+          <div class="card plan-item">
+            <div class="pi-thumb"><svg class="svg-ico" style="width:24px;height:24px"><use href="#i-train"></use></svg></div>
+            <div class="pi-body"><div class="pi-name">深蹲</div><div class="pi-meta">4 组 · 10 次 · 40kg</div><div class="bar"><i style="width:0%"></i></div></div>
+            <span class="tag">未练</span>
+          </div>
+          <div class="card plan-item">
+            <div class="pi-thumb"><svg class="svg-ico" style="width:24px;height:24px"><use href="#i-flame"></use></svg></div>
+            <div class="pi-body"><div class="pi-name">平板支撑</div><div class="pi-meta">3 组 · 60 秒</div><div class="bar"><i style="width:0%"></i></div></div>
+            <span class="tag">未练</span>
+          </div>
+        </div>
+
+        <div class="attribution">动作演示媒体 © Gym visual<br>https://gymvisual.com/</div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 训练 -->
+  <div class="phone-wrap">
+    <div class="phone-label">训练 <small>training · 动作库 + 双排卡片 + 底部行动栏</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="lib-head"><div class="lib-title">动作库</div><div class="create-btn">+ 创建动作</div></div>
+        <div class="chips">
+          <div class="chip on">全部<span class="chip-count">12</span></div>
+          <div class="chip">胸<span class="chip-count">3</span></div>
+          <div class="chip">背<span class="chip-count">2</span></div>
+          <div class="chip">腿<span class="chip-count">4</span></div>
+          <div class="chip">肩<span class="chip-count">2</span></div>
+          <div class="chip">核心<span class="chip-count">3</span></div>
+        </div>
+        <div class="search-bar">
+          <div class="search-input"><span class="search-ico"><svg class="svg-ico"><use href="#i-search"></use></svg></span><span class="search-field">搜索动作、部位或器械</span></div>
+          <div class="sel-pill">3 已选 ›</div>
+        </div>
+        <div class="action-list">
+          <div class="action-card"><div class="action-thumb"><div class="action-emoji"><svg class="svg-ico" style="width:42px;height:42px"><use href="#i-train"></use></svg></div><div class="play">▶</div><div class="fav on">♥</div></div><div class="action-body"><div class="action-name">哑铃卧推</div><div class="action-tags"><span class="tag tag-primary">胸</span><span class="tag">哑铃</span></div></div><div class="add-btn">+</div></div>
+          <div class="action-card"><div class="action-thumb"><div class="action-emoji"><svg class="svg-ico" style="width:42px;height:42px"><use href="#i-train"></use></svg></div><div class="fav">♡</div></div><div class="action-body"><div class="action-name">引体向上</div><div class="action-tags"><span class="tag tag-primary">背</span><span class="tag">徒手</span></div></div><div class="add-btn">+</div></div>
+          <div class="action-card"><div class="action-thumb"><div class="action-emoji"><svg class="svg-ico" style="width:42px;height:42px"><use href="#i-train"></use></svg></div><div class="play">▶</div><div class="fav">♡</div></div><div class="action-body"><div class="action-name">杠铃深蹲</div><div class="action-tags"><span class="tag tag-primary">腿</span><span class="tag">杠铃</span></div></div><div class="add-btn">+</div></div>
+          <div class="action-card"><div class="action-thumb"><div class="action-emoji"><svg class="svg-ico" style="width:42px;height:42px"><use href="#i-train"></use></svg></div><div class="fav">♡</div></div><div class="action-body"><div class="action-name">平板支撑</div><div class="action-tags"><span class="tag tag-primary">核心</span><span class="tag">徒手</span></div></div><div class="add-btn">+</div></div>
+          <div class="action-card"><div class="action-thumb"><div class="action-emoji"><svg class="svg-ico" style="width:42px;height:42px"><use href="#i-train"></use></svg></div><div class="fav on">♥</div></div><div class="action-body"><div class="action-name">哑铃划船</div><div class="action-tags"><span class="tag tag-primary">背</span><span class="tag">哑铃</span></div></div><div class="add-btn">+</div></div>
+          <div class="action-card"><div class="action-thumb"><div class="action-emoji"><svg class="svg-ico" style="width:42px;height:42px"><use href="#i-train"></use></svg></div><div class="fav">♡</div></div><div class="action-body"><div class="action-name">卷腹</div><div class="action-tags"><span class="tag tag-primary">核心</span><span class="tag">徒手</span></div></div><div class="add-btn added">✓</div></div>
+        </div>
+        <div class="empty" style="padding:24px 0">动作图片 © Gym visual</div>
+      </div>
+      <div class="action-bar">
+        <div class="ab-count"><div class="ab-num">3</div><div class="ab-label">已选动作</div></div>
+        <div class="ab-start">开始训练</div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 记录 -->
+  <div class="phone-wrap">
+    <div class="phone-label">记录 <small>list · 点击分段切换「体重 / 训练」</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="seg" data-seg>
+          <div class="seg-thumb"></div>
+          <div class="seg-btn on" data-to="weight">体重记录</div>
+          <div class="seg-btn" data-to="training">训练记录</div>
+        </div>
+
+        <div class="pane-weight tab-pane">
+          <div class="card">
+            <button class="rec-btn">+ 记录体重</button>
+            <div class="overview">
+              <div class="ov-item"><div class="ov-num">68.5<span class="ov-unit">kg</span></div><div class="ov-cap">最新体重</div></div>
+              <div class="ov-item"><div class="ov-num down">-1.2</div><div class="ov-cap">区间变化</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title"><span class="bar"></span>体重变化趋势</div>
+            <div class="ranges"><div class="range active">近7天</div><div class="range">近30天</div><div class="range">近90天</div></div>
+            <div class="chart-wrap">
+              <svg width="100%" height="170" viewBox="0 0 320 170" preserveAspectRatio="none">
+                <line x1="0" y1="30" x2="320" y2="30" stroke="#2B302C" stroke-width="1"/>
+                <line x1="0" y1="70" x2="320" y2="70" stroke="#2B302C" stroke-width="1"/>
+                <line x1="0" y1="110" x2="320" y2="110" stroke="#2B302C" stroke-width="1"/>
+                <line x1="0" y1="150" x2="320" y2="150" stroke="#2B302C" stroke-width="1"/>
+                <polyline fill="none" stroke="#1FF0A8" stroke-width="3" points="10,90 60,80 110,95 160,70 210,85 260,60 310,75"/>
+                <circle cx="10" cy="90" r="4" fill="#1FF0A8"/><circle cx="60" cy="80" r="4" fill="#1FF0A8"/><circle cx="110" cy="95" r="4" fill="#1FF0A8"/><circle cx="160" cy="70" r="4" fill="#1FF0A8"/><circle cx="210" cy="85" r="4" fill="#1FF0A8"/><circle cx="260" cy="60" r="4" fill="#1FF0A8"/><circle cx="310" cy="75" r="4" fill="#1FF0A8"/>
+              </svg>
+            </div>
+          </div>
+          <div class="stats-row">
+            <div class="stat-card"><div class="stat-num">70.2</div><div class="stat-cap">最高体重</div></div>
+            <div class="stat-card"><div class="stat-num">67.8</div><div class="stat-cap">最低体重</div></div>
+            <div class="stat-card"><div class="stat-num">24</div><div class="stat-cap">记录天数</div></div>
+          </div>
+          <div class="card">
+            <div class="section-title"><span class="bar"></span>体重历史记录（共 4 条）</div>
+            <div class="date-filter"><div class="df-picker has-val">开始日期</div><span style="font-size:12px;color:#7E877F">至</span><div class="df-picker has-val">结束日期</div></div>
+            <div class="his-row"><span class="his-date">2026-08-11</span><span class="his-weight">68.5 kg</span></div>
+            <div class="his-row"><span class="his-date">2026-08-10</span><span class="his-weight">68.8 kg</span></div>
+            <div class="his-row"><span class="his-date">2026-08-09</span><span class="his-weight">69.0 kg</span></div>
+            <div class="his-row"><span class="his-date">2026-08-07</span><span class="his-weight">69.3 kg</span></div>
+          </div>
+        </div>
+
+        <div class="pane-training tab-pane" style="display:none">
+          <div class="card">
+            <div class="section-title"><span class="bar"></span>训练历史记录（共 3 天）</div>
+            <div class="date-filter"><div class="qf active">今日</div><div class="qf">昨日</div><div class="qf">选择日期</div><div class="df-clear">回到今日</div></div>
+            <div class="train-group">
+              <div class="tg-head"><span class="tg-date">2026-08-11</span><div class="tg-meta"><span class="tg-count">2 场</span><span class="tg-arrow">▾</span></div></div>
+              <div class="tg-sessions">
+                <div class="tg-session"><span class="tl-session">第1练</span><div class="tl-actions"><span class="tl-act">杠铃卧推</span><span class="tl-act">引体向上</span><span class="tl-act">卷腹</span></div><span class="tl-arrow">›</span></div>
+                <div class="tg-session"><span class="tl-session">第2练</span><div class="tl-actions"><span class="tl-act">平板支撑</span><span class="tl-act">深蹲</span></div><span class="tl-arrow">›</span></div>
+              </div>
+            </div>
+            <div class="train-group">
+              <div class="tg-head"><span class="tg-date">2026-08-10</span><div class="tg-meta"><span class="tg-count">1 场</span><span class="tg-arrow">▾</span></div></div>
+              <div class="tg-sessions"><div class="tg-session"><span class="tl-session">第1练</span><div class="tl-actions"><span class="tl-act">哑铃划船</span><span class="tl-act">硬拉</span></div><span class="tl-arrow">›</span></div></div>
+            </div>
+            <div class="train-group">
+              <div class="tg-head"><span class="tg-date">2026-08-09</span><div class="tg-meta"><span class="tg-count">1 场</span><span class="tg-arrow">▾</span></div></div>
+              <div class="tg-sessions"><div class="tg-session"><span class="tl-session">第1练</span><div class="tl-actions"><span class="tl-act">跑步</span></div><span class="tl-arrow">›</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 饮食建议 -->
+  <div class="phone-wrap">
+    <div class="phone-label">饮食建议 <small>advice · 餐次块 + 环形汇总 + 宏量</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="seg" style="position:static;margin:14px 16px 0">
+          <div class="seg-thumb"></div>
+          <div class="seg-btn on">建议</div>
+          <div class="seg-btn">记录</div>
+        </div>
+        <div class="kcal-ring">
+          <div class="kr"><div class="kr-hole"><div class="kr-pct">72<span class="kr-pct-u">%</span></div><div class="kr-pct-u">已摄入</div></div></div>
+          <div class="kt">
+            <div class="kt-cap">今日总热量</div>
+            <div class="kt-big">1580 kcal</div>
+            <div class="kt-u">目标 2200 kcal</div>
+            <div class="kt-sub">剩余 620 kcal</div>
+          </div>
+        </div>
+        <div class="meal">
+          <div class="mh"><div class="mi"><svg class="svg-ico"><use href="#i-breakfast"></use></svg></div><div class="mtitle">早餐</div><div class="kc">420 kcal</div></div>
+          <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-egg"></use></svg></div><div class="dbody"><div class="dn">煎蛋燕麦碗</div><div class="dd">燕麦 50g · 鸡蛋 2 个 · 牛奶 200ml</div></div><div class="dk">420</div><div class="dadd">添加</div></div>
+        </div>
+        <div class="meal">
+          <div class="mh"><div class="mi"><svg class="svg-ico"><use href="#i-lunch"></use></svg></div><div class="mtitle">午餐</div><div class="kc">680 kcal</div></div>
+          <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-rice"></use></svg></div><div class="dbody"><div class="dn">糙米饭鸡胸</div><div class="dd">糙米 150g · 鸡胸 120g · 西兰花</div></div><div class="dk">680</div><div class="dadd">添加</div></div>
+        </div>
+        <div class="meal">
+          <div class="mh"><div class="mi"><svg class="svg-ico"><use href="#i-dinner"></use></svg></div><div class="mtitle">晚餐</div><div class="kc">480 kcal</div></div>
+          <div class="dish"><div class="emo"><svg class="svg-ico"><use href="#i-food-salad"></use></svg></div><div class="dbody"><div class="dn">牛油果沙拉</div><div class="dd">生菜 · 番茄 · 牛油果 · 金枪鱼</div></div><div class="dk">480</div><div class="dadd">添加</div></div>
+        </div>
+        <div class="macros">
+          <div class="m"><div class="dot"></div><div class="v">92<span style="font-size:11px">g</span></div><div class="mu">蛋白质</div><div class="l">P</div></div>
+          <div class="m"><div class="dot"></div><div class="v">180<span style="font-size:11px">g</span></div><div class="mu">碳水</div><div class="l">C</div></div>
+          <div class="m"><div class="dot"></div><div class="v">48<span style="font-size:11px">g</span></div><div class="mu">脂肪</div><div class="l">F</div></div>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 我的 -->
+  <div class="phone-wrap">
+    <div class="phone-label">我的 <small>profile · 头像 + 统计 + 菜单</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="profile-head">
+          <div class="av">达</div>
+          <div class="ph-text"><div class="pn">健身小达人</div><div class="ps">已坚持健身 128 天</div></div>
+          <div class="logout-link">退出</div>
+        </div>
+        <div class="pstats">
+          <div class="pv"><div class="pv-n">128</div><div class="pv-k">连续打卡</div></div>
+          <div class="pv"><div class="pv-n">342</div><div class="pv-k">训练场次</div></div>
+          <div class="pv"><div class="pv-n">16</div><div class="pv-k">收藏动作</div></div>
+        </div>
+        <div class="section" style="margin-top:18px">
+          <div class="section-title"><span class="bar"></span>健康概览</div>
+          <div class="hg-grid">
+            <div class="hg-item"><div class="hg-ic"><svg class="svg-ico"><use href="#i-goal"></use></svg></div><div class="hg-body"><div class="hg-v">68.5</div><div class="hg-k">当前体重 kg</div></div></div>
+            <div class="hg-item"><div class="hg-ic"><svg class="svg-ico"><use href="#i-scale"></use></svg></div><div class="hg-body"><div class="hg-v">22.4</div><div class="hg-k">BMI</div></div></div>
+            <div class="hg-item"><div class="hg-ic"><svg class="svg-ico"><use href="#i-flame"></use></svg></div><div class="hg-body"><div class="hg-v">1580</div><div class="hg-k">今日热量 kcal</div></div></div>
+            <div class="hg-item"><div class="hg-ic"><svg class="svg-ico"><use href="#i-trophy"></use></svg></div><div class="hg-body"><div class="hg-v">12</div><div class="hg-k">成就徽章</div></div></div>
+          </div>
+        </div>
+        <div class="menu">
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-plan"></use></svg></div><div class="mi-t">我的计划</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-diet"></use></svg></div><div class="mi-t">饮食记录</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-trophy"></use></svg></div><div class="mi-t">我的成就</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-settings"></use></svg></div><div class="mi-t">设置</div><div class="mi-ar">›</div></div>
+          <div class="mi"><div class="mi-ic"><svg class="svg-ico"><use href="#i-info"></use></svg></div><div class="mi-t">隐私政策</div><div class="mi-ar">›</div></div>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 动作详情 -->
+  <div class="phone-wrap">
+    <div class="phone-label">动作详情 <small>action-detail · hero + 要点 + 底部行动</small></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● 5G ▮</span></div>
+      <div class="screen">
+        <div class="hero-detail">
+          <div class="hero-emoji"><svg class="svg-ico" style="width:90px;height:90px"><use href="#i-train"></use></svg></div>
+          <div class="gif-badge">GIF</div>
+          <div class="zoom-btn"><svg class="svg-ico"><use href="#i-zoom"></use></svg></div>
+        </div>
+        <div class="section" style="margin-top:16px">
+          <div class="d-name">杠铃卧推</div>
+          <div class="d-tags"><span class="tag tag-primary">胸</span><span class="tag">杠铃</span><span class="tag">力量</span></div>
+          <div class="d-desc">仰卧于卧推凳，双手握杠略宽于肩，下放至胸口后由胸部发力推起，全程保持肩胛收紧、腰部微拱。</div>
+          <div class="section-title" style="margin:18px 0 12px"><span class="bar"></span>动作要点</div>
+          <div class="step"><div class="step-no">1</div><div class="step-text">双脚踩实地面，臀部贴凳，核心收紧稳定躯干。</div></div>
+          <div class="step"><div class="step-no">2</div><div class="step-text">杠铃下放至下胸，肘部约 45° 夹角，避免耸肩。</div></div>
+          <div class="step"><div class="step-no">3</div><div class="step-text">胸部主动发力推起，顶端呼气锁定不耸肩。</div></div>
+        </div>
+        <div style="height:14px"></div>
+      </div>
+      <div class="btn-row">
+        <div class="fav-btn on">♥ 已收藏</div>
+        <div class="add-today">加入今日</div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-home"></use></svg></div>首页</div>
+        <div class="tabbar-item active"><div class="ti-icon"><svg class="svg-ico"><use href="#i-train"></use></svg></div>训练</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-scale"></use></svg></div>记录</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-diet"></use></svg></div>饮食</div>
+        <div class="tabbar-item"><div class="ti-icon"><svg class="svg-ico"><use href="#i-user"></use></svg></div>我的</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // 记录页分段切换（体重 / 训练）
+  document.querySelectorAll('.seg[data-seg]').forEach(function(seg){
+    var thumb = seg.querySelector('.seg-thumb');
+    var btns = seg.querySelectorAll('.seg-btn');
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){
+        btns.forEach(function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        var to = b.getAttribute('data-to');
+        var phone = seg.closest('.phone');
+        phone.querySelector('.pane-weight').style.display = (to==='weight') ? 'block':'none';
+        phone.querySelector('.pane-training').style.display = (to==='training') ? 'block':'none';
+        thumb.classList.toggle('right', to==='training');
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

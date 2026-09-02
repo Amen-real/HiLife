@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "饮食建议"
+  "usingComponents": {
+    "icon": "/components/icon/icon"
+  },
+  "navigationBarTitleText": " "
 }

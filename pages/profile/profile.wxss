@@ -1,6 +1,6 @@
 /* pages/profile/profile.wxss —— 对齐 ui-redesign-preview.html v2 */
 /* 竖直渐变底（顶部青绿→底部桃色），与首页/训练执行页统一；顶部青绿与 .profile-head 同色自然衔接，底部桃色与 overscroll 一致 */
-.page { padding: 0 0 calc(160rpx + env(safe-area-inset-bottom)); min-height: 100vh; background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%); }
+.page { padding: 0 0 calc(138rpx + env(safe-area-inset-bottom)); min-height: 100vh; background: transparent; }
 
 /* ===== 头部（玻璃卡，与首页 hero / 全局玻璃体系一致） ===== */
 .profile-head {
@@ -71,20 +71,6 @@
 }
 .logout-link:active { opacity: 0.6; }
 
-/* ===== 数据条（对齐预览 pstats） ===== */
-.pstats {
-  margin: 24rpx 32rpx 0;
-  background: var(--glass-strong); border: 1rpx solid var(--glass-border); border-radius: 28rpx; box-shadow: var(--shadow-card);
-  padding: 24rpx; display: flex;
-}
-.pv { flex: 1; text-align: center; position: relative; }
-.pv:not(:last-child):after { content: ""; position: absolute; right: 0; top: 8rpx; bottom: 8rpx; width: 1rpx; background: var(--line); }
-.pv-n { font-size: var(--fs-page); font-weight: 800; color: var(--text); }
-.pv-k { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 6rpx; }
-/* 收藏统计项可点击进入收藏页 */
-.pv-tap { cursor: pointer; }
-.pv-press { opacity: 0.55; transform: scale(0.96); }
-
 /* ===== 健康概览卡片 ===== */
 .health-card { margin: 24rpx 32rpx 0; }
 .section-title { display: flex; align-items: center; gap: 12rpx; font-size: var(--fs-head); font-weight: 700; color: var(--text); margin-bottom: 20rpx; }
@@ -125,6 +111,8 @@
 }
 .menu .mi-t { flex: 1; font-size: var(--fs-head); font-weight: 600; color: var(--text); }
 .menu .mi-ar { color: var(--line-strong); font-size: var(--fs-title); }
+/* 深色主题开关：微信原生 switch 默认偏大，等比缩到与菜单行协调 */
+.menu .mi-sw { flex: 0 0 auto; transform: scale(0.82); transform-origin: right center; }
 
 /* 媒体署名 */
 .attribution { text-align: center; font-size: var(--fs-caption); color: var(--text-weak); padding: 28rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); line-height: 1.6; }
@@ -134,9 +122,9 @@
 
 /* ===== 数据管理弹层面板（底部弹出，含导出/导入/清除三项，无图标） ===== */
 .dm-mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(15,23,42,.45); display: flex; align-items: flex-end; z-index: 3000; }
-/* 底部预留 custom-tab-bar 高度（110rpx 内容 + 安全区），否则独立渲染的 tabBar 会浮在弹层之上遮住底部按钮/提示。
+/* 底部预留 custom-tab-bar 高度（88rpx 内容 + 安全区），否则独立渲染的 tabBar 会浮在弹层之上遮住底部按钮/提示。
    微信 custom-tab-bar 不在页面 z-index 堆叠内，页面内 fixed 遮罩无法盖住它，只能靠预留空间避让。 */
-.dm-sheet { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding-bottom: calc(120rpx + env(safe-area-inset-bottom)); box-shadow: 0 -10rpx 40rpx rgba(15,23,42,.2); animation: hist-up .26s ease; }
+.dm-sheet { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding-bottom: calc(98rpx + env(safe-area-inset-bottom)); box-shadow: 0 -10rpx 40rpx rgba(15,23,42,.2); animation: hist-up .26s ease; }
 .dm-head { display: flex; align-items: center; justify-content: space-between; padding: 32rpx 32rpx 12rpx; }
 .dm-title { font-size: var(--fs-title); font-weight: 800; color: var(--text); }
 .dm-close { width: 56rpx; height: 56rpx; border-radius: 50%; background: var(--bg); color: var(--text-sub); font-size: var(--fs-head); display: flex; align-items: center; justify-content: center; }
@@ -163,3 +151,48 @@
   border: none; margin-bottom: 18rpx; padding: 0;
 }
 .export-share-btn::after { border: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   深色主题覆盖（.page.theme-dark）
+   —— 由本页「深色主题」开关切换，utils/theme.js 持久化到 Storage。
+   手法同 pages/home/home.wxss：重定义 CSS 变量让整棵子树自动翻转，
+   只对本页的硬编码颜色（弹层白底、健康卡渐变icon）做单独覆盖。
+   ══════════════════════════════════════════════════════════════ */
+
+.page.theme-dark {
+  --n-50:  #0A0A0A;
+  --n-100: #1E1E1E;
+  --n-200: rgba(255, 255, 255, 0.10);
+  --n-500: rgba(255, 255, 255, 0.42);
+  --n-600: rgba(255, 255, 255, 0.55);
+  --n-700: rgba(255, 255, 255, 0.75);
+  --n-900: #FFFFFF;
+
+  --text:        #FFFFFF;
+  --text-sub:    rgba(255, 255, 255, 0.70);
+  --text-weak:   rgba(255, 255, 255, 0.45);
+  --line:        rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.20);
+
+  --card: #161616;
+  --bg:   rgba(255, 255, 255, 0.06);
+
+  background: #0A0A0A;
+  color: var(--text);
+}
+
+/* 图标：.ico--ink 默认深墨，黑底不可见 → 转白 */
+.page.theme-dark .ico--ink { background-color: #FFFFFF; }
+
+/* 卡片阴影去掉（暗色下无意义） */
+.page.theme-dark .card { box-shadow: none; }
+
+/* 健康卡四个指标 icon：浅色是亮彩渐变，暗色改用品牌绿系淡底，避免在黑底上发灰 */
+.page.theme-dark .hg-ic-goal { background: rgba(200, 255, 0, 0.16); }
+.page.theme-dark .hg-ic-scale { background: rgba(200, 255, 0, 0.14); }
+.page.theme-dark .hg-ic-user { background: rgba(255, 149, 0, 0.16); }
+.page.theme-dark .hg-ic-bmi { background: linear-gradient(135deg, #FFB199, #FF8A66); }
+
+/* 登录按钮 / 退出链接：浅色是墨底白字，暗色翻转为品牌绿底墨字 */
+.page.theme-dark .login-btn { background: var(--primary); color: #0A0A0A; }
+.page.theme-dark .logout-link { color: var(--text-weak); }

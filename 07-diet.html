@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 饮食建议 · HiLiLife</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =========================================
+   DESIGN TOKENS  (与 01-11 同步)
+   ========================================= */
+:root {
+  --primary:      #C8FF00;
+  --primary-ink:  #0A0A0A;
+  --primary-dim:  #ECFFC2;
+  --olive:        #A6C24A;
+
+  --n-950: #0A0A0A;
+  --n-900: #111111;
+  --n-700: #444444;
+  --n-600: #707070;
+  --n-500: #A0A0A0;
+  --n-400: #C7C7C2;
+  --n-300: #D9D9D5;
+  --n-200: #E8E8E4;
+  --n-100: #F1F1EE;
+  --n-50:  #F7F7F5;
+  --white: #FFFFFF;
+
+  --success: #6F9F00;
+  --warning: #FFB020;
+  --orange:  #FF9500;
+  --card-gray: #EFEFEB;
+
+  /* Nutrition colors (small dots / accents only) */
+  --prot:  #6F9F00;   /* protein green */
+  --carb:  #FF9500;   /* carbs orange */
+  --fat:   #FFB020;   /* fat amber */
+
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-pill: 999px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+
+  --f-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --f-en: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  --f-cn: "PingFang SC", "Inter", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: var(--f-zh); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 50% -10%, #ececea 0%, transparent 60%),
+    var(--n-50);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 16px 48px;
+}
+.preview-meta {
+  position: fixed; top: 16px; left: 16px;
+  font-family: var(--f-en); font-size: 12px; color: var(--n-600);
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-meta .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+.preview-meta .name { font-weight: 700; color: var(--n-900); }
+
+/* PHONE 390x844 */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--n-50);
+  border-radius: 36px;
+  border: 1px solid var(--n-200);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+
+/* STATUS BAR */
+.status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+  font-family: var(--f-en); font-weight: 600; font-size: 15px;
+  color: var(--n-900);
+}
+.status-bar .right { display: flex; align-items: center; gap: 6px; }
+.status-bar .right svg { width: 16px; height: 16px; }
+
+/* HEADER */
+.header {
+  height: 56px;
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+}
+.header h1 {
+  font-size: 22px; font-weight: 800;
+  letter-spacing: -0.02em; color: var(--n-900);
+}
+.header .actions { display: flex; align-items: center; gap: 4px; }
+.header .icon-btn {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--n-700);
+  cursor: pointer;
+  transition: background 200ms;
+}
+.header .icon-btn:hover { background: var(--n-100); }
+.header .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* MAIN scroll */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 20px 24px;
+}
+
+/* Section card (shared) */
+.card {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
+}
+.card .label {
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-900);
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+.section-label {
+  font-family: var(--f-cn);
+  font-size: 14px; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: 0.02em;
+  margin: 6px 4px 10px;
+}
+
+/* ============================
+   Hero card (今日目标 + 64%)
+   ============================ */
+.goal-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 18px;
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
+}
+.goal-card .info { flex: 1; min-width: 0; }
+.goal-card .info .label {
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-700);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.goal-card .info .kcal {
+  font-family: var(--f-en);
+  font-size: 30px; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: baseline;
+}
+.goal-card .info .kcal .unit {
+  font-family: var(--f-en);
+  font-size: 16px; font-weight: 700;
+  color: var(--n-700);
+  margin-left: 4px;
+}
+.goal-card .info .sub {
+  margin-top: 4px;
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 600;
+  color: var(--n-500);
+  letter-spacing: 0.02em;
+}
+
+/* 64% ring — 与 01-home.html 环形进度条样式一致 */
+.ring {
+  --size: 76px; --w: 8px; --pct: 64;
+  width: var(--size); height: var(--size);
+  border-radius: 50%;
+  background: conic-gradient(
+    #E4FF6E 0%,
+    #C8FF00 calc(var(--pct) * 0.5%),
+    #7CB800 calc(var(--pct) * 1%),
+    var(--n-200) calc(var(--pct) * 1%) 100%
+  );
+  display: grid; place-items: center;
+  position: relative;
+  flex: none;
+}
+.ring::before {
+  content: ""; position: absolute; inset: var(--w);
+  background: var(--card-gray); border-radius: 50%;
+}
+.ring > span {
+  position: relative; z-index: 1;
+  font-family: var(--f-en);
+  font-size: 18px; font-weight: 800;
+  color: var(--n-900);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ============================
+   Nutrition overview (3 cols)
+   ============================ */
+.nutrition-overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.nutrition-overview .item {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-m);
+  padding: 12px 12px 10px;
+  display: flex; flex-direction: column; gap: 6px;
+  box-shadow: var(--shadow-card);
+}
+.nutrition-overview .item .head {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-700);
+  letter-spacing: 0.02em;
+}
+.nutrition-overview .item .head .swatch {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex: none;
+}
+.nutrition-overview .item.prot .head .swatch { background: var(--prot); }
+.nutrition-overview .item.carb .head .swatch { background: var(--carb); }
+.nutrition-overview .item.fat  .head .swatch { background: var(--fat);  }
+
+.nutrition-overview .item .val {
+  font-family: var(--f-en);
+  font-size: 20px; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  display: inline-flex; align-items: baseline;
+}
+.nutrition-overview .item .val .unit {
+  font-family: var(--f-en);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-700);
+  margin-left: 3px;
+}
+
+/* ============================
+   Today's tasks list
+   ============================ */
+.tasks {
+  display: flex; flex-direction: column;
+}
+.tasks .row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--n-100);
+}
+.tasks .row:last-child { border-bottom: none; }
+.tasks .row .ic {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--card-gray);
+  display: grid; place-items: center;
+  flex: none;
+}
+.tasks .row .name {
+  flex: 1;
+  font-family: var(--f-cn);
+  font-size: 14px; font-weight: 700;
+  color: var(--n-900);
+}
+.tasks .row .rest {
+  font-family: var(--f-cn);
+  font-size: 13px; font-weight: 700;
+  color: var(--n-700);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.tasks .row .rest .num {
+  font-family: var(--f-en);
+  color: var(--n-900);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* ============================
+   Recommended foods (4 squares)
+   ============================ */
+.foods {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.foods .food {
+  display: flex; flex-direction: column; gap: 8px;
+  cursor: pointer;
+  transition: transform 150ms;
+}
+.foods .food:active { transform: scale(0.98); }
+.foods .food:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: var(--r-m); }
+
+.foods .food .img {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--r-m);
+  overflow: hidden;
+  background: var(--card-gray);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.foods .food .img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.foods .food .name {
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-900);
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* Bottom Tab */
+.tab {
+  flex: none;
+  height: 76px;
+  background: var(--white);
+  border-top: 1px solid var(--n-200);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 8px 8px 22px;
+}
+.tab .item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--n-500);
+  font-family: var(--f-cn);
+  font-size: 11px; font-weight: 600;
+  transition: color 200ms, transform 150ms;
+}
+.tab .item .ic {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--n-500);
+  transition: background 200ms, color 200ms;
+}
+.tab .item .ic svg { display: block; }
+.tab .item .t { letter-spacing: 0.02em; }
+.tab .item.on .ic { background: var(--primary); color: var(--ink); }
+.tab .item.on .t { color: var(--ink); }
+.tab .item:active { transform: scale(0.96); }
+.tab .item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-s); }
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="preview-meta" aria-hidden="true">
+  <span class="dot"></span><span class="name">07 · 饮食建议</span>
+</div>
+
+<div class="phone" role="application" aria-label="饮食建议">
+
+  <!-- Status bar -->
+  <div class="status-bar" aria-hidden="true">
+    <span>9:41</span>
+    <span class="right">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 16h3v4H2zM7 12h3v8H7zM12 8h3v12h-3zM17 4h3v16h-3z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 18a8 8 0 0 1-8-8c0-3 2-6 5-7l1 2c-2 1-3 3-3 5a5 5 0 0 0 5 5c3 0 5-2 5-5l2-1c1 3-1 7-4 9z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="14" height="6" rx="1"/><rect x="21" y="10" width="2" height="4" rx="1"/></svg>
+    </span>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>饮食建议</h1>
+    <div class="actions">
+      <button class="icon-btn" type="button" aria-label="更多">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>
+        </svg>
+      </button>
+      <button class="icon-btn" type="button" aria-label="添加">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Hero: 今日目标 + 64% ring -->
+    <section class="goal-card" aria-label="今日热量目标">
+      <div class="info">
+        <div class="label">今日目标</div>
+        <div class="kcal">2,100<span class="unit">kcal</span></div>
+        <div class="sub">建议摄入</div>
+      </div>
+      <div class="ring" style="--pct:64" role="img" aria-label="已完成 64%">
+        <span>64%</span>
+      </div>
+    </section>
+
+    <!-- 营养概览 (3 small cards) -->
+    <section class="nutrition-overview" aria-label="营养概览">
+      <div class="item prot">
+        <div class="head"><span class="swatch" aria-hidden="true"></span>蛋白质</div>
+        <div class="val">140<span class="unit">g</span></div>
+      </div>
+      <div class="item carb">
+        <div class="head"><span class="swatch" aria-hidden="true"></span>碳水</div>
+        <div class="val">220<span class="unit">g</span></div>
+      </div>
+      <div class="item fat">
+        <div class="head"><span class="swatch" aria-hidden="true"></span>脂肪</div>
+        <div class="val">70<span class="unit">g</span></div>
+      </div>
+    </section>
+
+    <!-- 今日任务 -->
+    <h2 class="section-label">今日任务</h2>
+    <section class="card" aria-label="今日任务列表">
+      <div class="tasks">
+        <div class="row">
+          <div class="ic" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6F9F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11z"/>
+            </svg>
+          </div>
+          <span class="name">蛋白质</span>
+          <span class="rest">还差 <span class="num">42g</span></span>
+        </div>
+        <div class="row">
+          <div class="ic" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+          </div>
+          <span class="name">碳水</span>
+          <span class="rest">还差 <span class="num">88g</span></span>
+        </div>
+        <div class="row">
+          <div class="ic" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFB020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 19c2-6 5-12 12-12-2 4-5 6-9 7-3 1-3 3-3 5z"/>
+              <path d="M5 19h12"/>
+            </svg>
+          </div>
+          <span class="name">脂肪</span>
+          <span class="rest">还差 <span class="num">28g</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 推荐食物 -->
+    <h2 class="section-label">推荐食物</h2>
+    <section class="card" aria-label="推荐食物">
+      <div class="foods">
+        <div class="food" tabindex="0" role="button" aria-label="鸡胸肉">
+          <div class="img">
+            <img src="https://images.unsplash.com/photo-1604908554027-9f0a25b8a55a?w=200&h=200&fit=crop"
+                 alt="鸡胸肉" loading="lazy">
+          </div>
+          <div class="name">鸡胸肉</div>
+        </div>
+        <div class="food" tabindex="0" role="button" aria-label="燕麦">
+          <div class="img">
+            <img src="https://images.unsplash.com/photo-1571091655789-405eb7a3a3a8?w=200&h=200&fit=crop"
+                 alt="燕麦" loading="lazy">
+          </div>
+          <div class="name">燕麦</div>
+        </div>
+        <div class="food" tabindex="0" role="button" aria-label="鸡蛋">
+          <div class="img">
+            <img src="https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=200&h=200&fit=crop"
+                 alt="鸡蛋" loading="lazy">
+          </div>
+          <div class="name">鸡蛋</div>
+        </div>
+        <div class="food" tabindex="0" role="button" aria-label="牛奶">
+          <div class="img">
+            <img src="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&h=200&fit=crop"
+                 alt="牛奶" loading="lazy">
+          </div>
+          <div class="name">牛奶</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Tab (数据 active) -->
+  <nav class="tab" aria-label="主导航">
+    <button class="item" aria-label="首页">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>
+      <span class="t">首页</span>
+    </button>
+    <button class="item" aria-label="训练">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4V4"/><path d="M4 7h2"/><path d="M2 9h4"/><path d="M18 7h2"/><path d="M18 9h4"/><path d="M10 14v6"/><path d="M14 14v6"/></svg></span>
+      <span class="t">训练</span>
+    </button>
+    <button class="item" aria-label="计划">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="9" y1="3" x2="9" y2="7"/><line x1="15" y1="3" x2="15" y2="7"/></svg></span>
+      <span class="t">计划</span>
+    </button>
+    <button class="item on" aria-current="page" aria-label="数据">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-6 4 3 6-9"/><circle cx="18" cy="6" r="1.5" fill="currentColor"/></svg></span>
+      <span class="t">数据</span>
+    </button>
+    <button class="item" aria-label="我的">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span>
+      <span class="t">我的</span>
+    </button>
+  </nav>
+
+</div>
+</body>
+</html>

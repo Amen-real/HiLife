@@ -1,0 +1,143 @@
+<!-- components/training-review/training-review.wxml -->
+<view class="page">
+
+  <!-- ===== 主体滚动区 ===== -->
+  <scroll-view class="scroll" scroll-y>
+    <view class="body">
+
+      <!-- ===== 顶部 4 段 tab ===== -->
+      <view class="tabs" role="tablist">
+        <view class="tab-item {{tab==='single'?'on':''}}" data-tab="single" bindtap="switchTab" role="tab">单次复盘</view>
+        <view class="tab-item {{tab==='rolling'?'on':''}}" data-tab="rolling" bindtap="switchTab" role="tab">滚动复盘</view>
+        <view class="tab-item {{tab==='baseline'?'on':''}}" data-tab="baseline" bindtap="switchTab" role="tab">基准对比</view>
+        <view class="tab-item {{tab==='weekly'?'on':''}}" data-tab="weekly" bindtap="switchTab" role="tab">周度复盘</view>
+      </view>
+
+      <!-- =============== 单次复盘（active） =============== -->
+      <block wx:if="{{tab==='single'}}">
+
+        <!-- Exercise hero -->
+        <view class="exercise" wx:if="{{hero.name}}">
+          <view class="ex-icon">
+            <icon name="arm" size="40"></icon>
+          </view>
+          <view class="ex-meta">
+            <view class="ex-title">{{hero.name}}</view>
+            <view class="ex-sub">{{hero.date}} · 第 {{hero.setIdx}} 组<text class="accent"> / 共 {{hero.setTotal}} 组</text></view>
+          </view>
+        </view>
+        <view wx:else class="exercise empty">
+          <view class="ex-icon muted"><icon name="arm" size="40"></icon></view>
+          <view class="ex-meta">
+            <view class="ex-title">暂无训练记录</view>
+            <view class="ex-sub">完成一次训练后，这里会自动生成复盘</view>
+          </view>
+        </view>
+
+        <!-- 3 stat cards -->
+        <view class="stats">
+          <view class="stat">
+            <text class="lab">训练量</text>
+            <text class="val">{{stats.duration}}</text>
+          </view>
+          <view class="stat">
+            <text class="lab">消耗</text>
+            <text class="val">{{stats.kcal}}<text class="unit">kcal</text></text>
+          </view>
+          <view class="stat">
+            <text class="lab">完成度</text>
+            <text class="val">{{stats.completion}}<text class="unit">%</text></text>
+          </view>
+        </view>
+
+        <!-- ===== 数据分析 ===== -->
+        <view class="section-title">数据分析</view>
+        <view class="analysis">
+          <view class="a-head">
+            <view class="a-left">
+              <view class="lab">训练量 (kg)</view>
+              <view class="big">{{analysis.totalLabel}}<text class="unit">kg</text></view>
+            </view>
+            <view class="delta" wx:if="{{analysis.deltaPct !== 0}}">较上次 <text class="up">{{analysis.deltaLabel}}</text></view>
+            <view class="delta" wx:else>较上次 <text class="up">—</text></view>
+          </view>
+          <view class="chart">
+            <view class="grid" aria-hidden="true">
+              <view class="tick"><text>12k</text></view>
+              <view class="tick"><text>8k</text></view>
+              <view class="tick"><text>4k</text></view>
+            </view>
+            <view class="bars">
+              <view class="bar {{item.color}}"
+                    wx:for="{{analysis.bars}}"
+                    wx:key="date"
+                    style="{{item.style}}">
+                <text class="bar-val">{{item.label}}</text>
+              </view>
+            </view>
+            <view class="x-axis">
+              <text wx:for="{{analysis.xAxis}}"
+                    wx:key="*this"
+                    class="{{item.hot?'hot':''}}">{{item.label}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- ===== RPE 分布 ===== -->
+        <view class="section-title">RPE 分布</view>
+        <view class="rpe-card">
+          <view class="rpe-row">
+            <view class="ring" style="{{rpe.ringStyle}}" aria-label="{{rpe.ariaLabel}}">
+              <view class="ring-center">
+                <view class="n">{{rpe.totalPct}}<text class="pct">%</text></view>
+                <view class="lab">总和</view>
+              </view>
+            </view>
+            <view class="legend">
+              <view class="lg-row">
+                <text class="lg-dot" style="background:#2A3310"></text>
+                <text class="lg-name">RPE 10</text>
+                <text class="lg-pct">{{rpe.pct10}}%</text>
+              </view>
+              <view class="lg-row">
+                <text class="lg-dot" style="background:#C8FF00"></text>
+                <text class="lg-name">RPE 8–9</text>
+                <text class="lg-pct">{{rpe.pct8}}%</text>
+              </view>
+              <view class="lg-row">
+                <text class="lg-dot" style="background:#6F9F00"></text>
+                <text class="lg-name">RPE 6–7</text>
+                <text class="lg-pct">{{rpe.pct6}}%</text>
+              </view>
+              <view class="lg-row">
+                <text class="lg-dot" style="background:#B8D45A"></text>
+                <text class="lg-name">RPE ≤5</text>
+                <text class="lg-pct">{{rpe.pct5}}%</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+      </block>
+
+      <!-- =============== 其他 tab 占位 =============== -->
+      <view wx:elif="{{tab==='rolling'}}" class="placeholder">
+        <view class="ph-ico">📈</view>
+        <view class="ph-tit">滚动复盘准备中</view>
+        <view class="ph-hint">该视图将展示同一动作跨场次的渐进对比</view>
+      </view>
+      <view wx:elif="{{tab==='baseline'}}" class="placeholder">
+        <view class="ph-ico">⚖️</view>
+        <view class="ph-tit">基准对比准备中</view>
+        <view class="ph-hint">该视图将展示基线 vs 当前的能力对比</view>
+      </view>
+      <view wx:elif="{{tab==='weekly'}}" class="placeholder">
+        <view class="ph-ico">📅</view>
+        <view class="ph-tit">周度复盘准备中</view>
+        <view class="ph-hint">该视图将展示本周完成度 / 力量 / 努力度汇总</view>
+      </view>
+
+      <view class="bottom-gap" />
+    </view>
+  </scroll-view>
+</view>

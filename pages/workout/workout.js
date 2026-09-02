@@ -83,6 +83,7 @@ Page({
     overlayPoster: '',
     // 动作历史
     showHistory: false,
+    histAction: null,     // 当前展开动作（历史 overlay 只展示选中动作的每组明细）
     // 替换动作
     showReplace: false,
     replaceAi: -1,          // 待替换的动作索引
@@ -388,11 +389,16 @@ Page({
     else restKind = 'done';
 
     this._afterRest = (restKind === 'done') ? null : { nextIndex, nextSet };
-    this._isLastSet = (restKind === 'done');
     this._activeActionIndex = ai;
     this._activeSetIndex = si;
 
     const stats = this.decorate(actions);
+    // 最后一个动作的末组完成：不弹任何「训练完成」强制保存弹窗，直接停留在训练中页面；
+    // 用户可继续「添加动作」或点顶栏「完成(.wo-done-btn)」才保存整次训练。
+    if (restKind === 'done') {
+      this.setData({ actions, stats });
+      return;
+    }
     this.setData(Object.assign(
       { actions, showRest: true, restLeft: this.data.restTotal, restRing: 100, restFillWidth: '100%', restKind, restMinimized: false, actNo: si, showTrain: false, stats }
     ));
@@ -429,10 +435,10 @@ Page({
       this._activeActionIndex = null;
       this._activeSetIndex = null;
     }
-    if (this._isLastSet) {
-      this._isLastSet = false;
+    // 兜底：末组完成已不再弹休息/保存弹窗（停留在训练中页，由顶栏「完成」保存）；
+    // 若因历史状态仍进入 done 态，仅关闭弹窗、绝不自动保存（整次训练的保存只走 .wo-done-btn）。
+    if (this.data.restKind === 'done') {
       this.setData({ showRest: false });
-      this.saveWorkout(this.data.actions);
       return;
     }
     const target = this._afterRest || { nextIndex: 0, nextSet: 0 };
@@ -493,9 +499,14 @@ Page({
 
   noop() {},
 
-  // 动作历史
-  openHistory() { this.setData({ showHistory: true }); },
-  closeHistory() { this.setData({ showHistory: false }); },
+  // 动作历史：只展示当前选中（展开）动作的每组明细，而非全部动作
+  openHistory(e) {
+    const ai = Number(e.currentTarget.dataset.ai);
+    const a = this.data.actions[ai];
+    if (!a) return;
+    this.setData({ showHistory: true, histAction: a });
+  },
+  closeHistory() { this.setData({ showHistory: false, histAction: null }); },
 
   // 替换动作：打开选择浮层（候选 = 全量动作库排除当前动作）
   replaceAction(e) {

@@ -1,7 +1,10 @@
 /* pages/workout/workout.wxss —— 训练执行页（全部动作可滚动列表 + 单卡展开） */
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%);
+  /* 柔和的品牌色晕染：顶部一抹极淡荧光绿，向下过渡为中性页面底色，避免原高饱和渐变过于突兀 */
+  background:
+    radial-gradient(130% 50% at 50% 0%, var(--primary-tint) 0%, rgba(242, 255, 214, 0) 60%),
+    var(--n-50);
   padding: 0;
   box-sizing: border-box;
 }
@@ -21,13 +24,15 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--primary-deep);
+  /* 清除原深绿实底，改为透明、与页面柔和底色融为一体；下方细线作轻分隔 */
+  background: transparent;
+  border-bottom: 1rpx solid var(--line);
 }
 .wo-timer-wrap { flex: 1; display: flex; align-items: center; }
 .wo-timer {
   font-size: var(--fs-hero);
   font-weight: 800;
-  color: #fff;
+  color: var(--text);
   letter-spacing: -1rpx;
   line-height: 1;
   font-feature-settings: "tnum";
@@ -39,15 +44,15 @@
   border-radius: 50%;
   flex-shrink: 0;
   margin-left: 24rpx;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s ease;
 }
-.wo-clock-toggle:active { background: rgba(255, 255, 255, 0.38); }
+.wo-clock-toggle:active { background: rgba(0, 0, 0, 0.08); }
 .wo-clock-ico {
-  color: #fff;
+  color: var(--text);
   font-size: var(--fs-head);
   line-height: 1;
   font-weight: 700;
@@ -125,15 +130,18 @@
   border-radius: 50%;
   flex-shrink: 0;
   margin-left: 12rpx;
-  background: rgba(46, 207, 176, 0.16);
-  border: 2rpx solid rgba(46, 207, 176, 0.40);
-  color: var(--primary-deep);
+  background-color: rgba(124, 184, 0, 0.14);
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNUJBODAwIiBzdHJva2Utd2lkdGg9IjIuNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjEgMTJhOSA5IDAgMSAxLTMuMi02LjkiLz48cG9seWxpbmUgcG9pbnRzPSIyMSA0IDIxIDkuNSAxNS41IDkuNSIvPjwvc3ZnPg==");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 44rpx 44rpx;
+  border: 2rpx solid rgba(124, 184, 0, 0.42);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--fs-section);
-  box-shadow: 0 4rpx 12rpx rgba(46, 207, 176, 0.25);
+  transition: background-color 0.15s ease, transform 0.12s ease;
 }
+.wo-ex-gear:active { background-color: rgba(124, 184, 0, 0.28); transform: scale(0.92); }
 
 /* 组数圆点指示器 */
 .wo-dots { display: flex; gap: 10rpx; margin-top: 12rpx; }
@@ -385,6 +393,28 @@
   animation: rest-pop 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .rest-pop-emoji { font-size: var(--fs-hero-lg); margin-bottom: 16rpx; }
+/* 训练计时悬浮窗：准备/训练态的极简指示点（替代原 emoji / flame 图标，避免 emoji 作 UI 图标） */
+.train-ready-dot {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  margin-bottom: 16rpx;
+  background: var(--primary);
+  animation: train-ready-pulse 1.6s ease-out infinite;
+}
+.train-work-dot {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  margin-bottom: 16rpx;
+  background: var(--primary-deep);
+  box-shadow: 0 8rpx 20rpx rgba(124, 184, 0, 0.35);
+}
+@keyframes train-ready-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(200, 255, 0, 0.55); }
+  70%  { box-shadow: 0 0 0 28rpx rgba(200, 255, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(200, 255, 0, 0); }
+}
 .rest-pop-title { font-size: var(--fs-title); font-weight: 600; color: var(--text); }
 .rest-pop-sub { font-size: var(--fs-label); color: var(--text-weak); margin-top: 10rpx; }
 
@@ -541,7 +571,7 @@
 
 /* 无障碍：尊重系统「减少动态效果」设置，关闭悬浮球无限脉冲动画 */
 @media (prefers-reduced-motion: reduce) {
-  .mini-float, .mini-float::after { animation: none !important; }
+  .mini-float, .mini-float::after, .train-ready-dot { animation: none !important; }
 }
 
 /* 震动提示开关 */
@@ -812,28 +842,28 @@
   border-radius: 50%;
   flex-shrink: 0;
   margin-left: 16rpx;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.wo-min-btn:active { background: rgba(255, 255, 255, 0.40); }
+.wo-min-btn:active { background: rgba(0, 0, 0, 0.08); }
 .wo-min-ico {
   position: relative;
   width: 30rpx;
   height: 30rpx;
-  border: 3rpx solid #fff;
-  border-radius: 7rpx;
-  box-sizing: border-box;
 }
-.wo-min-ico::after {
+.wo-min-ico::before {
   content: '';
   position: absolute;
-  left: 4rpx;
-  right: 4rpx;
-  bottom: 5rpx;
-  height: 3rpx;
-  background: #fff;
+  left: 50%;
+  top: 42%;
+  width: 16rpx;
+  height: 16rpx;
+  border-right: 4rpx solid var(--text);
+  border-bottom: 4rpx solid var(--text);
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-sizing: border-box;
 }
 
 /* 底部操作条：添加动作（sticky 贴底，玻璃渐隐底） */
@@ -844,7 +874,7 @@
   display: flex;
   align-items: center;
   padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(255, 241, 232, 0) 0%, rgba(255, 241, 232, 0.96) 45%, #FFF1E8 100%);
+  background: linear-gradient(180deg, rgba(247, 247, 245, 0) 0%, rgba(247, 247, 245, 0.96) 50%, var(--n-50) 100%);
 }
 .wo-add-btn {
   flex: 1 1 auto;

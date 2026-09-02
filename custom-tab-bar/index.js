@@ -1,12 +1,16 @@
 // custom-tab-bar/index.js
 const workoutSession = require('../utils/workoutSession.js');
-const ICONS = require('../components/icon/icons-data.js');
+// 主题：隔离组件不继承页面 data，启动时自行从 Storage 读一次；
+// 之后各 tab 页 onShow 会通过 getTabBar().setData({ theme }) 覆盖为最新值。
+const theme = require('../utils/theme.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
 Component({
   data: {
     selected: 0,
+    // 'theme-light' | 'theme-dark'，由 tab 页 onShow 注入；此处仅作启动兜底
+    theme: (theme.get() === theme.DARK ? 'theme-dark' : 'theme-light'),
     // 全局训练计时悬浮窗
     showWo: false,
     woClock: '00:00',
@@ -15,11 +19,11 @@ Component({
     woX: 0,
     woY: 0,
     list: [
-      { pagePath: '/pages/home/home', text: '首页', icon: 'home', iconSrc: ICONS['home'] || '' },
-      { pagePath: '/pages/training/training', text: '训练', icon: 'train', iconSrc: ICONS['train'] || '' },
-      { pagePath: '/pages/list/list', text: '记录', icon: 'scale', iconSrc: ICONS['scale'] || '' },
-      { pagePath: '/pages/advice/advice', text: '饮食', icon: 'diet', iconSrc: ICONS['diet'] || '' },
-      { pagePath: '/pages/profile/profile', text: '我的', icon: 'user', iconSrc: ICONS['user'] || '' }
+      { pagePath: '/pages/home/home', text: '首页', icon: 'home' },
+      { pagePath: '/pages/training/training', text: '训练', icon: 'train' },
+      { pagePath: '/pages/plan/plan', text: '计划', icon: 'plan' },
+      { pagePath: '/pages/list/list', text: '数据', icon: 'trendingup' },
+      { pagePath: '/pages/profile/profile', text: '我的', icon: 'user' }
     ]
   },
   lifetimes: {

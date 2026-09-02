@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "training-review": "/components/training-review/training-review"
+  },
   "navigationBarTitleText": "记录列表"
 }

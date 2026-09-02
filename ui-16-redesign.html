@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HiLife 设计稿 · 16 屏 HTML 原型（亮绿极简版）</title>
+<style>
+  :root{
+    --green:#7ED321; --green-deep:#5DBE2F; --green-tint:#F0F9E6;
+    --accent:#FF7A3D; --accent-tint:#FFE7DA;
+    --bg:#F7F8FA; --card:#FFFFFF; --line:#EFEFEF; --line-strong:#E2E8F0;
+    --text:#1E293B; --sub:#64748B; --weak:#9CA3AF;
+    --dark-bg:#0F0F0F; --dark-card:#1C1C1C; --dark-text:#FFFFFF; --dark-sub:#9CA3AF; --dark-border:#2A2A2A;
+    --r-card:20px; --r-btn:16px; --r-thumb:12px; --r-pill:999px;
+    --shadow:0 1px 4px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased;}
+  body{font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+    background:#EBEDF0; color:var(--text); padding:32px;}
+  .intro{max-width:1200px; margin:0 auto 28px;}
+  .intro h1{font-size:24px; font-weight:800; color:#1E293B;}
+  .intro p{font-size:14px; color:var(--sub); margin-top:6px; line-height:1.6;}
+  .intro .chip{display:inline-block; background:var(--green-tint); color:var(--green-deep);
+    font-size:12px; font-weight:600; padding:3px 12px; border-radius:999px; margin-right:6px;}
+
+  .grid{max-width:1200px; margin:0 auto; display:grid; gap:24px;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+  /* 手机外框 */
+  .phone{background:#fff; border-radius:38px; padding:10px; box-shadow:0 10px 40px rgba(0,0,0,.12);
+    width:280px; justify-self:center;}
+  .screen{width:260px; height:560px; border-radius:30px; overflow:hidden; position:relative;
+    background:var(--bg); display:flex; flex-direction:column;}
+  .screen.dark{background:var(--dark-bg);}
+  .scr-title{position:absolute; top:-22px; left:0; font-size:11px; font-weight:700; color:#475569;}
+  .pb{height:54px; border-top:1rpx solid var(--line); background:var(--card);
+    display:flex; align-items:center; justify-content:space-around; font-size:10px; color:var(--weak);}
+  .pb.dark{background:var(--dark-card); border-color:var(--dark-border);}
+  .pb .t{display:flex; flex-direction:column; align-items:center; gap:2px;}
+  .pb .t.on{color:var(--green); font-weight:700;}
+  .pb.dark .t.on{color:var(--green);}
+  .pb .dot{width:18px; height:18px; border-radius:6px; background:#E2E8F0; display:flex; align-items:center; justify-content:center; font-size:11px;}
+  .pb .t.on .dot{background:var(--green); color:#fff;}
+  .pb.dark .dot{background:#333;}
+
+  /* 通用内容滚动区 */
+  .body{flex:1; overflow:hidden; padding:14px 14px 0;}
+  .body.dark{color:var(--dark-text);}
+
+  /* 顶部标题 */
+  .page-h{font-size:19px; font-weight:800; margin-bottom:10px;}
+  .page-sub{font-size:11px; color:var(--sub); margin-top:2px;}
+
+  /* 卡片 */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--r-card);
+    padding:14px; margin-bottom:12px; box-shadow:var(--shadow);}
+  .dark .card{background:var(--dark-card); border-color:var(--dark-border);}
+
+  /* Ring */
+  .ring{width:62px; height:62px; border-radius:50%;
+    background:conic-gradient(var(--green) 0 75%, #E8EDF2 75% 100%);
+    display:flex; align-items:center; justify-content:center; position:relative;}
+  .ring::after{content:''; position:absolute; inset:7px; background:var(--card); border-radius:50%;}
+  .dark .ring::after{background:var(--dark-card);}
+  .ring span{position:relative; z-index:1; font-size:13px; font-weight:800; color:var(--green-deep);}
+
+  .row{display:flex; align-items:center; gap:10px;}
+  .grow{flex:1; min-width:0;}
+  .pill{display:inline-flex; align-items:center; font-size:10px; font-weight:600; padding:3px 10px;
+    border-radius:var(--r-pill); background:#F1F5F9; color:var(--sub);}
+  .pill.g{background:var(--green-tint); color:var(--green-deep);}
+  .pill.o{background:var(--accent-tint); color:var(--accent);}
+  .btn{background:var(--green); color:#fff; border:none; border-radius:var(--r-btn);
+    font-size:13px; font-weight:700; padding:11px; text-align:center;}
+  .btn.block{display:block; width:100%;}
+  .btn.line{background:transparent; border:1px solid var(--green); color:var(--green);}
+  .dark .btn.line{border-color:var(--green); color:var(--green);}
+  .bar{height:7px; border-radius:999px; background:#EEF1F5; overflow:hidden; margin-top:6px;}
+  .dark .bar{background:#2A2A2A;}
+  .bar > i{display:block; height:100%; background:var(--green); border-radius:999px;}
+  .mini-bar{height:5px; border-radius:999px; background:#EEF1F5; overflow:hidden; flex:1;}
+  .dark .mini-bar{background:#2A2A2A;}
+  .mini-bar > i{display:block; height:100%; border-radius:999px;}
+
+  .thumb{width:46px; height:46px; border-radius:var(--r-thumb); background:linear-gradient(135deg,#cfe9b0,#a8d97c);
+    flex-shrink:0;}
+  .dark .thumb{background:linear-gradient(135deg,#2a3a1f,#3a5326);}
+  .ttl{font-size:13px; font-weight:700;}
+  .stxt{font-size:10px; color:var(--sub); margin-top:2px;}
+  .dark .stxt{color:var(--dark-sub);}
+
+  .seg{display:inline-flex; background:#F1F5F9; border-radius:999px; padding:3px;}
+  .dark .seg{background:#262626;}
+  .seg span{padding:4px 12px; font-size:11px; color:var(--sub); border-radius:999px;}
+  .seg span.on{background:#fff; color:var(--green-deep); font-weight:700; box-shadow:var(--shadow);}
+  .dark .seg span.on{background:#333; color:var(--green);}
+
+  /* 相机视图 */
+  .cam{position:absolute; inset:46px 14px 70px; border-radius:18px; overflow:hidden;
+    background:linear-gradient(135deg,#3a2a1f,#5a3a2a); display:flex; align-items:center; justify-content:center;}
+  .cam img{width:78%; border-radius:14px; border:3px solid #fff;}
+  .cam .corner{position:absolute; width:20px; height:20px; border:3px solid #fff;}
+  .cam .c1{top:10px; left:10px; border-right:none; border-bottom:none;}
+  .cam .c2{top:10px; right:10px; border-left:none; border-bottom:none;}
+  .cam .c3{bottom:10px; left:10px; border-right:none; border-top:none;}
+  .cam .c4{bottom:10px; right:10px; border-left:none; border-top:none;}
+  .cap-dot{position:absolute; bottom:78px; left:50%; transform:translateX(-50%);
+    color:#fff; font-size:11px; background:rgba(0,0,0,.4); padding:4px 12px; border-radius:999px;}
+
+  /* 暗色训练输入 */
+  .sel{display:flex; align-items:center; justify-content:space-between; background:#262626;
+    border-radius:12px; padding:10px 14px;}
+  .sel .big{font-size:20px; font-weight:800; color:#fff;}
+  .sel .ci{width:26px; height:26px; border-radius:50%; background:#3a3a3a; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:16px;}
+  .rest{background:#1C1C1C; border:1px solid var(--accent); border-radius:16px; padding:12px; text-align:center;}
+  .rest .big{font-size:22px; font-weight:800; color:var(--accent);}
+
+  /* 图表 */
+  svg{display:block; width:100%;}
+
+  .menu{display:flex; align-items:center; gap:10px; padding:13px 2px; border-bottom:1px solid var(--line);}
+  .dark .menu{border-color:var(--dark-border);}
+  .menu .ic{width:30px; height:30px; border-radius:9px; background:#F1F5F9; display:flex; align-items:center; justify-content:center; font-size:14px;}
+  .menu .ar{margin-left:auto; color:var(--weak); font-size:14px;}
+  .numb{font-feature-settings:"tnum" 1;}
+
+  .chip-row{display:flex; gap:8px; overflow:hidden;}
+  .chip-card{flex:0 0 auto; width:120px; background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:10px;}
+  .dark .chip-card{background:var(--dark-card); border-color:var(--dark-border);}
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>HiLife 设计稿 · 16 屏 HTML 原型</h1>
+  <p>
+    <span class="chip">亮绿 #7ED321</span><span class="chip">扁平白底</span><span class="chip">训练中/拍照 暗色</span><span class="chip">Tab：首页/计划/训练/记录/我的</span>
+    &nbsp; 仅风格预览，未替换小程序代码。确认后按 4 个 Batch 落地。
+  </p>
+</div>
+
+<div class="grid">
+
+  <!-- 01 首页 -->
+  <div class="phone">
+    <div class="scr-title">01 首页</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">早上好，Alex 👋</div>
+        <div class="page-sub">8月26日 星期三 · 今天也要加油</div>
+
+        <div class="card row">
+          <div class="ring"><span>75%</span></div>
+          <div class="grow">
+            <div class="ttl">今日饮食 + 训练</div>
+            <div class="stxt">3 项入量已完成</div>
+            <div class="row" style="margin-top:6px; gap:14px;">
+              <div><div class="ttl numb" style="font-size:16px;">23</div><div class="stxt">连续打卡</div></div>
+              <div><div class="ttl numb" style="font-size:16px;">7</div><div class="stxt">天</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row"><div class="ttl grow">今日建议</div><span class="pill g">全身训练 · 中级</span></div>
+          <div class="stxt" style="margin-top:6px;">预计 45 分钟 · 525 kcal</div>
+        </div>
+
+        <div class="card">
+          <div class="row"><div class="ttl grow">今日饮食</div>
+            <div class="numb" style="font-size:13px;font-weight:800;color:var(--accent);">1,350 / 2,100 kcal</div></div>
+          <div class="bar" style="margin-top:8px;"><i style="width:64%"></i></div>
+          <div style="margin-top:10px; display:flex; gap:8px;">
+            <div class="row" style="flex:1;"><span class="pill" style="background:#E6F4FF;color:#3E8BFF;">蛋白</span><div class="mini-bar"><i style="width:70%;background:#3E8BFF"></i></div></div>
+            <div class="row" style="flex:1;"><span class="pill" style="background:#FFF4E0;color:#F5A524;">碳水</span><div class="mini-bar"><i style="width:56%;background:#F5A524"></i></div></div>
+            <div class="row" style="flex:1;"><span class="pill" style="background:#FFE7DA;color:#FF7A3D;">脂肪</span><div class="mini-bar"><i style="width:60%;background:#FF7A3D"></i></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="ttl" style="margin-bottom:6px;">体重趋势</div>
+          <svg viewBox="0 0 200 50" height="44"><polyline points="0,38 40,30 80,34 120,22 160,26 200,14" fill="none" stroke="#7ED321" stroke-width="3" stroke-linecap="round"/><circle cx="200" cy="14" r="4" fill="#7ED321"/></svg>
+          <div class="stxt">62.4 kg · 较昨日 −0.8</div>
+        </div>
+      </div>
+      <div class="pb"><div class="t on"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 02 训练 -->
+  <div class="phone">
+    <div class="scr-title">02 训练</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">训练</div>
+        <div class="card" style="padding:10px;"><span style="font-size:12px;color:var(--weak);">🔍 搜索动作 / 部位</span></div>
+        <div class="chip-row" style="margin:10px 0;">
+          <span class="pill g">全部</span><span class="pill">胸</span><span class="pill">背</span><span class="pill">肩</span><span class="pill">腿</span>
+        </div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">杠铃卧推</div><div class="stxt">胸部 · 杠铃</div></div><div style="color:var(--accent);">♥</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">上斜哑铃卧推</div><div class="stxt">胸部 · 哑铃</div></div><div style="color:var(--weak);">♡</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">高位下拉</div><div class="stxt">背部 · 器械</div></div><div style="color:var(--weak);">♡</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">腿举</div><div class="stxt">腿部 · 器械</div></div><div style="color:var(--weak);">♡</div></div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t on"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 03 计划 -->
+  <div class="phone">
+    <div class="scr-title">03 计划</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">我的计划</div>
+        <div class="seg" style="margin-bottom:10px;"><span class="on">全部</span><span>启用中</span></div>
+        <div class="card">
+          <div class="row"><div class="ttl grow">上半身分动练</div><span class="pill">4 天</span></div>
+          <div class="bar" style="margin:8px 0;"><i style="width:50%"></i></div>
+          <div class="stxt">4 动作 · 6 组 · 进行中</div>
+        </div>
+        <div class="card">
+          <div class="row"><div class="ttl grow">Push Pull Legs</div><span class="pill">6 天</span></div>
+          <div class="bar" style="margin:8px 0;"><i style="width:16%"></i></div>
+          <div class="stxt">18 动作 · 54 组 · 未开始</div>
+        </div>
+        <div class="card">
+          <div class="row"><div class="ttl grow">新手全身计划</div><span class="pill">3 天</span></div>
+          <div class="bar" style="margin:8px 0;"><i style="width:33%"></i></div>
+          <div class="stxt">9 动作 · 27 组 · 未开始</div>
+        </div>
+        <div class="ttl" style="margin:6px 0;">推荐模板</div>
+        <div class="chip-row">
+          <div class="chip-card"><div class="ttl" style="font-size:12px;">PPL 分化</div><div class="stxt">6 天 / 周</div></div>
+          <div class="chip-card"><div class="ttl" style="font-size:12px;">新手全身</div><div class="stxt">3 天 / 周</div></div>
+        </div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t on"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 04 动作详情 -->
+  <div class="phone">
+    <div class="scr-title">04 动作详情</div>
+    <div class="screen">
+      <div class="body" style="padding:0;">
+        <div style="height:170px; background:linear-gradient(135deg,#cfe9b0,#a8d97c);"></div>
+        <div style="padding:14px;">
+          <div class="row"><div class="ttl grow" style="font-size:16px;">杠铃卧推</div></div>
+          <div style="margin:6px 0;"><span class="pill g">胸部</span> <span class="pill">杠铃</span></div>
+          <div class="card">
+            <div class="ttl" style="font-size:13px;margin-bottom:6px;">动作要点</div>
+            <div class="row" style="margin:5px 0;"><span style="color:var(--green);">✓</span><div class="stxt">仰卧于平板，双手略宽于肩</div></div>
+            <div class="row" style="margin:5px 0;"><span style="color:var(--green);">✓</span><div class="stxt">下放至胸部轻触，保持挺胸</div></div>
+            <div class="row" style="margin:5px 0;"><span style="color:var(--green);">✓</span><div class="stxt">推起时呼气，锁定不耸肩</div></div>
+          </div>
+          <div class="card">
+            <div class="ttl" style="font-size:13px;margin-bottom:6px;">历史记录</div>
+            <div class="stxt">最佳 80kg × 10 · 05/16 · 完成度 92%</div>
+          </div>
+        </div>
+      </div>
+      <div class="body dark" style="display:none;"></div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t on"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 05 训练中 暗色 -->
+  <div class="phone">
+    <div class="scr-title">05 训练中（暗色）</div>
+    <div class="screen dark">
+      <div class="body dark">
+        <div class="row"><div class="grow"><div class="stxt">训练时长</div><div class="ttl numb" style="font-size:26px;color:#fff;">23:45</div></div><div class="btn line" style="padding:6px 12px;font-size:11px;">结束</div></div>
+        <div class="card">
+          <div class="row"><div class="ttl grow" style="color:#fff;">杠铃卧推</div><div style="color:var(--weak);">✕</div></div>
+          <div class="stxt" style="margin:4px 0;">第 1 组 / 共 4 组</div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <div class="sel grow"><div class="ci">−</div><div class="big">80<span style="font-size:11px;">kg</span></div><div class="ci">+</div></div>
+            <div class="sel grow"><div class="ci">−</div><div class="big">10</div><div class="ci">+</div></div>
+            <div class="sel grow"><div class="ci">−</div><div class="big">8</div><div class="ci">+</div></div>
+          </div>
+        </div>
+        <div class="btn block" style="margin:10px 0;">完成本组</div>
+        <div class="rest">
+          <div class="stxt" style="color:var(--accent);">组间休息</div>
+          <div class="big numb">01:30</div>
+          <div class="row" style="justify-content:center; gap:10px; margin-top:6px;">
+            <span class="pill o" style="color:var(--accent);">+30s</span><span class="pill o" style="color:var(--accent);">跳过</span><span class="pill o" style="color:var(--accent);">−30s</span>
+          </div>
+        </div>
+        <div class="stxt" style="margin-top:10px;">下一个动作 · 上斜哑铃卧推 4 组 × 10 次</div>
+      </div>
+      <div class="pb dark"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t on"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 06 训练记录 -->
+  <div class="phone">
+    <div class="scr-title">06 训练记录</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">训练记录</div>
+        <div class="chip-row" style="margin-bottom:10px;">
+          <span class="pill g">13</span><span class="pill">14</span><span class="pill">15</span><span class="pill g" style="background:var(--green);color:#fff;">16</span><span class="pill">17</span><span class="pill">18</span><span class="pill">19</span>
+        </div>
+        <div class="card">
+          <div class="row">
+            <div style="text-align:center;"><div class="ttl numb">45:20</div><div class="stxt">时长</div></div>
+            <div style="text-align:center;"><div class="ttl numb">420</div><div class="stxt">kcal</div></div>
+            <div style="text-align:center;"><div class="ttl numb">6</div><div class="stxt">动作</div></div>
+          </div>
+        </div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">05/16 周四</div><div class="stxt">45:20 · 420 kcal · 6 动作</div></div><div style="color:var(--weak);">›</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">05/14 周二</div><div class="stxt">38:10 · 360 kcal · 5 动作</div></div><div style="color:var(--weak);">›</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">05/12 周日</div><div class="stxt">52:30 · 510 kcal · 7 动作</div></div><div style="color:var(--weak);">›</div></div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t on"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 07 饮食建议 -->
+  <div class="phone">
+    <div class="scr-title">07 饮食建议</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">饮食建议</div>
+        <div class="page-sub">今日目标 2,100 kcal</div>
+        <div class="card row">
+          <div class="ring"><span>64%</span></div>
+          <div class="grow" style="display:flex; gap:8px;">
+            <div class="row" style="flex:1;"><span class="pill" style="background:#E6F4FF;color:#3E8BFF;">蛋白</span><div class="mini-bar"><i style="width:70%;background:#3E8BFF"></i></div></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div class="row" style="flex:1;"><span class="pill" style="background:#FFF4E0;color:#F5A524;">碳水</span><div class="mini-bar"><i style="width:56%;background:#F5A524"></i></div></div>
+            <div class="row" style="flex:1;"><span class="pill" style="background:#FFE7DA;color:#FF7A3D;">脂肪</span><div class="mini-bar"><i style="width:60%;background:#FF7A3D"></i></div></div>
+          </div>
+        </div>
+        <div class="ttl" style="font-size:13px;margin:4px 0;">今日记录</div>
+        <div class="card row"><div class="grow"><div class="ttl">鸡蛋 ×2</div><div class="stxt">140 kcal · 早餐</div></div><div style="color:var(--weak);">✕</div></div>
+        <div class="card row"><div class="grow"><div class="ttl">糙米饭</div><div class="stxt">210 kcal · 午餐</div></div><div style="color:var(--weak);">✕</div></div>
+        <div class="ttl" style="font-size:13px;margin:4px 0;">推荐食物</div>
+        <div class="chip-row">
+          <div class="chip-card"><div class="thumb" style="width:100%;height:54px;margin-bottom:6px;"></div><div class="ttl" style="font-size:11px;">鸡胸肉</div><div class="stxt">165 kcal</div></div>
+          <div class="chip-card"><div class="thumb" style="width:100%;height:54px;margin-bottom:6px;"></div><div class="ttl" style="font-size:11px;">西兰花</div><div class="stxt">34 kcal</div></div>
+        </div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t on"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 08 拍照识别 暗色 -->
+  <div class="phone">
+    <div class="scr-title">08 拍照识别（暗色）</div>
+    <div class="screen dark">
+      <div class="cam">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <div style="width:78%;height:120px;border-radius:14px;background:linear-gradient(135deg,#caa37a,#8a5a3a);border:3px solid #fff;"></div>
+      </div>
+      <div class="cap-dot">请将食物置于取景框内</div>
+      <div class="body dark" style="position:absolute;bottom:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:center;gap:24px;">
+        <div style="width:34px;height:34px;border-radius:50%;background:#262626;display:flex;align-items:center;justify-content:center;color:#fff;">🖼️</div>
+        <div style="width:54px;height:54px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;box-shadow:0 0 0 4px rgba(126,211,33,.3);">○</div>
+        <div style="width:34px;height:34px;border-radius:50%;background:#262626;display:flex;align-items:center;justify-content:center;color:#fff;">🔄</div>
+      </div>
+      <div class="pb dark" style="position:absolute;bottom:-54px;"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t on"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 09 食物识别结果 -->
+  <div class="phone">
+    <div class="scr-title">09 食物识别结果</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">识别结果</div>
+        <div class="card">
+          <div class="row"><div class="thumb" style="width:54px;height:54px;"></div><div class="grow"><div class="ttl">鸡胸肉西兰花套餐</div><div class="stxt">家常菜 · 一餐</div></div><span class="pill g">90% 准确性</span></div>
+        </div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between;">
+            <div style="text-align:center;"><div class="ttl numb">320</div><div class="stxt">热量 kcal</div></div>
+            <div style="text-align:center;"><div class="ttl numb">42</div><div class="stxt">蛋白 g</div></div>
+            <div style="text-align:center;"><div class="ttl numb">18</div><div class="stxt">碳水 g</div></div>
+            <div style="text-align:center;"><div class="ttl numb">9</div><div class="stxt">脂肪 g</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ttl" style="font-size:13px;margin-bottom:6px;">包含食物</div>
+          <div class="stxt">• 鸡胸肉 150g</div>
+          <div class="stxt">• 西兰花 120g</div>
+          <div class="stxt">• 橄榄油 5g</div>
+        </div>
+        <div class="btn block">加入记录</div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t on"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 10 体重记录 -->
+  <div class="phone">
+    <div class="scr-title">10 体重记录</div>
+    <div class="screen">
+      <div class="body">
+        <div class="seg" style="margin-bottom:10px;"><span class="on">记录</span><span>趋势</span></div>
+        <div class="ttl numb" style="font-size:40px;text-align:center;margin:8px 0;">62.4<span style="font-size:16px;color:var(--sub);"> kg</span></div>
+        <div class="stxt" style="text-align:center;">2024/05/16 早上</div>
+        <div class="pill g" style="margin:8px auto;display:block;width:fit-content;">体重变化 −0.8 kg</div>
+        <div class="card">
+          <svg viewBox="0 0 200 70" height="64"><polyline points="0,20 40,34 80,28 120,46 160,38 200,56" fill="none" stroke="#7ED321" stroke-width="3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="card"><div class="stxt">备注</div><div style="font-size:12px;margin-top:4px;color:var(--sub);">最近状态不错，继续保持…</div></div>
+        <div class="btn block">保存</div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t on"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 11 体重趋势 -->
+  <div class="phone">
+    <div class="scr-title">11 体重趋势</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">体重趋势</div>
+        <div class="seg" style="margin-bottom:10px;"><span class="on">7天</span><span>30天</span><span>90天</span><span>全部</span></div>
+        <div class="card row" style="justify-content:space-between;">
+          <div style="text-align:center;"><div class="ttl numb">63.2</div><div class="stxt">平均 kg</div></div>
+          <div style="text-align:center;"><div class="ttl numb">65.1</div><div class="stxt">最高</div></div>
+          <div style="text-align:center;"><div class="ttl numb">61.6</div><div class="stxt">最低</div></div>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 200 90" height="80">
+            <polyline points="0,40 40,30 80,52 120,44 160,66 200,58" fill="none" stroke="#7ED321" stroke-width="3" stroke-linecap="round"/>
+            <polygon points="0,40 40,30 80,52 120,44 160,66 200,58 200,90 0,90" fill="rgba(126,211,33,.12)"/>
+            <circle cx="200" cy="58" r="4" fill="#7ED321"/>
+          </svg>
+          <div class="stxt" style="text-align:right;color:var(--green-deep);">62.4 kg 今日</div>
+        </div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t on"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 12 周期复盘 -->
+  <div class="phone">
+    <div class="scr-title">12 周期复盘</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">训练复盘</div>
+        <div class="seg" style="margin-bottom:10px;"><span class="on">单次</span><span>滚动</span><span>基准</span><span>周</span></div>
+        <div class="card">
+          <div class="row"><div class="ttl grow">本次训练概要</div></div>
+          <div class="stxt">2024/05/16 周四</div>
+          <div class="row" style="justify-content:space-between;margin-top:8px;">
+            <div style="text-align:center;"><div class="ttl numb">45:20</div><div class="stxt">时长</div></div>
+            <div style="text-align:center;"><div class="ttl numb">420</div><div class="stxt">kcal</div></div>
+            <div style="text-align:center;"><div class="ttl numb">92%</div><div class="stxt">完成</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row"><div class="grow"><div class="ttl">训练量 (kg)</div></div><div class="numb" style="font-weight:800;color:var(--green-deep);">12,560 ↑16%</div></div>
+          <div class="row" style="margin-top:8px;"><div class="grow"><div class="ttl">训练量 (组)</div></div><div class="numb" style="font-weight:800;color:var(--green-deep);">12,560 ↑15%</div></div>
+        </div>
+        <div class="card">
+          <div class="ttl" style="font-size:13px;margin-bottom:8px;">RPE 分布</div>
+          <div class="row" style="gap:6px;align-items:flex-end;height:50px;">
+            <div style="flex:1;background:#E8EDF2;height:40%;border-radius:6px 6px 0 0;"></div>
+            <div style="flex:1;background:var(--green);height:80%;border-radius:6px 6px 0 0;"></div>
+            <div style="flex:1;background:#E8EDF2;height:55%;border-radius:6px 6px 0 0;"></div>
+            <div style="flex:1;background:#E8EDF2;height:30%;border-radius:6px 6px 0 0;"></div>
+          </div>
+          <div class="row" style="gap:6px;font-size:9px;color:var(--weak);"><span style="flex:1;text-align:center;">10</span><span style="flex:1;text-align:center;">8-9</span><span style="flex:1;text-align:center;">6-7</span><span style="flex:1;text-align:center;">≤5</span></div>
+        </div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t on"><div class="dot">📊</div>记录</div><div class="t"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 13 个人中心 -->
+  <div class="phone">
+    <div class="scr-title">13 个人中心</div>
+    <div class="screen">
+      <div class="body">
+        <div class="row" style="padding:14px 0;"><div class="thumb" style="width:54px;height:54px;border-radius:50%;"></div><div class="grow"><div class="ttl">Alex</div><div class="stxt">保持健身记录中</div></div></div>
+        <div class="card" style="padding:0;">
+          <div class="menu"><div class="ic">📈</div><div class="grow">健康数据</div><div class="ar">›</div></div>
+          <div class="menu"><div class="ic">🗂️</div><div class="grow">数据管理</div><div class="ar">›</div></div>
+          <div class="menu"><div class="ic">⏰</div><div class="grow">提醒设置</div><div class="ar">›</div></div>
+          <div class="menu"><div class="ic">🔒</div><div class="grow">隐私授权</div><div class="ar">›</div></div>
+          <div class="menu"><div class="ic">⚙️</div><div class="grow">单位设置</div><div class="ar">›</div></div>
+          <div class="menu"><div class="ic">💬</div><div class="grow">意见反馈</div><div class="ar">›</div></div>
+          <div class="menu" style="border:none;"><div class="ic">ℹ️</div><div class="grow">关于我们</div><div class="ar">›</div></div>
+        </div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t on"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 14 设置 -->
+  <div class="phone">
+    <div class="scr-title">14 设置</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">设置</div>
+        <div class="ttl" style="font-size:12px;color:var(--weak);margin:6px 0;">通用</div>
+        <div class="card" style="padding:0;">
+          <div class="menu"><div class="grow">训练提醒</div><div class="pill g" style="background:var(--green);color:#fff;">已开</div></div>
+          <div class="menu"><div class="grow">视觉后端</div><div class="stxt">云托管</div><div class="ar">›</div></div>
+          <div class="menu" style="border:none;"><div class="grow">单位制</div><div class="stxt">公制 kg</div><div class="ar">›</div></div>
+        </div>
+        <div class="ttl" style="font-size:12px;color:var(--weak);margin:6px 0;">数据与隐私</div>
+        <div class="card" style="padding:0;">
+          <div class="menu"><div class="grow">导出训练数据</div><div class="ar">›</div></div>
+          <div class="menu"><div class="grow">隐私政策</div><div class="ar">›</div></div>
+          <div class="menu" style="border:none;"><div class="grow">关于 HiLife</div><div class="ar">›</div></div>
+        </div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t on"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 15 隐私授权 -->
+  <div class="phone">
+    <div class="scr-title">15 隐私授权</div>
+    <div class="screen">
+      <div class="body" style="display:flex;flex-direction:column;justify-content:center;height:100%;">
+        <div style="text-align:center;">
+          <div style="width:54px;height:54px;border-radius:16px;background:var(--green-tint);color:var(--green-deep);font-size:26px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">🔒</div>
+          <div class="ttl" style="font-size:16px;">保护您的隐私是我们的责任</div>
+          <div class="stxt" style="margin-top:8px;line-height:1.7;">我们仅收集训练、体重与饮食记录用于本地计算，绝不向第三方分享您的个人信息。</div>
+        </div>
+        <div style="margin-top:24px;"><div class="btn block">同意并继续</div>
+          <div class="stxt" style="text-align:center;margin-top:10px;color:var(--green-deep);">暂不同意</div></div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t on"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+  <!-- 16 收藏 -->
+  <div class="phone">
+    <div class="scr-title">16 收藏</div>
+    <div class="screen">
+      <div class="body">
+        <div class="page-h">我的收藏</div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">杠铃卧推</div><div class="stxt">胸部 · 杠铃</div></div><div style="color:var(--accent);">♥</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">硬拉</div><div class="stxt">腿部 · 杠铃</div></div><div style="color:var(--accent);">♥</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">高位下拉</div><div class="stxt">背部 · 器械</div></div><div style="color:var(--accent);">♥</div></div>
+        <div class="card row"><div class="thumb"></div><div class="grow"><div class="ttl">肩推</div><div class="stxt">肩部 · 哑铃</div></div><div style="color:var(--accent);">♥</div></div>
+      </div>
+      <div class="pb"><div class="t"><div class="dot">🏠</div>首页</div><div class="t"><div class="dot">📋</div>计划</div><div class="t"><div class="dot">💪</div>训练</div><div class="t"><div class="dot">📊</div>记录</div><div class="t on"><div class="dot">👤</div>我的</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

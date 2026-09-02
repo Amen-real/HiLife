@@ -1,5 +1,6 @@
 // pages/profile/profile.js
 const store = require('../../utils/store.js');
+const theme = require('../../utils/theme.js');
 
 // 用户数据字段（导出/导入/清除只作用于这些，设备运行配置如 visionBackendUrl 等不纳入）
 const DATA_KEYS = [
@@ -44,30 +45,47 @@ Page({
     nickname: '',
     avatarText: '衡',
     avatarUrl: '',
-    streak: 0,
-    favCount: 0,
     health: { goal: '未设置', weight: '未记录', height: '未设置', bmi: '--' },
     showDataMgr: false,
     showExportShare: false,
-    exportFilePath: ''
+    exportFilePath: '',
+    // 深色主题开关（数据真源在 utils/theme.js，此处仅作 switch 的 checked 绑定）
+    darkMode: false,
+    // 'theme-light' | 'theme-dark'
+    theme: 'theme-light'
   },
 
   onShow() {
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({
+      theme: themeCls,
+      darkMode: theme.get() === theme.DARK
+    });
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 4 });
+      this.getTabBar().setData({ selected: 4, theme: themeCls });
     }
     this.refresh();
+  },
+
+  // 深色主题开关：切换后即时同步底栏；各 tab 页（首页等）在自身 onShow 里读取新值
+  onToggleTheme(e) {
+    const on = !!(e && e.detail && e.detail.value);
+    const t = theme.set(on ? theme.DARK : theme.LIGHT);
+    const themeCls = t === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ darkMode: t === theme.DARK, theme: themeCls });
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ theme: themeCls });
+    }
+    wx.showToast({
+      title: t === theme.DARK ? '已切换到深色' : '已切换到浅色',
+      icon: 'none',
+      duration: 1200
+    });
   },
 
   refresh() {
     const g = store.get();
     const p = g.profile;
-    // 连续训练天数（截至今天，向前连续有训练记录的日期数）
-    const daySet = new Set((g.trainingLogs || []).map(l => l.date));
-    let streak = 0;
-    let sd = new Date();
-    const fmtD = x => x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate());
-    while (daySet.has(fmtD(sd))) { streak++; sd.setDate(sd.getDate() - 1); }
 
     // 健康概览：当前目标 / 最新体重 / 身高 / BMI
     const ws = store.getWeightStats();
@@ -86,8 +104,6 @@ Page({
       nickname: g.userInfo.nickname,
       avatarUrl: g.userInfo.avatar || '',
       avatarText: g.userInfo.loggedIn ? (g.userInfo.nickname || '衡')[0] : '衡',
-      streak,
-      favCount: (g.favorites || []).length,
       health
     });
   },
@@ -160,24 +176,12 @@ Page({
 
   goPlan() { wx.navigateTo({ url: '/pages/plan/plan' }); },
 
-  // 点击「收藏」统计项 → 进入收藏页查看已收藏动作
-  goFavorites() { wx.navigateTo({ url: '/pages/favorites/favorites' }); },
-
   // 点击「隐私政策」→ 进入隐私政策页查看完整内容
   goPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); },
-
-  // 点击「训练复盘」→ 进入复盘页（按记录数+是否有周期自动分流模式）
-  goReview() { wx.navigateTo({ url: '/pages/review/review' }); },
 
   comingSoon(e) {
     const act = (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.act) || '该功能';
     wx.showToast({ title: act + ' 开发中', icon: 'none' });
-  },
-
-  goTrainRecords() {
-    const app = getApp();
-    if (app && app.globalData) app.globalData.pendingListTab = 'training';
-    wx.switchTab({ url: '/pages/list/list' });
   },
 
   /* ===== 数据管理面板：进入 / 关闭 ===== */

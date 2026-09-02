@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HiLiLife · Design System Prototype v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   DESIGN TOKENS (from Design.md)
+   ============================================ */
+:root {
+  /* Brand */
+  --primary:        #C8FF00;  /* 荧光黄绿 */
+  --primary-dim:    #ECFFC2;  /* Tag active bg */
+  --primary-ink:    #0A0A0A;  /* 品牌色上的文字色 */
+  --primary-dark:   #0A0A0A;  /* 深色训练场景背景 */
+  --primary-deep:   #111111;  /* Dark card */
+
+  /* Neutrals (warm gray) */
+  --n-950: #0A0A0A;
+  --n-900: #111111;
+  --n-800: #262626;
+  --n-700: #444444;
+  --n-600: #707070;
+  --n-500: #A0A0A0;
+  --n-400: #C7C7C2;
+  --n-300: #D9D9D5;
+  --n-200: #E8E8E4;
+  --n-100: #F1F1EE;
+  --n-50:  #F7F7F5;
+  --white: #FFFFFF;
+
+  /* Semantic */
+  --success: #6F9F00;
+  --warning: #FFB020;
+  --danger:  #E5484D;
+  --info:    #5B8DEF;
+
+  /* Spacing (8px system, 4 = half-step) */
+  --s-1: 4px;  --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 20px; --s-6: 24px;  --s-7: 32px;  --s-8: 40px;
+
+  /* Radius */
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-xl: 20px; --r-pill: 999px;
+
+  /* Shadow (克制, 6-8% opacity) */
+  --shadow-card:    0 4px 16px rgba(0,0,0,0.06);
+  --shadow-button:  0 1px 3px rgba(0,0,0,0.04);
+  --shadow-elevate: 0 8px 24px rgba(0,0,0,0.08);
+
+  /* Type */
+  --t-display: 32px/40px;
+  --t-h1:     24px/32px;
+  --t-h2:     20px/28px;
+  --t-h3:     17px/24px;
+  --t-body-l: 16px/24px;
+  --t-body:   14px/20px;
+  --t-cap:    12px/18px;
+  --t-micro:  10px/14px;
+
+  /* Font */
+  --f-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --f-en: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  --f-num: "Inter", "SF Pro Display", "JetBrains Mono", monospace;
+
+  /* Motion */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 150ms;
+  --t-base: 240ms;
+}
+
+/* ============================================
+   BASE
+   ============================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: var(--f-zh);
+  font-size: var(--t-body);
+  color: var(--n-900);
+  background:
+    radial-gradient(1200px 600px at 20% 0%, #f0f0eb 0%, transparent 60%),
+    radial-gradient(900px 600px at 90% 30%, #ececea 0%, transparent 50%),
+    var(--n-50);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+img { display: block; max-width: 100%; }
+
+/* ============================================
+   LAYOUT · 15 phones in a responsive grid
+   ============================================ */
+.showcase {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 56px 32px 96px;
+}
+.showcase-head {
+  display: flex; align-items: center; gap: var(--s-4);
+  margin-bottom: var(--s-7);
+}
+.showcase-head .logo {
+  width: 56px; height: 56px; border-radius: var(--r-m);
+  background: var(--primary); color: var(--primary-ink);
+  display: grid; place-items: center; font-weight: 800; font-size: 28px;
+  box-shadow: var(--shadow-button);
+}
+.showcase-head h1 {
+  font-size: 28px; line-height: 36px; font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.showcase-head p {
+  margin-top: 4px; color: var(--n-600); font-size: 14px;
+}
+.showcase-meta {
+  display: flex; gap: var(--s-2); margin-left: auto; align-items: center;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: var(--r-pill);
+  font-size: 12px; font-weight: 600;
+  background: var(--white); color: var(--n-700);
+  border: 1px solid var(--n-200);
+}
+.chip.brand { background: var(--primary); color: var(--primary-ink); border-color: transparent; }
+.chip.dark  { background: var(--n-950); color: var(--white); border-color: transparent; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: var(--s-6);
+}
+.tile {
+  display: flex; flex-direction: column; gap: var(--s-3);
+}
+.tile-label {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: 0 var(--s-1);
+}
+.tile-label .num {
+  display: inline-grid; place-items: center;
+  width: 28px; height: 28px; border-radius: var(--r-s);
+  background: var(--n-950); color: var(--primary);
+  font-family: var(--f-num); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.tile-label .name { font-weight: 700; font-size: 14px; color: var(--n-900); }
+.tile-label .note { color: var(--n-500); font-size: 12px; }
+
+/* Phone frame */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--white);
+  border-radius: 36px;
+  border: 1px solid var(--n-200);
+  box-shadow: var(--shadow-elevate);
+  overflow: hidden;
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.phone.dark { background: var(--primary-dark); color: var(--white); border-color: var(--n-800); }
+.phone > * { flex: none; }
+.phone .scroll {
+  flex: 1 1 auto; overflow-y: auto;
+  padding: 0 0 var(--s-5);
+  scrollbar-width: none;
+}
+.phone .scroll::-webkit-scrollbar { display: none; }
+
+/* Status bar */
+.status-bar {
+  height: 44px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  font-family: var(--f-num);
+  font-weight: 600; font-size: 14px; color: var(--n-900);
+}
+.phone.dark .status-bar { color: var(--white); }
+.status-bar .icons { display: flex; align-items: center; gap: 6px; }
+.status-bar .icons svg { width: 16px; height: 16px; }
+
+/* Header */
+.header {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-2) var(--s-4) var(--s-3);
+  min-height: 52px;
+}
+.header .back {
+  width: 32px; height: 32px; border-radius: var(--r-pill);
+  display: grid; place-items: center; color: var(--n-900);
+}
+.phone.dark .header .back { color: var(--white); }
+.header .title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.header .actions { margin-left: auto; display: flex; gap: var(--s-2); }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: var(--r-pill);
+  display: grid; place-items: center; color: var(--n-700);
+  background: var(--n-100);
+  transition: background var(--t-fast) var(--ease);
+}
+.icon-btn:hover { background: var(--n-200); }
+.phone.dark .icon-btn { background: rgba(255,255,255,0.08); color: var(--white); }
+
+/* Content padding */
+.pad { padding: 0 var(--s-4); }
+.pad-tight { padding: 0 var(--s-3); }
+
+/* Section spacing */
+.sec { padding: var(--s-5) var(--s-4) 0; }
+.sec-tight { padding: var(--s-3) var(--s-4) 0; }
+.sec-title {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--s-3);
+}
+.sec-title h2 {
+  font-size: 17px; font-weight: 700; letter-spacing: -0.01em;
+}
+.sec-title .more { font-size: 12px; color: var(--n-600); display: flex; align-items: center; gap: 2px; }
+
+/* Card */
+.card {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: var(--s-4);
+  box-shadow: var(--shadow-card);
+}
+.card.dark {
+  background: var(--primary-deep);
+  color: var(--white);
+  border-color: var(--n-800);
+}
+.card.flat { box-shadow: none; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 48px; padding: 0 var(--s-5);
+  border-radius: var(--r-m);
+  font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+  transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  border: 1px solid transparent;
+  width: 100%;
+}
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--primary); color: var(--primary-ink); box-shadow: var(--shadow-button); }
+.btn.primary:hover { box-shadow: var(--shadow-card); }
+.btn.secondary { background: var(--white); color: var(--n-900); border-color: var(--n-200); }
+.btn.dark { background: var(--n-900); color: var(--white); border-color: var(--n-800); }
+.btn.ghost { background: transparent; color: var(--n-700); border-color: var(--n-200); }
+.btn.lg { height: 52px; font-size: 16px; }
+
+/* Tag */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 24px; padding: 0 8px;
+  border-radius: var(--r-s);
+  font-size: 12px; font-weight: 600;
+  background: var(--n-100); color: var(--n-700);
+}
+.tag.active { background: var(--primary-dim); color: var(--success); }
+.tag.brand  { background: var(--primary); color: var(--primary-ink); }
+.tag.ghost  { background: transparent; border: 1px solid var(--n-200); color: var(--n-600); }
+
+/* Progress linear */
+.lin-prog { height: 6px; border-radius: var(--r-pill); background: var(--n-200); overflow: hidden; }
+.lin-prog > i { display: block; height: 100%; background: var(--primary); border-radius: var(--r-pill); }
+
+/* Progress circular */
+.ring {
+  --size: 100px; --pct: 0; --w: 8px;
+  width: var(--size); height: var(--size);
+  position: relative; display: grid; place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) calc(var(--pct) * 1%), var(--n-200) 0);
+  transition: background 600ms var(--ease);
+}
+.ring::before {
+  content: ""; position: absolute; inset: var(--w);
+  background: var(--white); border-radius: 50%;
+}
+.phone.dark .ring::before { background: var(--primary-dark); }
+.ring > span {
+  position: relative; z-index: 1;
+  font-family: var(--f-num); font-weight: 700; font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.ring.lg { --size: 132px; }
+.ring.lg > span { font-size: 30px; }
+
+/* List */
+.list { display: flex; flex-direction: column; }
+.list-item {
+  display: flex; align-items: center; gap: var(--s-3);
+  min-height: 56px; padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--n-200);
+}
+.list-item:last-child { border-bottom: none; }
+.list-item .lead { display: flex; align-items: center; gap: var(--s-3); }
+.list-item .lead .avatar, .list-item .lead .thumb {
+  width: 44px; height: 44px; border-radius: var(--r-m); flex: none;
+  background: var(--n-100);
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+.list-item .lead .avatar { border-radius: 50%; }
+.list-item .body { flex: 1 1 auto; min-width: 0; }
+.list-item .body .t1 { font-size: 15px; font-weight: 600; color: var(--n-900); }
+.list-item .body .t2 { font-size: 12px; color: var(--n-600); margin-top: 2px; }
+.list-item .trail { display: flex; align-items: center; gap: 6px; color: var(--n-600); font-size: 13px; }
+.list-item .trail .num { font-family: var(--f-num); font-weight: 700; color: var(--n-900); }
+
+/* Bottom Tab */
+.tab-bar {
+  height: 72px; padding: 0 6px;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--white);
+  border-top: 1px solid var(--n-200);
+  position: relative;
+}
+.tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font-size: 10px; font-weight: 600;
+  color: var(--n-600);
+  letter-spacing: 0.02em;
+}
+.tab .ic { width: 24px; height: 24px; display: grid; place-items: center; }
+.tab.active { color: var(--n-900); }
+.tab.active .ic { color: var(--success); }
+.tab.active .ic::after { content: ""; display: none; }
+
+/* Avatar initial */
+.avatar-init {
+  width: 100%; height: 100%; display: grid; place-items: center;
+  background: var(--n-100); color: var(--n-700);
+  font-weight: 700; font-size: 16px;
+}
+.avatar-init.brand { background: var(--primary); color: var(--primary-ink); }
+
+/* Stat number */
+.num-xl {
+  font-family: var(--f-num);
+  font-size: 32px; font-weight: 700; line-height: 40px;
+  letter-spacing: -0.03em;
+  color: var(--n-900);
+}
+.num-lg {
+  font-family: var(--f-num);
+  font-size: 22px; font-weight: 700; line-height: 28px;
+  letter-spacing: -0.02em;
+  color: var(--n-900);
+}
+.num-md { font-family: var(--f-num); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.num-sm { font-family: var(--f-num); font-weight: 600; font-size: 13px; }
+.muted { color: var(--n-600); }
+.brand-txt { color: var(--success); }
+.danger-txt { color: var(--danger); }
+
+/* Sparkline / chart helpers */
+.spark { display: block; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 100px; }
+.bars > div {
+  flex: 1; background: var(--n-200); border-radius: 4px 4px 0 0;
+  min-height: 6px;
+  position: relative;
+}
+.bars > div.active { background: var(--primary); }
+
+/* Photo placeholder (since we don't bundle real photos) */
+.thumb-photo {
+  width: 100%; height: 100%;
+  display: grid; place-items: center;
+  color: var(--white);
+  font-size: 24px;
+  background: linear-gradient(135deg, var(--n-800) 0%, var(--n-950) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.thumb-photo::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.08) 0%, transparent 50%);
+}
+
+/* Focus / pressed rings (a11y) */
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Common utility */
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
+.between { justify-content: space-between; }
+.center { align-items: center; justify-content: center; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.upper { text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; font-size: 10px; color: var(--n-500); }
+.tnum { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+
+/* Page-specific accent stripe for section titles */
+.stripe-title {
+  display: flex; align-items: center; gap: var(--s-2);
+  font-size: 17px; font-weight: 700; letter-spacing: -0.01em;
+}
+.stripe-title::before {
+  content: ""; display: block;
+  width: 4px; height: 18px; border-radius: 2px;
+  background: var(--primary);
+}
+
+/* Bottom safe area (sub-pages w/o tab) */
+.safe-bottom { padding-bottom: 28px; }
+
+/* Dark mode tweaks */
+.phone.dark .header .title,
+.phone.dark .header .back { color: var(--white); }
+.phone.dark .muted { color: var(--n-500); }
+.phone.dark .num-xl,
+.phone.dark .num-lg { color: var(--white); }
+
+/* Grids for thumbnails */
+.thumb-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3);
+}
+.thumb-grid .food-card { padding: var(--s-3); }
+
+/* Chip row scroll */
+.chip-row {
+  display: flex; gap: 8px;
+  padding: var(--s-2) var(--s-4) var(--s-3);
+  overflow-x: auto; scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+.chip-pill {
+  flex: none;
+  height: 32px; padding: 0 14px;
+  display: inline-flex; align-items: center;
+  border-radius: var(--r-pill);
+  background: var(--n-100); color: var(--n-700);
+  font-size: 13px; font-weight: 600;
+  white-space: nowrap;
+}
+.chip-pill.active { background: var(--primary); color: var(--primary-ink); }
+
+/* Calendar */
+.cal {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: var(--s-3);
+}
+.cal .cell {
+  aspect-ratio: 1; display: grid; place-items: center;
+  font-family: var(--f-num); font-size: 13px; font-weight: 600;
+  color: var(--n-700);
+  border-radius: 50%;
+  position: relative;
+}
+.cal .cell.dim { color: var(--n-400); }
+.cal .cell.active {
+  background: var(--primary); color: var(--primary-ink);
+  box-shadow: 0 4px 10px rgba(200,255,0,0.4);
+}
+.cal .cell.dot::after {
+  content: ""; position: absolute; bottom: 4px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--success);
+}
+.cal-week {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  font-size: 11px; font-weight: 600; color: var(--n-500);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+/* Donut/Bar chart for screen 12 */
+.donut-row { display: flex; align-items: center; gap: var(--s-4); }
+.legend { display: flex; flex-direction: column; gap: var(--s-2); flex: 1 1 auto; }
+.legend-row { display: flex; align-items: center; gap: var(--s-2); font-size: 12px; color: var(--n-700); }
+.legend-row i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.legend-row strong { font-family: var(--f-num); color: var(--n-900); margin-left: auto; font-weight: 700; }
+
+/* Photo card for workouts */
+.workout-card {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+}
+.workout-card .photo {
+  width: 64px; height: 64px; border-radius: var(--r-m);
+  background: linear-gradient(135deg, #2a2a2a 0%, #0a0a0a 100%);
+  display: grid; place-items: center; color: var(--primary);
+  font-size: 22px;
+  flex: none;
+}
+.workout-card .info { flex: 1 1 auto; min-width: 0; }
+.workout-card .name { font-size: 15px; font-weight: 700; color: var(--n-900); }
+.workout-card .sub  { font-size: 12px; color: var(--n-600); margin-top: 2px; }
+.workout-card .star { color: var(--n-400); }
+.workout-card .star.on { color: var(--primary); }
+</style>
+</head>
+<body>
+<div class="showcase">
+
+  <!-- Header -->
+  <div class="showcase-head">
+    <div class="logo">H</div>
+    <div>
+      <h1>HiLiLife · 衡力健身记录</h1>
+      <p>Design System Prototype v1 · 15 屏完整设计稿复刻 · 微信小程序 / 390 × 844</p>
+    </div>
+    <div class="showcase-meta">
+      <span class="chip brand">Brand · #C8FF00</span>
+      <span class="chip">8px 间距</span>
+      <span class="chip dark">Dark · #0A0A0A</span>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ============================================ -->
+    <!-- 01 首页 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">01</span>
+        <span class="name">首页</span>
+        <span class="note">Light · Bottom Tab</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="icons">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 22h20V11.5L12 2 2 11.5V22z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 12h2v8H3v-8zm4-4h2v12H7V8zm4-4h2v16h-2V4zm4 6h2v10h-2V10zm4 3h2v7h-2v-7z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 8h2V6h-2v2zm4 0h2V6h-2v2zM1 18v2h22v-2H1zm1-9h2v6H2V9zm4 0h2v6H6V9zm3 0h2v6H9V9zm3 0h2v6h-2V9zm3 0h2v6h-2V9zm3 0h2v6h-2V9z"/></svg>
+          </div>
+        </div>
+
+        <div class="header">
+          <div>
+            <div class="title">早上好, Alex <span style="color:var(--primary)">👋</span></div>
+            <div class="muted" style="font-size:12px;margin-top:2px">今天状态不错,继续坚持</div>
+          </div>
+          <div class="actions">
+            <button class="icon-btn" aria-label="刷新">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5"/></svg>
+            </button>
+            <button class="icon-btn" aria-label="通知">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="scroll">
+
+          <!-- Hero · 今日打卡 + 训练建议 -->
+          <div class="pad">
+            <div class="card" style="display:flex;align-items:center;gap:16px;padding:18px 16px">
+              <div class="ring" style="--pct:75;--size:88px;--w:8px">
+                <span>75%</span>
+              </div>
+              <div class="col gap-1" style="flex:1;min-width:0">
+                <div class="upper">今日打卡</div>
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <span class="num-md">3</span>
+                  <span class="muted" style="font-size:12px">/ 4 人已练</span>
+                </div>
+                <div class="muted" style="font-size:11px;display:flex;align-items:center;gap:4px">
+                  <span style="color:var(--warning)">🔥</span> 连续 23 天 · 距 7 日目标 4 天
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 训练建议 -->
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">训练建议</div>
+              <a class="more">查看全部 ›</a>
+            </div>
+            <div class="card" style="display:flex;align-items:center;gap:14px;padding:14px">
+              <div class="thumb-photo" style="width:64px;height:64px;border-radius:12px;font-size:26px">🏋️</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:15px;font-weight:700">全身训练 · 中级</div>
+                <div class="muted" style="font-size:12px;margin-top:2px">约 45 分钟 · 320 kcal</div>
+              </div>
+              <button class="btn primary" style="height:36px;padding:0 14px;font-size:13px;width:auto">开始</button>
+            </div>
+          </div>
+
+          <!-- 今日饮食 -->
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">今日饮食</div>
+              <a class="more">详情 ›</a>
+            </div>
+            <div class="card">
+              <div style="display:flex;align-items:center;gap:16px">
+                <div class="ring" style="--pct:64;--size:84px;--w:8px">
+                  <span style="font-size:18px">64%</span>
+                </div>
+                <div class="col gap-1" style="flex:1;min-width:0">
+                  <div class="num-lg tnum">1,350 <span style="font-size:14px;color:var(--n-600);font-weight:500">/ 2,100 kcal</span></div>
+                  <div class="muted" style="font-size:12px">还差 750 kcal · 4 餐</div>
+                </div>
+              </div>
+              <div class="col gap-3" style="margin-top:16px">
+                <div>
+                  <div class="row between" style="font-size:12px;margin-bottom:6px"><span class="muted">蛋白质</span><span class="tnum"><b>98</b> / 145 g</span></div>
+                  <div class="lin-prog"><i style="width:67.6%"></i></div>
+                </div>
+                <div>
+                  <div class="row between" style="font-size:12px;margin-bottom:6px"><span class="muted">碳水</span><span class="tnum"><b>192</b> / 235 g</span></div>
+                  <div class="lin-prog"><i style="width:81.7%"></i></div>
+                </div>
+                <div>
+                  <div class="row between" style="font-size:12px;margin-bottom:6px"><span class="muted">脂肪</span><span class="tnum"><b>42</b> / 70 g</span></div>
+                  <div class="lin-prog"><i style="width:60%"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 体重趋势 mini -->
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">体重趋势</div>
+              <a class="more">近 7 天 ›</a>
+            </div>
+            <div class="card">
+              <div class="row between">
+                <div>
+                  <div class="num-xl tnum">62.4 <span style="font-size:18px;color:var(--n-600);font-weight:500">kg</span></div>
+                  <div class="row gap-2" style="margin-top:4px">
+                    <span class="brand-txt" style="font-size:12px;font-weight:700">▼ -0.8 kg</span>
+                    <span class="muted" style="font-size:12px">较昨日</span>
+                  </div>
+                </div>
+                <svg width="120" height="50" viewBox="0 0 120 50" class="spark">
+                  <defs>
+                    <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#C8FF00" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#C8FF00" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M5,18 L25,22 L45,12 L65,28 L85,20 L105,32 L115,38" fill="none" stroke="#C8FF00" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M5,18 L25,22 L45,12 L65,28 L85,20 L105,32 L115,38 L115,50 L5,50 Z" fill="url(#g1)"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab active"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg></div>首页</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M20 12h2M6 7l1.5 1.5M16.5 15.5 18 17M6 17l1.5-1.5M16.5 8.5 18 7M12 4v2M12 18v2"/><circle cx="12" cy="12" r="3"/></svg></div>训练</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 5v16"/></svg></div>计划</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg></div>数据</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 02 训练 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">02</span>
+        <span class="name">训练</span>
+        <span class="note">动作库 · 分类 · 搜索</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <div class="row" style="gap:24px">
+            <div class="title" style="border-bottom:2px solid var(--n-900);padding-bottom:4px">动作库</div>
+            <div class="muted" style="font-size:15px">收藏</div>
+          </div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="pad" style="padding-top:4px">
+            <div style="display:flex;align-items:center;gap:10px;height:44px;background:var(--n-100);border-radius:12px;padding:0 14px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--n-500)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+              <span class="muted" style="font-size:14px">搜索动作名称</span>
+            </div>
+          </div>
+
+          <div class="chip-row">
+            <div class="chip-pill active">胸部</div>
+            <div class="chip-pill">背部</div>
+            <div class="chip-pill">腿部</div>
+            <div class="chip-pill">腹部</div>
+            <div class="chip-pill">手臂</div>
+            <div class="chip-pill">核心</div>
+            <div class="chip-pill">肩膀</div>
+          </div>
+
+          <div class="sec-tight" style="padding-top:12px">
+            <div class="row between" style="margin-bottom:10px;padding:0 4px">
+              <div class="upper">热门动作 · 7</div>
+              <a class="muted" style="font-size:12px">全部 ›</a>
+            </div>
+            <div class="col gap-3 pad">
+              <div class="workout-card">
+                <div class="photo">🏋️</div>
+                <div class="info">
+                  <div class="name">杠铃卧推</div>
+                  <div class="sub">Barbell Bench Press · 胸部</div>
+                </div>
+                <svg class="star on" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 14.7 8.6 22 9.3 16.5 14 18.2 21 12 17.3 5.8 21 7.5 14 2 9.3 9.3 8.6z"/></svg>
+              </div>
+              <div class="workout-card">
+                <div class="photo">💪</div>
+                <div class="info">
+                  <div class="name">引体向上</div>
+                  <div class="sub">Pull Up · 背部</div>
+                </div>
+                <svg class="star on" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 14.7 8.6 22 9.3 16.5 14 18.2 21 12 17.3 5.8 21 7.5 14 2 9.3 9.3 8.6z"/></svg>
+              </div>
+              <div class="workout-card">
+                <div class="photo">🦵</div>
+                <div class="info">
+                  <div class="name">深蹲</div>
+                  <div class="sub">Squat · 腿部</div>
+                </div>
+                <svg class="star on" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 14.7 8.6 22 9.3 16.5 14 18.2 21 12 17.3 5.8 21 7.5 14 2 9.3 9.3 8.6z"/></svg>
+              </div>
+              <div class="workout-card">
+                <div class="photo">🏋️‍♀️</div>
+                <div class="info">
+                  <div class="name">哑铃推举</div>
+                  <div class="sub">Dumbbell Shoulder Press · 肩部</div>
+                </div>
+                <svg class="star" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 14.7 8.6 22 9.3 16.5 14 18.2 21 12 17.3 5.8 21 7.5 14 2 9.3 9.3 8.6z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg></div>首页</div>
+          <div class="tab active"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M20 12h2M6 7l1.5 1.5M16.5 15.5 18 17M6 17l1.5-1.5M16.5 8.5 18 7M12 4v2M12 18v2"/><circle cx="12" cy="12" r="3"/></svg></div>训练</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 5v16"/></svg></div>计划</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg></div>数据</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 03 计划 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">03</span>
+        <span class="name">计划</span>
+        <span class="note">我的计划 · 训练模板</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <div class="title">我的计划</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5"/></svg></button>
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="row" style="gap:24px;padding:0 16px 12px;border-bottom:1px solid var(--n-200)">
+            <div class="title" style="font-size:15px;border-bottom:2px solid var(--n-900);padding-bottom:8px">我的计划</div>
+            <div class="muted" style="font-size:15px;padding-bottom:8px">训练模板</div>
+          </div>
+
+          <div class="sec">
+            <div class="col gap-3">
+              <div class="card" style="padding:16px">
+                <div class="row between" style="margin-bottom:8px">
+                  <div>
+                    <div style="font-size:15px;font-weight:700">上下肢分化训练</div>
+                    <div class="muted" style="font-size:12px;margin-top:2px">6 周计划 · 中级</div>
+                  </div>
+                  <span class="tag active">进行中</span>
+                </div>
+                <div class="row between" style="font-size:12px;margin-bottom:6px">
+                  <span class="muted">第 <b style="color:var(--n-900)">1</b> 天 / 共 4 天</span>
+                  <span class="brand-txt tnum" style="font-weight:700">50%</span>
+                </div>
+                <div class="lin-prog"><i style="width:50%"></i></div>
+              </div>
+
+              <div class="card" style="padding:16px">
+                <div class="row between" style="margin-bottom:8px">
+                  <div>
+                    <div style="font-size:15px;font-weight:700">Push Pull Legs</div>
+                    <div class="muted" style="font-size:12px;margin-top:2px">6 周计划 · 高级</div>
+                  </div>
+                  <span class="tag">未开始</span>
+                </div>
+                <div class="row between" style="font-size:12px;margin-bottom:6px">
+                  <span class="muted">第 <b style="color:var(--n-900)">1</b> 天 / 共 6 天</span>
+                  <span class="muted tnum" style="font-weight:700">16%</span>
+                </div>
+                <div class="lin-prog"><i style="width:16%"></i></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">推荐模板</div>
+              <a class="more">更多 ›</a>
+            </div>
+            <div class="col gap-3">
+              <div class="card flat" style="padding:14px;display:flex;align-items:center;gap:12px">
+                <div class="thumb-photo" style="width:56px;height:56px;border-radius:12px;font-size:24px">🆕</div>
+                <div style="flex:1">
+                  <div style="font-size:15px;font-weight:700">新手全身训练</div>
+                  <div class="muted" style="font-size:12px;margin-top:2px">3 天 · 入门</div>
+                </div>
+                <button class="btn primary" style="height:32px;padding:0 12px;font-size:12px;width:auto">开始</button>
+              </div>
+              <div class="card flat" style="padding:14px;display:flex;align-items:center;gap:12px">
+                <div class="thumb-photo" style="width:56px;height:56px;border-radius:12px;font-size:24px">💪</div>
+                <div style="flex:1">
+                  <div style="font-size:15px;font-weight:700">增肌进阶计划</div>
+                  <div class="muted" style="font-size:12px;margin-top:2px">5 天 · 中级</div>
+                </div>
+                <button class="btn primary" style="height:32px;padding:0 12px;font-size:12px;width:auto">开始</button>
+              </div>
+              <div class="card flat" style="padding:14px;display:flex;align-items:center;gap:12px">
+                <div class="thumb-photo" style="width:56px;height:56px;border-radius:12px;font-size:24px">🔥</div>
+                <div style="flex:1">
+                  <div style="font-size:15px;font-weight:700">减脂塑形计划</div>
+                  <div class="muted" style="font-size:12px;margin-top:2px">4 天 · 中级</div>
+                </div>
+                <button class="btn primary" style="height:32px;padding:0 12px;font-size:12px;width:auto">开始</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg></div>首页</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M20 12h2M6 7l1.5 1.5M16.5 15.5 18 17M6 17l1.5-1.5M16.5 8.5 18 7M12 4v2M12 18v2"/><circle cx="12" cy="12" r="3"/></svg></div>训练</div>
+          <div class="tab active"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 5v16"/></svg></div>计划</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg></div>数据</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 04 动作详情 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">04</span>
+        <span class="name">动作详情</span>
+        <span class="note">Hero · Muscle Map</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <button class="back icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="actions" style="margin-left:auto">
+            <button class="icon-btn"><svg class="star on" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 14.7 8.6 22 9.3 16.5 14 18.2 21 12 17.3 5.8 21 7.5 14 2 9.3 9.3 8.6z"/></svg></button>
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <!-- Hero media -->
+          <div style="position:relative;height:220px;background:linear-gradient(135deg,#1a1a1a 0%,#0a0a0a 100%);display:grid;place-items:center;overflow:hidden">
+            <div style="font-size:80px;opacity:0.9">🏋️</div>
+            <button style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.18);backdrop-filter:blur(8px);display:grid;place-items:center;border:1px solid rgba(255,255,255,0.3)">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div style="position:absolute;left:16px;bottom:14px;color:white">
+              <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em">杠铃卧推</div>
+              <div class="tnum" style="font-size:13px;opacity:0.7;margin-top:2px">Barbell Bench Press</div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="row gap-2">
+              <span class="tag active">胸部</span>
+              <span class="tag">三头</span>
+              <span class="tag">前束三角肌</span>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title"><div class="stripe-title">动作要点</div></div>
+            <div class="col gap-3">
+              <div class="row gap-3"><span style="color:var(--success);font-weight:700">✓</span><span style="font-size:14px;line-height:20px">保持平躺, 背部紧贴板凳</span></div>
+              <div class="row gap-3"><span style="color:var(--success);font-weight:700">✓</span><span style="font-size:14px;line-height:20px">握距略宽于肩, 收紧肩胛</span></div>
+              <div class="row gap-3"><span style="color:var(--success);font-weight:700">✓</span><span style="font-size:14px;line-height:20px">下放时肘关节与身体呈 45°</span></div>
+              <div class="row gap-3"><span style="color:var(--success);font-weight:700">✓</span><span style="font-size:14px;line-height:20px">全程控制, 避免胸肌代偿</span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title"><div class="stripe-title">主要肌肉</div></div>
+            <div class="card" style="display:flex;justify-content:center;padding:18px">
+              <svg width="120" height="200" viewBox="0 0 120 200" fill="none">
+                <!-- Body silhouette -->
+                <ellipse cx="60" cy="22" rx="14" ry="16" fill="#E8E8E4"/>
+                <path d="M40 50 Q40 42 50 40 L70 40 Q80 42 80 50 L82 70 L92 90 L88 110 L80 116 L78 140 L78 180 L72 188 L70 188 L70 150 L50 150 L50 188 L48 188 L42 180 L42 140 L40 116 L32 110 L28 90 L38 70 Z" fill="#E8E8E4"/>
+                <!-- Active chest (highlight) -->
+                <path d="M42 60 Q50 56 60 56 Q70 56 78 60 L78 78 Q70 80 60 80 Q50 80 42 78 Z" fill="#C8FF00" stroke="#0A0A0A" stroke-width="1"/>
+                <!-- Active triceps -->
+                <path d="M30 90 L40 90 L40 110 L30 110 Z" fill="#C8FF00" stroke="#0A0A0A" stroke-width="1"/>
+                <path d="M80 90 L90 90 L90 110 L80 110 Z" fill="#C8FF00" stroke="#0A0A0A" stroke-width="1"/>
+                <!-- Front delts hint -->
+                <circle cx="38" cy="64" r="4" fill="#C8FF00"/>
+                <circle cx="82" cy="64" r="4" fill="#C8FF00"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">历史记录</div>
+              <a class="more">更多 ›</a>
+            </div>
+            <div class="card">
+              <div class="row between">
+                <div>
+                  <div class="muted" style="font-size:12px">2024/05/20</div>
+                  <div class="tnum" style="font-weight:700;margin-top:2px">4 组 × 10 次 · 60 kg</div>
+                </div>
+                <div class="muted" style="font-size:12px">RPE 8</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <button class="btn primary lg">开始训练</button>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 05 训练中 (DARK) -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">05</span>
+        <span class="name">训练中</span>
+        <span class="note">Dark Immersive</span>
+      </div>
+      <div class="phone dark">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <div class="row gap-2">
+            <div class="muted" style="font-size:12px">训练计时</div>
+          </div>
+          <div class="num-lg tnum" style="color:var(--primary)">23:45</div>
+          <div class="actions" style="margin-left:auto">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll" style="background:transparent">
+          <div class="pad" style="padding-top:8px">
+            <div style="text-align:center;padding:32px 0 24px">
+              <div class="muted" style="font-size:13px;margin-bottom:8px">杠铃卧推</div>
+              <div class="tnum" style="font-size:36px;font-weight:800;letter-spacing:-0.03em;line-height:42px">第 <span style="color:var(--primary)">3</span> 组 / 共 <span style="color:var(--primary)">4</span> 组</div>
+            </div>
+
+            <!-- Weight & RPE -->
+            <div class="row gap-3" style="margin-top:8px">
+              <div class="card dark" style="flex:1;padding:18px 12px;text-align:center">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">重量 (kg)</div>
+                <div class="row center" style="gap:14px;margin-top:8px">
+                  <button class="icon-btn" style="width:36px;height:36px">−</button>
+                  <div class="tnum" style="font-size:48px;font-weight:800;letter-spacing:-0.04em;line-height:48px">80</div>
+                  <button class="icon-btn" style="width:36px;height:36px">+</button>
+                </div>
+              </div>
+              <div class="card dark" style="flex:1;padding:18px 12px;text-align:center">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">RPE</div>
+                <div class="row center" style="gap:14px;margin-top:8px">
+                  <button class="icon-btn" style="width:36px;height:36px">−</button>
+                  <div class="tnum" style="font-size:48px;font-weight:800;letter-spacing:-0.04em;line-height:48px;color:var(--primary)">8</div>
+                  <button class="icon-btn" style="width:36px;height:36px">+</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec">
+              <button class="btn primary lg">完成本组</button>
+            </div>
+
+            <!-- Rest timer -->
+            <div class="card dark" style="margin-top:8px">
+              <div class="row between" style="margin-bottom:8px">
+                <div class="muted" style="font-size:13px">组间休息</div>
+                <div class="muted" style="font-size:11px">建议 90s</div>
+              </div>
+              <div class="tnum" style="text-align:center;font-size:52px;font-weight:800;letter-spacing:-0.04em;line-height:60px;color:var(--primary)">01:30</div>
+              <div class="row gap-2" style="margin-top:14px">
+                <button class="btn dark" style="flex:1;height:44px">-30s</button>
+                <button class="btn dark" style="flex:1;height:44px">暂停</button>
+                <button class="btn dark" style="flex:1;height:44px">+30s</button>
+              </div>
+            </div>
+
+            <!-- Next exercise -->
+            <div class="card dark" style="margin-top:12px">
+              <div class="muted" style="font-size:11px;letter-spacing:0.06em">下一个动作</div>
+              <div class="row between" style="margin-top:8px">
+                <div>
+                  <div style="font-size:15px;font-weight:700">上斜哑铃卧推</div>
+                  <div class="tnum muted" style="font-size:12px;margin-top:2px">4 组 × 10 次</div>
+                </div>
+                <button class="btn dark" style="width:auto;height:36px;padding:0 14px">跳过</button>
+              </div>
+            </div>
+          </div>
+          <div style="height:32px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 06 训练记录 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">06</span>
+        <span class="name">训练记录</span>
+        <span class="note">Calendar · Logs</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <button class="back icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">训练记录</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <!-- Calendar -->
+          <div class="pad">
+            <div class="row between" style="margin-bottom:8px">
+              <div style="font-size:17px;font-weight:700">2024 年 5 月</div>
+              <div class="row gap-2">
+                <button class="icon-btn" style="width:28px;height:28px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <button class="icon-btn" style="width:28px;height:28px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+              </div>
+            </div>
+            <div class="cal-week">
+              <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+            </div>
+            <div class="cal">
+              <div class="cell dim">28</div>
+              <div class="cell dim">29</div>
+              <div class="cell dim">30</div>
+              <div class="cell">1</div>
+              <div class="cell">2</div>
+              <div class="cell">3</div>
+              <div class="cell">4</div>
+
+              <div class="cell">5</div>
+              <div class="cell">6</div>
+              <div class="cell dot">7</div>
+              <div class="cell">8</div>
+              <div class="cell">9</div>
+              <div class="cell">10</div>
+              <div class="cell dot">11</div>
+
+              <div class="cell">12</div>
+              <div class="cell">13</div>
+              <div class="cell">14</div>
+              <div class="cell">15</div>
+              <div class="cell active">16</div>
+              <div class="cell">17</div>
+              <div class="cell">18</div>
+
+              <div class="cell">19</div>
+              <div class="cell">20</div>
+              <div class="cell">21</div>
+              <div class="cell">22</div>
+              <div class="cell">23</div>
+              <div class="cell">24</div>
+              <div class="cell">25</div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">2024/05/16 训练</div>
+              <span class="muted" style="font-size:12px">45:20 · 420 kcal</span>
+            </div>
+            <div class="card" style="padding:0 16px">
+              <div class="list">
+                <div class="list-item">
+                  <div class="lead"><div class="thumb" style="background:#1a1a1a;color:#C8FF00">🏋️</div></div>
+                  <div class="body">
+                    <div class="t1">杠铃卧推</div>
+                    <div class="t2 tnum">4 组 × 10 次</div>
+                  </div>
+                  <div class="trail"><span class="num tnum">60 kg</span></div>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb" style="background:#1a1a1a;color:#C8FF00">💪</div></div>
+                  <div class="body">
+                    <div class="t1">上斜哑铃卧推</div>
+                    <div class="t2 tnum">4 组 × 12 次</div>
+                  </div>
+                  <div class="trail"><span class="num tnum">22.0 kg</span></div>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb" style="background:#1a1a1a;color:#C8FF00">🏋️‍♀️</div></div>
+                  <div class="body">
+                    <div class="t1">哑铃弯举</div>
+                    <div class="t2 tnum">3 组 × 15 次</div>
+                  </div>
+                  <div class="trail"><span class="num tnum">45 kg</span></div>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb" style="background:#1a1a1a;color:#C8FF00">🔥</div></div>
+                  <div class="body">
+                    <div class="t1">仰卧卷腹</div>
+                    <div class="t2 tnum">3 组 × 20 次</div>
+                  </div>
+                  <div class="trail"><span class="num tnum">18 kg</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 07 饮食建议 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">07</span>
+        <span class="name">饮食建议</span>
+        <span class="note">Nutrition · 4 Tab</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <div class="title">饮食建议</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="pad">
+            <div class="card">
+              <div class="row" style="gap:20px">
+                <div class="ring" style="--pct:64;--size:96px;--w:8px">
+                  <span style="font-size:20px">64%</span>
+                </div>
+                <div class="col gap-1" style="flex:1;min-width:0">
+                  <div class="upper">今日目标</div>
+                  <div class="num-lg tnum">2,100 <span style="font-size:13px;color:var(--n-600);font-weight:500">kcal</span></div>
+                  <div class="muted" style="font-size:12px">还差 750 kcal</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title"><div class="stripe-title">今日还需</div></div>
+            <div class="row gap-3">
+              <div class="card" style="flex:1;padding:14px">
+                <div class="row gap-2" style="font-size:14px"><span style="font-size:18px">🥩</span> 蛋白质</div>
+                <div class="tnum" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-top:6px">42 <span style="font-size:12px;color:var(--n-600);font-weight:500">g</span></div>
+              </div>
+              <div class="card" style="flex:1;padding:14px">
+                <div class="row gap-2" style="font-size:14px"><span style="font-size:18px">🍚</span> 碳水</div>
+                <div class="tnum" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-top:6px">192 <span style="font-size:12px;color:var(--n-600);font-weight:500">g</span></div>
+              </div>
+              <div class="card" style="flex:1;padding:14px">
+                <div class="row gap-2" style="font-size:14px"><span style="font-size:18px">🥑</span> 脂肪</div>
+                <div class="tnum" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-top:6px">42 <span style="font-size:12px;color:var(--n-600);font-weight:500">g</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">推荐食物</div>
+              <a class="more">更多 ›</a>
+            </div>
+            <div class="thumb-grid">
+              <div class="card food-card" style="padding:12px">
+                <div class="thumb-photo" style="height:84px;border-radius:12px;font-size:36px">🍗</div>
+                <div style="margin-top:10px;font-size:14px;font-weight:700">鸡胸肉</div>
+                <div class="muted tnum" style="font-size:12px;margin-top:2px">165 kcal / 100g</div>
+              </div>
+              <div class="card food-card" style="padding:12px">
+                <div class="thumb-photo" style="height:84px;border-radius:12px;font-size:36px">🥦</div>
+                <div style="margin-top:10px;font-size:14px;font-weight:700">西兰花</div>
+                <div class="muted tnum" style="font-size:12px;margin-top:2px">34 kcal / 100g</div>
+              </div>
+              <div class="card food-card" style="padding:12px">
+                <div class="thumb-photo" style="height:84px;border-radius:12px;font-size:36px">🥜</div>
+                <div style="margin-top:10px;font-size:14px;font-weight:700">核桃</div>
+                <div class="muted tnum" style="font-size:12px;margin-top:2px">654 kcal / 100g</div>
+              </div>
+              <div class="card food-card" style="padding:12px">
+                <div class="thumb-photo" style="height:84px;border-radius:12px;font-size:36px">🥛</div>
+                <div style="margin-top:10px;font-size:14px;font-weight:700">牛奶</div>
+                <div class="muted tnum" style="font-size:12px;margin-top:2px">42 kcal / 100g</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg></div>首页</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M20 12h2M6 7l1.5 1.5M16.5 15.5 18 17M6 17l1.5-1.5M16.5 8.5 18 7M12 4v2M12 18v2"/><circle cx="12" cy="12" r="3"/></svg></div>训练</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 5v16"/></svg></div>计划</div>
+          <div class="tab active"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg></div>数据</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 08 拍照识别 (DARK) -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">08</span>
+        <span class="name">拍照识别</span>
+        <span class="note">Camera · Dark</span>
+      </div>
+      <div class="phone dark">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="scroll" style="background:linear-gradient(180deg,#0a0a0a 0%,#1a1a1a 100%)">
+          <!-- Top bar -->
+          <div class="row between" style="padding:8px 20px">
+            <button class="icon-btn" style="background:rgba(255,255,255,0.08);color:white">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7v8l11-12h-8z"/></svg>
+            </button>
+            <button class="icon-btn" style="background:rgba(255,255,255,0.08);color:white">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </button>
+          </div>
+
+          <!-- Side mode labels -->
+          <div class="row" style="position:absolute;left:0;top:50%;transform:translateY(-50%);flex-direction:column;gap:18px;padding:0 12px;z-index:2">
+            <div class="col" style="align-items:center">
+              <span style="font-size:11px;letter-spacing:0.08em;writing-mode:vertical-rl;color:var(--primary);font-weight:700">智能识别</span>
+            </div>
+            <div class="col" style="align-items:center">
+              <span style="font-size:11px;letter-spacing:0.08em;writing-mode:vertical-rl;color:rgba(255,255,255,0.5)">识别美食</span>
+            </div>
+            <div class="col" style="align-items:center">
+              <span style="font-size:11px;letter-spacing:0.08em;writing-mode:vertical-rl;color:rgba(255,255,255,0.5)">识别卡路里</span>
+            </div>
+          </div>
+
+          <!-- Center camera frame -->
+          <div style="position:relative;height:480px;display:grid;place-items:center;padding:40px 50px">
+            <!-- Corner guides -->
+            <div style="position:absolute;inset:60px 70px;border-radius:8px">
+              <span style="position:absolute;left:-2px;top:-2px;width:32px;height:32px;border-top:3px solid white;border-left:3px solid white"></span>
+              <span style="position:absolute;right:-2px;top:-2px;width:32px;height:32px;border-top:3px solid white;border-right:3px solid white"></span>
+              <span style="position:absolute;left:-2px;bottom:-2px;width:32px;height:32px;border-bottom:3px solid white;border-left:3px solid white"></span>
+              <span style="position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;border-bottom:3px solid white;border-right:3px solid white"></span>
+            </div>
+            <div style="font-size:120px;opacity:0.18">🍱</div>
+          </div>
+
+          <!-- Bottom controls -->
+          <div class="row center" style="gap:48px;padding:24px 0">
+            <button class="icon-btn" style="width:48px;height:48px;background:rgba(255,255,255,0.1);color:white">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </button>
+            <button style="width:80px;height:80px;border-radius:50%;background:white;display:grid;place-items:center;border:5px solid var(--n-700)">
+              <div style="width:60px;height:60px;border-radius:50%;background:var(--primary)"></div>
+            </button>
+            <button class="icon-btn" style="width:48px;height:48px;background:rgba(255,255,255,0.1);color:white">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 09 食物识别结果 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">09</span>
+        <span class="name">食物识别结果</span>
+        <span class="note">AI · 92%</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <button class="back icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">食物识别结果</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.3L3 16M3 21v-5h5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <!-- Hero food image -->
+          <div class="pad">
+            <div style="height:200px;border-radius:20px;background:linear-gradient(135deg,#2a2a2a 0%,#0a0a0a 100%);display:grid;place-items:center;overflow:hidden;position:relative">
+              <div style="font-size:96px">🥗</div>
+              <div style="position:absolute;top:14px;left:14px;background:rgba(0,0,0,0.5);color:var(--primary);padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700">92% 置信度</div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="row between" style="margin-bottom:6px">
+              <div style="font-size:20px;font-weight:800;letter-spacing:-0.01em">鸡胸肉西兰花套餐</div>
+              <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v7l9 9 7-7-9-9zM9 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></button>
+            </div>
+            <div class="muted" style="font-size:12px">每 100g 营养成分</div>
+          </div>
+
+          <div class="pad">
+            <div class="card" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:14px 0">
+              <div style="text-align:center;border-right:1px solid var(--n-200)">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">热量</div>
+                <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:2px">121</div>
+                <div class="muted" style="font-size:10px">kcal</div>
+              </div>
+              <div style="text-align:center;border-right:1px solid var(--n-200)">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">蛋白质</div>
+                <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:2px">42</div>
+                <div class="muted" style="font-size:10px">g</div>
+              </div>
+              <div style="text-align:center;border-right:1px solid var(--n-200)">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">碳水</div>
+                <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:2px">0</div>
+                <div class="muted" style="font-size:10px">g</div>
+              </div>
+              <div style="text-align:center">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">脂肪</div>
+                <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:2px">12</div>
+                <div class="muted" style="font-size:10px">g</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title"><div class="stripe-title">包含食物</div></div>
+            <div class="card" style="padding:0 16px">
+              <div class="list">
+                <div class="list-item"><div class="lead"><div class="thumb" style="background:#1a1a1a">🍗</div></div><div class="body"><div class="t1">鸡胸肉</div></div><div class="trail"><span class="num tnum">150g</span></div></div>
+                <div class="list-item"><div class="lead"><div class="thumb" style="background:#1a1a1a">🥦</div></div><div class="body"><div class="t1">西兰花</div></div><div class="trail"><span class="num tnum">100g</span></div></div>
+                <div class="list-item"><div class="lead"><div class="thumb" style="background:#1a1a1a">🍚</div></div><div class="body"><div class="t1">米饭</div></div><div class="trail"><span class="num tnum">50g</span></div></div>
+                <div class="list-item"><div class="lead"><div class="thumb" style="background:#1a1a1a">🌽</div></div><div class="body"><div class="t1">玉米</div></div><div class="trail"><span class="num tnum">50g</span></div></div>
+                <div class="list-item"><div class="lead"><div class="thumb" style="background:#1a1a1a">🧄</div></div><div class="body"><div class="t1">蒜蓉</div></div><div class="trail"><span class="num tnum">1 个</span></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <button class="btn primary lg">加入记录</button>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 10 体重记录 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">10</span>
+        <span class="name">体重记录</span>
+        <span class="note">Single Metric</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <button class="back icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">体重记录</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="pad">
+            <div class="card" style="padding:24px 20px">
+              <div class="muted" style="font-size:12px">2024/05/16 · 早上</div>
+              <div class="num-xl tnum" style="margin-top:6px;font-size:48px;line-height:56px;letter-spacing:-0.04em">62.4 <span style="font-size:20px;color:var(--n-600);font-weight:500">kg</span></div>
+              <div class="row gap-2" style="margin-top:8px">
+                <span class="brand-txt tnum" style="font-size:14px;font-weight:700">▼ -0.8 kg</span>
+                <span class="muted" style="font-size:12px">较昨日</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="row gap-3">
+              <div class="card" style="flex:1;padding:14px">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">标准体重</div>
+                <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:4px">56.6 <span style="font-size:12px;color:var(--n-600);font-weight:500">kg</span></div>
+              </div>
+              <div class="card" style="flex:1;padding:14px">
+                <div class="muted" style="font-size:11px;letter-spacing:0.06em">BMI</div>
+                <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:4px">22.4</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title">
+              <div class="stripe-title">折线趋势</div>
+              <a class="more">7 天 ›</a>
+            </div>
+            <div class="card" style="padding:18px 14px">
+              <svg width="100%" height="120" viewBox="0 0 320 120" class="spark">
+                <defs>
+                  <linearGradient id="g10" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#C8FF00" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#C8FF00" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <!-- grid -->
+                <line x1="0" y1="30" x2="320" y2="30" stroke="#E8E8E4" stroke-width="1"/>
+                <line x1="0" y1="60" x2="320" y2="60" stroke="#E8E8E4" stroke-width="1"/>
+                <line x1="0" y1="90" x2="320" y2="90" stroke="#E8E8E4" stroke-width="1"/>
+                <!-- line -->
+                <path d="M20,40 L70,30 L120,55 L170,42 L220,68 L270,52 L300,80" fill="none" stroke="#C8FF00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20,40 L70,30 L120,55 L170,42 L220,68 L270,52 L300,80 L300,120 L20,120 Z" fill="url(#g10)"/>
+                <!-- active point -->
+                <circle cx="300" cy="80" r="5" fill="#C8FF00" stroke="#0A0A0A" stroke-width="2"/>
+                <!-- x labels -->
+                <text x="20" y="115" font-size="10" fill="#A0A0A0" font-weight="600">5/10</text>
+                <text x="100" y="115" font-size="10" fill="#A0A0A0" font-weight="600">5/12</text>
+                <text x="180" y="115" font-size="10" fill="#A0A0A0" font-weight="600">5/14</text>
+                <text x="280" y="115" font-size="10" fill="#0A0A0A" font-weight="700">5/16</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title"><div class="stripe-title">备注</div></div>
+            <div class="card flat" style="padding:14px">
+              <div class="muted" style="font-size:13px;line-height:20px">记一下今天的运动感受…</div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <button class="btn primary lg">保存</button>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 11 体重趋势 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">11</span>
+        <span class="name">体重趋势</span>
+        <span class="note">Time Filter · Chart</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <button class="back icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">体重趋势</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="pad">
+            <div class="row gap-2" style="background:var(--n-100);border-radius:12px;padding:4px">
+              <div class="chip-pill active" style="flex:1;justify-content:center">7天</div>
+              <div class="chip-pill" style="flex:1;justify-content:center;background:transparent">30天</div>
+              <div class="chip-pill" style="flex:1;justify-content:center;background:transparent">90天</div>
+              <div class="chip-pill" style="flex:1;justify-content:center;background:transparent">365天</div>
+            </div>
+          </div>
+
+          <div class="pad">
+            <div class="card" style="padding:18px 14px">
+              <div class="row gap-3" style="margin-bottom:14px">
+                <div style="flex:1">
+                  <div class="muted" style="font-size:11px;letter-spacing:0.06em">平均体重</div>
+                  <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:2px">63.2 <span style="font-size:12px;color:var(--n-600);font-weight:500">kg</span></div>
+                </div>
+                <div style="flex:1;border-left:1px solid var(--n-200);padding-left:14px">
+                  <div class="muted" style="font-size:11px;letter-spacing:0.06em">最高</div>
+                  <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:2px">65.1 <span style="font-size:12px;color:var(--n-600);font-weight:500">kg</span></div>
+                </div>
+                <div style="flex:1;border-left:1px solid var(--n-200);padding-left:14px">
+                  <div class="muted" style="font-size:11px;letter-spacing:0.06em">最低</div>
+                  <div class="tnum" style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:2px">61.6 <span style="font-size:12px;color:var(--n-600);font-weight:500">kg</span></div>
+                </div>
+              </div>
+              <svg width="100%" height="160" viewBox="0 0 320 160" class="spark">
+                <defs>
+                  <linearGradient id="g11" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#C8FF00" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#C8FF00" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <line x1="0" y1="40" x2="320" y2="40" stroke="#E8E8E4" stroke-width="1" stroke-dasharray="2 4"/>
+                <line x1="0" y1="80" x2="320" y2="80" stroke="#E8E8E4" stroke-width="1" stroke-dasharray="2 4"/>
+                <line x1="0" y1="120" x2="320" y2="120" stroke="#E8E8E4" stroke-width="1" stroke-dasharray="2 4"/>
+                <path d="M10,30 L50,55 L90,40 L130,80 L170,60 L210,110 L250,90 L290,120 L310,130" fill="none" stroke="#C8FF00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10,30 L50,55 L90,40 L130,80 L170,60 L210,110 L250,90 L290,120 L310,130 L310,160 L10,160 Z" fill="url(#g11)"/>
+                <circle cx="210" cy="110" r="5" fill="#C8FF00" stroke="#0A0A0A" stroke-width="2"/>
+                <text x="0" y="155" font-size="10" fill="#A0A0A0" font-weight="600">5/10</text>
+                <text x="100" y="155" font-size="10" fill="#A0A0A0" font-weight="600">5/12</text>
+                <text x="200" y="155" font-size="10" fill="#A0A0A0" font-weight="600">5/14</text>
+                <text x="290" y="155" font-size="10" fill="#0A0A0A" font-weight="700">5/16</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title"><div class="stripe-title">体重记录</div></div>
+            <div class="card" style="padding:0 16px">
+              <div class="list">
+                <div class="list-item">
+                  <div class="body">
+                    <div class="t1 tnum">2024/05/16</div>
+                    <div class="t2">早上 · 训练后</div>
+                  </div>
+                  <div class="trail"><span class="num tnum" style="font-size:17px">62.4 kg</span></div>
+                </div>
+                <div class="list-item">
+                  <div class="body">
+                    <div class="t1 tnum">2024/05/15</div>
+                    <div class="t2">早上</div>
+                  </div>
+                  <div class="trail"><span class="num tnum" style="font-size:17px">62.7 kg</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 12 周期复盘 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">12</span>
+        <span class="name">周期复盘</span>
+        <span class="note">Analytics</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <button class="back icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">训练复盘</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="pad">
+            <div class="row gap-2">
+              <span class="tag active">导入数据</span>
+              <span class="tag">选择周期</span>
+            </div>
+          </div>
+
+          <div class="pad">
+            <div class="card">
+              <div class="row between" style="margin-bottom:14px">
+                <div>
+                  <div class="upper">训练复盘</div>
+                  <div style="font-size:18px;font-weight:700;margin-top:4px">最近 7 天</div>
+                </div>
+                <div class="tnum" style="text-align:right">
+                  <div class="muted" style="font-size:11px">本次训练</div>
+                  <div style="font-size:15px;font-weight:700;margin-top:2px">45:20 · 420 kcal</div>
+                </div>
+              </div>
+
+              <div class="row gap-2" style="align-items:flex-end;height:100px;margin:14px 0">
+                <div class="bars" style="flex:1;height:80px">
+                  <div style="height:40%"></div>
+                  <div style="height:55%"></div>
+                  <div style="height:30%"></div>
+                  <div style="height:75%"></div>
+                  <div style="height:90%"></div>
+                  <div style="height:60%"></div>
+                  <div class="active" style="height:80%"></div>
+                </div>
+              </div>
+
+              <div class="row between" style="font-size:10px;color:var(--n-500);font-weight:600;letter-spacing:0.04em">
+                <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pad">
+            <div class="row gap-3">
+              <!-- Donut · 完成率 -->
+              <div class="card" style="flex:1;padding:16px">
+                <div class="upper">完成率</div>
+                <div class="tnum" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-top:4px">92%</div>
+                <div class="ring" style="--pct:92;--size:80px;--w:7px;margin-top:8px">
+                  <span style="font-size:14px">92%</span>
+                </div>
+              </div>
+              <!-- Stats -->
+              <div class="card" style="flex:1;padding:16px">
+                <div class="upper">训练量</div>
+                <div class="tnum" style="font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-top:4px">12,560</div>
+                <div class="muted" style="font-size:11px;margin-top:2px">kg · 较上周 +12%</div>
+                <div class="row gap-2" style="margin-top:10px">
+                  <div class="num-sm tnum" style="color:var(--success)">↑</div>
+                  <div class="num-sm tnum" style="color:var(--success);font-weight:700">+12%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-title"><div class="stripe-title">RPE 分布</div></div>
+            <div class="card" style="padding:16px">
+              <div class="col gap-3">
+                <div class="row gap-3" style="align-items:center">
+                  <div class="num-sm" style="width:60px;color:var(--n-700)">RPE 10</div>
+                  <div class="lin-prog" style="flex:1"><i style="width:15%"></i></div>
+                  <div class="num-sm tnum" style="width:40px;text-align:right">15%</div>
+                </div>
+                <div class="row gap-3" style="align-items:center">
+                  <div class="num-sm" style="width:60px;color:var(--n-700)">RPE 8-9</div>
+                  <div class="lin-prog" style="flex:1"><i style="width:45%"></i></div>
+                  <div class="num-sm tnum" style="width:40px;text-align:right">45%</div>
+                </div>
+                <div class="row gap-3" style="align-items:center">
+                  <div class="num-sm" style="width:60px;color:var(--n-700)">RPE 6-7</div>
+                  <div class="lin-prog" style="flex:1"><i style="width:30%"></i></div>
+                  <div class="num-sm tnum" style="width:40px;text-align:right">30%</div>
+                </div>
+                <div class="row gap-3" style="align-items:center">
+                  <div class="num-sm" style="width:60px;color:var(--n-700)">RPE ≤5</div>
+                  <div class="lin-prog" style="flex:1"><i style="width:10%"></i></div>
+                  <div class="num-sm tnum" style="width:40px;text-align:right">10%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 13 个人中心 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">13</span>
+        <span class="name">个人中心</span>
+        <span class="note">Profile · Setting</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <div class="title">我的</div>
+          <div class="actions">
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <div class="pad" style="padding-top:8px">
+            <div class="card" style="display:flex;align-items:center;gap:14px;padding:18px">
+              <div class="avatar-init brand" style="width:56px;height:56px;font-size:22px">A</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:18px;font-weight:800;letter-spacing:-0.01em">Alex</div>
+                <div class="muted" style="font-size:12px;margin-top:2px">衡力健身记录</div>
+              </div>
+              <button class="btn secondary" style="width:auto;height:32px;padding:0 12px;font-size:12px">编辑</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="card" style="padding:0 16px">
+              <div class="list">
+                <div class="list-item">
+                  <div class="lead"><div class="thumb">📋</div></div>
+                  <div class="body"><div class="t1">健康档案</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb">📤</div></div>
+                  <div class="body"><div class="t1">数据导出</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb">🔔</div></div>
+                  <div class="body"><div class="t1">提醒管理</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb">🔒</div></div>
+                  <div class="body"><div class="t1">隐私授权</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb">⚙️</div></div>
+                  <div class="body"><div class="t1">单位设置</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb">💬</div></div>
+                  <div class="body"><div class="t1">意见反馈</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb">ℹ️</div></div>
+                  <div class="body"><div class="t1">关于我们</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg></div>首页</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2M20 12h2M6 7l1.5 1.5M16.5 15.5 18 17M6 17l1.5-1.5M16.5 8.5 18 7M12 4v2M12 18v2"/><circle cx="12" cy="12" r="3"/></svg></div>训练</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 5v16"/></svg></div>计划</div>
+          <div class="tab"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg></div>数据</div>
+          <div class="tab active"><div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 14 设置 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">14</span>
+        <span class="name">设置</span>
+        <span class="note">Clean List</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="header">
+          <button class="back icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title">设置</div>
+          <div class="actions"></div>
+        </div>
+
+        <div class="scroll">
+          <div class="sec">
+            <div class="card" style="padding:0 16px">
+              <div class="list">
+                <div class="list-item">
+                  <div class="body"><div class="t1">训练提醒</div><div class="t2">每日 18:00</div></div>
+                  <div class="trail"><div style="width:36px;height:22px;background:var(--success);border-radius:999px;position:relative"><div style="position:absolute;right:2px;top:2px;width:18px;height:18px;background:white;border-radius:50%"></div></div></div>
+                </div>
+                <div class="list-item">
+                  <div class="body"><div class="t1">饮食提醒</div><div class="t2">早 8:00 / 晚 19:00</div></div>
+                  <div class="trail"><div style="width:36px;height:22px;background:var(--success);border-radius:999px;position:relative"><div style="position:absolute;right:2px;top:2px;width:18px;height:18px;background:white;border-radius:50%"></div></div></div>
+                </div>
+                <div class="list-item">
+                  <div class="body"><div class="t1">体重提醒</div><div class="t2">每日 07:00</div></div>
+                  <div class="trail"><div style="width:36px;height:22px;background:var(--n-200);border-radius:999px;position:relative"><div style="position:absolute;left:2px;top:2px;width:18px;height:18px;background:white;border-radius:50%"></div></div></div>
+                </div>
+                <div class="list-item">
+                  <div class="body"><div class="t1">单位设置</div><div class="t2">公制 / kg</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="body"><div class="t1">缓存清理</div><div class="t2">12.3 MB</div></div>
+                  <div class="trail"><span style="font-size:12px;color:var(--primary);font-weight:600">清理</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="card" style="padding:0 16px">
+              <div class="list">
+                <div class="list-item">
+                  <div class="body"><div class="t1">隐私授权</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="body"><div class="t1">意见反馈</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+                <div class="list-item">
+                  <div class="body"><div class="t1">关于我们</div><div class="t2">v 1.4.0</div></div>
+                  <svg class="trail" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="safe-bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 15 隐私授权 -->
+    <!-- ============================================ -->
+    <div class="tile">
+      <div class="tile-label">
+        <span class="num">15</span>
+        <span class="name">隐私授权</span>
+        <span class="note">Modal · Permission</span>
+      </div>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="icons"></div></div>
+
+        <div class="scroll">
+          <div class="pad" style="padding-top:40px;text-align:center">
+            <div style="width:96px;height:96px;margin:0 auto;border-radius:24px;background:var(--primary-dim);display:grid;place-items:center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-top:18px">保护您的隐私</div>
+            <div class="muted" style="font-size:14px;margin-top:6px;line-height:20px">是我们的责任 · 在使用前请阅读并同意以下条款</div>
+          </div>
+
+          <div class="sec">
+            <div class="card" style="padding:0 16px">
+              <div class="list">
+                <div class="list-item">
+                  <div class="lead"><div class="thumb" style="background:var(--n-100)">📷</div></div>
+                  <div class="body">
+                    <div class="t1">相机权限</div>
+                    <div class="t2">用于 AI 食物识别</div>
+                  </div>
+                  <div class="trail"><div style="width:36px;height:22px;background:var(--success);border-radius:999px;position:relative"><div style="position:absolute;right:2px;top:2px;width:18px;height:18px;background:white;border-radius:50%"></div></div></div>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb" style="background:var(--n-100)">💾</div></div>
+                  <div class="body">
+                    <div class="t1">存储权限</div>
+                    <div class="t2">保存训练图片与缓存</div>
+                  </div>
+                  <div class="trail"><div style="width:36px;height:22px;background:var(--success);border-radius:999px;position:relative"><div style="position:absolute;right:2px;top:2px;width:18px;height:18px;background:white;border-radius:50%"></div></div></div>
+                </div>
+                <div class="list-item">
+                  <div class="lead"><div class="thumb" style="background:var(--n-100)">👤</div></div>
+                  <div class="body">
+                    <div class="t1">用户信息</div>
+                    <div class="t2">用于健康档案与个性化建议</div>
+                  </div>
+                  <div class="trail"><div style="width:36px;height:22px;background:var(--success);border-radius:999px;position:relative"><div style="position:absolute;right:2px;top:2px;width:18px;height:18px;background:white;border-radius:50%"></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="card flat" style="padding:14px;background:var(--n-50)">
+              <div class="muted" style="font-size:12px;line-height:18px">点击「同意并继续」即表示您已阅读并同意 <a style="color:var(--success);font-weight:600">《用户协议》</a> 与 <a style="color:var(--success);font-weight:600">《隐私政策》</a>。您可随时在「我的 → 隐私授权」中管理权限。</div>
+            </div>
+          </div>
+
+          <div style="height:80px"></div>
+        </div>
+
+        <div style="padding:16px;border-top:1px solid var(--n-200);background:white">
+          <button class="btn primary lg">同意并继续</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="text-align:center;color:var(--n-500);font-size:12px;margin-top:64px;line-height:18px">
+    衡力健身记录 · Design System Prototype v1<br/>
+    <span class="muted">Brand <b style="color:var(--n-700)">#C8FF00</b> · Ink <b style="color:var(--n-700)">#0A0A0A</b> · Page <b style="color:var(--n-700)">#F7F7F5</b> · 8px Spacing · 16px Radius</span>
+  </div>
+</div>
+</body>
+</html>

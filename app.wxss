@@ -1,81 +1,106 @@
-/* app.wxss —— 全局样式与玻璃拟态设计变量（Glass UI · 薄荷 Teal 色系） */
+@import "./styles/icons.wxss";
+
+/* app.wxss —— 全局样式 · HiLiLife 设计系统（Light · 暖白底 + 品牌荧光绿 #C8FF00）
+   迁移说明：去掉原「薄荷 Teal 玻璃拟态」与渐变背景，统一为 HiLife 浅色体系。
+   为兼容尚未迁移的页面，旧 token 名（--primary / --accent / --glass 等）保留并映射到新体系。 */
 
 page {
-  /* —— 玻璃拟态 · 薄荷 Teal 主色 —— */
-  --primary: #2ECFB0;        /* 薄荷 Teal 主色 */
-  --primary-deep: #1AA885;   /* 深 Teal */
-  --primary-light: #3EDECA;  /* 亮 Teal（渐变起笔） */
-  --primary-tint: #E5FBF5;   /* 极浅 Teal 底 */
-  --primary-ink: #0E7C66;    /* 深青绿，浅底上对比度≈4.6 达 WCAG AA，用于关键数字 */
+  /* —— 品牌 & 中性色（来源: Design.md） —— */
+  --primary: #C8FF00;          /* 品牌荧光黄绿 */
+  --primary-deep: #7CB800;     /* 深绿（渐变收尾） */
+  --primary-light: #E4FF6E;    /* 亮绿（渐变起笔） */
+  --primary-tint: #F2FFD6;     /* 极浅绿底（标签/磁贴） */
+  --primary-ink: #0A0A0A;      /* 深墨绿黑，浅底上对比度足够，用于关键数字 */
 
-  /* Accent —— 珊瑚橙（能量型数据：休息 / 卡路里 / PR） */
-  --accent: #FF7A3D;
+  /* 辅助强调色（沿用旧 accent 体系，统一到橙/蓝/紫，不喧宾夺主） */
+  --accent: #FF9500;           /* 能量橙（休息 / 脂肪 / PR） */
   --accent-deep: #E8652A;
   --accent-soft: #FFE7DA;
-  --accent-tint: #FFE7DA;
-
-  /* 辅助强调色 */
+  --accent-tint: #FFF1E6;
   --info: #3E8BFF;
   --info-tint: #E6F0FF;
   --purple: #8B5CF6;
   --purple-tint: #F1E9FF;
   --gold: #F5B544;
+  --orange: #FF9500;           /* 脂肪橙 */
 
-  /* Neutral —— 冷调灰阶 */
-  --text: #1E293B;
-  --text-sub: #475569;
-  --text-weak: #94A3B8;
-  --line: #E2E8F0;
-  --line-strong: #CBD5E1;
+  /* 中性灰阶（暖调，对齐 Design.md --n-*） */
+  --n-950: #0A0A0A;
+  --n-900: #111111;
+  --n-700: #444444;
+  --n-600: #707070;
+  --n-500: #A0A0A0;
+  --n-400: #C7C7C2;
+  --n-300: #D9D9D5;
+  --n-200: #E8E8E4;           /* 边框线 */
+  --n-100: #F1F1EE;
+  --n-50:  #F7F7F5;           /* 页面暖白底 */
+  --white: #FFFFFF;
+  --card-gray: #EFEFEB;       /* 浅灰卡底（打卡/建议卡） */
+
+  --text: #0A0A0A;
+  --text-sub: #444444;
+  --text-weak: #A0A0A0;
+  --line: #E8E8E4;
+  --line-strong: #D9D9D5;
 
   /* Semantic */
-  --success: #16C784;
-  --warning: #F5A524;
-  --warning-tint: #FFF4E0;                   /* 预警浅底（替代硬编码 #fff7e6，统一带暖色调） */
+  --success: #6F9F00;         /* 碳水绿 / 活跃态 */
+  --warning: #FFB020;
+  --warning-tint: #FFF4E0;
   --error: #F2545B;
-  --warn: #FF7A3D; /* 兼容旧引用 */
+  --warn: #FF9500;
 
-  /* —— 玻璃表面 —— */
-  --card: rgba(255, 255, 255, 0.78);        /* 玻璃主卡 */
-  --bg: rgba(255, 255, 255, 0.55);          /* 玻璃内嵌面 / 胶囊 */
-  --bg-muted: #f1f5f9;                       /* 浅冷灰底（说明/注释块，替代硬编码 #f8fafc，带 slate 色调） */
-  --sk-base: #E6EBF1;                        /* 骨架屏底色 */
-  --sk-hi:   #F3F6FA;                        /* 骨架屏高光 */
-  --glass: rgba(255, 255, 255, 0.72);       /* 通用玻璃 */
-  --glass-strong: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(255, 255, 255, 0.85);
+  /* —— 表面（替代原玻璃） —— */
+  --card: #FFFFFF;                                      /* 主卡 */
+  --bg: #F1F1EE;                                        /* 内嵌面 / 胶囊 */
+  --bg-muted: #F1F1EE;
+  --sk-base: #E8E8E4;
+  --sk-hi:   #F4F4F1;
+  --glass: #FFFFFF;                                     /* 通用卡面（去玻璃） */
+  --glass-strong: #FFFFFF;
+  --glass-border: #E8E8E4;
 
-  /* —— 字体比例 Type Scale（语义层级；消除散落字号，就近归并 ±2~4rpx） —— */
-  --fs-caption:  20rpx;   /* 辅助 / 说明 / 极弱文本 */
-  --fs-label:   24rpx;   /* 标签 / 次要子文本 */
-  --fs-body:    28rpx;   /* 默认正文（与根 font-size 一致） */
-  --fs-head:    32rpx;   /* 强调正文 / 小节标题 */
-  --fs-title:   36rpx;   /* 区块标题 / 大数字 */
-  --fs-section: 40rpx;   /* 页面区块标题 */
-  --fs-page:    44rpx;   /* 页面主标题 */
-  --fs-display: 52rpx;   /* 超大数字 / 显示 */
-  --fs-hero:    72rpx;   /* 英雄区大字 */
-  --fs-hero-lg: 80rpx;   /* 巨幅显示 */
-  --fs-mega:   120rpx;   /* 极巨显示 */
-  --fs-giant:  180rpx;   /* 极限显示 */
-  --fs-mini:    14rpx;   /* 极小角标 / 迷你单位（原 14/16/17 归并） */
+  /* —— 字体比例 Type Scale（rpx） —— */
+  --fs-caption:  20rpx;
+  --fs-label:   24rpx;
+  --fs-body:    28rpx;
+  --fs-head:    32rpx;
+  --fs-title:   36rpx;
+  --fs-section: 40rpx;
+  --fs-page:    44rpx;
+  --fs-display: 52rpx;
+  --fs-hero:    72rpx;
+  --fs-hero-lg: 80rpx;
+  --fs-mega:   120rpx;
+  --fs-giant:  180rpx;
+  --fs-mini:    20rpx;
+
+  /* Radius */
+  --r-s: 16rpx;
+  --r-m: 24rpx;
+  --r-l: 32rpx;
+  --r-pill: 999rpx;
+
+  /* 字体：中文用 PingFang SC，拉丁/数字用系统无衬线（近似设计稿 Inter 观感） */
+  --f-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --f-en: "SF Pro Display", "Helvetica Neue", system-ui, -apple-system, "PingFang SC", sans-serif;
 
   /* Elevation */
-  --shadow-sm: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 10rpx 30rpx rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 16rpx 44rpx rgba(15, 23, 42, 0.12);
-  --shadow-card: 0 10rpx 30rpx rgba(15, 23, 42, 0.08);
-  --shadow-mint: 0 12rpx 30rpx rgba(46, 207, 176, 0.30);   /* 薄荷光晕 */
-  --shadow-coral: 0 10rpx 24rpx rgba(255, 122, 61, 0.32);   /* 珊瑚光晕 */
+  --shadow-sm: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 10rpx 30rpx rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16rpx 44rpx rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  --shadow-mint: 0 12rpx 30rpx rgba(124, 184, 0, 0.30);   /* 品牌绿光晕 */
+  --shadow-coral: 0 10rpx 24rpx rgba(255, 149, 0, 0.24);
   --shadow-brand: var(--shadow-mint);
-  --shadow-xs: 0 2rpx 8rpx rgba(15, 23, 42, 0.06);
+  --shadow-xs: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
 
-  /* 动效曲线 */
   --ease-out: cubic-bezier(0.22, 0.8, 0.28, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* 页面根背景：并入「顶部青绿→底部桃色」竖直渐变体系（与各页 .page 同款，端点对齐 app.json 的 backgroundColorTop/Bottom，消除 overscroll 接缝） */
-  background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%);
+  /* 页面根背景：暖白底（去掉原青绿→桃色渐变） */
+  background: var(--n-50);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
   font-size: var(--fs-body);
@@ -84,26 +109,38 @@ page {
 
 view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 
-/* ============ 玻璃卡 ============ */
+/* ============ 卡片（白底 + 细边框 + 轻阴影） ============ */
 .card {
-  background: var(--glass);
-  border: 1rpx solid var(--glass-border);
-  border-radius: 40rpx;
+  background: var(--card);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
   box-shadow: var(--shadow-card);
   padding: 32rpx;
   margin: 24rpx 32rpx;
 }
 .card-elevated { box-shadow: var(--shadow-md); }
 
-/* 区块标题：统一见下方「设计系统增强」区的 .section-title（30rpx flex 标题），此处不再重复定义 */
+/* 区块标题 */
+.section-title {
+  font-size: var(--fs-head); font-weight: 700; color: var(--n-900);
+  margin: 0 0 24rpx;
+  display: flex; align-items: center; gap: 12rpx;
+}
+.section-title .more { margin-left: auto; font-size: var(--fs-label); font-weight: 500; color: var(--text-weak); }
 
-/* 主按钮（玻璃拟态：Teal 渐变 + 薄荷光晕） */
+/* 英文小标 */
+.section-sub {
+  font-size: var(--fs-caption); font-weight: 600; letter-spacing: 2rpx;
+  color: var(--text-weak); margin-bottom: 16rpx;
+}
+
+/* 主按钮（品牌荧光绿底 + 深墨字） */
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-deep));
-  color: #fff;
+  background: var(--primary);
+  color: #0A0A0A;
   border-radius: 28rpx;
   font-size: var(--fs-head);
-  font-weight: 600;
+  font-weight: 700;
   border: none;
   line-height: 2.6;
   box-shadow: var(--shadow-mint);
@@ -112,11 +149,11 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 
 /* 次按钮 */
 .btn-secondary {
-  background: var(--primary-tint);
-  color: var(--primary-deep);
+  background: var(--n-100);
+  color: var(--n-700);
   border-radius: 28rpx;
   font-size: var(--fs-body);
-  font-weight: 500;
+  font-weight: 600;
   border: none;
   line-height: 2.4;
 }
@@ -127,19 +164,19 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
+  background: var(--white);
+  color: var(--n-700);
   font-size: var(--fs-page);
   line-height: 64rpx;
   text-align: center;
   padding: 0;
-  border: none;
-  box-shadow: var(--shadow-mint);
+  border: 1rpx solid var(--n-200);
+  box-shadow: var(--shadow-xs);
 }
 .icon-btn::after { border: none; }
 .icon-btn.ghost {
-  background: var(--primary-tint);
-  color: var(--primary);
+  background: var(--n-100);
+  color: var(--n-700);
 }
 
 /* 文字链接箭头 */
@@ -148,8 +185,6 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   font-size: var(--fs-body);
   display: inline-flex;
   align-items: center;
-  padding: 12rpx 0;
-  margin: -12rpx 0;
 }
 .link-arrow .arrow { margin-left: 6rpx; color: var(--text-weak); }
 
@@ -161,7 +196,15 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
   padding: 48rpx 0;
 }
 
-/* 通用标签：统一见下方「设计系统增强」区的 .tag（胶囊样式），此处不再重复定义 */
+/* 通用标签 */
+.tag {
+  display: inline-flex; align-items: center;
+  font-size: var(--fs-caption); font-weight: 500; color: var(--text-sub);
+  background: var(--bg); border-radius: 999rpx;
+  padding: 6rpx 16rpx; margin-right: 12rpx; line-height: 1.4;
+}
+.tag-primary { color: #2a3d00; background: var(--primary); font-weight: 700; }
+.tag-accent { color: var(--accent-deep); background: var(--accent-tint); }
 
 /* 文本省略 */
 .ellipsis {
@@ -171,73 +214,76 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 }
 
 /* ============================================================
-   设计系统增强（玻璃拟态 · 与 HiLife-Glass-UI 原型对齐）
-   渐变 hero + 状态环 + 彩色快捷磁贴 + 统一留白/圆角/胶囊标签
+   共享布局（与设计系统对齐）
    ============================================================ */
-
-/* —— 页面统一容器：左右 32rpx 安全边距，区块间 48rpx —— */
 .container { padding: 0 32rpx; }
 .section { padding: 0 32rpx; margin-bottom: 48rpx; }
-.section-title {
-  font-size: var(--fs-head); font-weight: 700; color: var(--text);
-  margin: 0 0 24rpx;
-  display: flex; align-items: center; gap: 12rpx;
-}
-.section-title .more { margin-left: auto; font-size: var(--fs-label); font-weight: 500; color: var(--text-weak); }
-/* 英文小标（如 DAILY STATUS · 今日状态） */
-.section-sub {
-  font-size: var(--fs-caption); font-weight: 600; letter-spacing: 2rpx;
-  color: var(--text-weak); text-transform: uppercase; margin-bottom: 16rpx;
-}
 
-/* —— 渐变 hero 头（破全白单调，承载问候/品牌） —— */
-.hero-header {
-  background: linear-gradient(155deg, var(--primary), var(--primary-deep));
-  padding: 40rpx 32rpx 56rpx;
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 14rpx 30rpx rgba(46, 207, 176, 0.28);
-}
-.hero-header::after {
-  content: ''; position: absolute; right: -30rpx; top: -30rpx;
-  width: 150rpx; height: 150rpx; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-}
-.hero-header .hh-greet { font-size: var(--fs-section); font-weight: 800; letter-spacing: -1rpx; }
-.hero-header .hh-sub { font-size: var(--fs-body); opacity: 0.9; margin-top: 8rpx; }
-.hero-header .hh-logo {
-  width: 84rpx; height: 84rpx; border-radius: 24rpx;
-  background: rgba(255, 255, 255, 0.18);
-  display: flex; align-items: center; justify-content: center;
-  font-size: var(--fs-section); font-weight: 800; margin-bottom: 20rpx;
-}
-
-/* —— 浮在 hero 上的状态卡（负边距制造层级） —— */
-.float-card {
-  margin: 0 32rpx;
-  position: relative;
-  z-index: 2;
-}
-
-/* —— 完成度环（conic-gradient + 内白圆，沿用 home.js 的 ringStyle） —— */
+/* —— 完成度环（conic-gradient + 内灰圆，对齐 01-home.html） —— */
 .ring {
-  width: 200rpx; height: 200rpx; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  --size: 146rpx; --w: 15rpx; --pct: 0;
+  width: var(--size); height: var(--size);
+  border-radius: 50%;
+  background: conic-gradient(
+    #E4FF6E 0%,
+    #C8FF00 calc(var(--pct) * 0.5%),
+    #7CB800 calc(var(--pct) * 1%),
+    var(--n-200) calc(var(--pct) * 1%) 100%
+  );
+  display: grid; place-items: center;
   position: relative;
+  flex: none;
 }
-.ring::after {
-  content: ''; position: absolute; inset: 18rpx;
-  background: var(--glass-strong); border-radius: 50%;
+.ring::before {
+  content: ""; position: absolute; inset: var(--w);
+  background: var(--card-gray); border-radius: 50%;
 }
-.ring-inner { position: relative; z-index: 1; text-align: center; }
-.ring-pct { font-size: var(--fs-display); font-weight: 800; color: var(--primary-ink); line-height: 1.1; font-feature-settings: "tnum" 1; }
-.ring-label { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 4rpx; }
+.ring > .ring-span {
+  position: relative; z-index: 1;
+  font-family: var(--f-en, sans-serif);
+  font-size: 36rpx; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--n-900);
+  font-variant-numeric: tabular-nums;
+}
 
-/* —— 彩色快捷磁贴（2×2，上图下文） —— */
+/* —— 列表行 —— */
+.row {
+  display: flex; align-items: center; gap: 20rpx;
+  padding: 24rpx 0; border-bottom: 1rpx solid var(--line);
+}
+.row:last-child { border-bottom: none; }
+.row .r-ico { font-size: var(--fs-section); }
+.row .r-main { flex: 1; }
+.row .r-title { font-size: var(--fs-body); font-weight: 600; color: var(--text); }
+.row .r-sub { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 4rpx; }
+.row .r-arrow { color: var(--text-weak); font-size: var(--fs-body); }
+
+/* —— 分段控件 —— */
+.segment {
+  display: inline-flex; background: var(--bg); border-radius: 999rpx; padding: 6rpx;
+}
+.segment .seg {
+  padding: 12rpx 24rpx; font-size: var(--fs-label); color: var(--text-sub);
+  border-radius: 999rpx; font-weight: 500;
+}
+.segment .seg.on { background: var(--white); color: var(--n-900); font-weight: 700; box-shadow: var(--shadow-xs); }
+
+/* —— 统计块 —— */
+.stat-row { display: flex; gap: 16rpx; margin-top: 8rpx; }
+.stat {
+  flex: 1; text-align: center; padding: 20rpx 8rpx;
+  border-left: 1rpx solid var(--line);
+}
+.stat:first-child { border-left: none; }
+.stat .v { font-size: var(--fs-title); font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.stat .v.primary { color: var(--success); }
+.stat .v.accent { color: var(--accent); }
+.stat .k { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 6rpx; }
+
+/* —— 快捷磁贴 —— */
 .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24rpx; }
 .quick {
-  background: var(--glass); border: 1rpx solid var(--glass-border);
+  background: var(--card); border: 1rpx solid var(--n-200);
   border-radius: 32rpx; padding: 24rpx 26rpx;
   display: flex; flex-direction: row; align-items: center; gap: 20rpx;
   box-shadow: var(--shadow-card);
@@ -251,74 +297,26 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 .quick .ic.b { background: var(--info-tint); }
 .quick .ic.p { background: var(--purple-tint); }
 .quick .qtxt { flex: 1; min-width: 0; }
-.quick .qt { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
-.quick .qs { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 4rpx; }
+.quick .qt { font-size: var(--fs-head); font-weight: 700; color: var(--text); text-align: left; }
+.quick .qs { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 4rpx; text-align: left; }
 
-/* —— 通用统计块（白卡内轻量分区，避免卡中卡） —— */
-.stat-row { display: flex; gap: 16rpx; margin-top: 8rpx; }
-.stat {
-  flex: 1; text-align: center; padding: 20rpx 8rpx;
-  border-left: 1rpx solid var(--line);
-}
-.stat:first-child { border-left: none; }
-.stat .v { font-size: var(--fs-title); font-weight: 800; color: var(--text); font-feature-settings: "tnum" 1; }
-.stat .v.primary { color: var(--primary-ink); }
-.stat .v.accent { color: var(--accent); }
-.stat .k { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 6rpx; }
-
-/* —— 胶囊标签（999rpx 圆角） —— */
-.tag {
-  display: inline-flex; align-items: center;
-  font-size: var(--fs-caption); font-weight: 500; color: var(--text-sub);
-  background: var(--bg); border-radius: 999rpx;
-  padding: 6rpx 16rpx; margin-right: 12rpx; line-height: 1.4;
-}
-.tag-primary { color: var(--primary-deep); background: var(--primary-tint); }
-.tag-accent { color: var(--accent-deep); background: var(--accent-tint); }
-
-/* —— 按钮按压反馈（统一） —— */
-.btn-hover { opacity: 0.9; transform: translateY(1rpx); }
-
-/* —— 分段控件（7/30/90/全部 等） —— */
-.segment {
-  display: inline-flex; background: var(--bg); border-radius: 999rpx; padding: 6rpx;
-}
-.segment .seg {
-  padding: 12rpx 24rpx; font-size: var(--fs-label); color: var(--text-sub);
-  border-radius: 999rpx; font-weight: 500;
-}
-.segment .seg.on { background: var(--glass-strong); color: var(--primary); font-weight: 700; box-shadow: var(--shadow-sm); }
-
-/* —— 列表行（通用：左图标/标题 + 右箭头） —— */
-.row {
-  display: flex; align-items: center; gap: 20rpx;
-  padding: 24rpx 0; border-bottom: 1rpx solid var(--line);
-}
-.row:last-child { border-bottom: none; }
-.row .r-ico { font-size: var(--fs-section); }
-.row .r-main { flex: 1; }
-.row .r-title { font-size: var(--fs-body); font-weight: 600; color: var(--text); }
-.row .r-sub { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 4rpx; }
-.row .r-arrow { color: var(--text-weak); font-size: var(--fs-body); }
-
-/* —— 媒体署名（© Gym visual，固定保留） —— */
+/* —— 媒体署名 —— */
 .attribution {
   text-align: center; font-size: var(--fs-caption); color: var(--text-weak);
   padding: 24rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
   line-height: 1.6;
 }
 
-/* —— 平板 / 大屏适配：手机优先，大屏将内容容器居中收口，避免 rpx 整体放大元素过大 —— */
+/* —— 按钮按压反馈 —— */
+.btn-hover { opacity: 0.9; transform: translateY(1rpx); }
+
+/* —— 平板适配 —— */
 @media (min-width: 768px) {
-  .container,
-  .section,
-  .card,
-  .float-card,
-  .hero-header { max-width: 720rpx; margin-left: auto; margin-right: auto; }
+  .container, .section, .card, .float-card { max-width: 720rpx; margin-left: auto; margin-right: auto; }
   .card { margin-left: auto; margin-right: auto; }
 }
 
-/* —— 骨架屏 shimmer（可复用：内容镜像占位，优于原生 spinner；无障碍降级） —— */
+/* —— 骨架屏 shimmer —— */
 .sk {
   background: linear-gradient(90deg, var(--sk-base) 25%, var(--sk-hi) 37%, var(--sk-base) 63%);
   background-size: 400% 100%;

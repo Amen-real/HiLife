@@ -1,97 +1,240 @@
-/* pages/action-detail/action-detail.wxss */
-.page { padding-bottom: 160rpx; min-height: 100vh; background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%); }
+/* pages/action-detail/action-detail.wxss —— 对齐 04-action.html（HiLiLife 设计系统） */
+.page {
+  padding-bottom: 200rpx;
+  min-height: 100vh;
+  background: var(--n-50);
+}
 
+/* ============== TITLE BLOCK ============== */
+.title-block {
+  padding: 23rpx 31rpx 23rpx;
+  background: var(--n-50);
+}
+.title-block .h1 {
+  font-size: 46rpx; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--n-900); line-height: 1.2;
+}
+.title-block .en {
+  font-family: var(--f-en);
+  font-size: 25rpx; font-weight: 500; color: var(--n-600);
+  margin-top: 4rpx; letter-spacing: -0.005em;
+}
+.title-block .tags {
+  display: flex; gap: 12rpx; margin-top: 19rpx; flex-wrap: wrap;
+}
+.title-block .tag {
+  display: inline-flex; align-items: center;
+  height: 46rpx; padding: 0 19rpx;
+  background: var(--primary-tint);
+  color: var(--success);
+  border-radius: var(--r-s);
+  font-size: 21rpx; font-weight: 700; letter-spacing: 0;
+}
+
+/* ============== HERO ============== */
 .hero {
+  margin: 15rpx 31rpx 31rpx;
   position: relative;
-  aspect-ratio: 1 / 1;
-  max-height: 60vh;
+  border-radius: var(--r-l);
   overflow: hidden;
-  box-sizing: border-box;
+  background: #1A1A1A;
+  aspect-ratio: 16 / 9;
+  cursor: pointer;
+}
+.hero-img { width: 100%; height: 100%; display: block; }
+.hero-emoji {
+  width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
+  font-size: 200rpx;
 }
-.hero-img { width: 100%; height: 100%; border-radius: 24rpx; }
-/* 仅有视频时：去掉卡片内边距，并用绝对定位让视频填满整个 hero，黑背景被视频完全覆盖，消除"大片黑边" */
-.hero--video { background: #000; padding: 0; }
-.hero--video .hero-img { position: absolute; left: 0; top: 0; }
-.hero-emoji { font-size: var(--fs-giant); }
-.gif-badge {
-  position: absolute; right: 20rpx; bottom: 20rpx;
-  background: rgba(0,0,0,0.55); color: #fff; font-size: var(--fs-caption);
-  padding: 6rpx 16rpx; border-radius: 999rpx;
+.hero .play {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 123rpx; height: 123rpx; border-radius: 50%;
+  background: var(--white);
+  display: grid; place-items: center;
+  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.35);
+  border: 4rpx solid rgba(255,255,255,0.85);
+}
+.hero .badge {
+  position: absolute; left: 23rpx; bottom: 23rpx;
+  display: inline-flex; align-items: center; gap: 12rpx;
+  padding: 12rpx 19rpx;
+  background: rgba(10,10,10,0.6);
+  color: var(--white);
+  font-family: var(--f-en);
+  font-size: 21rpx; font-weight: 700; letter-spacing: 0.04em;
+  border-radius: var(--r-pill);
+}
+.hero .badge .dot {
+  width: 12rpx; height: 12rpx; border-radius: 50%;
+  background: var(--primary);
 }
 
-.d-name { font-size: var(--fs-section); font-weight: 700; }
-.d-tags { margin: 18rpx 0 0; display: flex; flex-wrap: wrap; gap: 8rpx; }
-.d-desc { font-size: var(--fs-body); color: var(--text-sub); line-height: 1.7; }
-.attr { margin-top: 16rpx; font-size: var(--fs-caption); color: var(--text-weak); }
-
-.step { display: flex; align-items: flex-start; gap: 20rpx; margin-bottom: 22rpx; }
-.step-no {
-  flex: 0 0 auto; width: 48rpx; height: 48rpx; border-radius: 50%;
-  background: var(--primary-light); color: var(--primary); font-weight: 700;
-  display: flex; align-items: center; justify-content: center; font-size: var(--fs-body);
+/* ============== SECTION 通用 ============== */
+.section { padding: 15rpx 31rpx 31rpx; }
+.section .h2 {
+  font-size: 29rpx; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900);
+  margin: 0 8rpx 23rpx;
 }
-.step-text { flex: 1; font-size: var(--fs-body); line-height: 1.7; }
+.section .row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 23rpx; }
+.section .row-head .h2 { margin: 0; }
+.section .row-head .more {
+  font-size: 23rpx; font-weight: 600; color: var(--n-600); letter-spacing: 0;
+}
 
+/* ============== 动作要点 ============== */
+.tips { display: flex; flex-direction: column; gap: 12rpx; }
+.tip {
+  display: flex; align-items: center; gap: 19rpx;
+  padding: 17rpx 27rpx;
+  background: var(--white);
+  border-radius: var(--r-m);
+  box-shadow: var(--shadow-card);
+  font-size: 27rpx; font-weight: 600; color: var(--n-900);
+}
+.tip .num-circle {
+  width: 46rpx; height: 46rpx; flex: none;
+  border-radius: 50%;
+  background: var(--primary);
+  display: grid; place-items: center;
+  font-family: var(--f-en);
+  font-size: 25rpx; font-weight: 800;
+  color: var(--primary-ink);
+  font-variant-numeric: tabular-nums;
+}
+.tip .tip-text { flex: 1; }
+
+/* ============== 主要肌肉（参考 Lzheng 设计：以命名肌群为主，主肌高亮） ============== */
+.bodymap { display: flex; gap: 19rpx; margin: 0 8rpx 27rpx; }
+.bodymap .bm-cell {
+  flex: 1;
+  background: var(--white);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
+  padding: 19rpx 12rpx 12rpx;
+  display: flex; flex-direction: column; align-items: center;
+}
+.bodymap .bm-canvas {
+  width: 100%; height: 440rpx; display: block;
+}
+.bodymap .bm-label {
+  margin-top: 8rpx;
+  font-size: 23rpx; font-weight: 800; color: var(--n-700);
+  display: flex; align-items: baseline; gap: 6rpx;
+}
+.bodymap .bm-label .en {
+  font-family: var(--f-en);
+  font-size: 19rpx; font-weight: 500; color: var(--n-500);
+}
+.muscles { display: grid; grid-template-columns: 1fr 1fr; gap: 23rpx; }
+.muscle {
+  background: var(--white);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
+  padding: 27rpx 23rpx;
+  display: flex; flex-direction: column;
+}
+.muscle .m-head {
+  font-size: 25rpx; font-weight: 800;
+  color: var(--n-900);
+  margin-bottom: 19rpx; letter-spacing: -0.01em;
+  display: flex; align-items: baseline; gap: 8rpx;
+}
+.muscle .m-head .en {
+  font-family: var(--f-en);
+  font-size: 21rpx; font-weight: 500;
+  color: var(--n-600); letter-spacing: 0;
+}
+.muscle .m-tags { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.muscle .m-tag {
+  display: inline-flex; align-items: center;
+  height: 54rpx; padding: 0 23rpx;
+  border-radius: var(--r-pill);
+  background: var(--card-gray);
+  color: var(--n-700);
+  font-size: 23rpx; font-weight: 600;
+}
+.muscle .m-tag.primary {
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-weight: 800;
+}
+
+/* ============== 历史记录 ============== */
+.history {
+  background: var(--white);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.history .h-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr 1fr;
+  align-items: center;
+  padding: 27rpx 27rpx;
+  font-size: 27rpx; font-weight: 600;
+  color: var(--n-900);
+  border-top: 1rpx solid var(--n-100);
+}
+.history .h-row:first-child { border-top: none; }
+.history .h-row .date {
+  font-family: var(--f-en);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
+  color: var(--n-700);
+}
+.history .h-row .num {
+  font-family: var(--f-en);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700; color: var(--n-900);
+}
+.history .h-row .unit {
+  font-family: var(--f-en);
+  font-size: 21rpx; color: var(--n-500); font-weight: 600; margin-left: 6rpx;
+}
+.empty-hist {
+  text-align: center; color: var(--n-500);
+  font-size: 27rpx; padding: 60rpx 0;
+}
+
+/* ============== 底部固定栏 ============== */
+.bottom-gap { height: 24rpx; }
 .btn-row {
   position: fixed; left: 0; right: 0; bottom: 0;
   padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
-  background: var(--glass-strong); border-top: 1rpx solid var(--glass-border);
-  backdrop-filter: blur(20rpx); -webkit-backdrop-filter: blur(20rpx);
-  display: flex; align-items: center; gap: 20rpx;
-  box-shadow: 0 -4rpx 24rpx rgba(15, 23, 42, 0.06);
-}
-.fav-btn {
-  flex: 1; height: 88rpx; border-radius: 16rpx;
-  background: #fff; border: 2rpx solid var(--primary); color: var(--primary);
-  font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: var(--fs-body);
-}
-.fav-btn.on { background: rgba(242, 84, 91, 0.10); color: var(--error); border-color: rgba(242, 84, 91, 0.30); }
-.add-today { flex: 2; height: 88rpx; display: flex; align-items: center; justify-content: center; }
-.add-today:active { opacity: 0.85; }
-
-/* 视频放大按钮：盖在原生 video 之上，必须用 cover-view（普通 view 盖不住原生组件） */
-.zoom-btn {
-  position: absolute;
-  right: 16rpx;
-  top: 16rpx;
-  width: 60rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  text-align: center;
-  color: #fff;
-  font-size: var(--fs-section);
-  background-color: rgba(0, 0, 0, 0.45);
-  border-radius: 50%;
-}
-
-/* 视频放大覆盖层（半透明全屏，内部放大 video） */
-.video-mask {
-  position: fixed;
-  left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: var(--white);
+  border-top: 1rpx solid var(--n-200);
+  box-shadow: 0 -4rpx 24rpx rgba(0,0,0,0.06);
   z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+}
+.btn-primary.add-today {
+  height: 88rpx; display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: var(--primary-ink);
+  border-radius: var(--r-m); font-size: 31rpx; font-weight: 700;
+  box-shadow: var(--shadow-mint);
+}
+.btn-primary.add-today:active { opacity: 0.85; }
+
+/* ============== 放大覆盖层 ============== */
+.video-mask {
+  position: fixed; left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
 }
 .video-mask-player {
-  width: 92vw;
-  height: 92vw;
-  border-radius: 16rpx;
-  background-color: #000;
+  width: 92vw; height: 92vw;
+  border-radius: var(--r-m); background-color: #000;
 }
-/* 关闭按钮同样用 cover-view，才能压在原生 video 之上 */
 .video-mask-close {
-  position: absolute;
-  right: 48rpx;
-  top: 48rpx;
-  width: 76rpx;
-  height: 76rpx;
-  line-height: 76rpx;
-  text-align: center;
-  color: #fff;
-  font-size: var(--fs-page);
-  background-color: rgba(255, 255, 255, 0.22);
-  border-radius: 50%;
+  position: absolute; right: 48rpx; top: 48rpx;
+  width: 76rpx; height: 76rpx; line-height: 76rpx; text-align: center;
+  color: #fff; font-size: 40rpx;
+  background-color: rgba(255,255,255,0.22); border-radius: 50%;
 }
+
+/* ============== 空态 ============== */
+.empty { padding: 120rpx 32rpx; text-align: center; color: var(--n-500); font-size: 31rpx; }

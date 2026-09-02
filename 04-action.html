@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 动作详情 · HiLiLife</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =========================================
+   DESIGN TOKENS  (与 01/02/03 同步)
+   ========================================= */
+:root {
+  --primary:      #C8FF00;
+  --primary-ink:  #0A0A0A;
+  --primary-dim:  #ECFFC2;
+
+  --n-950: #0A0A0A;
+  --n-900: #111111;
+  --n-700: #444444;
+  --n-600: #707070;
+  --n-500: #A0A0A0;
+  --n-400: #C7C7C2;
+  --n-300: #D9D9D5;
+  --n-200: #E8E8E4;
+  --n-100: #F1F1EE;
+  --n-50:  #F7F7F5;
+  --white: #FFFFFF;
+
+  --success: #6F9F00;
+  --warning: #FFB020;
+  --orange:  #FF9500;
+  --card-gray: #EFEFEB;
+
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-pill: 999px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+
+  --f-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --f-en: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: var(--f-zh); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 50% -10%, #ececea 0%, transparent 60%),
+    var(--n-50);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 16px 48px;
+}
+.preview-meta {
+  position: fixed; top: 16px; left: 16px;
+  font-family: var(--f-en); font-size: 12px; color: var(--n-600);
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-meta .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+.preview-meta .name { font-weight: 700; color: var(--n-900); }
+
+/* PHONE 390x844 */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--n-50);
+  border-radius: 36px;
+  border: 1px solid var(--n-200);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+
+/* STATUS BAR */
+.status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+  font-family: var(--f-en); font-weight: 600; font-size: 15px;
+  color: var(--n-900);
+}
+.status-bar .right { display: flex; align-items: center; gap: 6px; }
+.status-bar .right svg { width: 16px; height: 16px; }
+
+/* HEADER (transparent over hero) */
+.header {
+  padding: 8px 12px 12px;
+  flex: none;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  background: transparent;
+}
+.header .ic-btn {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  color: var(--n-900);
+  cursor: pointer;
+  border-radius: var(--r-pill);
+  transition: background 200ms cubic-bezier(0.16,1,0.3,1), transform 150ms;
+}
+.header .ic-btn:active { transform: scale(0.92); }
+.header .ic-btn svg { width: 20px; height: 20px; }
+.header .right { display: flex; gap: 4px; }
+
+/* TITLE BLOCK */
+.title-block {
+  padding: 0 16px 12px;
+  flex: none;
+  background: var(--n-50);
+}
+.title-block h1 {
+  font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--n-900);
+  line-height: 1.2;
+}
+.title-block .en {
+  font-family: var(--f-en);
+  font-size: 13px; font-weight: 500;
+  color: var(--n-600);
+  margin-top: 2px;
+  letter-spacing: -0.005em;
+}
+.title-block .tags {
+  display: flex; gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.title-block .tag {
+  display: inline-flex; align-items: center;
+  height: 24px; padding: 0 10px;
+  background: var(--primary-dim);
+  color: var(--success);
+  border-radius: var(--r-s);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* SCROLL */
+.scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 0 24px;
+  scrollbar-width: none;
+  background: var(--n-50);
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* =========================================
+   HERO  大图 + Play Button
+   ========================================= */
+.hero {
+  margin: 8px 16px 16px;
+  position: relative;
+  border-radius: var(--r-l);
+  overflow: hidden;
+  background: #1A1A1A;
+  aspect-ratio: 16/9;
+  cursor: pointer;
+}
+.hero svg.scene { width: 100%; height: 100%; display: block; }
+.hero .play {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--white);
+  display: grid; place-items: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  border: 4px solid rgba(255,255,255,0.85);
+  transition: transform 200ms cubic-bezier(0.16,1,0.3,1), background 200ms;
+}
+.hero:hover .play { transform: translate(-50%, -50%) scale(1.06); }
+.hero:active .play { transform: translate(-50%, -50%) scale(0.94); }
+.hero .play svg { width: 24px; height: 24px; color: var(--n-900); margin-left: 4px; }
+.hero .badge {
+  position: absolute; left: 12px; bottom: 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: rgba(10,10,10,0.6);
+  color: var(--white);
+  font-family: var(--f-en);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  border-radius: var(--r-pill);
+  backdrop-filter: blur(6px);
+}
+.hero .badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--primary);
+}
+
+/* =========================================
+   SECTION  通用
+   ========================================= */
+.section { padding: 8px 16px 16px; }
+.section h2 {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900);
+  margin: 0 4px 12px;
+}
+.section .row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.section .row-head .more {
+  font-size: 12px; font-weight: 600; color: var(--n-600);
+  letter-spacing: 0;
+}
+
+/* 动作要点  list with green check */
+.tips {
+  display: flex; flex-direction: column;
+  gap: 6px;
+}
+.tip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px;
+  background: var(--white);
+  border-radius: var(--r-m);
+  box-shadow: var(--shadow-card);
+  font-size: 14px; font-weight: 600; color: var(--n-900);
+}
+.tip .check {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  background: var(--primary);
+  display: grid; place-items: center;
+  color: var(--primary-ink);
+}
+.tip .check svg { width: 14px; height: 14px; }
+.tip .num {
+  font-family: var(--f-en);
+  font-size: 12px; font-weight: 800;
+  color: var(--n-500);
+  letter-spacing: 0;
+  width: 16px; flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 主要肌肉 2 个 silhouette */
+.muscles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.muscle {
+  background: var(--white);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
+  padding: 14px 12px 12px;
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.16,1,0.3,1);
+}
+.muscle:active { transform: scale(0.98); }
+.muscle svg.fig {
+  width: 100%; max-width: 140px; height: 160px;
+}
+.muscle .label {
+  font-size: 13px; font-weight: 800;
+  color: var(--n-900);
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+}
+.muscle .label .en {
+  display: block;
+  font-family: var(--f-en);
+  font-size: 11px; font-weight: 500;
+  color: var(--n-600);
+  margin-top: 2px;
+  letter-spacing: 0;
+}
+
+/* 历史记录 */
+.history {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.history .h-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr 1fr;
+  align-items: center;
+  padding: 14px 14px;
+  font-size: 14px; font-weight: 600;
+  color: var(--n-900);
+  border-top: 1px solid var(--n-100);
+}
+.history .h-row:first-child { border-top: none; }
+.history .h-row .date {
+  font-family: var(--f-en);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
+}
+.history .h-row .num {
+  font-family: var(--f-en);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--n-900);
+}
+.history .h-row .unit {
+  font-family: var(--f-en);
+  font-size: 11px;
+  color: var(--n-500);
+  font-weight: 600;
+  margin-left: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="preview-meta">
+  <span class="dot"></span>
+  <span class="name">04 · 动作详情</span>
+  <span>·</span>
+  <span>390 × 844 · Light</span>
+</div>
+
+<div class="phone" role="application" aria-label="HiLiLife · 动作详情 · 杠铃卧推">
+
+  <!-- ============== STATUS BAR ============== -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="right">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 22h2V11H2v11zm5 0h2V14H7v8zm4 0h2V8h-2v14zm4 0h2V5h-2v17zm4 0h2V2h-2v20z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5 13a10 10 0 0 1 14 0l-1.5 1.5a8 8 0 0 0-11 0L5 13zm-3-3a14 14 0 0 1 20 0l-1.5 1.5a12 12 0 0 0-17 0L2 10zm-3-3a18 18 0 0 1 26 0l-1.5 1.5a16 16 0 0 0-23 0L-1 7z"/></svg>
+      <svg viewBox="0 0 28 14" fill="none" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="23" height="13" rx="3" stroke="currentColor" stroke-opacity="0.5"/>
+        <rect x="2" y="2" width="20" height="10" rx="2" fill="currentColor"/>
+        <rect x="25" y="4" width="2" height="6" rx="1" fill="currentColor" fill-opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ============== HEADER ============== -->
+  <header class="header">
+    <button class="ic-btn" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 6l-6 6 6 6"/>
+      </svg>
+    </button>
+    <div class="right">
+      <button class="ic-btn" aria-label="更多">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+        </svg>
+      </button>
+      <button class="ic-btn" aria-label="收藏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2 14.7 8.6 22 9.3 16.5 14 18.2 21 12 17.3 5.8 21 7.5 14 2 9.3 9.3 8.6z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============== TITLE + TAGS ============== -->
+  <div class="title-block">
+    <h1>杠铃卧推</h1>
+    <div class="en">Barbell Bench Press</div>
+    <div class="tags">
+      <span class="tag">胸部</span>
+      <span class="tag">胸大肌</span>
+      <span class="tag">复合动作</span>
+    </div>
+  </div>
+
+  <!-- ============== SCROLL CONTENT ============== -->
+  <div class="scroll">
+
+    <!-- HERO IMAGE -->
+    <div class="hero" role="img" aria-label="杠铃卧推动作演示">
+      <svg class="scene" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3A3026"/>
+            <stop offset="1" stop-color="#0A0806"/>
+          </linearGradient>
+          <radialGradient id="spot" cx="50%" cy="40%" r="55%">
+            <stop offset="0" stop-color="#5A4A30" stop-opacity="0.8"/>
+            <stop offset="1" stop-color="#0A0806" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1A140E"/>
+            <stop offset="1" stop-color="#0A0606"/>
+          </linearGradient>
+          <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#C8C8C0"/>
+            <stop offset="0.5" stop-color="#666660"/>
+            <stop offset="1" stop-color="#2A2A25"/>
+          </linearGradient>
+        </defs>
+        <!-- background gym wall -->
+        <rect width="800" height="450" fill="url(#bg1)"/>
+        <ellipse cx="400" cy="180" rx="500" ry="220" fill="url(#spot)"/>
+        <!-- subtle gym equipment silhouette -->
+        <rect x="40" y="120" width="60" height="200" rx="3" fill="#1A140E" opacity="0.85"/>
+        <rect x="700" y="100" width="70" height="220" rx="3" fill="#1A140E" opacity="0.85"/>
+        <!-- power rack frame -->
+        <rect x="120" y="80" width="6" height="320" fill="#0A0A0A"/>
+        <rect x="674" y="80" width="6" height="320" fill="#0A0A0A"/>
+        <rect x="120" y="80" width="560" height="6" fill="#0A0A0A"/>
+        <rect x="120" y="240" width="560" height="6" fill="#0A0A0A"/>
+        <!-- bench pad -->
+        <rect x="320" y="270" width="240" height="22" rx="8" fill="#1F1F1F"/>
+        <rect x="320" y="266" width="240" height="6" rx="3" fill="#2A2A2A"/>
+        <!-- bench legs -->
+        <rect x="340" y="290" width="6" height="80" fill="#0A0A0A"/>
+        <rect x="534" y="290" width="6" height="80" fill="#0A0A0A"/>
+        <!-- floor -->
+        <rect x="0" y="360" width="800" height="90" fill="url(#floor)"/>
+        <line x1="0" y1="360" x2="800" y2="360" stroke="#2A1F12" stroke-width="1"/>
+
+        <!-- athlete lying on bench -->
+        <!-- head (left, lying) -->
+        <ellipse cx="305" cy="232" rx="20" ry="22" fill="#5A3F2E"/>
+        <!-- torso -->
+        <path d="M340 220 Q360 210 420 210 Q480 210 520 222 L530 260 L340 260 Z" fill="#E8C09A"/>
+        <!-- arms holding bar -->
+        <path d="M345 232 Q380 226 410 224" stroke="#E8C09A" stroke-width="14" stroke-linecap="round" fill="none"/>
+        <path d="M520 234 Q490 226 460 224" stroke="#E8C09A" stroke-width="14" stroke-linecap="round" fill="none"/>
+        <!-- legs -->
+        <ellipse cx="380" cy="345" rx="18" ry="40" fill="#2A2A35"/>
+        <ellipse cx="490" cy="345" rx="18" ry="40" fill="#2A2A35"/>
+
+        <!-- BARBELL with plates -->
+        <rect x="200" y="222" width="500" height="6" rx="3" fill="url(#bar)"/>
+        <!-- left collar + plate -->
+        <rect x="210" y="212" width="6" height="26" rx="1" fill="#1A1A1A"/>
+        <ellipse cx="226" cy="225" rx="14" ry="34" fill="#0A0A0A"/>
+        <ellipse cx="226" cy="225" rx="6" ry="28" fill="#2A2A2A"/>
+        <ellipse cx="252" cy="225" rx="14" ry="34" fill="#0A0A0A"/>
+        <ellipse cx="252" cy="225" rx="6" ry="28" fill="#2A2A2A"/>
+        <!-- right collar + plate -->
+        <rect x="684" y="212" width="6" height="26" rx="1" fill="#1A1A1A"/>
+        <ellipse cx="674" cy="225" rx="14" ry="34" fill="#0A0A0A"/>
+        <ellipse cx="674" cy="225" rx="6" ry="28" fill="#2A2A2A"/>
+        <ellipse cx="648" cy="225" rx="14" ry="34" fill="#0A0A0A"/>
+        <ellipse cx="648" cy="225" rx="6" ry="28" fill="#2A2A2A"/>
+
+        <!-- C8FF00 highlight on bar highlight -->
+        <rect x="280" y="223" width="340" height="2" rx="1" fill="#C8FF00" fill-opacity="0.55"/>
+      </svg>
+
+      <!-- Play button overlay (center) -->
+      <div class="play" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+
+      <!-- bottom-left badge -->
+      <div class="badge" aria-hidden="true">
+        <span class="dot"></span>
+        <span>动作演示 · 00:32</span>
+      </div>
+    </div>
+
+    <!-- 动作要点 -->
+    <section class="section" aria-label="动作要点">
+      <h2>动作要点</h2>
+      <div class="tips">
+
+        <div class="tip">
+          <span class="num">1</span>
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </span>
+          仰卧于平凳，双脚踩实地面
+        </div>
+
+        <div class="tip">
+          <span class="num">2</span>
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </span>
+          握距略宽于肩，收紧肩胛
+        </div>
+
+        <div class="tip">
+          <span class="num">3</span>
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </span>
+          下放杠铃至胸部中缝，肘部呈约 90°
+        </div>
+
+        <div class="tip">
+          <span class="num">4</span>
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </span>
+          全程控制，避免耸肩晃动
+        </div>
+
+        <div class="tip">
+          <span class="num">5</span>
+          <span class="check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </span>
+          推起至手臂自然伸直但肘关节微屈
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 主要肌肉 -->
+    <section class="section" aria-label="主要肌肉">
+      <h2>主要肌肉</h2>
+      <div class="muscles">
+
+        <!-- FRONT: 胸部 / 前三角 / 三头肌 -->
+        <div class="muscle" role="img" aria-label="正面：胸部、三头肌、前三角">
+          <svg class="fig" viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- base silhouette (neutral gray) -->
+            <path d="M70 14
+                     C 78 14 84 20 84 28 C 84 34 82 38 80 40
+                     L 92 46
+                     C 102 52 106 62 104 70
+                     L 98 96
+                     L 100 110
+                     L 96 116
+                     L 90 116
+                     L 88 102
+                     L 88 130
+                     L 80 188
+                     L 78 196
+                     L 72 196
+                     L 70 160
+                     L 70 130
+                     L 70 196
+                     L 62 196
+                     L 60 188
+                     L 52 130
+                     L 52 102
+                     L 50 116
+                     L 44 116
+                     L 40 110
+                     L 42 96
+                     L 36 70
+                     C 34 62 38 52 48 46
+                     L 60 40
+                     C 58 38 56 34 56 28
+                     C 56 20 62 14 70 14 Z"
+                  fill="#C7C7C2"/>
+            <!-- Highlight: chest (left+right) -->
+            <path d="M48 50 L92 50 Q92 78 70 84 Q48 78 48 50 Z" fill="#C8FF00" opacity="0.95"/>
+            <!-- Highlight: front delts -->
+            <path d="M44 46 Q40 56 42 70 L48 70 Z" fill="#C8FF00" opacity="0.85"/>
+            <path d="M96 46 Q100 56 98 70 L92 70 Z" fill="#C8FF00" opacity="0.85"/>
+            <!-- Highlight: triceps -->
+            <path d="M36 74 Q40 90 44 96 L50 96 Q50 80 42 70 Z" fill="#C8FF00" opacity="0.7"/>
+            <path d="M104 74 Q100 90 96 96 L90 96 Q90 80 98 70 Z" fill="#C8FF00" opacity="0.7"/>
+            <!-- head outline -->
+            <circle cx="70" cy="24" r="13" fill="none" stroke="#A0A0A0" stroke-width="1"/>
+          </svg>
+          <div class="label">正面
+            <span class="en">Front View</span>
+          </div>
+        </div>
+
+        <!-- BACK view (anatomical) -->
+        <div class="muscle" role="img" aria-label="背面：背部、三角肌后束、二头肌">
+          <svg class="fig" viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- base silhouette -->
+            <path d="M70 14
+                     C 78 14 84 20 84 28 C 84 34 82 38 80 40
+                     L 92 46
+                     C 102 52 106 62 104 70
+                     L 98 96
+                     L 100 110
+                     L 96 116
+                     L 90 116
+                     L 88 102
+                     L 88 130
+                     L 80 188
+                     L 78 196
+                     L 72 196
+                     L 70 160
+                     L 70 130
+                     L 70 196
+                     L 62 196
+                     L 60 188
+                     L 52 130
+                     L 52 102
+                     L 50 116
+                     L 44 116
+                     L 40 110
+                     L 42 96
+                     L 36 70
+                     C 34 62 38 52 48 46
+                     L 60 40
+                     C 58 38 56 34 56 28
+                     C 56 20 62 14 70 14 Z"
+                  fill="#C7C7C2"/>
+            <!-- back muscles (latissimus) - subtle -->
+            <path d="M48 56 L92 56 Q90 86 70 92 Q50 86 48 56 Z" fill="#9A9A95" opacity="0.7"/>
+            <!-- triceps (back) -->
+            <path d="M36 74 Q40 90 44 96 L50 96 Q50 80 42 70 Z" fill="#9A9A95" opacity="0.7"/>
+            <path d="M104 74 Q100 90 96 96 L90 96 Q90 80 98 70 Z" fill="#9A9A95" opacity="0.7"/>
+            <!-- spine -->
+            <line x1="70" y1="56" x2="70" y2="124" stroke="#A0A0A0" stroke-width="1.5"/>
+            <!-- head outline -->
+            <circle cx="70" cy="24" r="13" fill="none" stroke="#A0A0A0" stroke-width="1"/>
+          </svg>
+          <div class="label">背面
+            <span class="en">Back View</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 历史记录 -->
+    <section class="section" aria-label="历史记录">
+      <div class="row-head">
+        <h2>历史记录</h2>
+        <span class="more">最近 5 次</span>
+      </div>
+      <div class="history">
+
+        <div class="h-row">
+          <span class="date">2026/08/20</span>
+          <span class="num">4<span class="unit">组</span></span>
+          <span class="num">10<span class="unit">次</span></span>
+          <span class="num">60<span class="unit">kg</span></span>
+        </div>
+        <div class="h-row">
+          <span class="date">2026/08/18</span>
+          <span class="num">4<span class="unit">组</span></span>
+          <span class="num">10<span class="unit">次</span></span>
+          <span class="num">57.5<span class="unit">kg</span></span>
+        </div>
+        <div class="h-row">
+          <span class="date">2026/08/15</span>
+          <span class="num">3<span class="unit">组</span></span>
+          <span class="num">12<span class="unit">次</span></span>
+          <span class="num">55<span class="unit">kg</span></span>
+        </div>
+        <div class="h-row">
+          <span class="date">2026/08/12</span>
+          <span class="num">3<span class="unit">组</span></span>
+          <span class="num">10<span class="unit">次</span></span>
+          <span class="num">55<span class="unit">kg</span></span>
+        </div>
+        <div class="h-row">
+          <span class="date">2026/08/10</span>
+          <span class="num">3<span class="unit">组</span></span>
+          <span class="num">8<span class="unit">次</span></span>
+          <span class="num">52.5<span class="unit">kg</span></span>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+</div>
+
+</body>
+</html>

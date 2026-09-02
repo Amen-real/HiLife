@@ -3,6 +3,7 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const exercises = require('../../utils/exercises.js');
 const presets = require('../../presets/plans.js');
+const theme = require('../../utils/theme.js');
 
 // 把预设训练日的动作展开为 store 计划动作（回查 exercises 补全展示字段）
 function buildPlanActions(day) {
@@ -29,6 +30,16 @@ function buildPlanActions(day) {
   });
 }
 
+// 推荐模板缩略图（小程序不渲染 SVG，用深色渐变块 + emoji 模拟 03 设计稿的 SVG 剪影）
+const GOAL_THUMB = {
+  '增肌': { emoji: '🏋️', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' },
+  '力量': { emoji: '💪', bg: 'linear-gradient(180deg,#1E2A4A,#0A0F1E)', accent: '#3E8BFF' },
+  '减脂': { emoji: '🔥', bg: 'linear-gradient(180deg,#3A1F1F,#1A0A0A)', accent: '#FF9500' },
+  '耐力': { emoji: '🏃', bg: 'linear-gradient(180deg,#1E3A2A,#0A1A12)', accent: '#6F9F00' },
+  '全身': { emoji: '🤸', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' }
+};
+const DEFAULT_THUMB = { emoji: '🏋️', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' };
+
 const CATEGORIES = ['我的动作', '全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心'];
 
 // 按分类取动作池；'全部' 合并「我的动作」与动作库所有部位
@@ -44,7 +55,10 @@ function poolOf(cat) {
 
 Page({
   data: {
+    // 'theme-light' | 'theme-dark'，由「我的 → 深色主题」开关控制，onShow 同步
+    theme: 'theme-light',
     mode: 'list',          // list | create
+    seg: 'mine',           // mine（我的计划） | tpl（模板推荐）
     plans: [],
     activePlanId: '',
     // 新建流程
@@ -63,20 +77,31 @@ Page({
   onLoad() {
     // 预设计划库一次性映射进 data（纯展示，无需每次 onShow 重算）
     this.setData({
-      programs: (presets.PROGRAMS || []).map(p => ({
-        id: p.id, name: p.name, goal: p.goal, level: p.level,
-        daysPerWeek: p.daysPerWeek, desc: p.desc, days: p.days
-      }))
+      programs: (presets.PROGRAMS || []).map(p => {
+        const th = GOAL_THUMB[p.goal] || DEFAULT_THUMB;
+        return {
+          id: p.id, name: p.name, goal: p.goal, level: p.level,
+          daysPerWeek: p.daysPerWeek, desc: p.desc, days: p.days,
+          sub: p.level + ' · ' + p.daysPerWeek + '天/周',
+          emoji: th.emoji, thumbBg: th.bg, accent: th.accent
+        };
+      })
     });
   },
 
-  onShow() {
-    this.loadPlans();
+  // 分段切换：我的计划 / 模板推荐
+  switchSeg(e) {
+    this.setData({ seg: e.currentTarget.dataset.seg });
   },
 
-  // 跳转到周期规划页（Phase 2）
-  goCycle() {
-    wx.navigateTo({ url: '/pages/cycle/cycle' });
+  onShow() {
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
+    // 「计划」现为 tab 页（第 3 个，索引 2）
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 2, theme: themeCls });
+    }
+    this.loadPlans();
   },
 
   loadPlans() {
@@ -104,32 +129,6 @@ Page({
       pickedMap: {},
       pickedCount: 0,
       activeCat: '我的动作',
-      actionPool: []
-    }, () => this.loadActions());
-  },
-  // 进入编辑：复用新建表单，预填名称与已选动作
-  goEdit(e) {
-    const id = e.currentTarget.dataset.id;
-    const plan = store.get().trainingPlans.find(p => p.id === id);
-    if (!plan) return;
-    this._editId = id;
-    this._planName = plan.name;
-    this._pickedDetails = {};
-    const map = {};
-    (plan.actions || []).forEach(a => {
-      this._pickedDetails[a.actionId] = {
-        actionId: a.actionId, name: a.name, nameZh: a.nameZh,
-        part: a.part, category: a.category, setsCount: a.setsCount || 0, reps: a.reps || '', weight: a.weight || ''
-      };
-      map[a.actionId] = true;
-    });
-    this.setData({
-      mode: 'create',
-      isEdit: true,
-      planName: plan.name,
-      pickedMap: map,
-      pickedCount: Object.keys(map).length,
-      activeCat: '全部',
       actionPool: []
     }, () => this.loadActions());
   },
@@ -258,19 +257,6 @@ Page({
     this.loadPlans();
   },
 
-  setActive(e) {
-    if (!auth.requireLogin()) return;
-    const id = e.currentTarget.dataset.id;
-    const plan = store.get().trainingPlans.find(p => p.id === id);
-    if (!plan) return;
-    store.setActivePlan(id);
-    // 关键修复：首页「今日训练计划」读取的是 selectedActions，仅 setActivePlan 不会在首页显示；
-    // 必须 applyPlanToSelected 把计划注入今日训练，首页才会显示动作
-    store.applyPlanToSelected(plan);
-    this.loadPlans();
-    wx.showToast({ title: '已设为今日计划', icon: 'success' });
-    wx.switchTab({ url: '/pages/home/home' });
-  },
   startPlan(e) {
     if (!auth.requireLogin()) return;
     const id = e.currentTarget.dataset.id;
@@ -278,22 +264,5 @@ Page({
     if (!plan) return;
     store.applyPlanToSelected(plan);
     wx.switchTab({ url: '/pages/training/training' });
-  },
-  deletePlan(e) {
-    if (!auth.requireLogin()) return;
-    const id = e.currentTarget.dataset.id;
-    const plan = store.get().trainingPlans.find(p => p.id === id);
-    const name = (plan && plan.name) || '该计划';
-    wx.showModal({
-      title: '删除计划',
-      content: '确定删除「' + name + '」吗？',
-      confirmColor: '#E53E3E',
-      success: (res) => {
-        if (!res.confirm) return;
-        store.deletePlan(id);
-        this.loadPlans();
-        wx.showToast({ title: '已删除', icon: 'success' });
-      }
-    });
   }
 });

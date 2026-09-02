@@ -1,22 +1,24 @@
-/* custom-tab-bar/index.wxss —— 毛玻璃底栏 */
+/* custom-tab-bar/index.wxss —— HiLiLife 底栏
+   浅色为默认；深色覆盖统一写在文件末尾 `.tab-bar.theme-dark` 下（由「我的 → 主题」开关切换）。
+   ⚠️ 隔离组件：不继承 app.wxss 的 CSS 变量，所有 var(--*) 必须带硬编码 fallback。 */
+
 .tab-bar {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  /* 内容区固定 110rpx，安全区额外叠加在底部，避免内容被压缩溢出 */
-  height: 110rpx;
+  /* 内容区固定 88rpx，安全区额外叠加在底部，避免内容被压缩溢出 */
+  height: 88rpx;
   padding-bottom: calc(env(safe-area-inset-bottom));
   box-sizing: content-box;
   /* 兜底色：custom-tab-bar 为隔离组件，不会继承 app.wxss 的 CSS 变量；若 var 解析失败也保证可见 */
-  background: rgba(236, 251, 246, 0.92);
-  background: var(--glass-strong);
-  border-top: 1rpx solid var(--glass-border);
-  box-shadow: 0 -4rpx 24rpx rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  background: rgba(255, 255, 255, 0.96);
+  background: var(--glass-strong, rgba(255, 255, 255, 0.96));
+  border-top: 1rpx solid var(--glass-border, #E8E8E4);
+  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.06);
   display: flex;
   z-index: 1000;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .tab-bar-item {
@@ -25,22 +27,36 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-weak);
+  color: var(--text-weak, #A0A0A0);
   transition: color 0.15s ease;
 }
 
 .tab-icon {
-  width: 60rpx;
-  height: 60rpx;
-  margin-bottom: 6rpx;
-  opacity: 0.6;
-  transition: all 0.15s ease;
+  width: 56rpx;          /* 紧凑圆形 chip 区（原 72rpx 偏高的主因） */
+  height: 56rpx;
+  margin-bottom: 4rpx;
+  opacity: 0.6;          /* 非选中：图标淡灰 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
-.tab-icon-img {
-  width: 100%;
-  height: 100%;
-  display: block;
+/* Tab 图标：自包含 mask 方案（隔离组件不继承全局 .ico-*, 此处内联 5 个图标） */
+.tab-icon .ico {
+  width: 34rpx;          /* 图标随 chip 等比缩小（原 44rpx） */
+  height: 34rpx;
+  background-color: var(--text-weak, #A0A0A0);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
 }
+.ico-home { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M3%2010.5%2012%203l9%207.5%22/%3E%3Cpath%20d=%22M5.2%209.6V20h13.6V9.6%22/%3E%3Cpath%20d=%22M9.6%2020v-6h4.8v6%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M3%2010.5%2012%203l9%207.5%22/%3E%3Cpath%20d=%22M5.2%209.6V20h13.6V9.6%22/%3E%3Cpath%20d=%22M9.6%2020v-6h4.8v6%22/%3E%3C/svg%3E"); }
+.ico-train { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M4%209v6%22/%3E%3Cpath%20d=%22M7%207.2v9.6%22/%3E%3Cpath%20d=%22M17%207.2v9.6%22/%3E%3Cpath%20d=%22M20%209v6%22/%3E%3Cpath%20d=%22M7%2012h10%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M4%209v6%22/%3E%3Cpath%20d=%22M7%207.2v9.6%22/%3E%3Cpath%20d=%22M17%207.2v9.6%22/%3E%3Cpath%20d=%22M20%209v6%22/%3E%3Cpath%20d=%22M7%2012h10%22/%3E%3C/svg%3E"); }
+.ico-plan { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Crect%20x=%225%22%20y=%224%22%20width=%2214%22%20height=%2217%22%20rx=%222.5%22/%3E%3Cpath%20d=%22M9%204h6v3H9z%22/%3E%3Cpath%20d=%22M8.5%2011h7%22/%3E%3Cpath%20d=%22M8.5%2015h7%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Crect%20x=%225%22%20y=%224%22%20width=%2214%22%20height=%2217%22%20rx=%222.5%22/%3E%3Cpath%20d=%22M9%204h6v3H9z%22/%3E%3Cpath%20d=%22M8.5%2011h7%22/%3E%3Cpath%20d=%22M8.5%2015h7%22/%3E%3C/svg%3E"); }
+.ico-trendingup { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M4%2016l5-5%204%203%207-8%22/%3E%3Cpath%20d=%22M15%206h5v5%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M4%2016l5-5%204%203%207-8%22/%3E%3Cpath%20d=%22M15%206h5v5%22/%3E%3C/svg%3E"); }
+.ico-user { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Ccircle%20cx=%2212%22%20cy=%228%22%20r=%223.4%22/%3E%3Cpath%20d=%22M5.6%2020c0-3.6%202.9-6%206.4-6s6.4%202.4%206.4%206%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Ccircle%20cx=%2212%22%20cy=%228%22%20r=%223.4%22/%3E%3Cpath%20d=%22M5.6%2020c0-3.6%202.9-6%206.4-6s6.4%202.4%206.4%206%22/%3E%3C/svg%3E"); }
+/* 选中态：绿色圆形 chip 上的图标转深墨色（07-diet .item.on .ic） */
+.tab-bar-item.active .tab-icon .ico { background-color: var(--text, #0A0A0A); }
 
 .tab-text {
   font-size: var(--fs-caption, 20rpx);
@@ -48,14 +64,14 @@
 }
 
 .tab-bar-item.active {
-  color: var(--primary);
+  color: var(--text, #0A0A0A);   /* 07-diet：选中态文字也为深色 ink，而非绿色 */
 }
 
 .tab-bar-item.active .tab-icon {
   opacity: 1;
-  transform: translateY(-2rpx) scale(1.08);
-  filter: drop-shadow(0 4rpx 8rpx rgba(46, 207, 176, 0.45));
-  transition: transform 0.15s ease;
+  background: var(--primary, #C8FF00);   /* 07-diet 绿色圆形 chip 背景 */
+  border-radius: 50%;                     /* 圆形 */
+  transition: background 0.15s ease;
 }
 
 /* 全局训练计时悬浮窗：可拖拽容器。覆盖全屏但 pointer-events:none，不挡住页面与底部 tab；
@@ -80,16 +96,16 @@
   width: 136rpx;
   height: 136rpx;
   border-radius: 50%;
-  background: #1AA885;
-  background: linear-gradient(155deg, var(--primary, #2ECFB0), var(--primary-deep, #1AA885));
+  background: #C8FF00;
+  background: linear-gradient(155deg, var(--primary-light, #E4FF6E), var(--primary-deep, #7CB800));
   border: 4rpx solid #ffffff;
-  box-shadow: 0 14rpx 34rpx rgba(15, 23, 42, 0.40);
+  box-shadow: 0 14rpx 34rpx rgba(0, 0, 0, 0.28);
 }
 .wo-float.running {
-  background: #1AA885;
-  background: linear-gradient(155deg, var(--primary-deep, #1AA885), #127A60);
+  background: #7CB800;
+  background: linear-gradient(155deg, var(--primary-deep, #7CB800), #4E7A00);
   border-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 14rpx 34rpx rgba(15, 23, 42, 0.46);
+  box-shadow: 0 14rpx 34rpx rgba(0, 0, 0, 0.34);
 }
 .wo-float-ico { font-size: var(--fs-head, 32rpx); line-height: 1; color: #fff; text-shadow: 0 1rpx 3rpx rgba(15, 23, 42, 0.30); }
 .wo-float-clock {
@@ -107,3 +123,30 @@
   line-height: 1;
   text-shadow: 0 1rpx 3rpx rgba(15, 23, 42, 0.30);
 }
+
+/* ══════════════════════════════════════════════════════════════
+   深色主题覆盖（.tab-bar.theme-dark）
+   特异性 0,2,0 > 上方 .tab-bar 的 0,1,0，自然赢。
+   ══════════════════════════════════════════════════════════════ */
+.tab-bar.theme-dark {
+  background: #0A0A0A;
+  border-top-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.45);
+}
+.tab-bar.theme-dark .tab-bar-item { color: rgba(255, 255, 255, 0.45); }
+.tab-bar.theme-dark .tab-icon .ico { background-color: rgba(255, 255, 255, 0.7); }
+/* 选中：白字 + 品牌绿圆形 chip（图标仍为深墨） */
+.tab-bar.theme-dark .tab-bar-item.active { color: #FFFFFF; }
+.tab-bar.theme-dark .tab-bar-item.active .tab-icon {
+  background: #C8FF00;
+  box-shadow: 0 4rpx 14rpx rgba(200, 255, 0, 0.35);
+}
+/* 训练计时悬浮药丸：白边在黑底上过跳 → 改深墨边，文字同步转深墨（绿色底上更清晰）
+   ⚠️ wo-float 挂在 .wo-float-area 下（与 .tab-bar 平级），故用 .wo-float-area.theme-dark 选择器 */
+.wo-float-area.theme-dark .wo-float {
+  border-color: #0A0A0A;
+  box-shadow: 0 14rpx 34rpx rgba(0, 0, 0, 0.5);
+}
+.wo-float-area.theme-dark .wo-float-ico,
+.wo-float-area.theme-dark .wo-float-clock { color: #0A0A0A; text-shadow: none; }
+.wo-float-area.theme-dark .wo-float-tip { color: #0A0A0A; text-shadow: none; }

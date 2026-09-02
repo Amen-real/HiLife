@@ -16,7 +16,12 @@ Page({
     todayCalories: 0     // 今日合计卡路里
   },
 
-  onLoad() {
+  onLoad(options) {
+    // 从「饮食记录」页的某一餐点「AI 识别拍照」进来：预选该餐别，记录后自动返回
+    if (options && options.meal) {
+      this.setData({ recordType: options.meal });
+      this._fromAdvice = true;
+    }
     this.computeToday();
   },
 
@@ -98,6 +103,7 @@ Page({
     });
     wx.showToast({ title: '已记录到饮食', icon: 'success' });
     this.computeToday();
+    if (this._fromAdvice) wx.navigateBack();
   },
 
   // 按当前餐别批量记录全部
@@ -112,5 +118,6 @@ Page({
     }));
     wx.showToast({ title: `已记录 ${foods.length} 项`, icon: 'success' });
     this.computeToday();
+    if (this._fromAdvice) wx.navigateBack();
   }
 });

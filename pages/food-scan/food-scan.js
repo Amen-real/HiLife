@@ -214,5 +214,5 @@ Page({
     wx.showToast({ title: '已记录到' + type, icon: 'success' });
   },
 
-  goAdvice() { wx.switchTab({ url: '/pages/advice/advice' }); }
+  goAdvice() { wx.navigateTo({ url: '/pages/advice/advice' }); }
 });

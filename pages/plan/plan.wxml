@@ -1,84 +1,69 @@
-<!-- pages/plan/plan.wxml -->
-<view class="page">
-  <!-- 列表模式 -->
+<!-- pages/plan/plan.wxml —— 严格对齐 03-plan.html（HiLiLife 设计系统） -->
+<view class="page {{theme}}">
+
+  <!-- ============== 列表模式 ============== -->
   <block wx:if="{{mode === 'list'}}">
-    <view class="topbar">
-      <view class="tb-title">训练计划</view>
-      <view class="tb-add" bindtap="goCreate">+ 新建</view>
+
+    <!-- HEADER：我的计划 / 模板推荐 双标题（对齐数据页 .header） -->
+    <view class="header">
+      <view class="lead">
+        <view class="title {{seg==='mine' ? 'active' : ''}}" data-seg="mine" bindtap="switchSeg">我的计划</view>
+        <view class="title {{seg==='tpl' ? 'active' : ''}}" data-seg="tpl" bindtap="switchSeg">模板推荐</view>
+      </view>
     </view>
 
-    <!-- 周期规划入口 -->
-    <view class="cyc-entry" bindtap="goCycle">
-      <view class="cyc-entry-l">
-        <view class="cyc-entry-t">周期规划</view>
-        <view class="cyc-entry-s">循证周期化 · 跨周进阶与处方对比</view>
-      </view>
-      <view class="cyc-entry-ar">›</view>
-    </view>
-
-    <!-- 推荐方案（循证训练模板） -->
-    <view class="rec">
-      <view class="rec-head">
-        <view class="rec-title">推荐方案</view>
-        <view class="rec-sub">循证训练模板 · 一键导入</view>
-      </view>
-      <view class="rec-card" wx:for="{{programs}}" wx:key="id">
-        <view class="rec-top" bindtap="toggleProgram" data-id="{{item.id}}" hover-class="rec-hover">
-          <view class="rec-meta">
-            <view class="rec-name">{{item.name}}</view>
-            <view class="rec-tags">
-              <text class="rec-tag">{{item.goal}}</text>
-              <text class="rec-tag">{{item.level}}</text>
-              <text class="rec-tag">{{item.daysPerWeek}}天/周</text>
+    <!-- ============== 我的计划 ============== -->
+    <scroll-view wx:if="{{seg==='mine'}}" class="scroll" scroll-y>
+      <view class="section">
+        <view wx:if="{{plans.length}}" class="plans">
+          <!-- 计划卡片：标题 + chev + meta + 进度条（对齐 03 .plan），整卡点击 = 开始训练 -->
+          <view class="plan" wx:for="{{plans}}" wx:key="id" data-id="{{item.id}}" bindtap="startPlan" hover-class="plan-hover">
+            <view class="row-top">
+              <view class="title">{{item.name}}</view>
+              <view class="chev" aria-hidden="true">›</view>
             </view>
-          </view>
-          <view class="rec-arrow">{{expandedId === item.id ? '▾' : '▸'}}</view>
-        </view>
-        <view wx:if="{{expandedId === item.id}}">
-          <view class="rec-desc">{{item.desc}}</view>
-          <view class="rec-days">
-            <view class="day-card" wx:for="{{item.days}}" wx:for-item="day" wx:key="name">
-              <view class="day-head">
-                <view class="day-info">
-                  <view class="day-name">{{day.name}}</view>
-                  <view class="day-focus">{{day.focus}} · {{day.actions.length}}个动作</view>
-                </view>
-                <view class="day-import" catchtap="importDay" data-pid="{{item.id}}" data-di="{{index}}">导入今日</view>
-              </view>
-              <view class="day-acts">
-                <text class="day-act" wx:for="{{day.actions}}" wx:for-item="act" wx:key="exerciseId">{{act.nameZh}}</text>
-              </view>
+            <view class="meta"><text class="label">{{item.count}} 个动作</text></view>
+            <view class="progress-row">
+              <text class="progress-label">{{item.isActive ? '已设为今日计划' : '未使用'}}</text>
+              <text class="progress-pct">{{item.isActive ? '100%' : '0%'}}</text>
             </view>
+            <view class="progress"><i class="{{item.isActive ? 'on' : ''}}"></i></view>
           </view>
         </view>
-      </view>
-    </view>
 
-    <view wx:if="{{plans.length}}" class="plan-list">
-      <view class="plan-item" wx:for="{{plans}}" wx:key="id">
-        <view class="pi-main">
-          <view class="pi-name">{{item.name}}</view>
-          <view class="pi-count">{{item.count}} 个动作</view>
-          <view wx:if="{{item.isActive}}" class="pi-tag">当前</view>
-        </view>
-        <view class="pi-actions">
-          <view class="pi-btn {{item.isActive ? 'on' : ''}}" data-id="{{item.id}}" bindtap="setActive">{{item.isActive ? '使用中' : '设为当前'}}</view>
-          <view class="pi-btn primary" data-id="{{item.id}}" bindtap="startPlan">开始训练</view>
-          <view class="pi-btn" data-id="{{item.id}}" bindtap="goEdit">修改</view>
-          <view class="pi-btn danger" data-id="{{item.id}}" bindtap="deletePlan">删除</view>
+        <!-- 空态 -->
+        <view wx:else class="empty">
+          <view class="empty-ico"><view class="ico ico-plan ico--ink" style="width:72rpx;height:72rpx"></view></view>
+          <view class="empty-title">还没有训练计划</view>
+          <view class="empty-hint">新建一套，首页即可看到今天练什么</view>
+          <view class="btn-primary empty-btn" bindtap="goCreate">新建计划</view>
         </view>
       </view>
-    </view>
+    </scroll-view>
 
-    <view wx:else class="empty">
-      <view class="empty-ico"><icon name="plan" size="72"/></view>
-      <view class="empty-title">还没有训练计划</view>
-      <view class="empty-hint">新建一套，首页即可看到今天练什么</view>
-      <view class="btn-primary empty-btn" bindtap="goCreate">新建计划</view>
-    </view>
+    <!-- ============== 模板推荐 ============== -->
+    <scroll-view wx:else class="scroll" scroll-y>
+      <view class="section">
+        <view class="section-label">推荐模板</view>
+        <view class="recs">
+          <!-- 推荐卡片：缩略图 + 标题 + 副标题 + chev（对齐 03 .rec），点击展开详情 -->
+          <view class="rec" wx:for="{{programs}}" wx:key="id" data-id="{{item.id}}" bindtap="toggleProgram" hover-class="rec-hover">
+            <view class="photo" style="background:{{item.thumbBg}}">
+              <text class="photo-emoji">{{item.emoji}}</text>
+              <view class="photo-accent" style="background:{{item.accent}}"></view>
+            </view>
+            <view class="body">
+              <view class="t">{{item.name}}</view>
+              <view class="sub">{{item.sub}}</view>
+            </view>
+            <view class="chev-wrap" aria-hidden="true">›</view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
   </block>
 
-  <!-- 新建模式 -->
+  <!-- ============== 新建模式 ============== -->
   <block wx:else>
     <view class="topbar">
       <view class="tb-back" bindtap="backToList">‹ 返回</view>

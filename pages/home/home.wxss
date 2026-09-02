@@ -1,161 +1,329 @@
-/* pages/home/home.wxss —— 对齐 ui-redesign-preview.html v2 */
+/* pages/home/home.wxss —— 对齐 01-home.html（HiLiLife 设计系统）
+   主题：浅色为默认样式；深色覆盖统一写在文件末尾 `.page.theme-dark` 下（由「我的 → 主题」开关切换）。 */
+
 .page {
-  padding: 0 0 calc(160rpx + env(safe-area-inset-bottom));
+  padding: 0 0 calc(128rpx + env(safe-area-inset-bottom));
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%);
+  background: var(--n-50);
 }
 
-/* 渐变 hero —— 透明叠在「状态栏→桃色」连续渐变上（自上而下无断缝） */
-.hero-grad {
-  margin: 0;
-  padding: 28rpx 32rpx 12rpx;
+/* ============== HERO（顶部问候，纯文字，无 appbar / 无卡片背景） ============== */
+.hero {
   position: relative;
-  color: #fff;
+  padding: 36rpx 32rpx 12rpx;
 }
-.hero-grad .hi { font-size: var(--fs-body); color: rgba(255,255,255,.92); font-weight: 600; text-shadow: 0 1rpx 4rpx rgba(13,59,48,.30); }
-.hero-grad .name { font-size: var(--fs-section); font-weight: 800; color: #fff; margin-top: 8rpx; letter-spacing: -1rpx; text-shadow: 0 1rpx 4rpx rgba(13,59,48,.30); }
-.hero-grad .date { font-size: var(--fs-caption); color: rgba(255,255,255,.82); margin-top: 12rpx; text-shadow: 0 1rpx 4rpx rgba(13,59,48,.24); }
-
-/* 状态卡（浮在 hero 上） */
-.status-card { padding: 28rpx 32rpx; }
-.sc-head { display: flex; align-items: flex-end; justify-content: space-between; }
-.sc-title { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
-.sc-pct { font-size: var(--fs-page); font-weight: 800; color: var(--primary-ink); font-feature-settings: "tnum" 1; line-height: 1; }
-.sc-pct-sign { font-size: var(--fs-label); font-weight: 600; margin-left: 2rpx; }
-
-/* 百分比进度条 */
-.pbar {
-  position: relative; height: 16rpx; border-radius: 999rpx;
-  background: var(--bg); margin-top: 18rpx; overflow: hidden;
+.hero-text {
+  position: relative;
 }
-.pbar-fill {
-  height: 100%; border-radius: 999rpx;
-  background: linear-gradient(90deg, var(--primary-light), var(--primary-deep));
-  transition: width .4s ease;
+.hero-greet {
+  font-size: 46rpx;
+  font-weight: 800;
+  color: var(--n-900);            /* 浅色深字 / 深色白字，自动跟主题翻转 */
+  letter-spacing: -0.02em;
+  line-height: 58rpx;
 }
-.sc-tip { font-size: var(--fs-label); color: var(--text-sub); margin-top: 14rpx; }
+.hero-sub {
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  font-weight: 500;
+  color: var(--n-600);            /* 次级灰，浅深主题均清晰 */
+  letter-spacing: 0.01em;
+}
 
-/* 今日三项打卡（体重 / 训练 / 饮食） */
-.checkins { display: flex; margin-top: 24rpx; gap: 16rpx; }
+/* ============== 通用 chevron（右箭头，CSS 绘制，无图片依赖） ============== */
+.chev {
+  width: 14rpx; height: 14rpx;
+  border-top: 4rpx solid var(--n-500);
+  border-right: 4rpx solid var(--n-500);
+  transform: rotate(45deg);
+  box-sizing: border-box;
+}
+
+/* ============== 1+2 打卡合并卡 ============== */
+.checkin-group { padding: 0; overflow: hidden; }
 .checkin {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx;
-  padding: 18rpx 8rpx 16rpx; border-radius: 18rpx; background: var(--bg);
-  border: 1rpx solid transparent; transition: all .15s; position: relative;
+  padding: 31rpx 35rpx;
+  display: flex; align-items: center; gap: 27rpx;
+  background: var(--card-gray);
 }
-.checkin .ci-ico {
-  position: relative; width: 72rpx; height: 72rpx; border-radius: 50%;
-  background: #fff; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(31,35,41,.06);
+.checkin .meta { flex: 1 1 auto; min-width: 0; }
+.checkin .label { font-size: 23rpx; font-weight: 600; color: var(--n-600); }
+.checkin .val {
+  margin-top: 12rpx;
+  font-family: var(--f-en, sans-serif);
+  font-size: 42rpx; font-weight: 700; line-height: 54rpx;
+  letter-spacing: -0.02em;
+  color: var(--n-900);
+  display: flex; align-items: baseline; gap: 8rpx;
 }
-.checkin .ci-emoji { font-size: var(--fs-title); line-height: 1; }
-.checkin .ci-check {
-  position: absolute; right: -4rpx; bottom: -4rpx;
-  width: 30rpx; height: 30rpx; border-radius: 50%;
-  background: var(--primary); color: #fff; font-size: var(--fs-caption); font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  border: 3rpx solid #fff; box-shadow: 0 2rpx 4rpx rgba(46,207,176,.4);
-}
-.checkin .ci-name { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
-.checkin .ci-state { font-size: var(--fs-caption); color: var(--text-weak); }
-.checkin.on { background: var(--primary-light); border-color: var(--primary); box-shadow: 0 0 0 2rpx var(--primary); }
-.checkin.on .ci-state { color: var(--primary-deep); font-weight: 700; }
+.checkin .val .x { font-size: 35rpx; color: var(--n-500); font-weight: 600; }
+.checkin .val .total { font-size: 27rpx; color: var(--n-600); font-weight: 500; margin-left: 4rpx; }
 
-/* 快捷磁贴：对齐 Glass UI 参考（长方形卡片、图标左 / 文字右） */
-/* 「快捷开始」区块与上方「今日打卡」浮卡拉开间距，避免标题紧贴、整体偏上不居中 */
-.section.quick-sec { margin-top: 40rpx; }
-.quick .qtxt { flex: 1; min-width: 0; }
-.quick .qt { text-align: left; }
-.quick .qs { text-align: left; }
+/* 进度环（复用全局 .ring，显式尺寸） */
+.checkin .ring { --size: 146rpx; --w: 15rpx; }
 
-/* 记录日历 */
-.cal-head { display: flex; align-items: center; justify-content: space-between; }
-/* 本周迷你日历（对齐参考：周一~周日，今日绿底，记录日珊瑚点） */
-.wk { display: flex; gap: 8rpx; margin-top: 18rpx; }
-.wk-d { flex: 1; display: flex; flex-direction: column; align-items: center; }
-.wk-wd { font-size: var(--fs-caption); color: var(--text-weak); font-weight: 600; }
-.wk-box {
-  position: relative; width: 72rpx; height: 80rpx; margin-top: 8rpx; box-sizing: border-box;
-  display: flex; align-items: center; justify-content: center;
-  font-size: var(--fs-body); font-weight: 600; color: var(--text);
-  background: var(--bg); border: 1rpx solid var(--line); border-radius: 18rpx;
+.stats {
+  display: flex;
+  border-top: 1rpx solid var(--n-200);
+  padding: 27rpx 0;
+  background: var(--white);
 }
-.wk-d.today .wk-box { background: var(--primary); color: #fff; border-color: var(--primary); }
-.wk-dot { position: absolute; bottom: 9rpx; width: 8rpx; height: 8rpx; border-radius: 50%; background: var(--accent); }
-.wk-d.today .wk-dot { background: #fff; }
-/* 日历弹窗 */
-.cal-mask {
-  position: fixed; left: 0; right: 0; top: 0; bottom: 0;
-  background: rgba(0,0,0,0.45); z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 56rpx;
+.stat {
+  flex: 1;
+  padding: 0 31rpx;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8rpx;
 }
-.cal-modal { width: 84%; max-height: 86vh; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #fff; border-radius: 24rpx; padding: 24rpx 20rpx 18rpx; box-sizing: border-box; position: relative; }
-.cal-close {
-  width: 52rpx; height: 52rpx; border-radius: 50%;
-  background: var(--bg); color: var(--text-sub); margin-left: 12rpx;
-  display: flex; align-items: center; justify-content: center;
-  font-size: var(--fs-head);
+.stat + .stat { border-left: 1rpx solid var(--n-200); }
+.stat .label { font-size: 23rpx; color: var(--n-600); font-weight: 500; }
+.stat .val {
+  margin-top: 6rpx;
+  font-family: var(--f-en, sans-serif);
+  font-size: 42rpx; font-weight: 800; line-height: 54rpx;
+  letter-spacing: -0.02em;
+  color: var(--n-900);
+  display: flex; align-items: baseline; gap: 4rpx;
 }
-.cal-close:active { opacity: 0.6; }
-.cal-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14rpx; }
-.cal-head-right { display: flex; align-items: center; }
-.cal-nav {
-  width: 52rpx; height: 52rpx; border-radius: 50%;
-  background: var(--bg); color: var(--text); font-size: var(--fs-title);
-  display: flex; align-items: center; justify-content: center; line-height: 1;
+.stat .val .unit { font-size: 23rpx; color: var(--n-500); font-weight: 600; margin-left: 4rpx; }
+.stat .ic {
+  width: 62rpx; height: 62rpx; border-radius: 19rpx;
+  display: grid; place-items: center;
+  flex: none;
+  background: #FFF1D6;
 }
-.cal-title { flex: 1; text-align: center; font-size: var(--fs-body); font-weight: 700; }
-.cal-week { display: flex; margin-bottom: 6rpx; }
-.cal-wk { width: 14.28%; text-align: center; font-size: var(--fs-caption); color: var(--text-weak); }
-.cal-grid { display: flex; flex-wrap: wrap; }
-.cal-cell { width: 14.28%; height: 70rpx; display: flex; align-items: center; justify-content: center; }
-.cal-cell.empty { visibility: hidden; }
-.cal-day {
-  font-size: var(--fs-label); color: var(--text);
-  width: 50rpx; height: 50rpx; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; box-sizing: border-box;
-}
-.cal-cell.rec .cal-day { background: var(--primary); color: #fff; }
-.cal-cell.today .cal-day { color: var(--primary); font-weight: 700; box-shadow: inset 0 0 0 2rpx var(--primary); }
-.cal-cell.sel .cal-day { box-shadow: 0 0 0 4rpx var(--primary-deep); }
-.cal-tip { margin-top: 12rpx; text-align: center; font-size: var(--fs-caption); color: var(--text-weak); }
 
-/* 弹窗内联训练详情 */
-.cdi { margin-top: 18rpx; border-top: 1rpx solid var(--line); padding-top: 18rpx; }
-.cdi-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
-.cdi-date { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
-.cdi-back { font-size: var(--fs-label); color: var(--primary); background: var(--primary-light); border-radius: 999rpx; padding: 6rpx 20rpx; }
-.cdi-overview { display: flex; gap: 12rpx; margin-bottom: 18rpx; }
-.cdi-ov { flex: 1; background: var(--bg); border-radius: 14rpx; padding: 16rpx 8rpx; text-align: center; }
-.cdi-num { font-size: var(--fs-head); font-weight: 800; color: var(--primary); font-feature-settings: "tnum" 1; }
-.cdi-cap { font-size: var(--fs-caption); color: var(--text-sub); margin-top: 4rpx; }
-.cdi-act { background: var(--bg); border-radius: 16rpx; padding: 16rpx; margin-bottom: 14rpx; }
-.cdi-act-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
-.cdi-act-name { font-size: var(--fs-body); font-weight: 700; }
-.cdi-act-sets { font-size: var(--fs-label); color: var(--primary-deep); }
-.cdi-set-row { display: flex; align-items: center; padding: 8rpx 0; font-size: var(--fs-caption); border-bottom: 1rpx solid var(--line); }
-.cdi-set-row.cdi-th { color: var(--text-weak); font-weight: 600; border-bottom: 1rpx solid var(--line); }
-.cdi-idx { width: 18%; text-align: center; color: var(--text-sub); }
-.cdi-col { flex: 1; text-align: center; color: var(--text); }
-.cdi-time { width: 22%; text-align: center; color: var(--text-sub); }
-.cdi-time.rest { color: var(--text-weak); }
+/* ============== 区块标题（左内缩 32rpx 与卡片左缘对齐） ============== */
+.section { padding: 0; margin: 0; }
+.section-label {
+  font-size: 29rpx; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900);
+  margin: 0 32rpx 20rpx;
+}
+.section-label.with-arrow {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sec-arrow {
+  width: 46rpx; height: 46rpx;
+  display: grid; place-items: center;
+  border-radius: 50%;
+}
+
+/* ============== 3 今日建议 ============== */
+.suggest {
+  padding: 27rpx 31rpx;
+  display: flex; align-items: center; gap: 27rpx;
+  background: var(--card-gray);
+}
+.suggest .photo {
+  width: 92rpx; height: 92rpx; border-radius: 23rpx;
+  background: var(--n-100);
+  display: grid; place-items: center;
+  flex: none;
+}
+.suggest .body { flex: 1 1 auto; min-width: 0; }
+.suggest .body .t1 {
+  font-size: 29rpx; font-weight: 700; color: var(--n-900);
+  letter-spacing: -0.01em;
+}
+.suggest .body .t2 {
+  margin-top: 8rpx;
+  font-size: 23rpx; color: var(--n-600); font-weight: 500;
+}
+.suggest .chev { flex: none; margin-right: 4rpx; }
+
+/* 绿色 CTA「开始训练」（浅深两色通用品牌强调） */
+.suggest .cta {
+  flex: none;
+  background: #C8FF00;
+  color: #0A0A0A;
+  border-radius: 999rpx;
+  padding: 14rpx 24rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 1.3;
+  display: flex; align-items: center; gap: 6rpx;
+  box-shadow: 0 6rpx 18rpx rgba(200, 255, 0, 0.28);
+}
+.suggest .cta .arr {
+  width: 10rpx; height: 10rpx;
+  border-top: 3rpx solid #0A0A0A;
+  border-right: 3rpx solid #0A0A0A;
+  transform: rotate(45deg);
+}
+
+/* ============== 4 今日饮食 ============== */
+.diet { padding: 27rpx 31rpx; }
+.diet .top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 23rpx;
+}
+.diet .top .num {
+  font-family: var(--f-en, sans-serif);
+  font-size: 42rpx; font-weight: 800; letter-spacing: -0.02em;
+  line-height: 54rpx;
+  color: var(--n-900);
+  display: flex; align-items: baseline; gap: 8rpx;
+}
+.diet .top .num .target { font-size: 27rpx; color: var(--n-600); font-weight: 500; }
+.diet .top .pct {
+  font-family: var(--f-en, sans-serif);
+  font-size: 42rpx; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: -0.02em;
+}
+.diet .progress {
+  height: 12rpx; border-radius: 999rpx;
+  background: var(--n-200);
+  overflow: hidden;
+  margin-bottom: 27rpx;
+}
+.diet .progress .fill {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, #0A0A0A 0%, #2A3310 50%, #A6C24A 100%);
+  border-radius: 999rpx;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.diet .nut {
+  display: flex;
+}
+.diet .nut .col {
+  flex: 1;
+  padding: 0 8rpx;
+  border-right: 1rpx solid var(--n-200);
+}
+.diet .nut .col:last-child { border-right: none; }
+.diet .nut .col.fat-col {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12rpx;
+}
+.diet .nut .col .name {
+  font-size: 23rpx; color: var(--n-600); font-weight: 500;
+}
+.diet .nut .col .v {
+  margin-top: 8rpx;
+  font-family: var(--f-en, sans-serif);
+  font-size: 25rpx; font-weight: 700; color: var(--n-900);
+  letter-spacing: -0.01em;
+  line-height: 36rpx;
+}
+.diet .nut .col .v .unit { font-size: 21rpx; color: var(--n-500); font-weight: 600; margin-left: 4rpx; }
+.diet .nut .col .v.carb,
+.diet .nut .col .v.carb .unit { color: var(--success); }
+.diet .nut .col .v.fat,
+.diet .nut .col .v.fat .unit { color: var(--orange); }
+.diet .nut .nut-arrow {
+  width: 46rpx; height: 46rpx; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+}
+
+/* ============== 5 体重趋势 ============== */
+.weight {
+  padding: 31rpx 35rpx;
+  display: flex; align-items: center; gap: 31rpx;
+}
+.weight .meta { flex: 1 1 auto; min-width: 0; }
+.weight .meta .num {
+  font-family: var(--f-en, sans-serif);
+  font-size: 54rpx; font-weight: 800; line-height: 65rpx;
+  letter-spacing: -0.03em;
+  color: var(--n-900);
+  display: flex; align-items: baseline; gap: 4rpx;
+}
+.weight .meta .num .unit { font-size: 27rpx; color: var(--n-600); font-weight: 600; margin-left: 8rpx; }
+.weight .meta .delta {
+  margin-top: 4rpx;
+  display: inline-flex; align-items: center; gap: 4rpx;
+  font-family: var(--f-en, sans-serif); font-size: 23rpx;
+  color: var(--success); font-weight: 700;
+}
+.weight .meta .delta.up { color: var(--accent); }
+.weight .meta .delta .arr { font-size: 20rpx; }
+.weight .chart { flex: 1 1 auto; min-width: 0; }
+.spark-canvas { width: 100%; height: 123rpx; display: block; }
 
 .bottom-gap { height: 20rpx; }
 
-/* 今日训练计划：动作卡片（对齐参考 .plan-item：缩略图 + 名称 + 元信息 + 进度条 + 状态标签） */
-.plan-item { display: flex; align-items: center; gap: 20rpx; padding: 24rpx 28rpx; margin: 0 0 16rpx; position: relative; }
-.pi-thumb {
-  width: 76rpx; height: 76rpx; border-radius: 18rpx; flex: 0 0 auto;
-  background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: var(--fs-section);
-  position: relative; overflow: hidden;
+/* ══════════════════════════════════════════════════════════════
+   深色主题覆盖（.page.theme-dark）
+   —— 由「我的 → 深色主题」开关切换，utils/theme.js 持久化到 Storage。
+
+   核心手法：**重定义 CSS 变量**，而不是逐条覆盖属性。
+   上面所有浅色样式用的都是 var(--n-900) / var(--card) / var(--line) 这类变量，
+   只要在 .page.theme-dark 上把它们重定义成暗色值，整棵子树自动翻转——
+   CSS 自定义属性会向下继承，连 .card（来自 app.wxss）等后代也一并生效。
+   只有「硬编码颜色」和「需要换色的强调元素」才需要下面单独覆盖。
+
+   → 新增页面支持深色的成本 ≈ 根节点挂 class + 复制这段变量重定义。
+   ══════════════════════════════════════════════════════════════ */
+
+.page.theme-dark {
+  /* —— 中性灰阶反转（暖白 → 暖黑）—— */
+  --n-50:  #0A0A0A;                    /* 页面底 */
+  --n-100: #1E1E1E;                    /* 内嵌面 */
+  --n-200: rgba(255, 255, 255, 0.10);  /* 分隔线 / 边框 */
+  --n-300: rgba(255, 255, 255, 0.16);
+  --n-400: rgba(255, 255, 255, 0.30);
+  --n-500: rgba(255, 255, 255, 0.42);  /* 弱化文字 / chevron */
+  --n-600: rgba(255, 255, 255, 0.55);  /* 次级标签 */
+  --n-700: rgba(255, 255, 255, 0.75);
+  --n-900: #FFFFFF;                    /* 主文字 / 主数字 */
+
+  /* —— 语义色 —— */
+  --text:        #FFFFFF;
+  --text-sub:    rgba(255, 255, 255, 0.70);
+  --text-weak:   rgba(255, 255, 255, 0.45);
+  --line:        rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.20);
+
+  /* —— 表面 —— */
+  --card:      #161616;                /* 主卡（app.wxss .card 自动跟着变） */
+  --white:     #161616;                /* 浅色里当卡面的 --white 也转暗 */
+  --card-gray: #1E1E1E;                /* 打卡 / 建议卡的浅灰底 */
+  --bg:        rgba(255, 255, 255, 0.06);
+
+  /* 成功色在暗底上太暗（#6F9F00），提亮到品牌绿：碳水量 / 体重降幅更醒目 */
+  --success: #C8FF00;
+
+  background: var(--n-50);
+  color: var(--text);
 }
-.pi-emoji { line-height: 1; }
-.pi-img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.pi-body { flex: 1; min-width: 0; }
-.pi-name { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
-.pi-meta { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 6rpx; }
-.bar { height: 12rpx; border-radius: 999rpx; background: var(--bg); margin-top: 14rpx; overflow: hidden; }
-.bar i, .bar-i { display: block; height: 100%; background: var(--primary); border-radius: 999rpx; }
-.plan-item .tag { flex: 0 0 auto; margin-right: 0; }
-.plan-item.on { background: var(--primary-light); }
-.plan-btn-sm { flex: 0 0 auto; padding: 0 28rpx; height: 64rpx; border-radius: 999rpx; display: flex; align-items: center; justify-content: center; }
+
+/* —— 以下为「硬编码颜色」或「需要换色的强调元素」的单独覆盖 —— */
+
+/* 图标：.ico--ink 默认深墨，黑底不可见 → 转白 */
+.page.theme-dark .ico--ink { background-color: #FFFFFF; }
+
+/* 卡片阴影：暗色下黑色阴影无意义，去掉 */
+.page.theme-dark .card { box-shadow: none; }
+
+/* 打卡火焰图标块：浅色是硬编码 #FFF1D6（橙调），暗色改用品牌绿淡底 */
+.page.theme-dark .stat .ic { background: rgba(200, 255, 0, 0.12); }
+
+/* 进度环：conic 轨道转半透白、进度用品牌绿、中心白字 */
+.page.theme-dark .checkin .ring {
+  background: conic-gradient(
+    rgba(200, 255, 0, 0.20) 0%,
+    #C8FF00 calc(var(--pct) * 1%),
+    rgba(255, 255, 255, 0.08) calc(var(--pct) * 1%) 100%
+  );
+}
+.page.theme-dark .checkin .ring::before { background: var(--card); }
+.page.theme-dark .checkin .ring .ring-span { color: #FFFFFF; }
+
+/* 饮食进度条填充：浅色是暗墨渐变（黑底上会整条消失），暗色改用亮绿 + 光晕 */
+.page.theme-dark .diet .progress .fill {
+  background: #C8FF00;
+  box-shadow: 0 0 10rpx rgba(200, 255, 0, 0.5);
+}
+/* 完成百分比：暗色下点亮成品牌绿（对齐参考图） */
+.page.theme-dark .diet .top .pct { color: #C8FF00; }
+
+/* 脂肪量：浅色 --orange #FF9500 在黑底偏暗，提亮一档 */
+.page.theme-dark .diet .nut .col .v.fat,
+.page.theme-dark .diet .nut .col .v.fat .unit { color: #FFB340; }
+
+/* —— 偏好降级：尊重系统减弱动效 —— */
+@media (prefers-reduced-motion: reduce) {
+  .diet .progress .fill { transition: none; }
+}

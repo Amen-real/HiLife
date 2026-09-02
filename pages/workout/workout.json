@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "训练中",
-  "usingComponents": {}
+  "usingComponents": {
+    "icon": "/components/icon/icon"
+  }
 }

@@ -12,12 +12,12 @@
     <view class="section-title">识别方式</view>
     <view class="actions">
       <view class="act-btn" hover-class="act-hover" bindtap="scanCode">
-        <view class="act-ico"><icon name="camera" size="44"/></view>
+        <view class="act-ico"><view class="ico ico-camera ico--ink" style="width:44rpx;height:44rpx"></view></view>
         <view class="act-name">扫码识别</view>
         <view class="act-desc">对准商品条码</view>
       </view>
       <view class="act-btn" hover-class="act-hover" bindtap="onSearch">
-        <view class="act-ico"><icon name="search" size="44"/></view>
+        <view class="act-ico"><view class="ico ico-search ico--ink" style="width:44rpx;height:44rpx"></view></view>
         <view class="act-name">名称搜索</view>
         <view class="act-desc">输入食物 / 品牌</view>
       </view>
@@ -32,7 +32,7 @@
 
     <!-- 拍照识别（自托管 CalorieScan） -->
     <view class="cam-btn" hover-class="cam-hover" bindtap="chooseAndAnalyze">
-      <view class="cam-ico"><icon name="camera" size="36"/></view>
+      <view class="cam-ico"><view class="ico ico-camera ico--ink" style="width:36rpx;height:36rpx"></view></view>
       <text>拍照识别热量（本地模型）</text>
     </view>
   </view>
@@ -42,7 +42,7 @@
     <view class="section-title">搜索结果（点选查看营养）</view>
     <view class="res" wx:for="{{results}}" wx:key="code" data-code="{{item.code}}" bindtap="onPick">
       <image wx:if="{{item.image}}" class="res-img" src="{{item.image}}" mode="aspectFill" />
-      <view wx:else class="res-img res-emoji"><icon name="food-bowl" size="60"/></view>
+      <view wx:else class="res-img res-emoji"><view class="ico ico-food-bowl ico--ink" style="width:60rpx;height:60rpx"></view></view>
       <view class="res-info">
         <view class="res-name ellipsis">{{item.name}}</view>
         <view class="res-brand ellipsis">{{item.brand || '未知品牌'}}</view>
@@ -57,7 +57,7 @@
     <view class="card detail">
       <view class="detail-head">
         <image wx:if="{{product.image}}" class="detail-img" src="{{product.image}}" mode="aspectFill" />
-        <view wx:else class="detail-img detail-emoji"><icon name="food-bowl" size="80"/></view>
+        <view wx:else class="detail-img detail-emoji"><view class="ico ico-food-bowl ico--ink" style="width:80rpx;height:80rpx"></view></view>
         <view class="detail-meta">
           <view class="detail-name">{{product.name}}</view>
           <view class="detail-brand">{{product.brand || '未知品牌'}}</view>

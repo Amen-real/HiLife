@@ -36,7 +36,7 @@
         <view class="wo-ex-thumb" catchtap="openHero" data-ai="{{ai}}">
           <image wx:if="{{item.video}}" class="wo-ex-thumb-img" src="{{item.video}}" mode="aspectFill" />
           <image wx:elif="{{item.image}}" class="wo-ex-thumb-img" src="{{item.image}}" mode="aspectFill" />
-          <icon wx:else name="train" size="56" />
+          <view wx:else class="ico ico-train ico--ink" style="width:56rpx;height:56rpx" />
         </view>
         <view class="wo-ex-body">
           <view class="wo-ex-name">{{item.nameZh || item.name}}</view>
@@ -47,7 +47,7 @@
                   wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si"></view>
           </view>
         </view>
-        <view class="wo-ex-gear" catchtap="replaceAction" data-ai="{{ai}}">⟳</view>
+        <view class="wo-ex-gear" catchtap="replaceAction" data-ai="{{ai}}"></view>
       </view>
 
       <!-- 展开内容 -->
@@ -115,7 +115,7 @@
         <!-- 展开底部操作 -->
         <view class="wo-ex-actions">
           <view class="wo-ex-btn primary" bindtap="addSet" data-ai="{{ai}}">+ 新增一组</view>
-          <view class="wo-ex-btn ghost" bindtap="openHistory">历史动作</view>
+          <view class="wo-ex-btn ghost" bindtap="openHistory" data-ai="{{ai}}">历史动作</view>
         </view>
       </view>
     </view>
@@ -157,7 +157,7 @@
               wx:for="{{addFiltered}}" wx:key="id" wx:for-item="item"
               bindtap="selectAdd" data-id="{{item.id}}">
           <image wx:if="{{item.video || item.image}}" class="repl-img" src="{{item.video || item.image}}" mode="aspectFill" />
-          <icon wx:else name="train" size="48" />
+          <view wx:else class="ico ico-train ico--ink" style="width:48rpx;height:48rpx" />
           <view class="repl-info">
             <text class="repl-name">{{item.nameZh || item.name}}</text>
             <text class="repl-cat">{{item.category}}</text>
@@ -185,8 +185,8 @@
 <view class="rest-mask" wx:if="{{showTrain && !trainMinimized}}" catchtouchmove="noop">
   <view class="rest-pop">
     <view class="rest-pop-mini" hover-class="press" bindtap="minimizeTrain"></view>
-    <view wx:if="{{trainPhase === 'ready'}}" class="rest-pop-emoji">🟡</view>
-    <icon wx:else name="flame" size="60"/>
+    <view wx:if="{{trainPhase === 'ready'}}" class="train-ready-dot"></view>
+    <view wx:else class="train-work-dot"></view>
     <view class="rest-pop-title">{{trainPhase === 'ready' ? '准备' : '训练中'}}</view>
     <view class="rest-pop-sub">{{trainPhase === 'ready' ? '即将开始 · 放轻松' : '保持节奏 · 还剩 ' + trainLeft}}</view>
     <view class="rest-ring">
@@ -209,27 +209,28 @@
   </movable-view>
 </movable-area>
 
-<!-- 组间休息倒计时悬浮窗（三档切换 + ±微调 + 完成休息） -->
+<!-- 组间休息倒计时悬浮窗（三档切换 + ±微调 + 完成休息）；最后一组完成时切换为「训练完成」保存态 -->
 <view class="rest-mask" wx:if="{{showRest && !restMinimized}}" catchtouchmove="noop">
   <view class="rest-pop">
     <view class="rest-pop-mini" hover-class="press" bindtap="minimizeRest"></view>
-    <view class="rest-pop-emoji"><icon name="train" size="60"/></view>
+    <view wx:if="{{restKind === 'done'}}" class="ico ico-trophy ico--primary" style="width:92rpx;height:92rpx" />
+    <view wx:else class="rest-pop-emoji"><view class="ico ico-train ico--ink" style="width:60rpx;height:60rpx" /></view>
     <view class="rest-pop-title">{{restKind === 'done' ? '训练完成' : (restKind === 'action' ? '动作间休息' : '组间休息')}}</view>
     <view class="rest-pop-sub">{{restKind === 'done' ? '全部动作完成 · 点击保存' : '第 ' + (actNo + 1) + ' 组完成 · 放松一下'}}</view>
-    <view class="rest-ring">
+    <view class="rest-ring" wx:if="{{restKind !== 'done'}}">
       <text class="rest-num">{{restLeft}}</text>
     </view>
-    <view class="rest-opts">
+    <view class="rest-opts" wx:if="{{restKind !== 'done'}}">
       <view class="rest-opt {{restSelected === idx ? 'on' : ''}}"
             wx:for="{{restOptions}}" wx:for-index="idx" wx:key="*this"
             data-sec="{{item}}" bindtap="changeRest">{{item}}</view>
     </view>
-    <view class="rest-step">
+    <view class="rest-step" wx:if="{{restKind !== 'done'}}">
       <view class="rest-step-btn" data-delta="-10" bindtap="adjustRest">−10</view>
       <view class="rest-step-btn" data-delta="10" bindtap="adjustRest">+10</view>
     </view>
-    <view class="rest-track"><view class="rest-fill" style="width:{{restFillWidth}}"></view></view>
-    <view class="rest-vib" bindtap="toggleVibrate">
+    <view class="rest-track" wx:if="{{restKind !== 'done'}}"><view class="rest-fill" style="width:{{restFillWidth}}"></view></view>
+    <view class="rest-vib" wx:if="{{restKind !== 'done'}}" bindtap="toggleVibrate">
       <text class="rest-vib-label">休息结束震动提示</text>
       <view class="rest-vib-switch {{vibrateOn ? 'on' : ''}}"><view class="rest-vib-dot" /></view>
     </view>
@@ -237,28 +238,26 @@
   </view>
 </view>
 
-<!-- 动作历史 overlay（本次训练每组明细：动作/次数/重量/训练时长/休息时长） -->
+<!-- 动作历史 overlay（当前选中动作的每组明细：次数/重量/训练时长/休息时长） -->
 <view class="hist-mask" wx:if="{{showHistory}}" catchtouchmove="noop">
   <view class="hist-pop">
     <view class="hist-head">
       <text class="hist-title">动作历史</text>
       <view class="hist-close" bindtap="closeHistory">✕</view>
     </view>
-    <scroll-view class="hist-body" scroll-y>
-      <block wx:for="{{actions}}" wx:key="id" wx:for-item="a">
-        <view class="hist-act-name">{{a.nameZh || a.name}}</view>
-        <view class="hist-set" wx:for="{{a.sets}}" wx:for-item="s" wx:for-index="si" wx:key="si">
-          <view class="hist-set-line1">
-            <text class="hist-set-no">第{{si + 1}}组</text>
-            <text class="hist-set-rep">{{s.reps || '-'}} 次 × {{s.weight || '-'}} kg</text>
-          </view>
-          <view class="hist-set-line2">
-            <text>训练 {{s.trainSec || '-'}}s</text>
-            <text class="hist-dot">·</text>
-            <text>休息 {{s.restSec || '-'}}s</text>
-          </view>
+    <scroll-view class="hist-body" scroll-y wx:if="{{histAction}}">
+      <view class="hist-act-name">{{histAction.nameZh || histAction.name}}</view>
+      <view class="hist-set" wx:for="{{histAction.sets}}" wx:for-item="s" wx:for-index="si" wx:key="si">
+        <view class="hist-set-line1">
+          <text class="hist-set-no">第{{si + 1}}组</text>
+          <text class="hist-set-rep">{{s.reps || '-'}} 次 × {{s.weight || '-'}} kg</text>
         </view>
-      </block>
+        <view class="hist-set-line2">
+          <text>训练 {{s.trainSec || '-'}}s</text>
+          <text class="hist-dot">·</text>
+          <text>休息 {{s.restSec || '-'}}s</text>
+        </view>
+      </view>
     </scroll-view>
   </view>
 </view>
@@ -284,7 +283,7 @@
               wx:for="{{replaceFiltered}}" wx:key="id" wx:for-item="item"
               bindtap="selectReplacement" data-id="{{item.id}}">
         <image wx:if="{{item.video || item.image}}" class="repl-img" src="{{item.video || item.image}}" mode="aspectFill" />
-        <icon wx:else name="train" size="48" />
+        <view wx:else class="ico ico-train ico--ink" style="width:48rpx;height:48rpx" />
         <view class="repl-info">
           <text class="repl-name">{{item.nameZh || item.name}}</text>
           <text class="repl-cat">{{item.category}}</text>
@@ -299,7 +298,7 @@
 
 <!-- 完成态 -->
 <view class="page finished" wx:if="{{finished}}">
-  <view class="done-emoji"><icon name="trophy" size="120"/></view>
+  <view class="done-emoji"><view class="ico ico-trophy ico--primary" style="width:120rpx;height:120rpx"></view></view>
   <view class="done-title">训练完成</view>
   <view class="done-sub">正在保存…</view>
 </view>

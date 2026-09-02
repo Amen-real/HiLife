@@ -1,109 +1,89 @@
-<!-- pages/training/training.wxml —— 对齐 ui-redesign-preview.html v2（chips + 双排动作卡） -->
-<view class="page">
+<!-- pages/training/training.wxml —— 对齐 02-train.html（HiLiLife 设计系统） -->
+<view class="page {{theme}}">
 
-  <!-- 动作库标题 + 创建（对齐预览：动作库 · N） -->
-  <view class="lib-head">
-    <text class="lib-title">动作库</text>
-    <view class="create-btn" bindtap="openCreate">+ 创建动作</view>
-  </view>
-
-  <!-- 训练复盘入口（与「我的」页菜单互为双入口，提升可见性） -->
-  <view class="review-entry" hover-class="re-press" bindtap="goReview">
-    <view class="re-ico"><icon name="idea" size="40"/></view>
-    <view class="re-body">
-      <view class="re-t">训练复盘</view>
-      <view class="re-s">单次 / 滚动 / 周 · 自动分析训练进展</view>
+  <!-- ============== HEADER：动作库 / 收藏 ============== -->
+  <view class="header">
+    <view class="lead">
+      <text class="title {{mode==='lib' ? 'active' : ''}}" bindtap="switchMode" data-mode="lib">动作库</text>
+      <text class="title {{mode==='fav' ? 'active' : ''}}" bindtap="switchMode" data-mode="fav">收藏</text>
     </view>
-    <view class="re-ar">›</view>
   </view>
 
-  <!-- 分类胶囊 chips（对齐预览） -->
-  <scroll-view class="chips" scroll-x enable-flex>
+  <!-- ============== SEARCH ============== -->
+  <view class="search">
+    <view class="ico ico-search ico--ink" style="width:32rpx;height:32rpx"></view>
+    <input class="search-input" placeholder="搜索动作名称" value="{{keyword}}" bindinput="onSearch" confirm-type="search" />
+    <text wx:if="{{keyword}}" class="search-clear" bindtap="clearSearch">✕</text>
+  </view>
+
+  <!-- ============== CATEGORIES（仅动作库模式，横向滚动） ============== -->
+  <scroll-view wx:if="{{mode==='lib'}}" class="categories" scroll-x enable-flex>
     <view
       wx:for="{{categories}}"
       wx:key="*this"
-      class="chip {{activeCat === item ? 'on' : ''}}"
+      class="cat {{activeCat === item ? 'active' : ''}}"
       data-cat="{{item}}"
       bindtap="switchCat"
-    >{{item}}<text wx:if="{{catCounts[item]}}" class="chip-count">{{catCounts[item]}}</text></view>
+    >
+      <view class="ic"><view class="ico ico-{{catIcons[item]}} ico--ink" style="width:48rpx;height:48rpx"></view></view>
+      <text class="name">{{item}}</text>
+    </view>
+    <!-- 添加动作：分类行最末，匹配样式 -->
+    <view class="cat cat-add" bindtap="openCreate" hover-class="op-press" aria-label="创建动作">
+      <view class="ic"><view class="ico ico-plus ico--primary" style="width:48rpx;height:48rpx"></view></view>
+      <text class="name">添加</text>
+    </view>
   </scroll-view>
 
-  <!-- 搜索 + 已选（对齐预览搜索条） -->
-  <view class="search-bar">
-    <view class="search-input">
-      <icon name="search" size="36"/>
-      <input
-        class="search-field"
-        placeholder="搜索动作、部位或器械"
-        value="{{keyword}}"
-        bindinput="onSearch"
-        confirm-type="search"
-      />
-      <text wx:if="{{keyword}}" class="search-clear" bindtap="clearSearch">✕</text>
-    </view>
-    <view class="sel-pill" hover-class="op-press" bindtap="openSelPanel">{{selectedCount}} 已选 ›</view>
-  </view>
-
-  <!-- 动作双排网格（对齐预览 ex-grid / ex2） -->
-  <view class="action-list">
+  <!-- ============== EXERCISE LIST（竖向卡片） ============== -->
+  <view class="section">
     <view
       wx:for="{{list}}"
       wx:key="id"
-      class="action-card"
-      hover-class="ac-press"
+      class="card exercise"
+      hover-class="ex-press"
       data-id="{{item.id}}"
       bindtap="tapAction"
     >
-      <view class="action-thumb">
-        <image wx:if="{{item.image}}" class="action-img" src="{{item.image}}" mode="aspectFill" lazy-load />
-        <text wx:else class="action-emoji">{{item.emoji}}</text>
-        <view wx:if="{{item.video}}" class="play">GIF</view>
-        <view
-          class="fav {{favoriteIds[item.id] ? 'on' : ''}}"
-          hover-class="fav-press"
-          catchtap="toggleFav"
-          data-id="{{item.id}}"
-        >{{favoriteIds[item.id] ? '♥' : '♡'}}</view>
-        <view
-          wx:if="{{item.custom}}"
-          class="del-btn"
-          hover-class="del-press"
-          catchtap="deleteCustom"
-          data-id="{{item.id}}"
-        >✕</view>
+      <view class="photo">
+        <image wx:if="{{item.gif}}" class="photo-img" src="{{item.gif}}" mode="aspectFill" lazy-load />
+        <text wx:else class="photo-emoji">{{item.emoji}}</text>
       </view>
-      <view class="action-body">
-        <view class="action-name ellipsis">{{item.nameZh || item.name}}</view>
-        <view class="action-tags">
-          <text class="tag tag-primary">{{item.part || item.category}}</text>
-          <text wx:if="{{item.equip}}" class="tag">{{item.equip}}</text>
+      <view class="body">
+        <view class="name">{{item.nameZh}}</view>
+        <view wx:if="{{item.name && item.name !== item.nameZh}}" class="en">{{item.name}}</view>
+        <view class="tag">{{item.part || item.category}}</view>
+      </view>
+      <view class="right">
+        <view class="star {{favoriteIds[item.id] ? 'on' : ''}}" hover-class="op-press" catchtap="toggleFav" data-id="{{item.id}}">
+          <view class="ico ico-{{favoriteIds[item.id] ? 'staron' : 'staroff'}} {{favoriteIds[item.id] ? 'ico--accent' : ''}}" style="width:40rpx;height:40rpx"></view>
+        </view>
+        <view class="add {{selectedIds[item.id] ? 'added' : ''}}" hover-class="op-press" catchtap="toggleSelect" data-id="{{item.id}}">
+          <text>{{selectedIds[item.id] ? '✓' : '+'}}</text>
+        </view>
+        <view wx:if="{{item.custom}}" class="del" hover-class="op-press" catchtap="deleteCustom" data-id="{{item.id}}" aria-label="删除动作">
+          <text class="del-glyph">🗑</text>
         </view>
       </view>
-      <view
-        class="add-btn {{selectedIds[item.id] ? 'added' : ''}}"
-        hover-class="add-press"
-        catchtap="toggleSelect"
-        data-id="{{item.id}}"
-      >{{selectedIds[item.id] ? '✓' : '+'}}</view>
     </view>
 
-    <view wx:if="{{list.length === 0}}" class="empty">{{activeCat === '我的动作' ? '还没有自建动作，点右上角「+ 创建动作」添加' : '没有匹配的动作，换个关键词试试'}}</view>
+    <view wx:if="{{list.length === 0}}" class="empty">{{mode==='fav' ? '还没有收藏动作，点卡片右侧星标收藏' : (activeCat==='我的动作' ? '还没有自建动作，点上方分类栏末尾的 + 添加' : '没有匹配的动作')}}</view>
   </view>
 
   <view class="attr">动作图片 © Gym visual</view>
-  <view class="bottom-gap" />
+  <view class="bottom-gap"></view>
 </view>
 
-<!-- 底部固定行动栏 -->
-<view class="action-bar" style="display: flex;">
-    <view class="ab-count" hover-class="op-press" bindtap="openSelPanel">
-      <text class="ab-num">{{selectedCount}}</text>
-      <text class="ab-label">已选动作</text>
-    </view>
+<!-- ============== 底部固定行动栏 ============== -->
+<view class="action-bar">
+  <view class="ab-count" hover-class="op-press" bindtap="openSelPanel">
+    <text class="ab-num">{{selectedCount}}</text>
+    <text class="ab-label">已选动作</text>
+  </view>
   <button class="ab-start {{selectedCount ? '' : 'disabled'}}" bindtap="startTraining">开始训练</button>
 </view>
 
-<!-- 创建动作弹窗 -->
+<!-- ============== 创建动作弹窗 ============== -->
 <view wx:if="{{showCreate}}" class="modal-mask" bindtap="closeCreate">
   <view class="modal" catchtap="noop">
     <view class="modal-title">创建动作</view>
@@ -137,7 +117,7 @@
   </view>
 </view>
 
-<!-- 已选动作编辑弹窗（层级需高于总览弹窗，避免被其遮罩压住） -->
+<!-- ============== 已选动作编辑弹窗 ============== -->
 <view wx:if="{{showSelEdit}}" class="modal-mask sel-edit-mask" bindtap="closeSelEdit">
   <view class="modal" catchtap="noop">
     <view class="modal-title">修改训练参数</view>
@@ -162,7 +142,7 @@
   </view>
 </view>
 
-<!-- 已选动作总览弹窗（可最小化） -->
+<!-- ============== 已选动作总览弹窗 ============== -->
 <view wx:if="{{showSelPanel}}" class="modal-mask sel-panel-mask" bindtap="closeSelPanel">
   <view class="modal sel-panel" catchtap="noop">
     <view class="sel-panel-head">
@@ -192,7 +172,7 @@
   </view>
 </view>
 
-<!-- 最小化悬浮气泡 -->
+<!-- ============== 最小化悬浮气泡 ============== -->
 <view wx:if="{{selMinimized}}" class="sel-bubble" hover-class="bubble-press" catchtap="restoreSelPanel">
   已选 {{selectedCount}} 个动作 ›
 </view>

@@ -1,24 +1,105 @@
-<!-- pages/weight-record/weight-record.wxml -->
+<!-- pages/weight-record/weight-record.wxml —— 10（记录 + 大数字）在上，11（趋势筛选 + 统计 + 图表 + 记录列表）在下 -->
 <view class="page">
-  <view class="card">
-    <view class="wr-title">记录今日体重</view>
-    <view class="wr-row">
-      <text class="wr-label">日期</text>
-      <text class="wr-value">{{date}}</text>
-    </view>
-    <view class="wr-input-wrap">
-      <input
-        class="wr-input"
-        type="digit"
-        placeholder="请输入体重，如 68.5"
-        value="{{weight}}"
-        bindinput="onWeight"
-        focus
-      />
-      <text class="wr-unit">kg</text>
-    </view>
-    <button class="btn-primary wr-save" bindtap="save">保存记录</button>
+
+  <!-- HEADER：体重记录 -->
+  <view class="header">
+    <view class="h1">体重记录</view>
   </view>
 
-  <view class="tip">记录体重后，首页与列表页会自动更新趋势与目标进度。</view>
+  <!-- HERO：当前体重（来自 10） -->
+  <view class="hero">
+      <view class="kg {{empty ? '' : 'editable'}}" bindtap="openInput" hover-class="kg-hover">{{current.weight}}<text class="unit">kg</text></view>
+      <view class="date" wx:if="{{!empty}}">{{current.dateText}}</view>
+      <view class="edit-hint" bindtap="openInput">点击数字记录今日体重</view>
+    </view>
+
+    <!-- 空状态：无数据时不显示任何方框 -->
+    <view class="empty-state" wx:if="{{empty}}">
+      <view class="empty-tip">还没有体重记录</view>
+      <view class="empty-sub">记录后这里会显示趋势、变化与历史</view>
+    </view>
+
+    <!-- 有数据时：变化卡 + 趋势区 + 记录列表（默认无数据不渲染方框） -->
+    <block wx:if="{{!empty}}">
+
+      <!-- 体重变化（来自 10） -->
+      <view class="card">
+        <view class="label">体重变化</view>
+        <view class="change-row">
+          <text class="delta">{{change.sign}}{{change.value}}</text>
+          <text class="vs">比昨天</text>
+        </view>
+      </view>
+
+      <!-- ===== 以下为 11-weight-trend.html 设计 ===== -->
+
+      <!-- 体重趋势 标签（与 .h1 一致） -->
+      <view class="section-title">体重趋势</view>
+
+      <!-- 时间筛选 -->
+      <view class="time-pills">
+        <view class="pill {{range === 7 ? 'on' : ''}}" data-range="7" bindtap="switchRange">7天</view>
+        <view class="pill {{range === 30 ? 'on' : ''}}" data-range="30" bindtap="switchRange">30天</view>
+        <view class="pill {{range === 90 ? 'on' : ''}}" data-range="90" bindtap="switchRange">90天</view>
+        <view class="pill {{range === 0 ? 'on' : ''}}" data-range="0" bindtap="switchRange">全部</view>
+      </view>
+
+      <!-- 三统计：平均 / 最低 / 最高 -->
+      <view class="stats-row">
+        <view class="stat">
+          <view class="label">平均体重</view>
+          <view class="value">{{stats.avg}}<text class="unit">kg</text></view>
+        </view>
+        <view class="stat">
+          <view class="label">最低</view>
+          <view class="value">{{stats.min}}<text class="unit">kg</text></view>
+        </view>
+        <view class="stat">
+          <view class="label">最高</view>
+          <view class="value">{{stats.max}}<text class="unit">kg</text></view>
+        </view>
+      </view>
+
+      <!-- 趋势图（真实 canvas，随页面原生滚动；点击取点高亮） -->
+      <view class="card chart-card">
+        <view class="label">{{rangeLabel}}趋势</view>
+        <view class="chart-wrap">
+          <canvas type="2d" id="weightChart" class="chart-canvas" bindtap="onChartTap"></canvas>
+          <image wx:if="{{chartImage}}" class="chart-image" src="{{chartImage}}" mode="aspectFit"></image>
+        </view>
+        <view class="empty-hint" wx:if="{{chartEmpty}}">该时间范围内暂无体重记录</view>
+      </view>
+
+      <!-- 体重记录列表 -->
+      <view class="section-label">体重记录</view>
+      <view class="card">
+        <view class="records">
+          <view class="row" wx:for="{{records}}" wx:key="date">
+            <text class="date">{{item.dateText}}</text>
+            <text class="kg">{{item.weight}}<text class="unit">kg</text></text>
+          </view>
+        </view>
+      </view>
+      <view class="more-link" wx:if="{{records.length > 0}}" bindtap="toggleRecords">{{allShown ? '收起' : '查看更多记录'}}</view>
+
+      <view class="bottom-gap"></view>
+    </block>
+
+  <!-- 体重输入弹窗：点击 .kg 弹出。用 wx:if 真正挂载/卸载，避免原生 <input> 隐藏时 placeholder 在真机泄漏 -->
+  <view class="modal-mask" wx:if="{{showInput}}" bindtap="closeInput">
+    <view class="modal" catchtap="noOp">
+      <view class="modal-head">
+        <view class="modal-title">记录体重</view>
+        <view class="modal-save" hover-class="modal-save-hover" bindtap="confirmWeight">保存</view>
+      </view>
+      <view class="modal-body">
+        <view class="input-row">
+          <input class="weight-input" type="digit" value="{{draft}}" bindinput="onDraft"
+                 placeholder="0.0" focus="{{showInput}}" confirm-type="done" bindconfirm="confirmWeight" />
+          <text class="input-unit">kg</text>
+        </view>
+        <view class="modal-date">记录日期：{{inputDateText}}</view>
+      </view>
+    </view>
+  </view>
 </view>

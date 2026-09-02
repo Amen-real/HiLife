@@ -1,44 +1,92 @@
-<!-- pages/action-detail/action-detail.wxml -->
+<!-- pages/action-detail/action-detail.wxml —— 对齐 04-action.html（HiLiLife 设计系统） -->
 <view class="page" wx:if="{{act}}">
 
-  <view class="hero card {{act.video ? 'hero--video' : ''}}">
-    <image wx:if="{{act.video && !showVideoOverlay}}" class="hero-img" src="{{act.video}}" mode="aspectFill" lazy-load bindtap="openVideoOverlay" />
-    <image wx:elif="{{act.image && !showVideoOverlay}}" class="hero-img" src="{{act.image}}" mode="aspectFit" lazy-load bindtap="previewHero" data-url="{{act.image}}" />
+  <!-- ============== TITLE BLOCK ============== -->
+  <view class="title-block">
+    <view class="h1">{{act.nameZh || act.name}}</view>
+    <view class="en" wx:if="{{act.name && act.name !== (act.nameZh || act.name)}}">{{act.name}}</view>
+    <view class="tags">
+      <text class="tag" wx:for="{{tags}}" wx:key="*this">{{item}}</text>
+    </view>
+  </view>
+
+  <!-- ============== HERO ============== -->
+  <view class="hero" bindtap="onHeroTap" role="img" aria-label="动作演示">
+    <image wx:if="{{heroSrc}}" class="hero-img" src="{{heroSrc}}" mode="aspectFill" lazy-load />
     <view wx:else class="hero-emoji">{{act.emoji}}</view>
-    <view wx:if="{{act.video}}" class="gif-badge">GIF 演示</view>
-    <cover-view wx:if="{{act.video}}" class="zoom-btn" bindtap="openVideoOverlay">⛶</cover-view>
+    <view wx:if="{{heroSrc}}" class="play" aria-hidden="true"><view class="ico ico-play ico--ink" style="width:40rpx;height:40rpx"></view></view>
+    <view wx:if="{{heroSrc}}" class="badge"><view class="dot"></view><text>{{heroBadge}}</text></view>
   </view>
 
-  <view class="card">
-    <view class="d-name">{{act.nameZh || act.name}}</view>
-    <view class="d-tags">
-      <text class="tag tag-primary">{{act.category}}</text>
-      <text class="tag">{{act.equip || '徒手'}}</text>
-      <text wx:if="{{act.target}}" class="tag tag-accent">{{act.target}}</text>
-    </view>
-    <view wx:if="{{act.desc}}" class="d-desc">{{act.desc}}</view>
-    <view wx:if="{{act.video}}" class="attr">动作演示 © Gym visual</view>
-  </view>
-
-  <view class="card" wx:if="{{act.steps && act.steps.length}}">
-    <view class="section-title">动作步骤</view>
-    <view class="step" wx:for="{{act.steps}}" wx:key="index">
-      <view class="step-no">{{index + 1}}</view>
-      <view class="step-text">{{item}}</view>
+  <!-- ============== 动作要点 ============== -->
+  <view class="section" wx:if="{{steps.length}}">
+    <view class="h2">动作要点</view>
+    <view class="tips">
+      <view class="tip" wx:for="{{steps}}" wx:key="index">
+        <view class="num-circle">{{index + 1}}</view>
+        <text class="tip-text">{{item}}</text>
+      </view>
     </view>
   </view>
 
+  <!-- ============== 主要肌肉 ============== -->
+  <view class="section">
+    <view class="h2">主要肌肉</view>
+    <view class="bodymap">
+      <view class="bm-cell">
+        <canvas type="2d" id="bodyFront" class="bm-canvas"></canvas>
+        <text class="bm-label">正面<text class="en">Front</text></text>
+      </view>
+      <view class="bm-cell">
+        <canvas type="2d" id="bodyBack" class="bm-canvas"></canvas>
+        <text class="bm-label">背面<text class="en">Back</text></text>
+      </view>
+    </view>
+    <view class="muscles">
+      <view class="muscle" wx:if="{{muscles.front.length}}">
+        <view class="m-head">正面<text class="en">Front</text></view>
+        <view class="m-tags">
+          <text class="m-tag {{m.primary ? 'primary' : ''}}" wx:for="{{muscles.front}}" wx:for-item="m" wx:key="name">{{m.name}}</text>
+        </view>
+      </view>
+      <view class="muscle" wx:if="{{muscles.back.length}}">
+        <view class="m-head">背面<text class="en">Back</text></view>
+        <view class="m-tags">
+          <text class="m-tag {{m.primary ? 'primary' : ''}}" wx:for="{{muscles.back}}" wx:for-item="m" wx:key="name">{{m.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============== 历史记录 ============== -->
+  <view class="section">
+    <view class="row-head">
+      <view class="h2">历史记录</view>
+      <text class="more">最近 5 次</text>
+    </view>
+    <view class="history" wx:if="{{history.length}}">
+      <view class="h-row" wx:for="{{history}}" wx:key="date">
+        <text class="date">{{item.date}}</text>
+        <text class="num">{{item.sets}}<text class="unit">组</text></text>
+        <text class="num">{{item.reps}}<text class="unit">次</text></text>
+        <text class="num">{{item.weight}}<text class="unit">kg</text></text>
+      </view>
+    </view>
+    <view wx:else class="empty-hist">还没有该动作的训练记录</view>
+  </view>
+
+  <view class="bottom-gap"></view>
+
+  <!-- 底部固定栏：加入今日训练（保留业务功能） -->
   <view class="btn-row">
-    <view class="fav-btn {{favorited ? 'on' : ''}}" bindtap="toggleFav">{{favorited ? '♥ 已收藏' : '♡ 收藏'}}</view>
     <view class="btn-primary add-today" bindtap="addToToday">加入今日训练</view>
   </view>
 
-  <!-- 放大覆盖层：点击放大按钮弹出半透明全屏 GIF（gif 用 image 标签渲染，自动循环播放） -->
+  <!-- 放大覆盖层：点击 Hero 弹出半透明全屏（GIF 用 image 标签渲染，自动循环播放） -->
   <view class="video-mask" wx:if="{{showVideoOverlay}}" bindtap="closeVideoOverlay">
-    <image class="video-mask-player" src="{{act.video}}" mode="aspectFit" />
-    <cover-view class="video-mask-close" bindtap="closeVideoOverlay">✕</cover-view>
+    <image class="video-mask-player" src="{{heroSrc}}" mode="aspectFit" />
+    <view class="video-mask-close" bindtap="closeVideoOverlay">✕</view>
   </view>
 
 </view>
-
 <view wx:else class="empty">未找到动作信息</view>

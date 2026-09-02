@@ -27,9 +27,9 @@ const store = {
   },
 
   /* ---------- 体重 ---------- */
-  addWeight(date, weight) {
+  addWeight(date, weight, note) {
     const list = g().weightRecords.filter(r => r.date !== date);
-    list.push({ date, weight: Number(weight) });
+    list.push({ date, weight: Number(weight), note: note || '' });
     list.sort((a, b) => a.date.localeCompare(b.date));
     g().weightRecords = list;
     g().profile.currentWeight = Number(weight);
@@ -39,6 +39,13 @@ const store = {
     }
     this.persist();
     return list;
+  },
+  setWeightNote(date, note) {
+    const list = g().weightRecords;
+    const rec = list.find(r => r.date === date);
+    if (!rec) return;
+    rec.note = note || '';
+    this.persist();
   },
   getWeightStats(rangeDays) {
     const list = g().weightRecords;

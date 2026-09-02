@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=390" />
+<title>12 训练复盘 · HiLiLife</title>
+<style>
+  /* ===== Design tokens (复用 01–06) ===== */
+  :root {
+    --primary: #C8FF00;
+    --primary-ink: #0A0A0A;
+    --success: #6F9F00;
+    --warning: #FF9500;
+    --danger: #FF5C3D;
+    --bg: #F7F7F5;
+    --card: #FFFFFF;
+    --line: #E8E8E4;
+    --card-gray: #EFEFEB;
+    --ink: #0A0A0A;
+    --ink-2: #444444;
+    --n-100: #EFEFEB;
+    --n-200: #E8E8E4;
+    --n-300: #D4D4D0;
+    --n-400: #B8B8B2;
+    --n-500: #999994;
+    --n-700: #444440;
+    --r-m: 12px;
+    --r-l: 16px;
+    --r-xl: 20px;
+    --r-pill: 999px;
+    --f-en: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --f-cn: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+    --shadow-elev: 0 6px 18px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); font-family: var(--f-cn); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  body { display: grid; place-items: center; min-height: 100vh; padding: 24px 0; }
+
+  /* ===== Phone frame ===== */
+  .phone {
+    width: 390px; height: 844px;
+    background: var(--bg);
+    border-radius: 36px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+
+  /* ===== Status bar ===== */
+  .status {
+    flex: none;
+    height: 44px;
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--f-en);
+    font-size: 15px; font-weight: 600;
+    color: var(--ink);
+  }
+  .status .right { display: flex; align-items: center; gap: 6px; }
+  .status .right svg { display: block; }
+
+  /* ===== Header ===== */
+  .header {
+    flex: none;
+    height: 52px;
+    padding: 0 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: transparent;
+  }
+  .header .back {
+    width: 36px; height: 36px;
+    background: transparent; border: 0;
+    display: grid; place-items: center;
+    cursor: pointer; color: var(--ink);
+    border-radius: 50%;
+    transition: background 200ms;
+  }
+  .header .back:hover { background: var(--n-100); }
+  .header .back:active { transform: scale(0.94); }
+  .header h1 {
+    font-size: 17px; font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .header .import {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 7px 12px 7px 11px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    font-size: 13px; font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 200ms, transform 100ms;
+  }
+  .header .import:hover { background: var(--n-100); }
+  .header .import:active { transform: scale(0.96); }
+  .header .import svg { display: block; }
+
+  /* ===== Main scroll ===== */
+  main {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 16px 110px;
+    scrollbar-width: none;
+  }
+  main::-webkit-scrollbar { display: none; }
+
+  /* ===== Top segment tabs ===== */
+  .tabs {
+    background: var(--n-100);
+    border-radius: var(--r-pill);
+    padding: 4px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-bottom: 14px;
+  }
+  .tabs .item {
+    background: transparent;
+    border: 0;
+    height: 32px;
+    border-radius: var(--r-pill);
+    font-size: 13px; font-weight: 600;
+    color: var(--n-500);
+    cursor: pointer;
+    font-family: var(--f-cn);
+    transition: background 200ms, color 200ms, box-shadow 200ms;
+  }
+  .tabs .item.on {
+    background: var(--primary);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .tabs .item:hover:not(.on) { color: var(--ink-2); }
+
+  /* ===== Exercise hero card ===== */
+  .exercise {
+    background: var(--n-100);
+    border-radius: var(--r-l);
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .exercise .icon {
+    flex: none;
+    width: 40px; height: 40px;
+    background: var(--primary);
+    border-radius: 12px;
+    display: grid; place-items: center;
+    color: var(--primary-ink);
+  }
+  .exercise .icon svg { display: block; }
+  .exercise .meta { flex: 1; min-width: 0; }
+  .exercise .meta .title {
+    font-size: 14px; font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 3px;
+  }
+  .exercise .meta .sub {
+    font-family: var(--f-en);
+    font-size: 11px; font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+  }
+  .exercise .meta .sub .accent {
+    color: var(--success);
+    margin-left: 2px;
+  }
+
+  /* ===== 3 stat cards (white, 训练量/消耗/完成度) ===== */
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-l);
+    box-shadow: var(--shadow-card);
+    padding: 12px 10px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    min-width: 0;
+  }
+  .stat .lab {
+    font-size: 11px; font-weight: 700;
+    color: var(--n-500);
+    letter-spacing: 0.02em;
+  }
+  .stat .val {
+    font-family: var(--f-en);
+    font-size: 20px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .val .unit {
+    font-family: var(--f-cn);
+    font-size: 11px; font-weight: 700;
+    color: var(--n-500);
+    margin-left: 2px;
+  }
+
+  /* ===== Section title ===== */
+  .section-title {
+    font-size: 15px; font-weight: 800;
+    color: #111111;
+    letter-spacing: -0.01em;
+    margin: 0 4px 10px;
+  }
+
+  /* ===== Data analysis card ===== */
+  .analysis {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-l);
+    box-shadow: var(--shadow-card);
+    padding: 16px 16px 18px;
+    margin-bottom: 18px;
+  }
+  .analysis-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .analysis-head .left .lab {
+    font-size: 11px; font-weight: 700;
+    color: var(--n-500);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .analysis-head .left .big {
+    font-family: var(--f-en);
+    font-size: 30px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .analysis-head .left .big .unit {
+    font-family: var(--f-en);
+    font-size: 14px; font-weight: 700;
+    color: var(--n-500);
+    margin-left: 4px;
+  }
+  .delta {
+    font-family: var(--f-en);
+    font-size: 11px; font-weight: 700;
+    color: var(--n-500);
+    letter-spacing: 0.02em;
+    padding: 4px 10px;
+    background: var(--n-100);
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+  }
+  .delta .up {
+    color: var(--success);
+    font-weight: 800;
+    margin-left: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ===== Bar chart ===== */
+  .chart {
+    position: relative;
+    height: 140px;
+    padding: 6px 6px 0;
+  }
+  .chart .grid {
+    position: absolute;
+    inset: 6px 6px 22px 6px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    pointer-events: none;
+  }
+  .chart .grid .tick {
+    height: 1px; background: var(--n-200);
+    position: relative;
+  }
+  .chart .grid .tick span {
+    position: absolute;
+    left: -2px; top: -7px;
+    font-family: var(--f-en);
+    font-size: 9px; font-weight: 700;
+    color: var(--n-400);
+    font-variant-numeric: tabular-nums;
+    background: var(--card);
+    padding: 0 2px;
+  }
+  .bars {
+    position: relative;
+    height: calc(100% - 22px);
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    align-items: end;
+    gap: 7px;
+  }
+  .bar {
+    position: relative;
+    border-radius: 6px 6px 2px 2px;
+    background: var(--n-200);
+    height: var(--h);
+    transition: transform 200ms cubic-bezier(0.16,1,0.3,1);
+  }
+  /* 4 档绿色梯度 */
+  .bar.g-dim  { background: #9CB84A; }
+  .bar.g-mid  { background: #7CB800; }
+  .bar.g-top  { background: var(--primary); }
+  .bar.g-peak {
+    background: var(--primary);
+    box-shadow: 0 0 0 2px rgba(200,255,0,.25), 0 4px 10px rgba(200,255,0,.35);
+  }
+  .bar:hover { transform: translateY(-2px); }
+  .bar .val {
+    position: absolute;
+    top: -14px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--f-en);
+    font-size: 9px; font-weight: 800;
+    color: var(--ink);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .x-axis {
+    margin-top: 6px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 7px;
+  }
+  .x-axis span {
+    text-align: center;
+    font-family: var(--f-en);
+    font-size: 10px; font-weight: 600;
+    color: var(--n-500);
+    font-variant-numeric: tabular-nums;
+  }
+  .x-axis span.hot { color: var(--ink); font-weight: 800; }
+
+  /* ===== RPE ring + legend ===== */
+  .rpe-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-l);
+    box-shadow: var(--shadow-card);
+    padding: 18px 18px 18px;
+    margin-bottom: 18px;
+  }
+  .rpe-row {
+    display: flex; align-items: center; gap: 20px;
+  }
+  .ring {
+    flex: none;
+    width: 128px; height: 128px;
+    border-radius: 50%;
+    /* 与图一致：左下段最大为黑/深色，右侧最大段为 brand 绿 */
+    background: conic-gradient(
+      from -90deg,
+      #2A3310 0% 15%,     /* RPE 10 - 极深绿（占位图风格：黑底为主） */
+      #4F8A2A 15% 30%,    /* RPE 8–9 - 中绿过渡 */
+      #C8FF00 30% 75%,    /* RPE 8–9 大段 - brand 绿（最大段） */
+      #6F9F00 75% 90%,    /* RPE 6–7 - 深绿 */
+      #B8D45A 90% 100%    /* RPE ≤5 - 浅绿 */
+    );
+    position: relative;
+    display: grid; place-items: center;
+  }
+  .ring::before {
+    content: "";
+    position: absolute;
+    inset: 18px;
+    background: var(--card);
+    border-radius: 50%;
+  }
+  .ring .center {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+  .ring .center .n {
+    font-family: var(--f-en);
+    font-size: 22px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .ring .center .lab {
+    margin-top: 4px;
+    font-family: var(--f-en);
+    font-size: 9px; font-weight: 700;
+    color: var(--n-500);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .legend { flex: 1 1 auto; display: flex; flex-direction: column; gap: 11px; }
+  .legend .row {
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    align-items: center;
+    gap: 10px;
+  }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .legend .row .name {
+    font-size: 12px; font-weight: 700;
+    color: var(--ink);
+  }
+  .legend .row .pct {
+    font-family: var(--f-en);
+    font-size: 13px; font-weight: 800;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* ===== 本次训练感受 ===== */
+  .feedback {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-l);
+    box-shadow: var(--shadow-card);
+    padding: 14px 16px 16px;
+    margin-bottom: 18px;
+  }
+  .feedback-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .feedback-head .tit {
+    font-size: 14px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .feedback-head .pencil {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--n-500);
+    display: grid; place-items: center;
+    transition: background 200ms, color 200ms;
+  }
+  .feedback-head .pencil:hover { background: var(--n-100); color: var(--ink); }
+  .feedback-head .pencil:active { transform: scale(0.92); }
+  .feedback .body {
+    font-size: 13px; line-height: 1.6;
+    color: var(--ink-2);
+    font-weight: 500;
+    letter-spacing: 0.005em;
+  }
+
+  /* ===== Bottom Tab ===== */
+  .tab {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 84px;
+    padding: 8px 8px 22px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    z-index: 10;
+  }
+  .tab .item {
+    background: transparent; border: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--n-500);
+    padding: 6px 0;
+    transition: color 200ms;
+  }
+  .tab .item .ic {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: transparent;
+    color: var(--n-500);
+    transition: background 200ms, color 200ms;
+  }
+  .tab .item .ic svg { display: block; }
+  .tab .item .t {
+    font-size: 10px; font-weight: 700;
+    color: var(--n-500);
+    letter-spacing: 0.02em;
+  }
+  .tab .item.on .ic { background: var(--primary); color: var(--ink); }
+  .tab .item.on .t { color: var(--ink); }
+
+  /* ===== A11y / motion ===== */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+  button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+  <div class="phone" role="application" aria-label="训练复盘页">
+
+    <!-- Status bar -->
+    <div class="status" aria-hidden="true">
+      <span>9:41</span>
+      <div class="right">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M1 8h2v3H1zM5 6h2v5H5zM9 4h2v7H9zM13 1h2v10h-2z"/></svg>
+        <svg width="14" height="11" viewBox="0 0 14 11" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 5c2-3 5-4 6-4s4 1 6 4"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>
+        <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" stroke-width="1"><rect x="1" y="1" width="18" height="9" rx="2"/><rect x="2.5" y="2.5" width="13" height="6" fill="currentColor" stroke="none"/><rect x="20" y="3.5" width="1.5" height="4" fill="currentColor" stroke="none"/></svg>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <button class="back" aria-label="返回">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <h1>训练复盘</h1>
+      <button class="import" aria-label="导入模板">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        导入模板
+      </button>
+    </header>
+
+    <main>
+
+      <!-- Top segment tabs -->
+      <div class="tabs" role="tablist">
+        <button class="item on" role="tab" aria-selected="true">单次复盘</button>
+        <button class="item" role="tab" aria-selected="false">滚动复盘</button>
+        <button class="item" role="tab" aria-selected="false">基准对比</button>
+        <button class="item" role="tab" aria-selected="false">周度复盘</button>
+      </div>
+
+      <!-- Exercise hero (杠铃卧推) -->
+      <div class="exercise" aria-label="当前动作">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9v6"/>
+            <path d="M21 9v6"/>
+            <path d="M6 7v10"/>
+            <path d="M18 7v10"/>
+            <rect x="6" y="11" width="12" height="2" rx="1" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="meta">
+          <div class="title">杠铃卧推</div>
+          <div class="sub">2024/05/16 第 3 组 <span class="accent">/ 共 4 组</span></div>
+        </div>
+      </div>
+
+      <!-- 3 stat cards -->
+      <div class="stats">
+        <div class="stat">
+          <span class="lab">训练量</span>
+          <span class="val">45:20</span>
+        </div>
+        <div class="stat">
+          <span class="lab">消耗</span>
+          <span class="val">420<span class="unit">kcal</span></span>
+        </div>
+        <div class="stat">
+          <span class="lab">完成度</span>
+          <span class="val">92<span class="unit">%</span></span>
+        </div>
+      </div>
+
+      <!-- 数据分析 -->
+      <div class="section-title">数据分析</div>
+      <section class="analysis" aria-label="训练总量分析">
+        <div class="analysis-head">
+          <div class="left">
+            <div class="lab">训练量 (kg)</div>
+            <div class="big">12,560<span class="unit">kg</span></div>
+          </div>
+          <div class="delta">较上次 <span class="up">+15%</span></div>
+        </div>
+        <div class="chart" role="img" aria-label="5月10日到5月16日训练量柱状图">
+          <div class="grid" aria-hidden="true">
+            <div class="tick"><span>12k</span></div>
+            <div class="tick"><span>8k</span></div>
+            <div class="tick"><span>4k</span></div>
+          </div>
+          <div class="bars">
+            <div class="bar g-dim" style="--h:38%"><span class="val">5.2k</span></div>
+            <div class="bar g-mid" style="--h:55%"><span class="val">6.8k</span></div>
+            <div class="bar g-dim" style="--h:32%"><span class="val">4.5k</span></div>
+            <div class="bar g-mid" style="--h:68%"><span class="val">8.4k</span></div>
+            <div class="bar g-top" style="--h:78%"><span class="val">9.5k</span></div>
+            <div class="bar g-top" style="--h:80%"><span class="val">9.8k</span></div>
+            <div class="bar g-peak" style="--h:90%"><span class="val">11.2k</span></div>
+          </div>
+          <div class="x-axis">
+            <span>5/10</span><span>5/11</span><span>5/12</span><span>5/13</span><span>5/14</span><span>5/15</span><span class="hot">5/16</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RPE 分布 -->
+      <div class="section-title">RPE 分布</div>
+      <section class="rpe-card" aria-label="RPE 强度分布">
+        <div class="rpe-row">
+          <div class="ring" role="img" aria-label="RPE 分布环：RPE 10 15%，RPE 8-9 45%，RPE 6-7 30%，RPE 小于等于 5 10%">
+            <div class="center">
+              <div class="n">100<span style="font-size:13px;color:var(--n-500);margin-left:1px;">%</span></div>
+              <div class="lab">总和</div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="row">
+              <span class="dot" style="background:#2A3310"></span>
+              <span class="name">RPE 10</span>
+              <span class="pct">15%</span>
+            </div>
+            <div class="row">
+              <span class="dot" style="background:#C8FF00"></span>
+              <span class="name">RPE 8–9</span>
+              <span class="pct">45%</span>
+            </div>
+            <div class="row">
+              <span class="dot" style="background:#6F9F00"></span>
+              <span class="name">RPE 6–7</span>
+              <span class="pct">30%</span>
+            </div>
+            <div class="row">
+              <span class="dot" style="background:#B8D45A"></span>
+              <span class="name">RPE ≤5</span>
+              <span class="pct">10%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 本次训练感受 -->
+      <div class="section-title">本次训练感受</div>
+      <section class="feedback">
+        <div class="feedback-head">
+          <span class="tit">本次训练感受</span>
+          <button class="pencil" aria-label="编辑反馈">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3l4 4-11 11H6v-4z"/><line x1="13" y1="7" x2="17" y2="11"/>
+            </svg>
+          </button>
+        </div>
+        <p class="body">今天状态不错，重量提升明显，后面注意控制组间休息时间。</p>
+      </section>
+
+    </main>
+
+    <!-- Bottom Tab (数据 active) -->
+    <nav class="tab" aria-label="主导航">
+      <button class="item" aria-label="首页">
+        <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>
+        <span class="t">首页</span>
+      </button>
+      <button class="item" aria-label="训练">
+        <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4V4"/><path d="M4 7h2"/><path d="M2 9h4"/><path d="M18 7h2"/><path d="M18 9h4"/><path d="M10 14v6"/><path d="M14 14v6"/></svg></span>
+        <span class="t">训练</span>
+      </button>
+      <button class="item" aria-label="计划">
+        <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="9" y1="3" x2="9" y2="7"/><line x1="15" y1="3" x2="15" y2="7"/></svg></span>
+        <span class="t">计划</span>
+      </button>
+      <button class="item on" aria-current="page" aria-label="数据">
+        <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-6 4 3 6-9"/><circle cx="18" cy="6" r="1.5" fill="currentColor"/></svg></span>
+        <span class="t">数据</span>
+      </button>
+      <button class="item" aria-label="我的">
+        <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span>
+        <span class="t">我的</span>
+      </button>
+    </nav>
+
+  </div>
+</body>
+</html>

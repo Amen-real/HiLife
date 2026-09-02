@@ -2,28 +2,83 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const { media, resolveUrl } = require('../../utils/media.js');
+const { collectSlugs, buildMuscles, targetCn, drawBody } = require('../../utils/bodymap.js');
 
 Page({
   data: {
     act: null,
-    favorited: false,
-    showVideoOverlay: false   // 视频放大覆盖层是否显示
+    heroSrc: '',
+    heroBadge: '',
+    tags: [],
+    steps: [],
+    muscles: { front: [], back: [] },
+    history: [],
+    showVideoOverlay: false
   },
 
   onLoad() {
     const raw = store.get().currentAction || null;
-    const act = raw ? { ...raw, image: media(raw.image), video: media(raw.video) } : null;
+    if (!raw) { this.setData({ act: null }); return; }
+    const act = { ...raw, image: media(raw.image), video: media(raw.video) };
+    const heroSrc = act.video || act.image || '';
+    const tags = [act.category];
+    const tc = targetCn(act);
+    if (tc) tags.push(tc);
+    tags.push(act.equip || '徒手');
+    const steps = (act.steps && act.steps.length) ? act.steps : [];
+    const slugSet = collectSlugs(act);
+    this._slugSet = slugSet;
     this.setData({
       act,
-      favorited: act ? store.isFavorite(act.id) : false
+      heroSrc,
+      heroBadge: act.video ? '动作演示 · GIF' : '动作演示',
+      tags,
+      steps,
+      muscles: buildMuscles(act)
     });
+    this.buildHistory(act.id);
   },
 
-  toggleFav() {
-    if (!this.data.act) return;
-    if (!auth.requireLogin()) return;
-    store.toggleFavorite(this.data.act.id);
-    this.setData({ favorited: store.isFavorite(this.data.act.id) });
+  onReady() {
+    // canvas 节点在首次渲染后才可取，于 onReady 内绘制
+    if (this._slugSet) this.renderBody(this._slugSet);
+  },
+
+  // 用 canvas 2d 绘制真实人体肌肉解剖图（前/后），高亮当前动作涉及肌群
+  renderBody(slugSet) {
+    const dpr = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 2;
+    const draw = (id, side) => {
+      wx.createSelectorQuery().in(this).select('#' + id).fields({ node: true, size: true }).exec((res) => {
+        if (!res || !res[0] || !res[0].node) return;
+        const canvas = res[0].node;
+        const ctx = canvas.getContext('2d');
+        canvas.width = res[0].width * dpr;
+        canvas.height = res[0].height * dpr;
+        drawBody(canvas, ctx, side, slugSet, {});
+      });
+    };
+    draw('bodyFront', 'front');
+    draw('bodyBack', 'back');
+  },
+
+  // 从训练日志中提取该动作的最近 5 次记录（日期倒序）
+  buildHistory(id) {
+    const logs = store.get().trainingLogs || [];
+    const out = [];
+    for (const log of logs) {
+      if (out.length >= 5) break;
+      const hit = (log.actions || []).find(a => a.id === id);
+      if (!hit) continue;
+      const sets = hit.sets || [];
+      const first = sets[0] || {};
+      out.push({
+        date: log.date,
+        sets: sets.length,
+        reps: (first.reps != null && first.reps !== '') ? String(first.reps) : '—',
+        weight: (first.weight != null && first.weight !== '') ? String(first.weight) : '—'
+      });
+    }
+    this.setData({ history: out });
   },
 
   addToToday() {
@@ -34,19 +89,13 @@ Page({
     wx.showToast({ title: on ? '已加入今日训练' : '已移出', icon: 'none' });
   },
 
-  // 点击演示图全屏看原图（GIF 动图也完整显示）
-  previewHero(e) {
-    const url = e.currentTarget.dataset.url;
-    // url 可能是 cloud:// 文件 ID，previewImage 只认 HTTPS，先解析
-    resolveUrl(url, (u) => wx.previewImage({ current: u, urls: [u] }));
+  // 点击 Hero：有媒体则弹放大层；仅有图片则调起系统预览（GIF 也会完整显示）
+  onHeroTap() {
+    if (this.data.heroSrc) {
+      this.setData({ showVideoOverlay: true });
+    } else if (this.data.act && this.data.act.image) {
+      resolveUrl(this.data.act.image, (u) => wx.previewImage({ current: u, urls: [u] }));
+    }
   },
-
-  // 自定义放大覆盖层：弹出半透明全屏 GIF（gif 用 image 标签渲染、自动循环播放，规避原生 video 在真机误退出的 bug）
-  // 打开时卡片内 gif 由 wx:if 销毁，避免与覆盖层 gif 重叠；关闭后自动重建
-  openVideoOverlay() {
-    this.setData({ showVideoOverlay: true });
-  },
-  closeVideoOverlay() {
-    this.setData({ showVideoOverlay: false });
-  }
+  closeVideoOverlay() { this.setData({ showVideoOverlay: false }); }
 });

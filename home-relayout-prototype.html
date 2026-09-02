@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>衡砺健身 · 首页重排原型</title>
+<style>
+  :root{
+    --primary-deep:#0E7C66;
+    --primary:#2ECFB0;
+    --primary-light:#E1F5EE;
+    --primary-tint:#D8F3EA;
+    --accent:#FF7A3D;
+    --bg:#F1F5F9;
+    --card:#FFFFFF;
+    --text:#0E2A23;
+    --text-sub:#475569;
+    --text-weak:#94A3B8;
+    --line:#E2E8F0;
+    --shadow:0 4px 18px rgba(13,59,48,.07);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    background:#EEF2F4;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+    color:var(--text);padding:24px 12px 40px;
+  }
+  .toolbar{
+    display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:18px;
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow);
+  }
+  .toolbar button{
+    font:inherit;font-size:13px;font-weight:600;color:var(--primary-deep);
+    background:var(--primary-light);border:0;border-radius:999px;padding:8px 16px;cursor:pointer;transition:.15s;
+  }
+  .toolbar button:active{transform:scale(.96);}
+  .toolbar button.ghost{background:#fff;border:1px solid var(--line);color:var(--text-sub);}
+  .stage{display:flex;gap:40px;flex-wrap:wrap;justify-content:center;align-items:flex-start;}
+  .phone{
+    width:390px;height:844px;background:#fff;border-radius:46px;
+    box-shadow:0 20px 60px rgba(13,59,48,.18),0 0 0 10px #0c1110,0 0 0 12px #2a3331;
+    overflow:hidden;position:relative;
+  }
+  .screen{height:100%;overflow-y:auto;background:linear-gradient(180deg,#0E7C66 0%,#2ECFB0 15%,#D8F3EA 40%,#FFF1E8 100%);}
+  .screen::-webkit-scrollbar{width:0;}
+  .hero{padding:54px 24px 14px;color:#fff;}
+  .hero .hi{font-size:15px;font-weight:600;opacity:.92;text-shadow:0 1px 4px rgba(13,59,48,.3);}
+  .hero .name{font-size:27px;font-weight:800;margin-top:4px;letter-spacing:-.5px;text-shadow:0 1px 5px rgba(13,59,48,.32);}
+  .hero .date{font-size:13px;opacity:.85;margin-top:8px;text-shadow:0 1px 4px rgba(13,59,48,.26);}
+  .col{padding:0 18px 120px;display:flex;flex-direction:column;gap:14px;margin-top:-2px;}
+  .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+  .card-head{display:flex;align-items:flex-end;justify-content:space-between;}
+  .card-title{font-size:18px;font-weight:800;letter-spacing:-.4px;color:var(--text);}
+  .link{font-size:13px;font-weight:600;color:var(--primary-deep);}
+  /* entry card */
+  .entry{border:1.5px solid var(--primary);}
+  .entry .pct{display:flex;align-items:baseline;gap:2px;}
+  .entry .pct b{font-size:34px;font-weight:800;color:var(--primary-deep);font-feature-settings:"tnum";line-height:1;}
+  .entry .pct span{font-size:15px;font-weight:700;color:var(--primary-deep);}
+  .ring-wrap{position:relative;width:62px;height:62px;flex:0 0 auto;}
+  .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--primary-deep);}
+  .pbar{height:9px;border-radius:999px;background:var(--bg);margin-top:14px;overflow:hidden;}
+  .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-deep));transition:width .35s ease;}
+  .chips{display:flex;gap:10px;margin-top:14px;}
+  .chip{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 6px 12px;
+    border-radius:16px;background:var(--bg);border:1.5px solid transparent;cursor:pointer;transition:.15s;
+  }
+  .chip .ico{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(31,35,41,.06);}
+  .chip .ico svg{width:24px;height:24px;stroke:var(--primary-deep);fill:none;stroke-width:1.8;}
+  .chip .cn{font-size:14px;font-weight:700;}
+  .chip .cs{font-size:12px;color:var(--text-weak);}
+  .chip.on{background:var(--primary-light);border-color:var(--primary);}
+  .chip.on .cs{color:var(--primary-deep);font-weight:700;}
+  .chip .check{position:absolute;}
+  .entry-foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);}
+  .entry-foot .hint{font-size:12px;color:var(--text-weak);}
+  /* plan */
+  .plan-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);}
+  .plan-item:last-child{border-bottom:0;padding-bottom:0;}
+  .thumb{width:52px;height:52px;border-radius:14px;background:var(--primary-light);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;position:relative;}
+  .thumb svg{width:26px;height:26px;stroke:var(--primary-deep);fill:none;stroke-width:1.8;}
+  .plan-body{flex:1;min-width:0;}
+  .plan-name{font-size:16px;font-weight:700;}
+  .plan-meta{font-size:12px;color:var(--text-weak);margin-top:3px;}
+  .bar2{height:7px;border-radius:999px;background:var(--bg);margin-top:9px;overflow:hidden;}
+  .bar2 i{display:block;height:100%;background:var(--primary);border-radius:999px;}
+  .tag{flex:0 0 auto;font-size:12px;font-weight:700;color:var(--text-weak);background:var(--bg);border-radius:999px;padding:5px 12px;}
+  .tag.done{color:#fff;background:var(--primary);}
+  .plan-empty{display:flex;align-items:center;gap:14px;}
+  .plan-empty .pe-name{font-size:15px;font-weight:700;}
+  .plan-empty .pe-meta{font-size:12px;color:var(--text-weak);margin-top:3px;}
+  .btn{margin-left:auto;font-size:13px;font-weight:700;color:var(--primary-deep);background:var(--primary-light);border-radius:999px;padding:9px 18px;cursor:pointer;border:0;}
+  .hidden{display:none!important;}
+  /* calendar */
+  .wk{display:flex;gap:6px;margin-top:14px;}
+  .wk-d{flex:1;display:flex;flex-direction:column;align-items:center;}
+  .wk-wd{font-size:12px;color:var(--text-weak);font-weight:600;}
+  .wk-box{position:relative;width:44px;height:48px;margin-top:6px;display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:600;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:14px;cursor:pointer;transition:.15s;}
+  .wk-d.today .wk-box{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .wk-dot{position:absolute;bottom:7px;width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .wk-d.today .wk-dot{background:#fff;}
+  /* week overview strip */
+  .ovw{display:flex;gap:12px;}
+  .ovw .o{flex:1;background:var(--bg);border-radius:14px;padding:14px 8px;text-align:center;}
+  .ovw .on{font-size:22px;font-weight:800;color:var(--primary-deep);font-feature-settings:"tnum";}
+  .ovw .oc{font-size:12px;color:var(--text-sub);margin-top:3px;}
+  /* tab bar */
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;padding:8px 18px calc(8px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;align-items:flex-start;}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-weak);font-size:11px;font-weight:600;cursor:pointer;}
+  .tab svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;}
+  .tab.on{color:var(--primary-deep);}
+  .tab.on svg{stroke:var(--primary-deep);}
+  /* modal */
+  .mask{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:0 40px;z-index:50;}
+  .modal{width:100%;max-height:84%;overflow-y:auto;background:#fff;border-radius:22px;padding:18px 16px 14px;}
+  .m-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .m-nav{width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text);cursor:pointer;}
+  .m-title{flex:1;text-align:center;font-size:15px;font-weight:700;}
+  .m-close{width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-sub);cursor:pointer;}
+  .m-week{display:flex;margin-bottom:4px;}
+  .m-wk{width:14.28%;text-align:center;font-size:12px;color:var(--text-weak);}
+  .m-grid{display:flex;flex-wrap:wrap;}
+  .m-cell{width:14.28%;height:52px;display:flex;align-items:center;justify-content:center;}
+  .m-day{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text);}
+  .m-cell.rec .m-day{background:var(--primary);color:#fff;}
+  .m-cell.today .m-day{color:var(--primary-deep);font-weight:800;box-shadow:inset 0 0 0 2px var(--primary);}
+  .m-tip{margin-top:10px;text-align:center;font-size:12px;color:var(--text-weak);}
+  .caption{font-size:12px;color:var(--text-weak);text-align:center;margin-top:14px;max-width:390px;line-height:1.6;}
+  .note{width:300px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);font-size:13px;line-height:1.7;color:var(--text-sub);}
+  .note h3{margin:0 0 8px;font-size:14px;color:var(--primary-deep);font-weight:800;}
+  .note ol{margin:0;padding-left:18px;}
+  .note li{margin-bottom:6px;}
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <button id="btnReset">重置打卡</button>
+    <button id="btnPlan" class="ghost">切换：空状态 / 示例计划</button>
+    <button id="btnCal" class="ghost">展开月历</button>
+  </div>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen">
+        <div class="hero">
+          <div class="hi">晚上好</div>
+          <div class="name">健身者</div>
+          <div class="date">周三 · 8 月 19 日</div>
+        </div>
+
+        <div class="col">
+          <!-- 合并后的「今日打卡 · 入口」卡 -->
+          <div class="card entry">
+            <div class="card-head">
+              <div class="card-title">今日打卡</div>
+              <div class="ring-wrap">
+                <svg width="62" height="62" viewBox="0 0 62 62">
+                  <circle cx="31" cy="31" r="26" fill="none" stroke="#E2E8F0" stroke-width="7"/>
+                  <circle id="ring" cx="31" cy="31" r="26" fill="none" stroke="#2ECFB0" stroke-width="7" stroke-linecap="round" transform="rotate(-90 31 31)" stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
+                </svg>
+                <div class="ring-num"><span id="ringPct">0</span>%</div>
+              </div>
+            </div>
+
+            <div class="pbar"><i id="pbar" style="width:0%"></i></div>
+            <div class="chips" id="chips">
+              <div class="chip" data-k="weight">
+                <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 12h16M20 5v14"/></svg></div>
+                <div class="cn">体重</div><div class="cs">待记录</div>
+              </div>
+              <div class="chip" data-k="train">
+                <div class="ico"><svg viewBox="0 0 24 24"><path d="M6.5 6v12M17.5 6v12M3 9h3.5M17.5 9H21M3 15h3.5M17.5 15H21"/></svg></div>
+                <div class="cn">训练</div><div class="cs">待记录</div>
+              </div>
+              <div class="chip" data-k="diet">
+                <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v18M12 8c0-2 2-3 4-3M12 8c0-2-2-3-4-3M12 14c0-2 2-3 4-3M12 14c0-2-2-3-4-3"/></svg></div>
+                <div class="cn">饮食</div><div class="cs">待记录</div>
+              </div>
+            </div>
+
+            <div class="entry-foot">
+              <div class="hint" id="entryHint">点按上方直接去记录 · 完成 0 / 3 项</div>
+              <div class="link">我的计划 ›</div>
+            </div>
+          </div>
+
+          <!-- 今日训练计划（上移） -->
+          <div class="card" id="planCard">
+            <div class="card-head">
+              <div class="card-title">今日训练计划</div>
+              <div class="link">全部 ›</div>
+            </div>
+            <div id="planList">
+              <div class="plan-item">
+                <div class="thumb"><svg viewBox="0 0 24 24"><path d="M6.5 6v12M17.5 6v12M3 9h3.5M17.5 9H21M3 15h3.5M17.5 15H21"/></svg></div>
+                <div class="plan-body">
+                  <div class="plan-name">杠铃卧推</div>
+                  <div class="plan-meta">4 组 · 12 次 · 上次 40kg</div>
+                  <div class="bar2"><i style="width:60%"></i></div>
+                </div>
+                <div class="tag">2 / 4 组</div>
+              </div>
+              <div class="plan-item">
+                <div class="thumb"><svg viewBox="0 0 24 24"><path d="M5 20c0-6 3-10 7-10s7 4 7 10M12 10V4"/></svg></div>
+                <div class="plan-body">
+                  <div class="plan-name">深蹲</div>
+                  <div class="plan-meta">4 组 · 10 次 · 上次 60kg</div>
+                  <div class="bar2"><i style="width:40%"></i></div>
+                </div>
+                <div class="tag">1 / 4 组</div>
+              </div>
+            </div>
+            <div id="planEmpty" class="plan-empty hidden">
+              <div class="thumb"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 3-3M12 4v7M5 20h14"/></svg></div>
+              <div>
+                <div class="pe-name">今天还没选训练</div>
+                <div class="pe-meta">去挑选或创建你的训练计划</div>
+              </div>
+              <button class="btn">去选择</button>
+            </div>
+          </div>
+
+          <!-- 本周概览（可选，紧凑数据条） -->
+          <div class="card">
+            <div class="card-head"><div class="card-title">本周概览</div></div>
+            <div class="ovw" style="margin-top:14px">
+              <div class="o"><div class="on">3</div><div class="oc">训练天数</div></div>
+              <div class="o"><div class="on">11</div><div class="oc">完成动作</div></div>
+              <div class="o"><div class="on">-0.4</div><div class="oc">体重 kg</div></div>
+            </div>
+          </div>
+
+          <!-- 训练记录日历（下沉） -->
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">训练记录日历</div>
+              <div class="link" id="calLink">查看日历 ›</div>
+            </div>
+            <div class="wk" id="wk"></div>
+          </div>
+
+          <div style="height:8px"></div>
+        </div>
+
+        <!-- tab bar -->
+        <div class="tabbar">
+          <div class="tab on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>首页</div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M6.5 6v12M17.5 6v12M3 9h3.5M17.5 9H21M3 15h3.5M17.5 15H21"/></svg>训练</div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 12h16M20 5v14"/></svg>记录</div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 100-8 4 4 0 000 8M5 20c0-4 3-6 7-6s7 2 7 6"/></svg>我的</div>
+        </div>
+      </div>
+
+      <!-- 月历弹窗 -->
+      <div class="mask hidden" id="calMask">
+        <div class="modal">
+          <div class="m-head">
+            <div class="m-nav" id="prevM">‹</div>
+            <div class="m-title" id="mTitle">2026 年 8 月</div>
+            <div class="m-close" id="closeM">✕</div>
+          </div>
+          <div class="m-week"><div class="m-wk">日</div><div class="m-wk">一</div><div class="m-wk">二</div><div class="m-wk">三</div><div class="m-wk">四</div><div class="m-wk">五</div><div class="m-wk">六</div></div>
+          <div class="m-grid" id="mGrid"></div>
+          <div class="m-tip">绿色日期为已训练日，点击可查看当日训练</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <h3>原型说明</h3>
+      <ol>
+        <li><b>合并入口</b>：「快捷开始」已并入「今日打卡」，三项即可点按跳转又可显示完成态，省掉一整块重复入口。</li>
+        <li><b>计划上移</b>：「今日训练计划」紧跟完成度之后，日历下沉为回顾。</li>
+        <li><b>统一卡片语言</b>：全部圆角卡片，强调色（薄荷）只用于进度/激活/完成态。</li>
+        <li>点chip可切换完成态，进度环实时更新；右上「切换」可看空状态；「展开月历」为本月日历。</li>
+      </ol>
+    </div>
+  </div>
+
+<script>
+  // ---- 打卡状态 ----
+  const state={weight:false,train:false,diet:false};
+  const CIRC=163.36;
+  const chips=document.getElementById('chips');
+  const ring=document.getElementById('ring');
+  const ringPct=document.getElementById('ringPct');
+  const pbar=document.getElementById('pbar');
+  const hint=document.getElementById('entryHint');
+  function render(){
+    const done=Object.values(state).filter(Boolean).length;
+    const pct=Math.round(done/3*100);
+    ringPct.textContent=pct;
+    ring.style.strokeDashoffset=CIRC*(1-pct/100);
+    pbar.style.width=pct+'%';
+    hint.textContent='点按上方直接去记录 · 完成 '+done+' / 3 项';
+    chips.querySelectorAll('.chip').forEach(c=>{
+      const k=c.dataset.k, on=state[k];
+      c.classList.toggle('on',on);
+      c.querySelector('.cs').textContent=on?'已打卡':'待记录';
+    });
+  }
+  chips.querySelectorAll('.chip').forEach(c=>{
+    c.addEventListener('click',()=>{state[c.dataset.k]=!state[c.dataset.k];render();});
+  });
+  document.getElementById('btnReset').addEventListener('click',()=>{
+    state.weight=state.train=state.diet=false;render();
+  });
+  render();
+
+  // ---- 计划 示例 / 空状态 ----
+  let planEmpty=false;
+  document.getElementById('btnPlan').addEventListener('click',()=>{
+    planEmpty=!planEmpty;
+    document.getElementById('planList').classList.toggle('hidden',planEmpty);
+    document.getElementById('planEmpty').classList.toggle('hidden',!planEmpty);
+  });
+
+  // ---- 本周迷你日历 ----
+  const wkNames=['一','二','三','四','五','六','日'];
+  const wkDates=[17,18,19,20,21,22,23];
+  const recSet=new Set([18,19,21]);
+  const today=19;
+  const wk=document.getElementById('wk');
+  wkNames.forEach((w,i)=>{
+    const d=wkDates[i];
+    const el=document.createElement('div');
+    el.className='wk-d'+(d===today?' today':'')+(recSet.has(d)?' rec':'');
+    el.innerHTML='<div class="wk-wd">'+w+'</div><div class="wk-box">'+d+(recSet.has(d)?'<div class="wk-dot"></div>':'')+'</div>';
+    wk.appendChild(el);
+  });
+
+  // ---- 月历弹窗 ----
+  let y=2026,m=7; // August (0-based)
+  const records=new Set(['2026-8-18','2026-8-19','2026-8-21','2026-8-14','2026-8-10']);
+  const mGrid=document.getElementById('mGrid');
+  const mTitle=document.getElementById('mTitle');
+  function buildMonth(){
+    mTitle.textContent=y+' 年 '+(m+1)+' 月';
+    mGrid.innerHTML='';
+    const first=new Date(y,m,1).getDay();
+    const days=new Date(y,m+1,0).getDate();
+    const cells=[];
+    for(let i=0;i<first;i++)cells.push(null);
+    for(let d=1;d<=days;d++)cells.push(d);
+    while(cells.length%7)cells.push(null);
+    cells.forEach(d=>{
+      const cell=document.createElement('div');
+      cell.className='m-cell';
+      if(d){
+        const key=y+'-'+(m+1)+'-'+d;
+        const rec=records.has(key);
+        const isToday=(y===2026&&m===7&&d===19);
+        if(rec)cell.classList.add('rec');
+        if(isToday)cell.classList.add('today');
+        cell.innerHTML='<div class="m-day">'+d+'</div>';
+      }else cell.classList.add('empty');
+      mGrid.appendChild(cell);
+    });
+  }
+  const mask=document.getElementById('calMask');
+  function openCal(){buildMonth();mask.classList.remove('hidden');}
+  function closeCal(){mask.classList.add('hidden');}
+  document.getElementById('calLink').addEventListener('click',openCal);
+  document.getElementById('btnCal').addEventListener('click',openCal);
+  document.getElementById('closeM').addEventListener('click',closeCal);
+  mask.addEventListener('click',e=>{if(e.target===mask)closeCal();});
+  document.getElementById('prevM').addEventListener('click',()=>{m--;if(m<0){m=11;y--;}buildMonth();});
+  document.getElementById('nextM').addEventListener('click',()=>{m++;if(m>11){m=0;y++;}buildMonth();});
+</script>
+</body>
+</html>

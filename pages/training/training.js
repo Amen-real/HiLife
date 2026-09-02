@@ -5,12 +5,17 @@ const { media, thumb } = require('../../utils/media.js');
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const categoryEmoji = mock.categoryEmoji;
+const theme = require('../../utils/theme.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
 Page({
   data: {
-    categories: ['我的动作', '全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心'],
+    // 'theme-light' | 'theme-dark'，由「我的 → 深色主题」开关控制，onShow 同步
+    theme: 'theme-light',
+    mode: 'lib', // lib=动作库 / fav=收藏
+    categories: ['全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心', '我的动作'],
+    catIcons: { '全部': 'all', '胸部': 'chest', '背部': 'muscleback', '肩膀': 'shoulder', '腿部': 'leg', '手臂': 'arm', '核心': 'core', '我的动作': 'myaction' },
     activeCat: '全部',
     keyword: '',
     list: [],
@@ -36,8 +41,10 @@ Page({
   },
 
   onShow() {
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 1 });
+      this.getTabBar().setData({ selected: 1, theme: themeCls });
     }
     this.syncState();
     this.refresh();
@@ -60,22 +67,30 @@ Page({
   refresh() {
     const cat = this.data.activeCat;
     let base = [];
-    if (cat === '我的动作') {
+    if (this.data.mode === 'fav') {
+      // 收藏：库 + 自建动作里筛出已收藏的
+      const lib = exercises.library;
+      Object.keys(lib).forEach(k => { if (Array.isArray(lib[k])) base = base.concat(lib[k]); });
+      base = base.concat(store.get().customActions);
+      const favIds = store.get().favorites;
+      base = base.filter(a => favIds.indexOf(a.id) >= 0);
+    } else if (cat === '我的动作') {
       base = store.get().customActions;
     } else if (cat === '全部') {
       const lib = exercises.library;
-      base = [];
       Object.keys(lib).forEach(k => { if (Array.isArray(lib[k])) base = base.concat(lib[k]); });
     } else {
       base = (exercises.library[cat] || []).slice();
     }
-    const isCustomTab = cat === '我的动作';
+    const isCustomTab = cat === '我的动作' && this.data.mode === 'lib';
     let list = base.map(a => ({
       ...a,
       // 「我的动作」下展示的必然是自建动作，强制打标，覆盖旧数据（无 custom 字段）也能显示删除按钮
       custom: isCustomTab ? true : (a.custom || false),
       nameZh: a.nameZh || a.name,
-      image: thumb(a.image || '', 600, 600),
+      image: thumb(a.image || a.video || '', 600, 600),
+      // 动作图标用演示 GIF 动图（优先 video，无则回退静态 image）；<image> 渲染 GIF 自动循环播放，不额外加角标
+      gif: media(a.video || a.image || ''),
       video: media(a.video || ''),
       emoji: a.emoji || categoryEmoji[a.category] || '🏋️'
     }));
@@ -111,6 +126,11 @@ Page({
 
   switchCat(e) {
     this.setData({ activeCat: e.currentTarget.dataset.cat, keyword: '' }, () => this.refresh());
+  },
+
+  // 动作库 / 收藏 切换
+  switchMode(e) {
+    this.setData({ mode: e.currentTarget.dataset.mode, keyword: '' }, () => this.refresh());
   },
 
   onSearch(e) {
@@ -355,8 +375,5 @@ Page({
       wx.showToast({ title: '已自动选好 ' + picks.length + ' 个动作', icon: 'none' });
     }
     wx.navigateTo({ url: '/pages/workout/workout' });
-  },
-
-  // 训练复盘入口（与「我的」页菜单互为双入口）
-  goReview() { wx.navigateTo({ url: '/pages/review/review' }); }
+  }
 });

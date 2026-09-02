@@ -1,220 +1,132 @@
-<!-- pages/list/list.wxml -->
-<view class="page">
+<!-- pages/list/list.wxml —— 严格对齐 06-records.html（训练记录） -->
+<view class="page {{theme}}">
 
-  <!-- 顶部标签（吸顶药丸 + 滑动指示条，与饮食建议一致） -->
-  <view class="seg">
-    <view class="seg-thumb {{tab==='training' ? 'right' : ''}}"></view>
-    <view class="seg-btn {{tab==='weight'?'on':''}}" data-tab="weight" bindtap="switchTab">体重记录</view>
-    <view class="seg-btn {{tab==='training'?'on':''}}" data-tab="training" bindtap="switchTab">训练记录</view>
-  </view>
-
-  <!-- 体重记录 -->
-  <view wx:if="{{tab==='weight'}}" class="tab-pane">
-    <view class="card">
-      <view class="btn-primary rec-btn" bindtap="goRecordWeight">+ 记录体重</view>
-      <view class="overview">
-        <view class="ov-item">
-          <view class="ov-num">{{stats.latest}}<text class="ov-unit">kg</text></view>
-          <view class="ov-cap">最新体重</view>
-        </view>
-        <view class="ov-item">
-          <view class="ov-num {{stats.trend === 'down' ? 'down' : (stats.trend === 'up' ? 'up' : (stats.trend === 'flat' ? 'flat' : ''))}}"><text wx:if="{{stats.trend === 'down'}}" class="ov-trend">↓</text><text wx:elif="{{stats.trend === 'up'}}" class="ov-trend">↑</text><text wx:elif="{{stats.trend === 'flat'}}" class="ov-trend">—</text>{{stats.change}}</view>
-          <view class="ov-cap">区间变化</view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 趋势图 -->
-    <view class="card">
-      <view class="section-title">体重变化趋势</view>
-      <view class="ranges">
-        <view
-          wx:for="{{ranges}}"
-          wx:key="*this"
-          class="range {{rangeIdx===index?'active':''}}"
-          data-idx="{{index}}"
-          bindtap="switchRange"
-        >{{item}}</view>
-      </view>
-      <view wx:if="{{hasWeight}}" class="chart-wrap">
-        <canvas type="2d" id="wc" class="wc"></canvas>
-      </view>
-      <view wx:else class="empty">当前{{ranges[rangeIdx]}}范围内还没有体重记录</view>
-    </view>
-
-    <!-- 统计卡片 -->
-    <view class="stats-row">
-      <view class="stat-card">
-        <view class="stat-num">{{stats.max}}</view>
-        <view class="stat-cap">最高体重</view>
-      </view>
-      <view class="stat-card">
-        <view class="stat-num">{{stats.min}}</view>
-        <view class="stat-cap">最低体重</view>
-      </view>
-      <view class="stat-card">
-        <view class="stat-num">{{stats.days}}</view>
-        <view class="stat-cap">记录天数</view>
-      </view>
-    </view>
-
-    <!-- 历史记录 -->
-    <view class="card">
-      <view class="section-title">
-        体重历史记录（共 {{filteredWeightList.length}} 条）
-      </view>
-
-      <!-- 日期筛选 -->
-      <view class="date-filter">
-        <picker mode="date" value="{{filterStart}}" end="{{filterEnd || ''}}" bindchange="onFilterStart">
-          <view class="df-picker {{filterStart ? 'has-val' : ''}}">{{filterStart || '开始日期'}}</view>
-        </picker>
-        <text class="df-sep">至</text>
-        <picker mode="date" value="{{filterEnd}}" start="{{filterStart || ''}}" bindchange="onFilterEnd">
-          <view class="df-picker {{filterEnd ? 'has-val' : ''}}">{{filterEnd || '结束日期'}}</view>
-        </picker>
-        <view class="df-clear" wx:if="{{filterStart || filterEnd}}" bindtap="clearFilter">✕ 重置</view>
-      </view>
-
-      <view wx:if="{{filteredWeightList.length}}">
-        <view class="his-row" wx:for="{{filteredWeightList}}" wx:key="date">
-          <text class="his-date">{{item.date}}</text>
-          <text class="his-weight">{{item.weight}} kg</text>
-        </view>
-      </view>
-      <view wx:else class="empty">
-        <block wx:if="{{filterStart || filterEnd}}">该日期范围内没有体重记录</block>
-        <block wx:else>记录体重后，这里会显示历史记录</block>
-      </view>
+  <!-- HEADER：训练记录 / 训练复盘 双标题 -->
+  <view class="header">
+    <view class="lead">
+      <view class="title {{tab === 'records' ? 'active' : ''}}" data-tab="records" bindtap="switchTitle">训练记录</view>
+      <view class="title {{tab === 'review' ? 'active' : ''}}" data-tab="review" bindtap="switchTitle">训练复盘</view>
     </view>
   </view>
 
   <!-- 训练记录 -->
-  <view wx:else class="tab-pane">
-    <view class="card">
-      <view class="section-title">训练历史记录（共 {{filteredTrainGroups.length}} 天）</view>
+  <block wx:if="{{tab === 'records'}}">
+    <scroll-view class="scroll" scroll-y>
+      <!-- 月份选择（点击弹原生日期选择器） -->
+      <picker mode="date" value="{{todayStr}}" fields="month" bindchange="onPickMonth">
+        <view class="month" hover-class="month-hover">
+          <text>{{monthLabel}}</text>
+          <text class="caret">▾</text>
+        </view>
+      </picker>
 
-      <!-- 日期筛选：今日 / 昨日 / 选择日期 -->
-      <view class="date-filter">
-        <view class="qf {{trainQuick==='today'?'active':''}}" data-mode="today" bindtap="onTrainQuick">今日</view>
-        <view class="qf {{trainQuick==='yesterday'?'active':''}}" data-mode="yesterday" bindtap="onTrainQuick">昨日</view>
-        <picker mode="date" value="{{trainCustomDate}}" end="{{todayStr}}" bindchange="onTrainCustomDate">
-          <view class="qf {{trainCustomDate?'active':''}}">{{trainCustomDate || '选择日期'}}</view>
-        </picker>
-        <view class="df-clear" wx:if="{{trainQuick !== 'today' || trainCustomDate}}" bindtap="clearTrainFilter">回到今日</view>
+      <!-- 星期行 -->
+      <view class="weekdays">
+        <view class="weekday" wx:for="{{weekdays}}" wx:key="*this">{{item}}</view>
       </view>
 
-      <view wx:if="{{filteredTrainGroups.length}}">
-        <view class="train-group" wx:for="{{filteredTrainGroups}}" wx:for-item="g" wx:key="key">
-          <view class="tg-head" data-idx="{{index}}" bindtap="toggleGroup">
-            <text class="tg-date">{{g.date}}</text>
-            <view class="tg-meta">
-              <text wx:if="{{g.multi}}" class="tg-count">{{g.sessions.length}} 场</text>
-              <text class="tg-arrow">{{g.collapsed ? '▸' : '▾'}}</text>
-            </view>
-          </view>
-          <view class="tg-sessions" wx:if="{{!g.collapsed}}">
-            <view class="tg-session" wx:for="{{g.sessions}}" wx:for-item="s" wx:key="key"
-                  data-date="{{g.date}}" data-sid="{{s.sid}}" bindtap="openTrainDetail" hover-class="train-hover">
-              <text wx:if="{{g.multi}}" class="tl-session">第{{s.sessionNo}}练</text>
-              <view class="tl-actions">
-                <text class="tl-act" wx:for="{{s.actions}}" wx:for-item="a" wx:key="name">{{a.name}}</text>
-              </view>
-              <text class="tl-arrow">›</text>
-            </view>
-          </view>
+      <!-- 日期行：7 天单元格，支持左右滑动切周（绑 catchtouchstart/move/end） -->
+      <view class="dates"
+            bindtouchstart="onDateTouchStart"
+            bindtouchend="onDateTouchEnd">
+        <view wx:for="{{weekDates}}"
+              wx:key="iso"
+              class="date {{item.muted ? 'muted' : ''}} {{item.isActive ? 'active' : ''}} {{item.hasRecord ? 'has-record' : ''}}"
+              data-iso="{{item.iso}}"
+              bindtap="selectDate">
+          {{item.day}}
         </view>
       </view>
-      <view wx:else class="empty">
-        <block wx:if="{{trainQuick==='today'}}">今天还没有训练记录，去「训练」开始第一次吧</block>
-        <block wx:elif="{{trainQuick==='yesterday'}}">昨天没有训练记录</block>
-        <block wx:elif="{{trainCustomDate}}">{{trainCustomDate}} 没有训练记录</block>
-        <block wx:else>还没有训练记录，去「训练」开始第一次吧</block>
-      </view>
-    </view>
 
-    <!-- 训练详细报表 -->
-    <view class="card report-card">
-      <view class="section-title">训练详细报表</view>
+      <!-- 训练记录卡（选中日期没有记录时显示空态） -->
+      <block wx:if="{{record.hasData}}">
+        <view class="records-card" aria-label="{{record.date}} 训练记录">
 
-      <!-- 三大类 banner 菜单：默认显示「组数对比」，点击切换 -->
-      <view class="rep-tabs">
-        <view class="rep-thumb {{reportTab==='time' ? 'right' : ''}}"></view>
-        <view wx:for="{{reportTabs}}" wx:key="*this"
-          class="rep-tab {{reportTab===item?'active':''}}" data-tab="{{item}}" bindtap="switchReportTab">{{reportTabLabels[item]}}</view>
-      </view>
-
-      <block wx:if="{{report.hasData}}">
-        <!-- ══════════════ 1. 组数对比（柱状图 + 柱顶数字 + 汇总） ══════════════ -->
-        <view class="rep-block" wx:if="{{reportTab==='sets'}}">
-          <view class="rep-head">
-            <text class="rep-title">组数对比</text>
-            <text class="rep-delta {{report.sets.up?'up':'down'}}">{{report.sets.deltaText}}</text>
-          </view>
-          <view class="rep-sub">展示部位的具体完成组数（单位：组）</view>
-          <view class="rep-legend-inline">
-            <view class="lg"><view class="lg-dot prev"></view>上周</view>
-            <view class="lg"><view class="lg-dot cur"></view>本周</view>
-          </view>
-          <view class="bar-chart sets-chart">
-            <view class="bar-group" wx:for="{{report.sets.bars}}" wx:key="name">
-              <view class="bars">
-                <view class="bar bar-prev" style="height:{{item.prevH}}rpx" wx:if="{{item.prev>0}}">
-                  <text class="bar-num">{{item.prev}}</text>
-                </view>
-                <view class="bar bar-cur" style="height:{{item.curH}}rpx" wx:if="{{item.cur>0}}">
-                  <text class="bar-num">{{item.cur}}</text>
-                </view>
+          <!-- 灰底汇总：日期 + 3 列统计（时长 / 卡路里 / 动作数） -->
+          <view class="day-card">
+            <view class="day-head">
+              <text class="day-date">{{record.dateLabel}}</text>
+            </view>
+            <view class="day-stats">
+              <view class="day-stat first">
+                <view class="v big">{{record.duration}}</view>
               </view>
-              <text class="bar-name">{{item.name}}</text>
+              <view class="day-stat">
+                <view class="v">{{record.calories}}<text class="unit">kcal</text></view>
+              </view>
+              <view class="day-stat">
+                <view class="v">{{record.actionCount}}<text class="lab">大动作</text></view>
+              </view>
             </view>
           </view>
-          <view class="rep-summary">
-            <text class="rep-sum-text">与上周做对比，本周训练次数总计训练 </text>
-            <text class="rep-sum-hl">{{report.sets.curLabel}}</text><text class="rep-sum-text"> 次 · 上周 </text>
-            <text class="rep-sum-hl">{{report.sets.prevLabel}}</text><text class="rep-sum-text"> 次</text>
-            <text class="rep-sum-emoji">{{report.sets.up ? '👍' : '📉'}}</text>
-          </view>
-        </view>
 
-        <!-- ══════════════ 2. 锻炼时间（星期每日柱状图 + 汇总） ══════════════ -->
-        <view class="rep-block time" wx:if="{{reportTab==='time'}}">
-          <view class="rep-head">
-            <text class="rep-title">锻炼时间</text>
-            <text class="rep-delta {{report.time.up?'up':'down'}}">{{report.time.deltaText}}</text>
-          </view>
-          <view class="rep-sub">展示具体的训练时间（单位：分钟）</view>
-      <view class="rep-legend-inline">
-        <view class="lg"><view class="lg-dot prev"></view>上周</view>
-        <view class="lg"><view class="lg-dot cur time-cur"></view>本周</view>
-      </view>
-      <view class="bar-chart daily-chart">
-            <view class="bar-group" wx:for="{{report.timeDaily}}" wx:key="day">
-              <view class="bars">
-                <view class="bar bar-prev" style="height:{{item.prevH}}rpx" wx:if="{{item.prevMin>0}}">
-                  <text class="bar-num-sm">{{item.prevMin}}</text>
-                </view>
-                <view class="bar bar-cur time-bar-cur" style="height:{{item.curH}}rpx" wx:if="{{item.curMin>0}}">
-                  <text class="bar-num-sm">{{item.curMin}}</text>
-                </view>
+          <!-- 白底动作列表 -->
+          <view class="ex-list">
+            <view wx:for="{{record.actions}}"
+                  wx:key="name"
+                  class="ex-row"
+                  hover-class="ex-row-hover"
+                  data-name="{{item.name}}"
+                  bindtap="openExercise">
+              <view class="ex-thumb">
+                <image wx:if="{{item.gif}}" class="ex-thumb-img" src="{{item.gif}}" mode="aspectFill" lazy-load></image>
+                <text wx:else class="ex-thumb-emoji">{{item.thumbEmoji}}</text>
               </view>
-              <text class="bar-name">{{item.day}}</text>
+              <view class="ex-body">
+                <view class="ex-name">{{item.name}}</view>
+                <view class="ex-meta">{{item.meta}}</view>
+              </view>
+              <view class="ex-right">{{item.value}}<text class="unit">{{item.unit}}</text></view>
             </view>
           </view>
-          <view class="rep-summary">
-            <text class="rep-sum-text">与上周做对比，本周训练总时长 </text>
-            <text class="rep-sum-hl">{{report.time.curText}}</text>
-            <text class="rep-sum-text"> · 上周 </text>
-            <text class="rep-sum-hl">{{report.time.prevText}}</text>
-            <text class="rep-sum-emoji">{{report.time.up ? '👍' : '📉'}}</text>
-          </view>
-        </view>
 
+        </view>
       </block>
 
-      <view wx:else class="empty">近{{report.periodLabel}}还没有训练记录，开始训练后自动生成报表</view>
+      <view wx:else class="empty-card">
+        <view class="empty-ico">📋</view>
+        <view class="empty-title">这天还没有训练记录</view>
+        <view class="empty-hint">去「训练」开始第一次吧</view>
+      </view>
+
+      <view class="bottom-gap" />
+    </scroll-view>
+  </block>
+
+  <!-- 训练复盘（内嵌组件，当前页直接显示，不再跳独立页） -->
+  <block wx:elif="{{tab === 'review'}}">
+    <training-review />
+  </block>
+
+  <!-- 动作历史抽屉：点按训练记录动作弹出（组数 / 重量等） -->
+  <view wx:if="{{showExSheet}}" class="mask" bindtap="closeExSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <view class="sheet-thumb" wx:if="{{exSheet.gif}}">
+          <image class="sheet-thumb-img" src="{{exSheet.gif}}" mode="aspectFill" lazy-load></image>
+        </view>
+        <view class="sheet-title">{{exSheet.name}} · 历史训练</view>
+      </view>
+      <view class="ex-summary">
+        <view class="ex-stat"><view class="v">{{exSheet.totalSets}}</view><view class="lab">组数</view></view>
+        <view class="ex-stat"><view class="v">{{exSheet.maxWeight}}</view><view class="lab">峰值kg</view></view>
+        <view class="ex-stat"><view class="v">{{exSheet.avgRpe}}</view><view class="lab">平均RPE</view></view>
+      </view>
+
+      <scroll-view scroll-y class="ex-hist">
+        <view class="ex-hist-row" wx:for="{{exSheet.history}}" wx:key="k">
+          <view class="eh-line1">
+            <text class="eh-set">第{{item.setNo}}组</text>
+            <text class="eh-main">{{item.weight}}kg × {{item.reps}}次</text>
+          </view>
+          <view class="eh-line2">
+            <text class="eh-chip">RPE {{item.rpeText}}</text>
+            <text class="eh-chip">训练 {{item.train}}</text>
+            <text class="eh-chip">休息 {{item.rest}}</text>
+          </view>
+        </view>
+        <view wx:if="{{exSheet.count === 0}}" class="meal-empty">当天没有该动作的训练记录</view>
+      </scroll-view>
     </view>
   </view>
-
-  <view class="bottom-gap" />
 </view>

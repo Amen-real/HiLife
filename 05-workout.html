@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>05 · 训练中 · HiLiLife</title>
+<style>
+/* ============== TOKENS ============== */
+:root {
+  --bg: #080808;
+  --bg-card: #1A1A1A;
+  --bg-card-2: #232323;
+  --bg-input: #1F1F1F;
+  --bg-elev: #2A2A2A;
+  --line: #2A2A2A;
+  --line-soft: #1F1F1F;
+  --primary: #C8FF00;
+  --primary-ink: #0A0A0A;
+  --orange: #FF9500;
+  --white: #FFFFFF;
+  --n-200: #B5B5B0;
+  --n-300: #888880;
+  --n-400: #6A6A66;
+  --n-500: #4A4A46;
+  --n-600: #2E2E2C;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+  --f-cn: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+  --f-en: "Inter", "SF Pro Display", system-ui, sans-serif;
+  --r-s: 8px;
+  --r-m: 12px;
+  --r-l: 16px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+}
+
+/* ============== RESET ============== */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; min-height: 100%; background: #1E1E1E; font-family: var(--f-cn); -webkit-font-smoothing: antialiased; }
+body { display: grid; place-items: center; padding: 24px 0; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+/* ============== META ============== */
+.preview-meta {
+  position: fixed; top: 12px; left: 16px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 600; color: #999;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+.preview-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+
+/* ============== PHONE ============== */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--bg);
+  border-radius: 44px;
+  overflow: hidden;
+  position: relative;
+  display: flex; flex-direction: column;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+  color: var(--white);
+}
+
+/* ============== STATUS BAR ============== */
+.status-bar {
+  flex: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px 6px;
+  font-size: 15px; font-weight: 700;
+}
+.status-bar .right { display: flex; gap: 6px; align-items: center; }
+.status-bar svg { width: 16px; height: 16px; }
+
+/* ============== HEADER ============== */
+.header {
+  flex: none;
+  padding: 8px 16px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.header .left { display: flex; flex-direction: column; gap: 2px; }
+.header .label { font-size: 11px; font-weight: 600; color: var(--n-300); letter-spacing: 0.02em; }
+.header .time {
+  font-family: var(--f-en);
+  font-size: 32px; font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 28px rgba(200,255,0,0.25);
+}
+.header .right { display: flex; align-items: center; gap: 8px; }
+.header .ic-btn {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  background: var(--bg-card);
+  border-radius: 50%;
+  color: var(--white);
+  transition: background 200ms;
+}
+.header .ic-btn:active { background: var(--bg-elev); }
+.header .ic-btn svg { width: 18px; height: 18px; }
+.header .end-btn {
+  height: 36px; padding: 0 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-card);
+  color: var(--white);
+  border-radius: var(--r-pill);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background 200ms;
+}
+.header .end-btn:hover { background: var(--bg-elev); }
+.header .end-btn:active { background: var(--n-600); }
+.header .end-btn svg { width: 12px; height: 12px; }
+
+/* ============== SCROLL ============== */
+.scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 16px 32px;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ============== ACTION CARD ============== */
+.action-card {
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  padding: 16px 16px 18px;
+  position: relative;
+}
+.action-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 2px;
+}
+.action-title {
+  font-size: 20px; font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--white);
+}
+.action-close {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--n-300);
+  transition: background 200ms;
+}
+.action-close:hover { background: var(--bg-elev); }
+.action-close:active { background: var(--n-600); }
+.action-close svg { width: 16px; height: 16px; }
+.action-sub {
+  font-size: 12px; font-weight: 600;
+  color: var(--n-300);
+  margin-bottom: 18px;
+  letter-spacing: 0;
+}
+.action-sub .sep { margin: 0 6px; color: var(--n-500); }
+
+/* RPE */
+.rpe-block { margin-bottom: 16px; }
+.rpe-label {
+  text-align: center;
+  font-size: 11px; font-weight: 700;
+  color: var(--n-300);
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+.rpe-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px;
+}
+.rpe-btn {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  background: var(--bg-elev);
+  border-radius: 50%;
+  color: var(--white);
+  font-size: 22px; font-weight: 600;
+  transition: background 200ms, transform 150ms;
+  line-height: 1;
+}
+.rpe-btn:hover { background: #353535; }
+.rpe-btn:active { background: var(--n-600); transform: scale(0.94); }
+.rpe-value {
+  min-width: 60px;
+  text-align: center;
+  font-family: var(--f-en);
+  font-size: 38px; font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 输入块 重量/次数 */
+.inputs {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.input-block {
+  display: flex; flex-direction: column;
+  gap: 6px;
+}
+.input-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--n-300);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.input-field {
+  height: 56px;
+  background: var(--bg-input);
+  border-radius: var(--r-m);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-en);
+  font-size: 28px; font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+  border: 1px solid transparent;
+  transition: border-color 200ms;
+}
+.input-field:hover { border-color: var(--n-600); }
+.input-field:focus-within { border-color: var(--primary); }
+
+/* 主 CTA 完成本组 */
+.cta {
+  display: block; width: 100%;
+  height: 52px;
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-size: 16px; font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: var(--r-m);
+  transition: transform 150ms, box-shadow 200ms;
+  box-shadow: 0 6px 24px rgba(200,255,0,0.25);
+}
+.cta:hover { box-shadow: 0 8px 32px rgba(200,255,0,0.35); }
+.cta:active { transform: scale(0.98); }
+
+/* ============== 休息 / REST CARD ============== */
+.rest-card {
+  margin-top: 12px;
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  padding: 16px 16px 16px;
+}
+.rest-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.rest-title {
+  font-size: 13px; font-weight: 800;
+  color: var(--white);
+  letter-spacing: 0.02em;
+}
+.rest-time {
+  font-family: var(--f-en);
+  font-size: 44px; font-weight: 800;
+  color: var(--white);
+  text-align: center;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 14px;
+}
+.rest-controls {
+  display: flex; align-items: center; justify-content: center;
+  gap: 18px;
+}
+.rest-btn {
+  height: 36px; padding: 0 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-elev);
+  color: var(--white);
+  font-family: var(--f-en);
+  font-size: 13px; font-weight: 700;
+  border-radius: var(--r-pill);
+  font-variant-numeric: tabular-nums;
+  transition: background 200ms, transform 150ms;
+}
+.rest-btn:hover { background: #353535; }
+.rest-btn:active { background: var(--n-600); transform: scale(0.96); }
+.rest-pause {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-radius: 50%;
+  transition: transform 150ms, box-shadow 200ms;
+  box-shadow: 0 4px 16px rgba(200,255,0,0.25);
+}
+.rest-pause:hover { box-shadow: 0 6px 22px rgba(200,255,0,0.35); }
+.rest-pause:active { transform: scale(0.92); }
+.rest-pause svg { width: 18px; height: 18px; }
+
+/* ============== 下一个动作 ============== */
+.next-card {
+  margin-top: 12px;
+  background: var(--bg-card);
+  border-radius: var(--r-xl);
+  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.next-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.next-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--n-300);
+  letter-spacing: 0.04em;
+}
+.next-name {
+  font-size: 15px; font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.01em;
+}
+.next-right { display: flex; align-items: center; gap: 8px; }
+.next-meta {
+  font-family: var(--f-en);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-200);
+  font-variant-numeric: tabular-nums;
+}
+.next-arrow {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  color: var(--n-300);
+  border-radius: 50%;
+  transition: background 200ms;
+}
+.next-arrow:hover { background: var(--bg-elev); }
+.next-arrow svg { width: 14px; height: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="preview-meta">
+  <span class="dot"></span>
+  <span>05 · 训练中</span>
+  <span>·</span>
+  <span>390 × 844 · Dark</span>
+</div>
+
+<div class="phone" role="application" aria-label="HiLiLife · 训练中 · 杠铃卧推">
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="right">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 22h2V11H2v11zm5 0h2V14H7v8zm4 0h2V8h-2v14zm4 0h2V5h-2v17zm4 0h2V2h-2v20z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5 13a10 10 0 0 1 14 0l-1.5 1.5a8 8 0 0 0-11 0L5 13zm-3-3a14 14 0 0 1 20 0l-1.5 1.5a12 12 0 0 0-17 0L2 10zm-3-3a18 18 0 0 1 26 0l-1.5 1.5a16 16 0 0 0-23 0L-1 7z"/></svg>
+      <svg viewBox="0 0 28 14" fill="none" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="23" height="13" rx="3" stroke="currentColor" stroke-opacity="0.5"/>
+        <rect x="2" y="2" width="20" height="10" rx="2" fill="currentColor"/>
+        <rect x="25" y="4" width="2" height="6" rx="1" fill="currentColor" fill-opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="left">
+      <div class="label">训练时长</div>
+      <div class="time">23:45</div>
+    </div>
+    <div class="right">
+      <button class="ic-btn" aria-label="更多">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+      </button>
+      <button class="ic-btn" aria-label="结束">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 4v6"/><path d="M5.5 7.5a8 8 0 1 0 13 0"/></svg>
+      </button>
+      <button class="end-btn">结束训练</button>
+    </div>
+  </header>
+
+  <main class="scroll">
+
+    <!-- 动作卡 -->
+    <section class="action-card" aria-label="当前动作 杠铃卧推">
+      <div class="action-head">
+        <div class="action-title">杠铃卧推</div>
+        <button class="action-close" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+        </button>
+      </div>
+      <div class="action-sub">
+        <span>第 3 组</span>
+        <span class="sep">/</span>
+        <span>共 4 组</span>
+      </div>
+
+      <!-- RPE -->
+      <div class="rpe-block">
+        <div class="rpe-label">RPE</div>
+        <div class="rpe-row">
+          <button class="rpe-btn" aria-label="RPE 减小">−</button>
+          <div class="rpe-value" aria-label="RPE 8">8</div>
+          <button class="rpe-btn" aria-label="RPE 增大">+</button>
+        </div>
+      </div>
+
+      <!-- 重量 / 次数 -->
+      <div class="inputs">
+        <div class="input-block">
+          <div class="input-label">重量 <span style="color:var(--n-500);">(kg)</span></div>
+          <div class="input-field">80</div>
+        </div>
+        <div class="input-block">
+          <div class="input-label">次数 <span style="color:var(--n-500);">(次)</span></div>
+          <div class="input-field">10</div>
+        </div>
+      </div>
+
+      <!-- 主 CTA -->
+      <button class="cta">完成本组</button>
+    </section>
+
+    <!-- 休息卡 -->
+    <section class="rest-card" aria-label="组间休息 01:30">
+      <div class="rest-head">
+        <div class="rest-title">组间休息</div>
+      </div>
+      <div class="rest-time" aria-label="休息 01 分 30 秒">01:30</div>
+      <div class="rest-controls">
+        <button class="rest-btn" aria-label="减少 30 秒">-30s</button>
+        <button class="rest-pause" aria-label="暂停">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
+        </button>
+        <button class="rest-btn" aria-label="增加 30 秒">+30s</button>
+      </div>
+    </section>
+
+    <!-- 下一个动作 -->
+    <section class="next-card" aria-label="下一个动作 上斜哑铃卧推">
+      <div class="next-left">
+        <div class="next-label">下一个动作</div>
+        <div class="next-name">上斜哑铃卧推</div>
+      </div>
+      <div class="next-right">
+        <div class="next-meta">4组 × 10次</div>
+        <button class="next-arrow" aria-label="切换动作">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 体重记录 · HiLiLife</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =========================================
+   DESIGN TOKENS  (与 01/02/03/04/06/12 同步)
+   ========================================= */
+:root {
+  --primary:      #C8FF00;
+  --primary-ink:  #0A0A0A;
+  --primary-dim:  #ECFFC2;
+
+  --n-950: #0A0A0A;
+  --n-900: #111111;
+  --n-700: #444444;
+  --n-600: #707070;
+  --n-500: #A0A0A0;
+  --n-400: #C7C7C2;
+  --n-300: #D9D9D5;
+  --n-200: #E8E8E4;
+  --n-100: #F1F1EE;
+  --n-50:  #F7F7F5;
+  --white: #FFFFFF;
+
+  --success: #6F9F00;
+  --warning: #FFB020;
+  --orange:  #FF9500;
+  --card-gray: #EFEFEB;
+
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-pill: 999px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+
+  --f-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --f-en: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: var(--f-zh); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 50% -10%, #ececea 0%, transparent 60%),
+    var(--n-50);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 16px 48px;
+}
+.preview-meta {
+  position: fixed; top: 16px; left: 16px;
+  font-family: var(--f-en); font-size: 12px; color: var(--n-600);
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-meta .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+.preview-meta .name { font-weight: 700; color: var(--n-900); }
+
+/* PHONE 390x844 */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--n-50);
+  border-radius: 36px;
+  border: 1px solid var(--n-200);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+
+/* STATUS BAR */
+.status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+  font-family: var(--f-en); font-weight: 600; font-size: 15px;
+  color: var(--n-900);
+}
+.status-bar .right { display: flex; align-items: center; gap: 6px; }
+.status-bar .right svg { width: 16px; height: 16px; }
+
+/* HEADER */
+.header {
+  height: 56px;
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+}
+.header h1 {
+  font-size: 22px; font-weight: 800;
+  letter-spacing: -0.02em; color: var(--ink, var(--n-900));
+}
+.header .save {
+  font-size: 14px; font-weight: 700;
+  color: var(--success);
+  font-family: var(--f-cn);
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: opacity 200ms;
+}
+.header .save:hover { opacity: 0.7; }
+.header .save:active { opacity: 0.5; }
+
+/* MAIN scroll */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 20px 24px;
+}
+
+/* Big number card */
+.hero {
+  padding: 6px 4px 18px;
+}
+.hero .kg {
+  font-family: var(--f-en);
+  font-size: 56px; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: baseline;
+}
+.hero .kg .unit {
+  font-family: var(--f-en);
+  font-size: 26px; font-weight: 800;
+  color: var(--n-700);
+  margin-left: 6px;
+  letter-spacing: -0.02em;
+}
+.hero .date {
+  margin-top: 8px;
+  font-family: var(--f-en);
+  font-size: 13px; font-weight: 600;
+  color: var(--n-500);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Section card (shared) */
+.card {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
+}
+.card .label {
+  font-size: 12px; font-weight: 700;
+  color: var(--n-900);
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+/* Standalone section label (placed outside a card) */
+.section-label {
+  font-size: 12px; font-weight: 700;
+  color: var(--n-900);
+  letter-spacing: 0.04em;
+  margin: 2px 4px 10px;
+}
+
+/* Change row */
+.change-row {
+  display: flex; align-items: baseline; gap: 10px;
+}
+.change-row .delta {
+  font-family: var(--f-en);
+  font-size: 26px; font-weight: 800;
+  color: #A6C24A;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: baseline;
+}
+.change-row .delta .unit {
+  font-family: var(--f-en);
+  font-size: 16px; font-weight: 700;
+  color: #A6C24A;
+  margin-left: 3px;
+}
+.change-row .vs {
+  font-size: 12px; font-weight: 600;
+  color: var(--n-500);
+}
+
+/* Trend chart */
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 168px;
+  padding: 4px 4px 24px 28px;
+}
+.chart-wrap .y-axis {
+  position: absolute;
+  left: 0; top: 4px; bottom: 24px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  font-family: var(--f-en);
+  font-size: 11px; font-weight: 600;
+  color: var(--n-400);
+  font-variant-numeric: tabular-nums;
+}
+.chart-wrap .grid {
+  position: absolute;
+  left: 28px; right: 4px; top: 4px; bottom: 24px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.chart-wrap .grid i {
+  display: block; height: 1px;
+  background: var(--n-200);
+  opacity: 0.6;
+}
+.chart-wrap .x-axis {
+  position: absolute;
+  left: 28px; right: 4px; bottom: 4px;
+  display: flex; justify-content: space-between;
+  font-family: var(--f-en);
+  font-size: 11px; font-weight: 600;
+  color: var(--n-400);
+  font-variant-numeric: tabular-nums;
+}
+.chart-wrap svg {
+  position: absolute;
+  left: 28px; right: 4px; top: 4px; bottom: 24px;
+  width: calc(100% - 32px); height: calc(100% - 28px);
+}
+
+/* Note input (rounded gray box) */
+.note-box {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  background: var(--card-gray);
+  border-radius: var(--r-m);
+  color: var(--n-900);
+}
+.note-box .ic { color: var(--n-700); flex: none; }
+
+/* Bottom Tab */
+.tab {
+  flex: none;
+  height: 76px;
+  background: var(--white);
+  border-top: 1px solid var(--n-200);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 8px 8px 22px;
+}
+.tab .item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--n-500);
+  font-family: var(--f-cn);
+  font-size: 11px; font-weight: 600;
+  transition: color 200ms, transform 150ms;
+}
+.tab .item .ic {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--n-500);
+  transition: background 200ms, color 200ms;
+}
+.tab .item .ic svg { display: block; }
+.tab .item .t { letter-spacing: 0.02em; }
+.tab .item.on .ic { background: var(--primary); color: var(--ink); }
+.tab .item.on .t { color: var(--ink); }
+.tab .item:active { transform: scale(0.96); }
+.tab .item:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-s);
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="preview-meta" aria-hidden="true">
+  <span class="dot"></span><span class="name">10 · 体重记录</span>
+</div>
+
+<div class="phone" role="application" aria-label="体重记录">
+
+  <!-- Status bar -->
+  <div class="status-bar" aria-hidden="true">
+    <span>9:41</span>
+    <span class="right">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 16h3v4H2zM7 12h3v8H7zM12 8h3v12h-3zM17 4h3v16h-3z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 18a8 8 0 0 1-8-8c0-3 2-6 5-7l1 2c-2 1-3 3-3 5a5 5 0 0 0 5 5c3 0 5-2 5-5l2-1c1 3-1 7-4 9z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="14" height="6" rx="1"/><rect x="21" y="10" width="2" height="4" rx="1"/></svg>
+    </span>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>体重记录</h1>
+    <button class="save" type="button" aria-label="保存体重记录">保存</button>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Hero: 62.4 kg -->
+    <section class="hero" aria-label="本次体重">
+      <div class="kg">62.4<span class="unit">kg</span></div>
+      <div class="date">2024/05/16 &nbsp; 上午</div>
+    </section>
+
+    <!-- 体重变化 -->
+    <section class="card" aria-label="体重变化">
+      <div class="label">体重变化</div>
+      <div class="change-row">
+        <span class="delta">−0.8<span class="unit">kg</span></span>
+        <span class="vs">比昨天</span>
+      </div>
+    </section>
+
+    <!-- 体重趋势 -->
+    <div class="section-label">体重趋势</div>
+    <section class="card" aria-label="体重趋势">
+      <div class="chart-wrap" role="img" aria-label="近 30 天体重趋势：从 64.0 kg 下降至 62.4 kg，整体走低。">
+        <div class="y-axis" aria-hidden="true">
+          <span>66</span><span>64</span><span>62</span><span>60</span>
+        </div>
+        <div class="grid" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </div>
+        <svg viewBox="0 0 280 130" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="gradFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#C8FF00" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="#C8FF00" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- fill area -->
+          <path d="M0,40 L20,46 L40,38 L60,52 L80,44 L100,58 L120,52 L140,70 L160,66 L180,82 L200,78 L220,94 L240,90 L260,104 L280,98 L280,130 L0,130 Z"
+                fill="url(#gradFill)"/>
+          <!-- line -->
+          <path d="M0,40 L20,46 L40,38 L60,52 L80,44 L100,58 L120,52 L140,70 L160,66 L180,82 L200,78 L220,94 L240,90 L260,104 L280,98"
+                fill="none" stroke="#C8FF00" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- points -->
+          <circle cx="280" cy="98" r="4.5" fill="#0A0A0A" stroke="#C8FF00" stroke-width="2.5"/>
+        </svg>
+        <div class="x-axis" aria-hidden="true">
+          <span>4/16</span><span>4/26</span><span>5/6</span><span>5/16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 备注 -->
+    <div class="section-label">备注</div>
+    <label class="note-box" for="note-input">
+      <span class="ic" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/>
+        </svg>
+      </span>
+      <input id="note-input" type="text" placeholder="记录一下今天的状态吧……"
+             style="border:0;outline:none;background:transparent;flex:1;font:inherit;color:var(--n-900);"/>
+    </label>
+
+  </main>
+
+  <!-- Bottom Tab (数据 active) -->
+  <nav class="tab" aria-label="主导航">
+    <button class="item" aria-label="首页">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>
+      <span class="t">首页</span>
+    </button>
+    <button class="item" aria-label="训练">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4V4"/><path d="M4 7h2"/><path d="M2 9h4"/><path d="M18 7h2"/><path d="M18 9h4"/><path d="M10 14v6"/><path d="M14 14v6"/></svg></span>
+      <span class="t">训练</span>
+    </button>
+    <button class="item" aria-label="计划">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="9" y1="3" x2="9" y2="7"/><line x1="15" y1="3" x2="15" y2="7"/></svg></span>
+      <span class="t">计划</span>
+    </button>
+    <button class="item on" aria-current="page" aria-label="数据">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-6 4 3 6-9"/><circle cx="18" cy="6" r="1.5" fill="currentColor"/></svg></span>
+      <span class="t">数据</span>
+    </button>
+    <button class="item" aria-label="我的">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span>
+      <span class="t">我的</span>
+    </button>
+  </nav>
+
+</div>
+</body>
+</html>

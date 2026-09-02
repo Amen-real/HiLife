@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "训练复盘",
-  "usingComponents": {}
+  "usingComponents": {
+    "training-review": "/components/training-review/training-review"
+  }
 }

@@ -4,11 +4,11 @@
   <!-- 记录这一餐：虚线扫描框（对齐预览） -->
   <view class="section-title">记录这一餐</view>
   <view class="scan" bindtap="chooseImage" data-source="camera">
-    <view class="cam"><icon name="camera" size="48"/></view>
+    <view class="cam"><view class="ico ico-camera ico--ink" style="width:48rpx;height:48rpx"></view></view>
     <view class="stxt">拍照识别食物</view>
     <view class="ssub">AI 自动估算卡路里与营养</view>
   </view>
-  <view class="scan-alt" bindtap="chooseImage" data-source="album"><icon name="album" size="32"/> 从相册选择图片</view>
+  <view class="scan-alt" bindtap="chooseImage" data-source="album"><view class="ico ico-album ico--ink" style="width:32rpx;height:32rpx"></view> 从相册选择图片</view>
 
   <view wx:if="{{loading}}" class="loading">识别中…</view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
@@ -31,7 +31,7 @@
     <view wx:if="{{result.foods.length === 0}}" class="empty">未能识别到食物，请换一张更清晰的图。</view>
 
     <view wx:for="{{result.foods}}" wx:key="name" class="card food">
-      <view class="f-thumb"><text wx:if="{{item.emoji}}">{{item.emoji}}</text><icon wx:else name="food-bowl" size="52"/></view>
+      <view class="f-thumb"><text wx:if="{{item.emoji}}">{{item.emoji}}</text><view wx:else class="ico ico-food-bowl ico--ink" style="width:52rpx;height:52rpx"></view></view>
       <view class="f-body">
         <view class="f-name">{{item.name}}</view>
         <view class="f-meta">蛋白 {{item.protein}}g · 碳水 {{item.carb}}g · 脂肪 {{item.fat}}g</view>

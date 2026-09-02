@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11 体重趋势 · HiLiLife</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =========================================
+   DESIGN TOKENS  (与 01-10 同步)
+   ========================================= */
+:root {
+  --primary:      #C8FF00;
+  --primary-ink:  #0A0A0A;
+  --primary-dim:  #ECFFC2;
+  --olive:        #A6C24A;
+
+  --n-950: #0A0A0A;
+  --n-900: #111111;
+  --n-700: #444444;
+  --n-600: #707070;
+  --n-500: #A0A0A0;
+  --n-400: #C7C7C2;
+  --n-300: #D9D9D5;
+  --n-200: #E8E8E4;
+  --n-100: #F1F1EE;
+  --n-50:  #F7F7F5;
+  --white: #FFFFFF;
+
+  --success: #6F9F00;
+  --warning: #FFB020;
+  --orange:  #FF9500;
+  --card-gray: #EFEFEB;
+
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-pill: 999px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+
+  --f-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --f-en: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  --f-cn: "PingFang SC", "Inter", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: var(--f-zh); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 50% -10%, #ececea 0%, transparent 60%),
+    var(--n-50);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 16px 48px;
+}
+.preview-meta {
+  position: fixed; top: 16px; left: 16px;
+  font-family: var(--f-en); font-size: 12px; color: var(--n-600);
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-meta .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+.preview-meta .name { font-weight: 700; color: var(--n-900); }
+
+/* PHONE 390x844 */
+.phone {
+  width: 390px; height: 844px;
+  background: var(--n-50);
+  border-radius: 36px;
+  border: 1px solid var(--n-200);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+
+/* STATUS BAR */
+.status-bar {
+  height: 44px;
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+  font-family: var(--f-en); font-weight: 600; font-size: 15px;
+  color: var(--n-900);
+}
+.status-bar .right { display: flex; align-items: center; gap: 6px; }
+.status-bar .right svg { width: 16px; height: 16px; }
+
+/* HEADER */
+.header {
+  height: 56px;
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex: none;
+}
+.header h1 {
+  font-size: 22px; font-weight: 800;
+  letter-spacing: -0.02em; color: var(--n-900);
+}
+.header .share {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--n-700);
+  cursor: pointer;
+  transition: background 200ms;
+}
+.header .share:hover { background: var(--n-100); }
+.header .share:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+}
+
+/* MAIN scroll */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 20px 24px;
+}
+
+/* Time filter pills (7天 / 30天 / 90天 / 全部) */
+.time-pills {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.time-pills button {
+  height: 36px;
+  border-radius: var(--r-pill);
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  font-family: var(--f-cn);
+  font-size: 13px; font-weight: 700;
+  color: var(--n-700);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 200ms, color 200ms, border-color 200ms, transform 150ms;
+}
+.time-pills button:hover { background: var(--n-100); }
+.time-pills button.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--n-900);
+}
+.time-pills button:active { transform: scale(0.97); }
+.time-pills button:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+}
+
+/* 3 stats row (平均/最低/最高) */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-bottom: 18px;
+}
+.stats-row .stat {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 4px 0;
+}
+.stats-row .stat .label {
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-700);
+  letter-spacing: 0.04em;
+}
+.stats-row .stat .value {
+  display: inline-flex; align-items: baseline;
+  font-family: var(--f-en);
+  font-size: 22px; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stats-row .stat .value .unit {
+  font-family: var(--f-en);
+  font-size: 13px; font-weight: 700;
+  color: var(--n-700);
+  margin-left: 3px;
+}
+
+/* Section card (shared) */
+.card {
+  background: var(--white);
+  border: 1px solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
+}
+.card .label {
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-900);
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+/* Standalone section label (placed outside a card) */
+.section-label {
+  font-family: var(--f-cn);
+  font-size: 14px; font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: 0.02em;
+  margin: 6px 4px 10px;
+}
+
+/* Chart card */
+.chart-card {
+  padding: 14px 14px 12px;
+  background: var(--white);
+}
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  padding: 6px 6px 22px 32px;
+}
+.chart-wrap .y-axis {
+  position: absolute;
+  left: 0; top: 6px; bottom: 22px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  font-family: var(--f-en);
+  font-size: 11px; font-weight: 600;
+  color: var(--n-400);
+  font-variant-numeric: tabular-nums;
+}
+.chart-wrap .grid {
+  position: absolute;
+  left: 32px; right: 6px; top: 6px; bottom: 22px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.chart-wrap .grid i {
+  display: block; height: 1px;
+  background: var(--n-200);
+  opacity: 0.7;
+}
+.chart-wrap .x-axis {
+  position: absolute;
+  left: 32px; right: 6px; bottom: 2px;
+  display: flex; justify-content: space-between;
+  font-family: var(--f-en);
+  font-size: 11px; font-weight: 600;
+  color: var(--n-400);
+  font-variant-numeric: tabular-nums;
+}
+.chart-wrap svg.line {
+  position: absolute;
+  left: 32px; right: 6px; top: 6px; bottom: 22px;
+  width: calc(100% - 38px); height: calc(100% - 28px);
+  overflow: visible;
+}
+
+/* Black tooltip (62.4 kg / 5/16) */
+.tooltip {
+  position: absolute;
+  right: 14px; top: 18px;
+  background: var(--n-950);
+  color: #fff;
+  border-radius: var(--r-s);
+  padding: 8px 10px;
+  min-width: 84px;
+  text-align: left;
+  font-family: var(--f-cn);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.01em;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+}
+.tooltip .kg {
+  font-family: var(--f-en);
+  font-size: 15px; font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  display: block;
+  margin-bottom: 2px;
+}
+.tooltip .date {
+  font-size: 11px; font-weight: 600;
+  color: #C8C8C2;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.tooltip .date .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--primary);
+  flex: none;
+}
+
+/* Record list */
+.records {
+  display: flex; flex-direction: column;
+}
+.records .row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--n-100);
+}
+.records .row:last-child { border-bottom: none; }
+.records .row .date {
+  font-family: var(--f-en);
+  font-size: 14px; font-weight: 600;
+  color: var(--n-700);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.records .row .kg {
+  font-family: var(--f-en);
+  font-size: 15px; font-weight: 800;
+  color: var(--n-900);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  display: inline-flex; align-items: baseline;
+}
+.records .row .kg .unit {
+  font-family: var(--f-en);
+  font-size: 12px; font-weight: 700;
+  color: var(--n-700);
+  margin-left: 3px;
+}
+
+/* View more — fluorescent-green filled pill (readable on light bg) */
+.more-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 6px 0 4px;
+  padding: 13px 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--n-900);
+  font-family: var(--f-cn);
+  font-size: 14px; font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: opacity 200ms, transform 150ms;
+}
+.more-link:hover { opacity: 0.88; }
+.more-link:active { transform: scale(0.985); }
+.more-link:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-pill);
+}
+
+/* Bottom Tab */
+.tab {
+  flex: none;
+  height: 76px;
+  background: var(--white);
+  border-top: 1px solid var(--n-200);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 8px 8px 22px;
+}
+.tab .item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--n-500);
+  font-family: var(--f-cn);
+  font-size: 11px; font-weight: 600;
+  transition: color 200ms, transform 150ms;
+}
+.tab .item .ic {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--n-500);
+  transition: background 200ms, color 200ms;
+}
+.tab .item .ic svg { display: block; }
+.tab .item .t { letter-spacing: 0.02em; }
+.tab .item.on .ic { background: var(--primary); color: var(--ink); }
+.tab .item.on .t { color: var(--ink); }
+.tab .item:active { transform: scale(0.96); }
+.tab .item:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--r-s);
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="preview-meta" aria-hidden="true">
+  <span class="dot"></span><span class="name">11 · 体重趋势</span>
+</div>
+
+<div class="phone" role="application" aria-label="体重趋势详情">
+
+  <!-- Status bar -->
+  <div class="status-bar" aria-hidden="true">
+    <span>9:41</span>
+    <span class="right">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 16h3v4H2zM7 12h3v8H7zM12 8h3v12h-3zM17 4h3v16h-3z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 18a8 8 0 0 1-8-8c0-3 2-6 5-7l1 2c-2 1-3 3-3 5a5 5 0 0 0 5 5c3 0 5-2 5-5l2-1c1 3-1 7-4 9z"/></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="4" y="9" width="14" height="6" rx="1"/><rect x="21" y="10" width="2" height="4" rx="1"/></svg>
+    </span>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>体重趋势</h1>
+    <button class="share" type="button" aria-label="分享">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
+        <polyline points="16 6 12 2 8 6"/>
+        <line x1="12" y1="2" x2="12" y2="15"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Time filter pills -->
+    <div class="time-pills" role="tablist" aria-label="时间范围">
+      <button type="button" role="tab" aria-selected="false">7天</button>
+      <button type="button" role="tab" class="on" aria-selected="true">30天</button>
+      <button type="button" role="tab" aria-selected="false">90天</button>
+      <button type="button" role="tab" aria-selected="false">全部</button>
+    </div>
+
+    <!-- 3 stats: 平均 / 最低 / 最高 -->
+    <section class="stats-row" aria-label="体重统计">
+      <div class="stat">
+        <span class="label">平均体重</span>
+        <span class="value">63.2<span class="unit">kg</span></span>
+      </div>
+      <div class="stat">
+        <span class="label">最低</span>
+        <span class="value">61.8<span class="unit">kg</span></span>
+      </div>
+      <div class="stat">
+        <span class="label">最高</span>
+        <span class="value">65.1<span class="unit">kg</span></span>
+      </div>
+    </section>
+
+    <!-- Trend chart card -->
+    <section class="card chart-card" aria-label="30天体重趋势折线图">
+      <div class="label">30天趋势</div>
+      <div class="chart-wrap" role="img" aria-label="30 天体重从 66.0 kg 下降至 62.4 kg，整体走低。">
+        <div class="y-axis" aria-hidden="true">
+          <span>66</span><span>64</span><span>62</span><span>60</span><span>58</span>
+        </div>
+        <div class="grid" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <svg class="line" viewBox="0 0 300 160" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="gradFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%"  stop-color="#C8FF00" stop-opacity="0.32"/>
+              <stop offset="100%" stop-color="#C8FF00" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Fill area -->
+          <path d="M0,4
+                   C 20,2 30,6 50,8
+                   C 70,10 80,12 100,22
+                   C 120,30 130,32 150,42
+                   C 170,52 180,54 200,64
+                   C 220,72 235,72 255,76
+                   C 275,78 290,78 300,78
+                   L 300,160 L 0,160 Z"
+                fill="url(#gradFill)"/>
+          <!-- Smooth line -->
+          <path d="M0,4
+                   C 20,2 30,6 50,8
+                   C 70,10 80,12 100,22
+                   C 120,30 130,32 150,42
+                   C 170,52 180,54 200,64
+                   C 220,72 235,72 255,76
+                   C 275,78 290,78 300,78"
+                fill="none" stroke="#C8FF00" stroke-width="2.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Data points (small dots) -->
+          <g fill="#C8FF00">
+            <circle cx="0"   cy="4"  r="2.6"/>
+            <circle cx="50"  cy="8"  r="2.6"/>
+            <circle cx="100" cy="22" r="2.6"/>
+            <circle cx="150" cy="42" r="2.6"/>
+            <circle cx="200" cy="64" r="2.6"/>
+            <circle cx="255" cy="76" r="2.6"/>
+          </g>
+          <!-- Current point (highlighted: dark center, green ring) -->
+          <circle cx="300" cy="78" r="5.2" fill="#0A0A0A" stroke="#C8FF00" stroke-width="2.6"/>
+        </svg>
+        <div class="x-axis" aria-hidden="true">
+          <span>4/17</span><span>4/24</span><span>5/1</span><span>5/18</span>
+        </div>
+        <!-- Tooltip on current point -->
+        <div class="tooltip" aria-hidden="true">
+          <span class="kg">62.4 kg</span>
+          <span class="date"><span class="dot"></span>5/16</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 体重记录 -->
+    <h2 class="section-label">体重记录</h2>
+    <section class="card" aria-label="体重记录列表">
+      <div class="records">
+        <div class="row">
+          <span class="date">2024/05/16</span>
+          <span class="kg">62.4<span class="unit">kg</span></span>
+        </div>
+        <div class="row">
+          <span class="date">2024/05/15</span>
+          <span class="kg">62.7<span class="unit">kg</span></span>
+        </div>
+        <div class="row">
+          <span class="date">2024/05/14</span>
+          <span class="kg">63.0<span class="unit">kg</span></span>
+        </div>
+        <div class="row">
+          <span class="date">2024/05/13</span>
+          <span class="kg">63.5<span class="unit">kg</span></span>
+        </div>
+        <div class="row">
+          <span class="date">2024/05/12</span>
+          <span class="kg">63.2<span class="unit">kg</span></span>
+        </div>
+      </div>
+    </section>
+
+    <button class="more-link" type="button">查看更多记录</button>
+
+  </main>
+
+  <!-- Bottom Tab (数据 active) -->
+  <nav class="tab" aria-label="主导航">
+    <button class="item" aria-label="首页">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span>
+      <span class="t">首页</span>
+    </button>
+    <button class="item" aria-label="训练">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4V4"/><path d="M4 7h2"/><path d="M2 9h4"/><path d="M18 7h2"/><path d="M18 9h4"/><path d="M10 14v6"/><path d="M14 14v6"/></svg></span>
+      <span class="t">训练</span>
+    </button>
+    <button class="item" aria-label="计划">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="9" y1="3" x2="9" y2="7"/><line x1="15" y1="3" x2="15" y2="7"/></svg></span>
+      <span class="t">计划</span>
+    </button>
+    <button class="item on" aria-current="page" aria-label="数据">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-6 4 3 6-9"/><circle cx="18" cy="6" r="1.5" fill="currentColor"/></svg></span>
+      <span class="t">数据</span>
+    </button>
+    <button class="item" aria-label="我的">
+      <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span>
+      <span class="t">我的</span>
+    </button>
+  </nav>
+
+</div>
+</body>
+</html>
