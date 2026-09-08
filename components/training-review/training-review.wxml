@@ -118,24 +118,243 @@
           </view>
         </view>
 
+        <!-- ===== 动作判断 ===== -->
+        <view class="section-title">动作判断</view>
+        <view class="pa-list">
+          <view class="pa-row" wx:for="{{perAction}}" wx:key="key">
+            <view class="pa-name">{{item.name}}</view>
+            <view class="pa-metrics">
+              <view class="pa-m">
+                <text class="pa-mv">{{item.vol}}</text>
+                <text class="pa-ml">容量kg</text>
+              </view>
+              <view class="pa-m">
+                <text class="pa-mv">{{item.peakW || '—'}}</text>
+                <text class="pa-ml">峰值kg</text>
+              </view>
+              <view class="pa-m">
+                <text class="pa-mv">{{item.e1rm || '—'}}</text>
+                <text class="pa-ml">强度e1RM</text>
+              </view>
+              <view class="pa-m">
+                <text class="pa-mv">{{item.avgRpe || '—'}}</text>
+                <text class="pa-ml">平均RPE</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- ===== 下次处方 ===== -->
+        <view class="section-title">下次处方</view>
+        <view class="rx-card">
+          <view class="rx-row" wx:for="{{perAction}}" wx:key="key">
+            <text class="rx-name">{{item.name}}</text>
+            <text class="rx-plan">{{item.plan}}</text>
+          </view>
+        </view>
+
+        <!-- ===== 本次训练感受（聚合动作级备注，无则不渲染） ===== -->
+        <block wx:if="{{feelings.length}}">
+          <view class="section-title">本次训练感受</view>
+          <view class="feel-card">
+            <view class="feel-row" wx:for="{{feelings}}" wx:key="key">
+              <text class="feel-name">{{item.name}}</text>
+              <text class="feel-note">{{item.note}}</text>
+            </view>
+          </view>
+        </block>
+
       </block>
 
-      <!-- =============== 其他 tab 占位 =============== -->
-      <view wx:elif="{{tab==='rolling'}}" class="placeholder">
-        <view class="ph-ico">📈</view>
-        <view class="ph-tit">滚动复盘准备中</view>
-        <view class="ph-hint">该视图将展示同一动作跨场次的渐进对比</view>
-      </view>
-      <view wx:elif="{{tab==='baseline'}}" class="placeholder">
-        <view class="ph-ico">⚖️</view>
-        <view class="ph-tit">基准对比准备中</view>
-        <view class="ph-hint">该视图将展示基线 vs 当前的能力对比</view>
-      </view>
-      <view wx:elif="{{tab==='weekly'}}" class="placeholder">
-        <view class="ph-ico">📅</view>
-        <view class="ph-tit">周度复盘准备中</view>
-        <view class="ph-hint">该视图将展示本周完成度 / 力量 / 努力度汇总</view>
-      </view>
+      <!-- =============== 滚动复盘（active） =============== -->
+      <block wx:elif="{{tab==='rolling'}}">
+
+        <view class="rl-chips" wx:if="{{rolling.groups.length}}">
+          <view class="rl-chip {{rolling.selKey===item.key?'on':''}}" wx:for="{{rolling.groups}}" wx:key="key" data-key="{{item.key}}" bindtap="switchRollingGroup">
+            <text class="rl-chip-n">{{item.name}}</text><text wx:if="{{item.equip}}" class="rl-chip-eq">·{{item.equip}}</text>
+          </view>
+        </view>
+
+        <block wx:if="{{rolling.view}}">
+          <view class="rl-head">
+            <view class="rl-stat">
+              <text class="rl-v">{{rolling.view.count}}</text>
+              <text class="rl-l">可比场次</text>
+            </view>
+            <view class="rl-stat">
+              <text class="rl-v">{{rolling.view.firstDate || '—'}}</text>
+              <text class="rl-l">首练</text>
+            </view>
+            <view class="rl-stat">
+              <text class="rl-v">{{rolling.view.lastDate || '—'}}</text>
+              <text class="rl-l">最近</text>
+            </view>
+          </view>
+
+          <block wx:if="{{rolling.view.enough}}">
+            <view class="section-title">容量趋势 · 跨场次</view>
+            <view class="rl-chart">
+              <view class="rl-bar" wx:for="{{rolling.view.bars}}" wx:key="date" style="{{item.style}}">
+                <text class="rl-bar-v">{{item.label}}</text>
+                <text class="rl-bar-e1">e1RM {{item.e1}}</text>
+              </view>
+            </view>
+            <view class="rl-xaxis">
+              <text class="rl-x" wx:for="{{rolling.view.bars}}" wx:key="date">{{item.date}}</text>
+            </view>
+
+            <view class="section-title">渐进建议</view>
+            <view class="rx-card">
+              <view class="rx-row">
+                <text class="rx-name">容量变化</text>
+                <text class="rx-plan">{{rolling.view.volDeltaPct>=0?'+':''}}{{rolling.view.volDeltaPct}}%（{{rolling.view.sessions[0].vol}} → {{rolling.view.sessions[rolling.view.sessions.length-1].vol}}）</text>
+              </view>
+              <view class="rx-row">
+                <text class="rx-name">强度 e1RM</text>
+                <text class="rx-plan">{{rolling.view.e1DeltaPct>=0?'+':''}}{{rolling.view.e1DeltaPct}}%</text>
+              </view>
+              <view class="rx-row">
+                <text class="rx-name">处方</text>
+                <text class="rx-plan">{{rolling.view.rec}}</text>
+              </view>
+            </view>
+          </block>
+
+          <view wx:else class="wk-empty">
+            样本不足（仅 {{rolling.view.count}} 次同动作同器械记录）。
+            <text class="rl-link" bindtap="switchTab" data-tab="single">再完成 1 次即可建立跨场对比</text>
+          </view>
+        </block>
+
+        <view wx:else class="placeholder">
+          <view class="ph-ico">📈</view>
+          <view class="ph-tit">暂无可比数据</view>
+          <view class="ph-hint">完成至少 2 次同一动作的记录后，这里会显示渐进趋势</view>
+        </view>
+
+      </block>
+
+      <!-- =============== 基准对比（active） =============== -->
+      <block wx:elif="{{tab==='baseline'}}">
+
+        <view class="bl-head">
+          <view class="bl-ring" style="{{baseline.blRingStyle}}" aria-label="可靠样本 {{baseline.reliableCount}} 次">
+            <view class="bl-ring-c">
+              <text class="bl-n">{{baseline.reliableCount}}</text>
+              <text class="bl-l">可靠样本</text>
+            </view>
+          </view>
+          <view class="bl-meta">
+            <view class="bl-meta-t">RPE 校准进度</view>
+            <view class="bl-meta-d">已记录 <text class="bl-hl">{{baseline.reliableCount}}</text> / 2 次带 RPE 的训练</view>
+            <view class="bl-cal" bindtap="openRpeGuide">
+              <text class="wk-dot"></text> RPE 校准参考
+            </view>
+          </view>
+        </view>
+
+        <block wx:if="{{baseline.enough}}">
+          <view class="section-title">基准 vs 当前</view>
+          <view class="bl-cmp">
+            <view class="bl-col">
+              <view class="bl-col-t">基准 · {{baseline.baseDate}}</view>
+              <view class="bl-metric">
+                <text class="bl-mv">{{baseline.bRpe}}</text><text class="bl-mu">平均RPE</text>
+              </view>
+              <view class="bl-metric">
+                <text class="bl-mv">{{baseline.bVol}}</text><text class="bl-mu">总容量kg</text>
+              </view>
+            </view>
+            <view class="bl-arrow">→</view>
+            <view class="bl-col cur">
+              <view class="bl-col-t">当前 · {{baseline.curDate}}</view>
+              <view class="bl-metric">
+                <text class="bl-mv">{{baseline.cRpe}}</text><text class="bl-mu">平均RPE</text>
+              </view>
+              <view class="bl-metric">
+                <text class="bl-mv">{{baseline.cVol}}</text><text class="bl-mu">总容量kg</text>
+              </view>
+            </view>
+          </view>
+          <view class="bl-delta">
+            <text class="bl-d-chip {{baseline.rpeDelta>0?'up':(baseline.rpeDelta<0?'down':'flat')}}">RPE {{baseline.rpeDelta>0?'+':''}}{{baseline.rpeDelta}}</text>
+            <text class="bl-d-chip {{baseline.volDeltaPct>0?'up':(baseline.volDeltaPct<0?'down':'flat')}}">容量 {{baseline.volDeltaPct>0?'+':''}}{{baseline.volDeltaPct}}%</text>
+          </view>
+          <view class="section-title">解读</view>
+          <view class="rx-card">
+            <view class="rx-row">
+              <text class="rx-name">建议</text>
+              <text class="rx-plan">{{baseline.rec}}</text>
+            </view>
+          </view>
+        </block>
+
+        <view wx:else class="wk-empty">
+          尚不足 2 次带 RPE 的训练，暂无法生成基准线。
+          <text class="rl-link" bindtap="openRpeGuide">了解 RPE 并记录下一次训练</text>
+        </view>
+
+      </block>
+      <!-- =============== 周度复盘（active） =============== -->
+      <block wx:elif="{{tab==='weekly'}}">
+
+        <!-- 完成度 + 概览 -->
+        <view class="wk-head">
+          <view class="wk-ring" style="{{weekly.compStyle}}" aria-label="周完成度 {{weekly.completion}}%">
+            <view class="wk-ring-center">
+              <view class="wk-pct">{{weekly.completion}}<text class="wk-pct-u">%</text></view>
+              <view class="wk-pct-lab">周完成度</view>
+            </view>
+          </view>
+          <view class="wk-meta">
+            <view class="wk-meta-row">
+              <view class="wk-mv">{{weekly.trainDays}}<text class="wk-mu"> / {{weekly.weeklyTarget}} 次</text></view>
+              <view class="wk-ml">本周训练天数</view>
+            </view>
+            <view class="wk-meta-row">
+              <view class="wk-mv">{{weekly.avgRpe || '—'}}</view>
+              <view class="wk-ml">本周平均 RPE</view>
+            </view>
+            <view class="wk-target" bindtap="editWeeklyTarget">
+              <text class="wk-dot"></text>
+              <text class="wk-target-txt">目标 {{weekly.weeklyTarget}} 次 / 周</text>
+              <text class="wk-edit">改</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 力量进展 -->
+        <view class="section-title">力量进展 · 本周 vs 上周</view>
+        <view class="wk-prog" wx:if="{{weekly.prog.length}}">
+          <view class="wk-p-row" wx:for="{{weekly.prog}}" wx:key="name">
+            <view class="wk-p-name">{{item.name}}</view>
+            <view class="wk-p-bars">
+              <view class="wk-p-cur">{{item.cur}}<text class="wk-p-unit"> e1RM</text></view>
+              <view class="wk-p-delta {{item.delta > 0 ? 'up' : (item.delta < 0 ? 'down' : 'flat')}}">
+                <text wx:if="{{item.isNew}}" class="wk-new">新动作</text>
+                <text wx:elif="{{item.delta > 0}}">▲ +{{item.delta}}</text>
+                <text wx:elif="{{item.delta < 0}}">▼ {{item.delta}}</text>
+                <text wx:else>持平</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view wx:else class="wk-empty">上周无同动作记录，继续训练即可看到力量对比</view>
+
+        <!-- 近 6 周 RPE 趋势 -->
+        <view class="section-title">努力度趋势 · 近 6 周</view>
+        <view class="wk-weeks">
+          <view class="wk-w-col" wx:for="{{weekly.weeks}}" wx:key="label">
+            <view class="wk-w-track">
+              <view class="wk-w-bar {{item.has ? 'on' : 'off'}}" style="{{item.barStyle}}">
+                <text class="wk-w-val">{{item.has ? item.rpe : ''}}</text>
+              </view>
+            </view>
+            <text class="wk-w-lab">{{item.label}}</text>
+          </view>
+        </view>
+
+      </block>
 
       <view class="bottom-gap" />
     </view>

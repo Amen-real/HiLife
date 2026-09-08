@@ -8,6 +8,7 @@ const auth = require('../../utils/auth.js');
 const { media, resolveUrl } = require('../../utils/media.js');
 const exercises = require('../../utils/exercises.js');
 const workoutSession = require('../../utils/workoutSession.js');
+const theme = require('../../utils/theme.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function fmtClock(sec) { sec = sec || 0; return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60); }
@@ -103,11 +104,43 @@ Page({
     showAdd: false,
     // 进度条宽度（预计算为 "XX%" 字符串，避免行内 style 的 }}% 解析错误）
     trainFillWidth: '0%',
-    restFillWidth: '0%'
+    restFillWidth: '0%',
+    // 自定义导航栏总高（px，状态栏 + 44px 导航栏）：供 .wo-top 的 sticky top 偏移，避免与吸顶导航栏重叠
+    navH: 0
+  },
+
+  // 深色主题同步：本页原先无 onShow，切主题后从其它页进入仍是白色，这里与其它页保持同一套路
+  onShow() {
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
+    // 自定义导航栏下同步状态栏前景/背景色（背景色仅系统兜底，页面自身用 .page.theme-dark 深底）
+    wx.setNavigationBarColor({
+      frontColor: themeCls === 'theme-dark' ? '#ffffff' : '#000000',
+      backgroundColor: themeCls === 'theme-dark' ? '#0A0A0A' : '#F7F7F5'
+    });
+  },
+
+  // 解析本次训练的动作来源：优先「手动已选」（训练页动作库勾选），其次「活跃计划」。
+  // 计划流程（首页/计划页「开始训练」、导入今日训练）不再写 selectedActions，
+  // 避免污染训练页「已选动作」；本页直接从 activePlan 解析动作。
+  resolveWorkoutSource() {
+    const sel = store.get().selectedActions || [];
+    if (sel.length) return { actions: sel, name: '' };
+    const plan = store.getActivePlan();
+    if (plan && Array.isArray(plan.actions) && plan.actions.length) {
+      return { actions: plan.actions.map(pa => store.planActionToTrain(pa)), name: plan.name || '今日训练' };
+    }
+    return { actions: [], name: '' };
   },
 
   onLoad() {
-    const sel = store.get().selectedActions || [];
+    // 导航栏高度实测注入（.wo-top 是 sticky 顶栏，需要让出导航栏位置）
+    const winInfo = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    this.setData({ navH: (winInfo.statusBarHeight || 20) + 44 });
+
+    const src = this.resolveWorkoutSource();
+    this._woSource = src.name ? 'plan' : 'manual'; // 标记来源：plan 来源的替换/添加动作不回写 selectedActions
+    const sel = src.actions;
     // 计划签名：用于判断「上次未完成的会话」是否属于同一套动作
     const sig = sel.map(a => a.id).sort().join(',');
     const sess = workoutSession.load();
@@ -145,7 +178,7 @@ Page({
       expandedId = actions.length ? actions[0].id : null;
       const cats = [];
       actions.forEach(a => { if (cats.indexOf(a.category) < 0) cats.push(a.category); });
-      planName = cats.length === 1 ? cats[0] : '综合训练';
+      planName = src.name || (cats.length === 1 ? cats[0] : '综合训练');
       // 建立可恢复会话（供离开训练页后全局悬浮窗显示 + 恢复）
       workoutSession.save({ signature: sig, actions, planName, expandedId, elapsed: 0, running: false, startTs: null });
     }
@@ -182,7 +215,9 @@ Page({
   // 把当前进度快照进全局会话（离开训练页前调用，确保悬浮窗与恢复为最新状态）
   // 仅更新动作/计划类字段；elapsed/running/startTs 由计时模型（markRunning/freeze/getElapsed）管理，不被覆盖
   snapshotSession() {
-    const sig = (store.get().selectedActions || []).map(a => a.id).sort().join(',');
+    // 签名与 onLoad 保持一致：从当前会话动作列表推导
+    // （计划来源时 selectedActions 为空，不能再用它算签名；onLoad 时 sel 与 actions 的 id 一一对应）
+    const sig = (this.data.actions || []).map(a => a.id).sort().join(',');
     workoutSession.update({
       signature: sig,
       actions: this.data.actions,
@@ -564,12 +599,15 @@ Page({
       replaceTargetName: cand.nameZh || cand.name,
       showReplace: false
     });
-    // 同步更新当前训练计划（selectedActions 保持原始相对路径，避免二次 media 包裹）
-    store.removeSelected(oldId);
-    store.addSelected({
-      id: cand.id, name: cand.name, nameZh: cand.nameZh || '', category: cand.category || '',
-      image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
-    });
+    // 同步回「已选动作」：仅手动勾选来源（selectedActions 保持原始相对路径，避免二次 media 包裹）；
+    // 计划来源不写 selectedActions，避免污染训练页「已选动作」
+    if (this._woSource !== 'plan') {
+      store.removeSelected(oldId);
+      store.addSelected({
+        id: cand.id, name: cand.name, nameZh: cand.nameZh || '', category: cand.category || '',
+        image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
+      });
+    }
     wx.showToast({ title: '已替换动作', icon: 'success' });
   },
 
@@ -692,11 +730,13 @@ Page({
     const total = actions.length;
     const stats = this.decorate(actions, expandedId);
     this.setData({ actions, total, expandedId, showAdd: false, stats });
-    // 同步追加到当前训练计划（selectedActions 保持原始相对路径）
-    store.addSelected({
-      id: raw.id, name: raw.name, nameZh: raw.nameZh || '', category: raw.category || '',
-      image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
-    });
+    // 同步追加到「已选动作」：仅手动勾选来源；计划来源不写 selectedActions
+    if (this._woSource !== 'plan') {
+      store.addSelected({
+        id: raw.id, name: raw.name, nameZh: raw.nameZh || '', category: raw.category || '',
+        image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
+      });
+    }
     wx.showToast({ title: '已添加动作', icon: 'success' });
   },
 
@@ -781,15 +821,39 @@ Page({
 
   // 占位交互（后续可扩展为真实编辑/备注/设置面板）
   editPlan() { wx.showToast({ title: '编辑训练计划', icon: 'none' }); },
-  editNote(e) { wx.showToast({ title: '输入备注', icon: 'none' }); },
   openGear(e) { wx.showToast({ title: '动作设置', icon: 'none' }); },
+  // 动作级备注（逐动作感受 / 注意点），落库到 action.note，复盘「训练感受」聚合展示
+  editNote(e) {
+    const ai = Number(e.currentTarget.dataset.ai);
+    const a = this.data.actions[ai];
+    if (!a) return;
+    wx.showModal({
+      title: a.nameZh || a.name,
+      editable: true,
+      placeholderText: '记录这个动作的感受 / 注意点',
+      content: a.note || '',
+      success: (r) => {
+        if (!r.confirm) return;
+        const actions = this.data.actions.slice();
+        const na = Object.assign({}, actions[ai]);
+        na.note = (r.content || '').trim();
+        actions[ai] = na;
+        this.setData({ actions });
+      }
+    });
+  },
 
   saveWorkout(actions) {
     if (!auth.requireLogin()) return;
     this._finished = true;
     workoutSession.clear();   // 训练完成，清除全局会话（隐藏悬浮计时窗）
     const logActions = actions.map(a => ({
+      // 关键：带上动作身份字段，否则复盘「滚动/基准」无法跨场次可靠匹配同动作（同名不同器械、自建动作重名会串）
+      id: a.id || '',
+      category: a.category || '',
+      equip: a.equip || '',
       name: a.nameZh || a.name,
+      note: (a.note || '').trim(),
       sets: a.sets.length,
       reps: a.sets.length ? (Number(a.sets[a.sets.length - 1].reps) || 0) : 0,
       weight: a.sets.length ? (Number(a.sets[a.sets.length - 1].weight) || 0) : 0,

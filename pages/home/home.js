@@ -2,6 +2,8 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const theme = require('../../utils/theme.js');
+const media = require('../../utils/media.js');
+const nutrition = require('../../utils/nutrition.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function fmtDate(d) {
@@ -35,6 +37,11 @@ Page({
     greeting: '你好',
     nickname: '健身用户',
     sub: '',
+    // 背景图：人物铺满顶部（cloud:// 仅 <image src> 认得，必须用原生 <image> 渲染）；
+    // 随主题切换：浅色用原人物图，深色用哑铃人物深底图（onShow 里按主题重算）
+    bgUrl: media.media('images/home-bg.jpg'),
+    // 状态栏占位高度（自定义导航栏后手动注入）
+    statusBarStyle: 'height: 0px',
     checkin: { done: 0, total: 3, pct: 0 },
     fitnessDays: 0,
     streak: 0,
@@ -47,13 +54,30 @@ Page({
     },
     weight: { current: '--', delta: '0.0', down: true },
     // 饮食进度条宽度（注意：wxml 行内 style 禁 Mustache，width 通过完整 style 字符串注入）
-    fillStyle: 'width: 0%'
+    fillStyle: 'width: 0%',
+    // 三营养素进度条宽度（蛋白质/碳水/脂肪，同样用完整 style 字符串注入）
+    proteinBarStyle: 'width: 0%',
+    carbBarStyle: 'width: 0%',
+    fatBarStyle: 'width: 0%'
   },
 
   onShow() {
     // 主题：先同步自身（可能刚在「我的」页切换），再同步隔离组件 custom-tab-bar
     const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
     this.setData({ theme: themeCls });
+
+    // 首页背景随主题切换：深色用哑铃人物深底图，浅色用原人物图
+    this.setData({ bgUrl: media.media(themeCls === 'theme-dark' ? 'images/home-bg-dark.jpg' : 'images/home-bg.jpg') });
+
+    // 自定义导航栏：手动补状态栏高度占位 + 切换状态栏文字/背景色
+    const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const sbh = info.statusBarHeight || 20;
+    this.setData({ statusBarStyle: 'height: ' + sbh + 'px' });
+    wx.setNavigationBarColor({
+      frontColor: themeCls === 'theme-dark' ? '#ffffff' : '#000000',
+      backgroundColor: themeCls === 'theme-dark' ? '#0A0A0A' : '#F7F7F5'
+    });
+
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0, theme: themeCls });
     }
@@ -99,8 +123,18 @@ Page({
       cNow += (m.carb || 0);
       fNow += (m.fat || 0);
     });
-    const dietTarget = 2100;
+    // 目标热量与宏量随身体数据/目标实时计算；手动覆盖优先（与 advice 页同一真源）
+    const prof = g.profile || {};
+    const rec = nutrition.recommendIntake(prof);
+    const overrideNum = (prof.intakeOverride != null) ? Number(prof.intakeOverride) : null;
+    const dietTarget = (overrideNum != null && isFinite(overrideNum) && overrideNum > 0) ? overrideNum : rec.kcal;
+    const macroGoal = nutrition.recommendMacros({ kcal: dietTarget, goal: prof.goal || '减重', weight: prof.currentWeight });
     const dietPct = intake > 0 ? Math.min(100, Math.round((intake / dietTarget) * 100)) : 0;
+    // 三营养素目标（g）与进度条宽度百分比（对齐 .card diet 右侧三色小进度条）
+    const pGoal = macroGoal.p, cGoal = macroGoal.c, fGoal = macroGoal.f;
+    const pPct = pNow > 0 ? Math.min(100, Math.round((pNow / pGoal) * 100)) : 0;
+    const cPct = cNow > 0 ? Math.min(100, Math.round((cNow / cGoal) * 100)) : 0;
+    const fPct = fNow > 0 ? Math.min(100, Math.round((fNow / fGoal) * 100)) : 0;
 
     // —— 体重趋势（最新 + 涨跌 + sparkline 数据） ——
     const wlist = g.weightRecords || [];
@@ -117,6 +151,38 @@ Page({
     }
     this._sparkData = wlist.slice(-8).map(r => r.weight);
 
+    // —— 今日推荐：以 active 计划为准（「导入今日训练」写入 activePlanId，换计划必变；
+    //    selectedActions 会被跨天重置清空，仅作无计划时的兜底数据源） ——
+    const activePlan = store.getActivePlan();
+    const sel = g.selectedActions || [];
+    let suggest;
+    if (activePlan) {
+      const actions = activePlan.actions || [];
+      let totalSets = 0;
+      actions.forEach(a => { totalSets += Number(a.setsCount) || 0; });
+      const minutes = Math.max(10, Math.round(totalSets * 1.5));
+      suggest = {
+        title: activePlan.name || '今日训练',
+        sub: actions.length + ' 个动作 · 约 ' + minutes + ' 分钟',
+        hasPlan: true
+      };
+    } else if (sel.length > 0) {
+      let totalSets = 0;
+      sel.forEach(a => { totalSets += (a.sets && a.sets.length) ? a.sets.length : (a.setsCount || 0); });
+      const minutes = Math.max(10, Math.round(totalSets * 1.5));
+      suggest = {
+        title: '今日训练',
+        sub: sel.length + ' 个动作 · 约 ' + minutes + ' 分钟',
+        hasPlan: true
+      };
+    } else {
+      suggest = {
+        title: '今天还没安排训练',
+        sub: '去计划页导入一套开始吧',
+        hasPlan: false
+      };
+    }
+
     this.setData({
       greeting, nickname, sub,
       checkin: { done, total, pct },
@@ -125,12 +191,16 @@ Page({
         intake: Math.round(intake),
         target: dietTarget,
         pct: dietPct,
-        protein: { now: Math.round(pNow), goal: 140 },
-        carb: { now: Math.round(cNow), goal: 220 },
-        fat: { now: Math.round(fNow), goal: 70 }
+        protein: { now: Math.round(pNow), goal: pGoal },
+        carb: { now: Math.round(cNow), goal: cGoal },
+        fat: { now: Math.round(fNow), goal: fGoal }
       },
       weight: { current: wCurrent, delta: wDelta, down: wDown },
-      fillStyle: 'width: ' + dietPct + '%'
+      suggest,
+      fillStyle: 'width: ' + dietPct + '%',
+      proteinBarStyle: 'width: ' + pPct + '%',
+      carbBarStyle: 'width: ' + cPct + '%',
+      fatBarStyle: 'width: ' + fPct + '%'
     }, () => {
       // setData 完成后绘制折线图（canvas 节点已就绪）
       wx.nextTick(() => this.drawSpark());
@@ -203,18 +273,19 @@ Page({
     });
   },
 
-  // 开始训练计划：注入「本次训练」并进入训练页（无计划则跳计划管理）
+  // 开始训练：有活跃计划 → 直接进入训练中页（动作由 workout 页从 activePlan 解析，
+  // 不再注入 selectedActions，避免污染训练页「已选动作」）；
+  // 无计划但有手动已选动作 → 同样直进训练中页；都没有 → 去计划页导入
   startPlan() {
     if (!auth.requireLogin()) return;
-    const plan = store.getActivePlan();
-    if (!plan) {
-      wx.navigateTo({ url: '/pages/plan/plan' });
-      return;
-    }
-    store.applyPlanToSelected(plan);
-    wx.switchTab({ url: '/pages/training/training' });
+    if (store.getActivePlan()) { wx.navigateTo({ url: '/pages/workout/workout' }); return; }
+    if ((store.get().selectedActions || []).length) { wx.navigateTo({ url: '/pages/workout/workout' }); return; }
+    wx.navigateTo({ url: '/pages/plan/plan' });
   },
 
   goWeight() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/weight-record/weight-record?from=home' }); },
-  goDiet() { wx.navigateTo({ url: '/pages/advice/advice' }); }
+  goDiet() { wx.navigateTo({ url: '/pages/advice/advice' }); },
+  goPlan() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/plan/plan' }); },
+  // 添加饮食：进入拍照识别/搜索页（food-scan 三入口：条码/名称/拍照）
+  addMeal() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/food-scan/food-scan' }); }
 });

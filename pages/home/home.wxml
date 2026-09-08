@@ -2,51 +2,91 @@
      根节点 theme-light / theme-dark 由「我的 → 主题」开关控制（见 utils/theme.js） -->
 <view class="page {{theme}}">
 
+  <!-- 背景图：人物铺满顶部，盖住原生导航栏标题。cloud:// 仅 <image src> 认得，必须用原生 <image> 渲染（CSS url() 静默失败） -->
+  <image class="hero-bg" src="{{bgUrl}}" mode="widthFix" />
+
+  <view class="page-body">
+    <!-- 状态栏占位：自定义导航栏后顶部交还 WebView，需手动补状态栏高度 -->
+    <view class="status-bar-spacer" style="{{statusBarStyle}}"></view>
+
+    <!-- 顶部品牌标题：浮在背景图上（自定义导航栏已关掉原生标题） -->
+    <view class="hero-top">
+      <view class="brand-name">衡砺健身记录</view>
+    </view>
+
   <!-- ============== 顶部问候（纯文字，无 appbar / 无卡片背景） ============== -->
   <view class="hero">
     <view class="hero-text">
-      <view class="hero-greet">{{greeting}}，{{nickname}}</view>
+      <view class="hero-greet">
+        <view class="greet-line">{{greeting}}</view>
+        <view class="user-line">{{nickname}}</view>
+      </view>
       <view class="hero-sub">{{sub}}</view>
     </view>
   </view>
 
-  <!-- ============== 1+2 今日打卡进度 + 健身天数/连续打卡（合并一卡） ============== -->
-  <view class="card checkin-group">
-    <view class="checkin">
-      <view class="meta">
-        <view class="label">今日打卡进度</view>
-        <view class="val">
-          <text>{{checkin.done}}</text>
-          <text class="x">/</text>
-          <text class="total">{{checkin.total}} 项已完成</text>
+  <!-- ============== 1+2 今日打卡进度 + 健身天数/连续打卡（卡内含右侧进度环） ============== -->
+  <view class="section checkin-section">
+    <view class="card checkin-group">
+      <!-- 左 2/3：今日打卡进度 1/3 + 健身天数 / 连续打卡 -->
+      <view class="checkin-main">
+        <view class="checkin">
+          <view class="meta">
+            <view class="label">
+              <view class="dot-green"></view>
+              <text>今日打卡进度</text>
+            </view>
+            <view class="val">
+              <text>{{checkin.done}}</text>
+              <text class="x">/</text>
+              <text class="total">{{checkin.total}}</text>
+              <text class="total-label">项已完成</text>
+            </view>
+          </view>
         </view>
-      </view>
-      <view class="ring" style="--pct: {{checkin.pct}}" role="img" aria-label="完成度 {{checkin.pct}}%">
-        <text class="ring-span">{{checkin.pct}}%</text>
-      </view>
-    </view>
 
-    <view class="stats">
-      <view class="stat">
-        <view class="meta">
-          <view class="label">健身天数</view>
-          <view class="val">{{fitnessDays}}<text class="unit">天</text></view>
+        <view class="stats">
+          <view class="stat">
+            <view class="meta">
+              <view class="label">
+                <view class="ico ico-calendar"></view>
+                <text>健身天数</text>
+              </view>
+              <view class="val">{{fitnessDays}}<text class="unit">天</text></view>
+            </view>
+          </view>
+          <view class="stat">
+            <view class="meta">
+              <view class="label">
+                <view class="ico ico-lightning"></view>
+                <text>连续打卡</text>
+              </view>
+              <view class="val">{{streak}}<text class="unit">天</text></view>
+            </view>
+          </view>
         </view>
       </view>
-      <view class="stat">
-        <view class="meta">
-          <view class="label">连续打卡</view>
-          <view class="val">{{streak}}<text class="unit">天</text></view>
-        </view>
-        <view class="ic flame">
-          <view class="ico ico-flame ico--primary" style="width:34rpx;height:34rpx"></view>
+
+      <!-- 右 1/3：进度环写在卡片内部右侧 -->
+      <view class="ring-wrap">
+        <view class="ring" style="--pct: {{checkin.pct}}" role="img" aria-label="完成度 {{checkin.pct}}%">
+          <text class="ring-span">{{checkin.pct}}%</text>
         </view>
       </view>
     </view>
   </view>
 
   <!-- ============== 3 今日建议（绿色 CTA「开始训练」） ============== -->  <view class="section">
-    <view class="section-label">今日建议</view>
+    <view class="section-label with-arrow">
+      <view class="label-left">
+        <view class="label-bar"></view>
+        <text>今日推荐</text>
+      </view>
+      <view class="label-link" bindtap="goPlan" hover-class="btn-hover" aria-label="查看全部推荐">
+        <text>查看全部</text>
+        <view class="chev"></view>
+      </view>
+    </view>
     <view class="card suggest">
       <view class="photo">
         <view class="ico ico-train ico--primary" style="width:42rpx;height:42rpx"></view>
@@ -63,32 +103,67 @@
 
   <!-- ============== 4 今日饮食 ============== -->
   <view class="section">
-    <view class="section-label">今日饮食</view>
+    <view class="section-label diet-label with-arrow">
+      <view class="label-left">
+        <view class="label-bar"></view>
+        <text>今日饮食</text>
+      </view>
+      <view class="label-link" bindtap="goDiet" hover-class="btn-hover" aria-label="查看全部饮食">
+        <text>查看全部</text>
+        <view class="chev"></view>
+      </view>
+    </view>
     <view class="card diet">
-      <view class="top">
-        <view class="num">{{diet.intake}}<text class="target">/ {{diet.target}} kcal</text></view>
-        <view class="pct">{{diet.pct}}%</view>
-      </view>
-      <view class="progress">
-        <view class="fill" style="{{fillStyle}}"></view>
-      </view>
-      <view class="nut">
-        <view class="col">
-          <view class="name">蛋白质</view>
-          <view class="v">{{diet.protein.now}}<text class="unit">/ {{diet.protein.goal}}g</text></view>
-        </view>
-        <view class="col">
-          <view class="name">碳水</view>
-          <view class="v carb">{{diet.carb.now}}<text class="unit">/ {{diet.carb.goal}}g</text></view>
-        </view>
-        <view class="col fat-col">
-          <view class="meta">
-            <view class="name">脂肪</view>
-            <view class="v fat">{{diet.fat.now}}<text class="unit">/ {{diet.fat.goal}}g</text></view>
+      <!-- 左侧主区：kcal / 主进度条 / 三营养素 -->
+      <view class="diet-main">
+        <view class="top">
+          <view class="num">
+            <text class="big">{{diet.intake}}</text>
+            <text class="target">/ {{diet.target}} kcal</text>
+            <view class="pct-block">
+              <view class="pct">{{diet.pct}}%</view>
+              <view class="pct-label">摄入进度</view>
+            </view>
           </view>
-          <view class="nut-arrow" bindtap="goDiet" hover-class="btn-hover">
-            <view class="chev"></view>
+        </view>
+        <view class="progress">
+          <view class="fill" style="{{fillStyle}}"></view>
+        </view>
+        <view class="nut">
+          <view class="col">
+            <view class="name">
+              <view class="dot dot-protein"></view>
+              <text>蛋白质</text>
+            </view>
+            <view class="v">{{diet.protein.now}}<text class="unit">/ {{diet.protein.goal}}g</text></view>
+            <view class="bar"><view class="bar-fill bar-protein" style="{{proteinBarStyle}}"></view></view>
           </view>
+          <view class="col">
+            <view class="name">
+              <view class="dot dot-carb"></view>
+              <text>碳水</text>
+            </view>
+            <view class="v">{{diet.carb.now}}<text class="unit">/ {{diet.carb.goal}}g</text></view>
+            <view class="bar"><view class="bar-fill bar-carb" style="{{carbBarStyle}}"></view></view>
+          </view>
+          <view class="col">
+            <view class="name">
+              <view class="dot dot-fat"></view>
+              <text>脂肪</text>
+            </view>
+            <view class="v">{{diet.fat.now}}<text class="unit">/ {{diet.fat.goal}}g</text></view>
+            <view class="bar"><view class="bar-fill bar-fat" style="{{fatBarStyle}}"></view></view>
+          </view>
+        </view>
+      </view>
+      <!-- 右侧：添加饮食（摄入进度已移到左侧 .num 下） -->
+      <view class="diet-side">
+        <view class="add-meal" bindtap="addMeal" hover-class="btn-hover" role="button" aria-label="添加饮食">
+          <view class="add-circle">
+            <view class="ico ico-foodbowl"></view>
+            <view class="add-btn">+</view>
+          </view>
+          <view class="add-text">添加饮食</view>
         </view>
       </view>
     </view>
@@ -97,8 +172,12 @@
   <!-- ============== 5 体重趋势 ============== -->
   <view class="section">
     <view class="section-label with-arrow">
-      <text>体重趋势</text>
-      <view class="sec-arrow" bindtap="goWeight" hover-class="btn-hover" aria-label="查看体重趋势详情">
+      <view class="label-left">
+        <view class="label-bar"></view>
+        <text>体重趋势</text>
+      </view>
+      <view class="label-link" bindtap="goWeight" hover-class="btn-hover" aria-label="查看全部体重">
+        <text>查看全部</text>
         <view class="chev"></view>
       </view>
     </view>
@@ -117,4 +196,5 @@
   </view>
 
   <view class="bottom-gap"></view>
+  </view><!-- /.page-body -->
 </view>

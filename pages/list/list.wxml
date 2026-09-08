@@ -1,11 +1,18 @@
 <!-- pages/list/list.wxml —— 严格对齐 06-records.html（训练记录） -->
 <view class="page {{theme}}">
+  <nav-bar title="记录列表" show-back="{{false}}" />
 
   <!-- HEADER：训练记录 / 训练复盘 双标题 -->
   <view class="header">
     <view class="lead">
-      <view class="title {{tab === 'records' ? 'active' : ''}}" data-tab="records" bindtap="switchTitle">训练记录</view>
-      <view class="title {{tab === 'review' ? 'active' : ''}}" data-tab="review" bindtap="switchTitle">训练复盘</view>
+      <view class="title {{tab === 'records' ? 'active' : ''}}" data-tab="records" bindtap="switchTitle">
+        <text class="t-text">训练记录</text>
+        <view class="tab-bar"></view>
+      </view>
+      <view class="title {{tab === 'review' ? 'active' : ''}}" data-tab="review" bindtap="switchTitle">
+        <text class="t-text">训练复盘</text>
+        <view class="tab-bar"></view>
+      </view>
     </view>
   </view>
 

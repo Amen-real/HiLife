@@ -2,6 +2,9 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const GOALS = ['减重', '增肌', '塑形', '保持'];
+// 活动量档位：展示文案与 store.profile.activityLevel 取值一一对应（系数映射见 utils/nutrition.js）
+const ACTIVITY_LEVELS = ['久坐', '轻度', '中度', '高度', '运动员'];
+const ACTIVITY_KEYS = ['sedentary', 'light', 'moderate', 'high', 'athlete'];
 
 Page({
   data: {
@@ -9,6 +12,9 @@ Page({
     goal: '减重',
     targetWeight: '',
     height: '',
+    age: '',
+    activityLevels: ACTIVITY_LEVELS,
+    activityIndex: 2,
     goals: GOALS,
     genders: ['男', '女'],
     genderIndex: 0,
@@ -22,6 +28,8 @@ Page({
       goal: p.goal || '减重',
       targetWeight: p.targetWeight || '',
       height: p.height || '',
+      age: p.age || '',
+      activityIndex: Math.max(0, ACTIVITY_KEYS.indexOf(p.activityLevel || 'moderate')),
       genderIndex: p.gender === '女' ? 1 : 0,
       goalIndex: Math.max(0, GOALS.indexOf(p.goal || '减重'))
     });
@@ -37,6 +45,8 @@ Page({
 
   onTarget(e) { this.setData({ targetWeight: e.detail.value }); },
   onHeight(e) { this.setData({ height: e.detail.value }); },
+  onAge(e) { this.setData({ age: e.detail.value }); },
+  pickActivity(e) { this.setData({ activityIndex: Number(e.detail.value) }); },
 
   save() {
     if (!auth.requireLogin()) return;
@@ -44,7 +54,9 @@ Page({
       gender: this.data.gender,
       goal: this.data.goal,
       targetWeight: this.data.targetWeight ? Number(this.data.targetWeight) : null,
-      height: this.data.height ? Number(this.data.height) : null
+      height: this.data.height ? Number(this.data.height) : null,
+      age: this.data.age ? Number(this.data.age) : null,
+      activityLevel: ACTIVITY_KEYS[this.data.activityIndex]
     });
     wx.showToast({ title: '已保存', icon: 'success' });
     setTimeout(() => wx.navigateBack(), 500);

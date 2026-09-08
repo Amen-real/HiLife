@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "隐私政策",
-  "usingComponents": {}
+  "usingComponents": {
+    "nav-bar": "/components/nav-bar/nav-bar"
+  },
+  "navigationStyle": "custom"
 }

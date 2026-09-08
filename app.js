@@ -18,7 +18,10 @@ App({
       targetWeight: null,  // kg
       height: null,        // cm
       currentWeight: null, // kg
-      fitnessDays: 0
+      fitnessDays: 0,
+      age: null,            // 岁（营养推荐 TDEE 计算用）
+      activityLevel: 'moderate', // sedentary|light|moderate|high|athlete（活动量系数）
+      intakeOverride: null  // 手动覆盖的每日目标热量（null = 跟随推荐）
     },
 
     // 今日训练
@@ -51,9 +54,12 @@ App({
     // 开发期联调（useCallContainer=false 时）填后端局域网/公网地址
     visionBackendUrl: 'http://192.168.110.238:8000',
 
-    // ===== 微信云托管（上线默认，免备案免域名）=====
-    // true: 小程序经 wx.cloud.callContainer 调云托管（前端压缩图片→base64，受 100K 限制）
-    // false: 走普通 wx.uploadFile 到 visionBackendUrl（需备案域名 + 微信后台配合法域名）
+    // ===== 微信云托管（生产链路，免备案免域名）=====
+    // true: callContainer 调云托管。⚠️ callContainer 有 15s 硬超时（errCode 102002），同步识别必超时，
+    //   已改为「异步任务」：POST /task/submit 秒回 taskId → 每 2s GET /task/{id} 轮询（约 90s 上限）。
+    //   云托管 hilife-vision 需部署 server/ 最新代码，并在服务设置配环境变量：
+    //   LLM_API_KEY（必填，配了走大模型；不配回退 mock）、LLM_MODEL（默认 qwen-vl-plus）、LLM_BASE_URL（默认百炼）。
+    // false: 走普通 wx.uploadFile 到 visionBackendUrl（局域网 vision-server，开发联调用）。
     useCallContainer: true,
     // 云托管所在「云开发环境 ID」（云托管是云开发的能力，与上方云存储同环境）
     cloudEnv: 'cloud1-d0g5ihto42b4ed256',

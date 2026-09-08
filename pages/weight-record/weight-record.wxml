@@ -1,5 +1,6 @@
 <!-- pages/weight-record/weight-record.wxml —— 10（记录 + 大数字）在上，11（趋势筛选 + 统计 + 图表 + 记录列表）在下 -->
 <view class="page">
+  <nav-bar show-back="{{true}}" />
 
   <!-- HEADER：体重记录 -->
   <view class="header">

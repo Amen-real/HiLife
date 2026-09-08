@@ -1,6 +1,8 @@
 {
   "navigationBarTitleText": "训练复盘",
   "usingComponents": {
-    "training-review": "/components/training-review/training-review"
-  }
+    "training-review": "/components/training-review/training-review",
+    "nav-bar": "/components/nav-bar/nav-bar"
+  },
+  "navigationStyle": "custom"
 }

@@ -1,4 +1,7 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "训练"
+  "usingComponents": {
+    "nav-bar": "/components/nav-bar/nav-bar"
+  },
+  "navigationBarTitleText": "训练",
+  "navigationStyle": "custom"
 }

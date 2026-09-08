@@ -1,10 +1,7 @@
 /* pages/workout/workout.wxss —— 训练执行页（全部动作可滚动列表 + 单卡展开） */
 .page {
   min-height: 100vh;
-  /* 柔和的品牌色晕染：顶部一抹极淡荧光绿，向下过渡为中性页面底色，避免原高饱和渐变过于突兀 */
-  background:
-    radial-gradient(130% 50% at 50% 0%, var(--primary-tint) 0%, rgba(242, 255, 214, 0) 60%),
-    var(--n-50);
+  /* 背景色已去除：根 view 透明，直接沿用 app.wxss 的 page 底色 var(--n-50)（暖白），与全局页面统一 */
   padding: 0;
   box-sizing: border-box;
 }
@@ -22,7 +19,8 @@
   gap: 20rpx;
   padding: 20rpx 32rpx 16rpx;
   position: sticky;
-  top: 0;
+  /* sticky 偏移：--nav-h 由 onLoad 实测注入（状态栏高 + 44px 导航栏），避免与吸顶的自定义导航栏重叠 */
+  top: var(--nav-h, 0px);
   z-index: 50;
   /* 清除原深绿实底，改为透明、与页面柔和底色融为一体；下方细线作轻分隔 */
   background: transparent;
@@ -62,7 +60,7 @@
   padding: 0 40rpx;
   border-radius: 999rpx;
   background: var(--primary);
-  color: #fff;
+  color: #0A0A0A;
   font-size: var(--fs-head);
   font-weight: 700;
   line-height: 72rpx;
@@ -157,6 +155,10 @@
   padding: 16rpx 0;
   border-bottom: 1rpx solid var(--line);
 }
+.wo-note-ph.filled {
+  color: var(--text);
+  line-height: 1.6;
+}
 .wo-timer-toggle-row {
   display: flex;
   align-items: center;
@@ -181,7 +183,7 @@
   flex-shrink: 0;
 }
 .wo-checkbox.checked { border-color: var(--primary); background: var(--primary); }
-.wo-checkbox.checked::after { content: '✓'; color: #fff; font-size: var(--fs-body); font-weight: 700; line-height: 1; }
+.wo-checkbox.checked::after { content: '✓'; color: #0A0A0A; font-size: var(--fs-body); font-weight: 700; line-height: 1; }
 
 /* 每组计时开启后显示的秒表目标提示（⏱ 60，与开关同行） */
 .wo-stopwatch-pill {
@@ -197,7 +199,7 @@
 .wo-sw-val {
   font-size: var(--fs-label);
   font-weight: 700;
-  color: var(--primary-deep);
+  color: var(--primary-text);
   font-feature-settings: "tnum";
 }
 
@@ -270,18 +272,18 @@
   position: relative;
   box-sizing: border-box;
 }
-.wo-set-check.checked { border-color: var(--primary); background: var(--primary); color: #fff; }
+.wo-set-check.checked { border-color: var(--primary); background: var(--primary); color: #0A0A0A; }
 
 /* ⏱ 60 与 ✓ 合并在同一框内（未完成显示 ⏱ 60，完成后显示 ✓） */
 .wo-check-sw-ico {
   font-size: var(--fs-caption);
   line-height: 1;
-  color: var(--primary-deep);
+  color: var(--primary-text);
 }
 .wo-set-sw-sec {
   font-size: var(--fs-body);
   font-weight: 700;
-  color: var(--primary-deep);
+  color: var(--primary-text);
   font-feature-settings: "tnum";
 }
 
@@ -312,7 +314,7 @@
 .wo-rpe-label {
   font-size: var(--fs-body);
   font-weight: 800;
-  color: var(--primary-deep);
+  color: var(--primary-text);
   line-height: 1;
 }
 .wo-rpe-cap {
@@ -330,7 +332,7 @@
   border-radius: 50%;
   background: var(--primary-tint);
   border: 1rpx solid rgba(46, 207, 176, 0.40);
-  color: var(--primary-deep);
+  color: var(--primary-text);
   font-size: var(--fs-head);
   font-weight: 700;
   line-height: 1;
@@ -349,7 +351,7 @@
   font-feature-settings: "tnum";
   line-height: 1;
 }
-.wo-rpe-val.set { color: var(--primary-deep); }
+.wo-rpe-val.set { color: var(--primary-text); }
 .wo-rpe-val.high { color: #E8743B; }
 
 /* 展开底部操作按钮 */
@@ -363,8 +365,8 @@
   line-height: 84rpx;
   text-align: center;
 }
-.wo-ex-btn.primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-mint); }
-.wo-ex-btn.ghost { background: var(--bg); color: var(--primary-deep); border: 1rpx solid var(--line); }
+.wo-ex-btn.primary { background: var(--primary); color: #0A0A0A; box-shadow: var(--shadow-mint); }
+.wo-ex-btn.ghost { background: var(--bg); color: var(--primary-text); border: 1rpx solid var(--line); }
 
 /* ==================== 训练计时 / 休息 / 历史 / 视频 浮层（沿用原 UI） ==================== */
 
@@ -479,7 +481,7 @@
   align-items: center;
   justify-content: center;
   background: var(--primary);
-  color: #fff;
+  color: #0A0A0A;
   border-radius: 999rpx;
   font-size: var(--fs-body);
   border: none;
@@ -772,7 +774,7 @@
   height: 44rpx;
   border-radius: 50%;
   background: var(--primary);
-  color: #fff;
+  color: #0A0A0A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -881,7 +883,7 @@
   height: 88rpx;
   border-radius: 24rpx;
   background: var(--primary);
-  color: #fff;
+  color: #0A0A0A;
   font-size: var(--fs-head);
   font-weight: 700;
   line-height: 88rpx;
@@ -938,7 +940,7 @@
 .repl-cat.on {
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: #0A0A0A;
   font-weight: 600;
 }
 .repl-empty {
@@ -947,3 +949,68 @@
   font-size: var(--fs-body);
   padding: 48rpx 0;
 }
+
+
+/* ============================================================
+   深色主题（.page.theme-dark 重定义 token，向下继承自动翻转；
+   页面外的浮层 mask 也挂了 .theme-dark 类，与 .page 共享同一套变量）
+   ============================================================ */
+.page.theme-dark,
+.rest-mask.theme-dark,
+.hist-mask.theme-dark,
+.repl-mask.theme-dark,
+.float-area.theme-dark {
+  --n-950: #FFFFFF;
+  --n-900: #FFFFFF;
+  --n-700: rgba(255,255,255,.70);
+  --n-600: rgba(255,255,255,.55);
+  --n-500: rgba(255,255,255,.42);
+  --n-400: rgba(255,255,255,.32);
+  --n-300: rgba(255,255,255,.22);
+  --n-200: rgba(255,255,255,.10);
+  --n-100: #1E1E1E;
+  --n-50: #0A0A0A;
+  --white: #161616;
+  --card-gray: #1E1E1E;
+
+  --text: #FFFFFF;
+  --text-sub: rgba(255,255,255,.70);
+  --text-weak: rgba(255,255,255,.45);
+  --line: rgba(255,255,255,.10);
+  --line-strong: rgba(255,255,255,.20);
+
+  --success: #C8FF00;
+
+  --card: #161616;
+  --bg: rgba(255,255,255,.06);
+  --bg-muted: #1E1E1E;
+  --glass: #161616;
+  --glass-strong: #1E1E1E;
+  --glass-border: rgba(255,255,255,.10);
+
+  --primary-tint: rgba(200,255,0,.12);
+  --accent-soft: rgba(255,149,0,.14);
+  --accent-tint: rgba(255,149,0,.14);
+  --info-tint: rgba(62,139,255,.14);
+
+  /* 绿色文字：浅色的深橄榄绿在黑底上只有 3.8:1，翻成品牌亮绿 */
+  --primary-text: #C8FF00;
+
+  --shadow-card: 0 4rpx 16rpx rgba(0,0,0,.35);
+  --shadow-sm: 0 4rpx 16rpx rgba(0,0,0,.30);
+  --shadow-md: 0 10rpx 30rpx rgba(0,0,0,.40);
+  --shadow-lg: 0 16rpx 44rpx rgba(0,0,0,.50);
+  --shadow-xs: 0 2rpx 8rpx rgba(0,0,0,.30);
+}
+
+/* 页面底色：原生 page 元素吃不到 .page 上的变量重定义，必须在 .page 上显式铺深底 */
+.page.theme-dark { background: var(--n-50); color: var(--text); }
+
+/* 深色下的硬编码色单独覆盖 */
+.page.theme-dark .wo-del-btn { background: #161616; }
+.page.theme-dark .wo-page-actions { background: linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.96) 50%, #0A0A0A 100%); }
+.page.theme-dark .wo-clock-toggle:active { background: rgba(255,255,255,0.10); }
+.page.theme-dark .wo-min-btn:active { background: rgba(255,255,255,0.10); }
+.rest-mask.theme-dark .rest-pop,
+.hist-mask.theme-dark .hist-pop,
+.repl-mask.theme-dark .repl-pop { background: #161616; }

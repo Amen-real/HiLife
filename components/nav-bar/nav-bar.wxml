@@ -1,0 +1,19 @@
+<!-- components/nav-bar/nav-bar.wxml —— 通用自定义导航栏（全站统一）
+     结构：.nb-wrap 静态占位（撑开高度，避免遮挡内容）+ .nb-fixed 实际导航栏（fixed 吸顶）
+     高度 = statusBarHeight(px) + 44px（导航栏标准内容高）
+     用法：<nav-bar title="页面标题" show-back="{{true}}" /> -->
+<view class="nb-wrap" style="height: {{totalH}}px">
+  <view class="nb-fixed" style="height: {{totalH}}px; padding-top: {{sbh}}px">
+    <view class="nb-inner">
+      <view class="nb-side nb-left">
+        <view wx:if="{{showBack}}" class="nb-back" bindtap="goBack" hover-class="nb-hover" role="button" aria-label="返回">
+          <view class="nb-arrow"></view>
+        </view>
+      </view>
+      <text wx:if="{{title}}" class="nb-title">{{title}}</text>
+      <view class="nb-side nb-right">
+        <slot name="right"></slot>
+      </view>
+    </view>
+  </view>
+</view>

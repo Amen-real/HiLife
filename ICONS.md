@@ -1,7 +1,7 @@
 # HiLife 图标设计规范（ICONS.md）
 
 一整套适配「衡力健身记录 / HiLife」浅色主题（暖白底 `#F7F7F5` + 荧光绿 `#C8FF00`）的 SVG 图标。
-**66 个图标**，统一栅格、统一描边、跟随主题色、矢量无限清晰。
+**71 个图标**，统一栅格、统一描边、跟随主题色、矢量无限清晰。
 
 ## 文件结构
 
@@ -53,7 +53,7 @@
 
 - **导航/Tab**：home, train, plan, user
 - **通用操作**：plus, close, check, search, settings, more, back, arrowleft, arrowright, chevrondown, chevronup, edit, delete, share, refresh, play, pause, camera, album, zoom
-- **状态/反馈**：info, warning, success, error, staron, staroff, flame, trophy, goal, idea, chart, clock, trendingup, heart, hearton, calendar, target, myaction
+- **状态/反馈**：info, warning, success, error, staron, staroff, flame, trophy, goal, idea, chart, clock, trendingup, heart, hearton, calendar, target, myaction, pulse（心率线，用于「耐力」目标模板）
 - **健身/身体**：scale, body, musclefront, muscleback, arm, chest, core, leg, shoulder, dumbbell
 - **饮食/食物**：foodbowl, foodegg, foodfish, foodmeat, foodnoodle, foodrice, foodsalad, veg, breakfast, lunch, dinner, snack, diet, water
 

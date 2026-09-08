@@ -1,6 +1,7 @@
 /* pages/training/training.wxss —— 对齐 02-train.html（HiLiLife 设计系统） */
 
-.page { padding: 0 0 230rpx; min-height: 100vh; background: var(--n-50); }
+/* --lime：下划线色，与计划页 .tab-bar 同款（深色模式在 .page.theme-dark 内覆盖为 #C8FF00） */
+.page { padding: 0 0 230rpx; min-height: 100vh; background: var(--n-50); --lime: #B7E600; }
 
 /* ============== HEADER：动作库 / 收藏 ============== */
 .header {
@@ -9,18 +10,21 @@
   gap: 23rpx;
 }
 .header .lead { display: flex; align-items: center; gap: 46rpx; }
-.header .title {
+/* .title 作为纵向容器：文字 .t-text + 独立下划线 .tab-bar（与计划页同款实现） */
+.header .title { display: inline-flex; flex-direction: column; align-items: flex-start; }
+.header .t-text {
   font-size: 42rpx; font-weight: 500;
   color: var(--n-500);
   letter-spacing: -0.01em;
-  padding-bottom: 8rpx;
-  border-bottom: 4rpx solid transparent;
   line-height: 1.2;
 }
-.header .title.active {
-  color: var(--n-900); font-weight: 800;
-  border-bottom-color: var(--primary);
+.header .title.active .t-text { color: var(--n-900); font-weight: 800; }
+/* 下划线：与计划页 .tab-bar 完全一致（6rpx 高 / 圆角 / margin-top 10rpx / var(--lime)） */
+.header .tab-bar {
+  height: 6rpx; width: 100%; margin-top: 10rpx; border-radius: 999rpx;
+  background: var(--lime); opacity: 0; transition: opacity .2s ease;
 }
+.header .title.active .tab-bar { opacity: 1; }
 
 /* ============== SEARCH ============== */
 .search {
@@ -276,6 +280,7 @@
   --n-50: #0A0A0A;
   --white: #161616;
   --card-gray: #1E1E1E;
+  --lime: #C8FF00;        /* 深色下下划线提亮，与计划页深色变体一致 */
 
   --text: #FFFFFF;
   --text-sub: rgba(255,255,255,.70);

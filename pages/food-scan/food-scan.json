@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "食物识别",
-  "usingComponents": {}
+  "usingComponents": {
+    "nav-bar": "/components/nav-bar/nav-bar"
+  },
+  "navigationStyle": "custom"
 }

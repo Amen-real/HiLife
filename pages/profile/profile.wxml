@@ -1,6 +1,7 @@
 <!-- pages/profile/profile.wxml —— 渐变头 + 健康概览 + 菜单（已移除 pstats 统计条与训练日报/复盘菜单项）
      根节点 theme-light / theme-dark 由本页「深色主题」开关控制（见 utils/theme.js） -->
 <view class="page {{theme}}">
+  <nav-bar title="我的" show-back="{{false}}" />
 
   <!-- 渐变头（对齐预览：头像 + 昵称 + 坚持天数；访客态加 guest 类切换居中竖向排版） -->
   <view class="profile-head {{loggedIn ? '' : 'guest'}}">

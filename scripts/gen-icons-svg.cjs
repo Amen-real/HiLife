@@ -47,6 +47,7 @@ const ICONS = {
   chevronup: '<path d="M5 15l7-7 7 7"/>',
   edit: '<path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/><path d="M14 7l3 3"/>',
   delete: '<path d="M4 6.5h16"/><path d="M9 6.5V4.5h6v2"/><path d="M6.5 6.5 7.6 20h8.8l1.1-13.5"/><path d="M10 10v7M14 10v7"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
   share: '<circle cx="6" cy="12" r="2.1" fill="#000"/><circle cx="18" cy="6" r="2.1" fill="#000"/><circle cx="18" cy="18" r="2.1" fill="#000"/><path d="M8 11l8-4M8 13l8 4"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.2 5.4"/><path d="M20 5v5h-5"/>',
   play: '<path d="M8 5.5v13l11-6.5z" fill="#000" stroke="none"/>',
@@ -72,8 +73,11 @@ const ICONS = {
   heart: '<path d="M12 20s-7-4.3-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.7 12 20 12 20z"/>',
   hearton: '<path d="M12 20s-7-4.3-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.7 12 20 12 20z" fill="#000" stroke="none"/>',
   calendar: '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16"/><path d="M8 3.5v3M16 3.5v3"/><path d="M8 14l2 2 4-4"/>',
+  lightning: '<path d="M13 2L3 14h9l-1 8L21 10h-9l1-8z" fill="#000" stroke="none"/>',
   target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1" fill="#000" stroke="none"/>',
   myaction: '<path d="M3 12h4l2-5 3 9 2-6 2 2h3"/>',
+  // 有氧 / 耐力：心率线（供「耐力」目标模板缩略图使用）
+  pulse: '<path d="M3 12h4l2-6 4 12 3-8 2 2h3"/>',
 
   // —— 健身 / 身体部位 ——
   scale: '<rect x="4" y="3.5" width="16" height="3" rx="1.5"/><path d="M12 6.5 7 20h10z"/><circle cx="12" cy="14" r="2"/>',

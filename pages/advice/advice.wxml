@@ -1,5 +1,6 @@
 <!-- pages/advice/advice.wxml —— 对齐 07-diet.html（HiLiLife 饮食建议 · 浅色 + 荧光绿） -->
 <view class="page">
+  <nav-bar show-back="{{true}}" />
 
   <!-- 顶部切换：饮食建议 | 饮食记录 -->
   <view class="topbar">
@@ -16,12 +17,31 @@
     <view class="goal-card" aria-label="今日热量目标">
       <view class="info">
         <view class="label">今日目标</view>
-        <view class="kcal">{{intakeTarget}}<text class="unit">kcal</text></view>
-        <view class="sub">建议摄入</view>
+        <view class="kcal">{{intakeTarget}}<text class="unit">kcal</text><text wx:if="{{overrideActive}}" class="kcal-tag">手动</text></view>
+        <view class="sub">{{overrideActive ? '手动设定' : '建议摄入'}}</view>
       </view>
       <view class="ring goal-ring" style="{{ringStyle}}" role="img" aria-label="已完成 {{intakePct}}%">
         <text class="ring-span">{{intakePct}}%</text>
       </view>
+    </view>
+
+    <!-- 推荐依据 / 降级提示 -->
+    <view class="goal-note" aria-label="推荐依据">
+      <text class="gn-text">{{intakeNote}}</text>
+      <view wx:if="{{showProfileTip}}" class="gn-fix" bindtap="goSettings" hover-class="btn-hover" role="button" aria-label="去完善健康数据">去完善 ›</view>
+    </view>
+
+    <!-- T6：体重变化导致推荐已更新提示（点击关闭） -->
+    <view wx:if="{{intakeUpdated}}" class="update-hint" bindtap="dismissUpdateHint" role="button" aria-label="关闭提示">
+      <view class="uh-ico"></view>
+      <text class="uh-text">{{intakeUpdateMsg}}</text>
+      <text class="uh-close">✕</text>
+    </view>
+
+    <!-- T6：手动覆盖入口 -->
+    <view class="goal-adjust" bindtap="openIntakeEdit" role="button" aria-label="调整目标热量">
+      <text class="ga-text">调整目标热量</text>
+      <text class="ga-caret">›</text>
     </view>
 
     <!-- 营养概览（3 列） -->
@@ -33,6 +53,28 @@
         </view>
         <view class="val">{{item.goal}}<text class="unit">g</text></view>
       </view>
+    </view>
+
+    <!-- T6：近 30 天 · 目标热量随体重变化 趋势 -->
+    <view class="trend-card card" aria-label="近30天趋势">
+      <view class="tc-head">
+        <text class="tc-title">近 30 天 · 目标热量随体重变化</text>
+      </view>
+      <view wx:if="{{trendEmpty}}" class="trend-empty">记录体重后，这里会显示目标热量随体重的自动调整趋势。</view>
+      <block wx:else>
+        <view class="trend-caption">
+          <text class="tc-w">体重 {{trendSummary.w0}}→{{trendSummary.w1}}kg</text>
+          <text class="tc-k">目标 {{trendSummary.k0}}→{{trendSummary.k1}} kcal</text>
+        </view>
+        <view class="trend-wrap">
+          <canvas type="2d" id="kcalChart" class="trend-canvas"></canvas>
+          <image wx:if="{{trendImage}}" class="trend-image" src="{{trendImage}}" mode="aspectFit"></image>
+        </view>
+        <view class="trend-legend">
+          <view class="lg"><view class="lg-dot kcal"></view><text>目标热量</text></view>
+          <view class="lg"><view class="lg-dot weight"></view><text>体重</text></view>
+        </view>
+      </block>
     </view>
 
     <!-- 推荐分类筛选（早/中/晚/加餐/蔬果） -->
@@ -77,7 +119,7 @@
       </view>
       <view class="rh-main">
         <text class="rh-val">{{intakeSum.cal}}</text>
-        <text class="rh-unit"> / -- kcal</text>
+        <text class="rh-unit"> / {{intakeTarget}} kcal</text>
       </view>
       <view class="macro-rows">
         <view class="macro-row" wx:for="{{macros}}" wx:key="key">
@@ -178,6 +220,24 @@
       <view class="modal-actions">
         <view class="btn-cancel" bindtap="closeManual" hover-class="btn-hover" role="button" aria-label="取消">取消</view>
         <view class="btn-save" bindtap="saveManual" hover-class="btn-hover" role="button" aria-label="保存">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============ 手动覆盖：调整目标热量 ============ -->
+  <view wx:if="{{showIntakeEdit}}" class="mask" bindtap="closeIntakeEdit">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">调整每日目标热量</view>
+      <view class="ie-row">
+        <view class="ie-step" bindtap="stepIntake" data-d="-10" hover-class="opt-hover" role="button" aria-label="减少10">−</view>
+        <input class="ie-input" type="number" value="{{intakeEditValue}}" bindinput="onIntakeEdit" />
+        <view class="ie-step" bindtap="stepIntake" data-d="10" hover-class="opt-hover" role="button" aria-label="增加10">＋</view>
+        <text class="ie-unit">kcal</text>
+      </view>
+      <view class="ie-hint">推荐值 {{intakeEditRecommended}} kcal，可上下微调（步长 10）。</view>
+      <view class="ie-actions">
+        <view wx:if="{{overrideActive}}" class="btn-reset" bindtap="resetIntakeOverride" hover-class="btn-hover" role="button" aria-label="恢复推荐">恢复推荐</view>
+        <view class="btn-save" bindtap="saveIntakeOverride" hover-class="btn-hover" role="button" aria-label="保存">保存</view>
       </view>
     </view>
   </view>

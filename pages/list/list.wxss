@@ -4,6 +4,7 @@
   background: var(--n-50);
   display: flex; flex-direction: column;
   min-height: 100vh;
+  --lime: #B7E600;        /* 下划线色，与计划页同款（深色模式在 .page.theme-dark 内覆盖为 #C8FF00） */
 }
 
 /* ============== HEADER：训练记录 / 训练复盘 + 更多/设置 ============== */
@@ -13,18 +14,22 @@
   display: flex; align-items: center; justify-content: space-between;
 }
 .header .lead { display: flex; align-items: center; gap: 48rpx; }
-.header .title {
-  font-size: 44rpx; font-weight: 500;
+/* .title 作为纵向容器：文字 .t-text + 独立下划线 .tab-bar（与计划页同款实现）；字号保持本页原 44rpx */
+.header .title { display: inline-flex; flex-direction: column; align-items: flex-start; }
+.header .t-text {
+  font-size: 42rpx; font-weight: 500;
   color: var(--n-500);
   letter-spacing: -0.01em;
-  padding-bottom: 8rpx;
-  border-bottom: 4rpx solid transparent;
-  transition: color 200ms var(--ease-out), border-color 200ms;
+  line-height: 1.2;
+  transition: color 200ms var(--ease-out);
 }
-.header .title.active {
-  color: var(--n-900); font-weight: 800;
-  border-bottom-color: var(--primary);
+.header .title.active .t-text { color: var(--n-900); font-weight: 800; }
+/* 下划线：与计划页 .tab-bar 完全一致（6rpx 高 / 圆角 / margin-top 10rpx / var(--lime)） */
+.header .tab-bar {
+  height: 6rpx; width: 100%; margin-top: 10rpx; border-radius: 999rpx;
+  background: var(--lime); opacity: 0; transition: opacity .2s ease;
 }
+.header .title.active .tab-bar { opacity: 1; }
 
 /* ============== SCROLL ============== */
 .scroll {
@@ -369,6 +374,7 @@
   --n-50: #0A0A0A;
   --white: #161616;
   --card-gray: #1E1E1E;
+  --lime: #C8FF00;        /* 深色下下划线提亮，与计划页深色变体一致 */
 
   --text: #FFFFFF;
   --text-sub: rgba(255,255,255,.70);

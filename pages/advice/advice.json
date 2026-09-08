@@ -1,6 +1,8 @@
 {
   "usingComponents": {
-    "icon": "/components/icon/icon"
+    "icon": "/components/icon/icon",
+    "nav-bar": "/components/nav-bar/nav-bar"
   },
-  "navigationBarTitleText": " "
+  "navigationBarTitleText": " ",
+  "navigationStyle": "custom"
 }

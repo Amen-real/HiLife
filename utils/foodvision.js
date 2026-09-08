@@ -39,6 +39,9 @@ function compressToBase64(tempFilePath) {
   });
 }
 
+// 云托管模式：异步任务（callContainer 有 15s 硬超时，同步识别必超时 102002）
+//   1) POST /task/submit（JSON base64，压缩图 <100K）→ 立即返回 {taskId}
+//   2) GET  /task/{id} 每 2s 轮询 → {status: processing|done|error, result}
 function analyzeByCallContainer(tempFilePath, cfg) {
   return compressToBase64(tempFilePath).then((b64) => new Promise((resolve, reject) => {
     if (typeof wx.cloud === 'undefined' || !wx.cloud.callContainer) {
@@ -47,21 +50,53 @@ function analyzeByCallContainer(tempFilePath, cfg) {
     }
     wx.cloud.callContainer({
       config: { env: cfg.env },
-      path: '/analyze',
+      path: '/task/submit',
       method: 'POST',
       header: { 'X-WX-SERVICE': cfg.service, 'content-type': 'application/json' },
       data: { image: b64 },
       success: (res) => {
         try {
           const d = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-          resolve(d);
+          if (d && d.taskId) resolve(d.taskId);
+          else reject(new Error(d && d.message ? d.message : '提交识别任务失败'));
         } catch (e) {
           reject(new Error('返回数据解析失败'));
         }
       },
       fail: reject
     });
-  }));
+  })).then((taskId) => pollTask(cfg, taskId));
+}
+
+// 轮询任务结果：2s 间隔，最长约 90s（30 次）
+function pollTask(cfg, taskId) {
+  return new Promise((resolve, reject) => {
+    let tries = 0;
+    const MAX = 30;
+    const tick = () => {
+      tries++;
+      wx.cloud.callContainer({
+        config: { env: cfg.env },
+        path: '/task/' + taskId,
+        method: 'GET',
+        header: { 'X-WX-SERVICE': cfg.service },
+        success: (res) => {
+          let d = null;
+          try { d = typeof res.data === 'string' ? JSON.parse(res.data) : res.data; } catch (e) {}
+          if (d && d.status === 'done') { resolve(d); return; }
+          if (d && d.status === 'error') { reject(new Error(d.message || '识别失败')); return; }
+          if (tries >= MAX) { reject(new Error('识别超时，请重试')); return; }
+          setTimeout(tick, 2000);
+        },
+        fail: (err) => {
+          // 单次网络抖动容忍，不立即失败
+          if (tries >= MAX) { reject(err); return; }
+          setTimeout(tick, 2000);
+        }
+      });
+    };
+    tick();
+  });
 }
 
 function analyzeByUpload(tempFilePath, cfg) {

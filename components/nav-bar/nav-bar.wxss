@@ -1,0 +1,63 @@
+/* components/nav-bar/nav-bar.wxss —— 通用自定义导航栏
+   颜色全部走 var(--*) 设计变量：页面根节点若有 .theme-dark 重定义变量，本组件自动跟随。 */
+
+.nb-wrap {
+  width: 100%;
+}
+
+.nb-fixed {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 999;
+  box-sizing: border-box;
+  background: var(--n-50, #F7F7F5);
+}
+
+.nb-inner {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 24rpx;
+  box-sizing: border-box;
+}
+
+.nb-title {
+  position: absolute;
+  left: 140rpx; right: 140rpx;
+  text-align: center;
+  font-size: 33rpx;
+  font-weight: 600;
+  color: var(--n-900, #0A0A0A);
+  line-height: 44px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.nb-side {
+  min-width: 80rpx;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.nb-right { justify-content: flex-end; }
+
+.nb-back {
+  width: 64rpx; height: 64rpx;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: -14rpx;
+}
+
+.nb-arrow {
+  width: 22rpx; height: 22rpx;
+  border-left: 4rpx solid var(--n-900, #0A0A0A);
+  border-bottom: 4rpx solid var(--n-900, #0A0A0A);
+  transform: rotate(45deg);
+  box-sizing: border-box;
+}
+
+.nb-hover { opacity: 0.45; }

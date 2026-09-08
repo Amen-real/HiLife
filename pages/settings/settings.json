@@ -1,4 +1,7 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "健康数据"
+  "usingComponents": {
+    "nav-bar": "/components/nav-bar/nav-bar"
+  },
+  "navigationBarTitleText": "健康数据",
+  "navigationStyle": "custom"
 }

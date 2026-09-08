@@ -1,11 +1,18 @@
 <!-- pages/training/training.wxml —— 对齐 02-train.html（HiLiLife 设计系统） -->
 <view class="page {{theme}}">
+  <nav-bar title="训练" show-back="{{false}}" />
 
   <!-- ============== HEADER：动作库 / 收藏 ============== -->
   <view class="header">
     <view class="lead">
-      <text class="title {{mode==='lib' ? 'active' : ''}}" bindtap="switchMode" data-mode="lib">动作库</text>
-      <text class="title {{mode==='fav' ? 'active' : ''}}" bindtap="switchMode" data-mode="fav">收藏</text>
+      <view class="title {{mode==='lib' ? 'active' : ''}}" bindtap="switchMode" data-mode="lib">
+        <text class="t-text">动作库</text>
+        <view class="tab-bar"></view>
+      </view>
+      <view class="title {{mode==='fav' ? 'active' : ''}}" bindtap="switchMode" data-mode="fav">
+        <text class="t-text">收藏</text>
+        <view class="tab-bar"></view>
+      </view>
     </view>
   </view>
 
@@ -72,10 +79,9 @@
 
   <view class="attr">动作图片 © Gym visual</view>
   <view class="bottom-gap"></view>
-</view>
 
-<!-- ============== 底部固定行动栏 ============== -->
-<view class="action-bar">
+<!-- ============== 底部固定行动栏（仅手动勾选动作后出现，selectedActions 只存手动添加） ============== -->
+<view wx:if="{{selectedCount > 0}}" class="action-bar">
   <view class="ab-count" hover-class="op-press" bindtap="openSelPanel">
     <text class="ab-num">{{selectedCount}}</text>
     <text class="ab-label">已选动作</text>
@@ -176,3 +182,6 @@
 <view wx:if="{{selMinimized}}" class="sel-bubble" hover-class="bubble-press" catchtap="restoreSelPanel">
   已选 {{selectedCount}} 个动作 ›
 </view>
+
+</view>
+<!-- /.page（闭合于文件末尾：行动栏/弹窗/气泡是 fixed 元素，纳入 .page 内才能吃到 .page.theme-dark 的深色变量） -->

@@ -1,186 +1,118 @@
-<!-- pages/food-scan/food-scan.wxml -->
-<view class="page">
+<!-- pages/food-scan/food-scan.wxml —— 拍照识别（对齐 08-拍照识别 / 09-食物识别结果） -->
+<view class="page {{view === 'result' ? 'page-result' : 'page-dark'}}">
 
-  <!-- 顶部说明 -->
-  <view class="card intro">
-    <view class="intro-title">食物识别 · Open Food Facts</view>
-    <view class="intro-sub">免费开源营养数据库。扫码商品条码，或搜索名称，即可获取真实热量与营养素。</view>
+  <!-- ============== 取景态（08）：live camera + cover-view 覆盖层 ============== -->
+  <block wx:if="{{view === 'camera'}}">
+    <camera wx:if="{{!camError}}" class="cam" device-position="back" flash="{{flash ? 'torch' : 'off'}}" binderror="onCamError">
+      <!-- 顶部：返回 + 闪光灯 -->
+      <cover-view class="cam-top">
+        <cover-view class="cam-top-btn" bindtap="goBack">‹</cover-view>
+        <cover-view class="cam-flash {{flash ? 'on' : ''}}" bindtap="toggleFlash">⚡</cover-view>
+      </cover-view>
+
+      <cover-view class="cam-hint">请将食物置于取景框内</cover-view>
+
+      <!-- 底部：相册 / 快门 / 识别历史 -->
+      <cover-view class="cam-bar">
+        <cover-view class="side-btn" bindtap="pickAlbum">
+          <cover-view class="side-ico">相册</cover-view>
+        </cover-view>
+        <cover-view class="shutter" bindtap="takePhoto">
+          <cover-view class="shutter-core"></cover-view>
+        </cover-view>
+        <cover-view class="side-btn" bindtap="openHistory">
+          <cover-view class="side-ico">历史</cover-view>
+        </cover-view>
+      </cover-view>
+    </camera>
+
+    <!-- 相机不可用（权限被拒等）：引导去设置 / 相册兜底 -->
+    <view wx:else class="cam-error">
+      <view class="ce-title">相机不可用</view>
+      <view class="ce-sub">需要相机权限才能拍照识别食物</view>
+      <view class="ce-btns">
+        <view class="ce-btn ghost" bindtap="openSetting">去开启权限</view>
+        <view class="ce-btn primary" bindtap="pickAlbum">从相册选图</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ============== 识别中 ============== -->
+  <view wx:elif="{{view === 'analyzing'}}" class="analyzing">
+    <view class="an-ring"></view>
+    <view class="an-text">AI 识别中…</view>
+    <view class="an-sub">正在分析食物营养</view>
   </view>
 
-  <!-- 操作区 -->
-  <view class="card">
-    <view class="section-title">识别方式</view>
-    <view class="actions">
-      <view class="act-btn" hover-class="act-hover" bindtap="scanCode">
-        <view class="act-ico"><view class="ico ico-camera ico--ink" style="width:44rpx;height:44rpx"></view></view>
-        <view class="act-name">扫码识别</view>
-        <view class="act-desc">对准商品条码</view>
+  <!-- ============== 识别历史 ============== -->
+  <view wx:elif="{{view === 'history'}}" class="hist">
+    <view class="status-spacer" style="{{statusBarStyle}}"></view>
+    <view class="h-nav">
+      <view class="h-back" bindtap="goBack"><view class="ico ico-arrowleft ico--ink" style="width:40rpx;height:40rpx"></view></view>
+      <view class="h-title">识别历史</view>
+      <view class="h-clear" bindtap="clearHistory" wx:if="{{history.length}}">清空</view>
+    </view>
+    <scroll-view scroll-y class="h-scroll">
+      <view class="h-item" wx:for="{{history}}" wx:key="ts" data-idx="{{index}}" bindtap="onPickHistory">
+        <view class="h-info">
+          <view class="h-name">{{item.name}}</view>
+          <view class="h-meta">置信度 {{item.conf || '—'}}</view>
+        </view>
+        <view class="h-kcal">{{item.kcal == null ? '—' : item.kcal}} <text class="h-unit">kcal</text></view>
       </view>
-      <view class="act-btn" hover-class="act-hover" bindtap="onSearch">
-        <view class="act-ico"><view class="ico ico-search ico--ink" style="width:44rpx;height:44rpx"></view></view>
-        <view class="act-name">名称搜索</view>
-        <view class="act-desc">输入食物 / 品牌</view>
-      </view>
-    </view>
-
-    <view class="search-row">
-      <input class="search-input" placeholder="如：酸奶 / 全麦面包 / 可乐" value="{{keyword}}" bindinput="onInput" confirm-type="search" bindconfirm="onSearch" />
-      <view class="search-go" bindtap="onSearch">搜索</view>
-    </view>
-
-    <view class="note">说明：Open Food Facts 提供「条码 + 名称」查询，不含「拍照识别食物图像」能力；下方「拍照识别」由自托管 CalorieScan 视觉模型实现，需你部署后端服务（见 server/ 目录）。</view>
-
-    <!-- 拍照识别（自托管 CalorieScan） -->
-    <view class="cam-btn" hover-class="cam-hover" bindtap="chooseAndAnalyze">
-      <view class="cam-ico"><view class="ico ico-camera ico--ink" style="width:36rpx;height:36rpx"></view></view>
-      <text>拍照识别热量（本地模型）</text>
-    </view>
+      <view wx:if="{{!history.length}}" class="h-empty">还没有识别记录，拍一张试试</view>
+    </scroll-view>
   </view>
 
-  <!-- 搜索结果列表 -->
-  <view wx:if="{{mode === 'search' && results.length}}" class="card">
-    <view class="section-title">搜索结果（点选查看营养）</view>
-    <view class="res" wx:for="{{results}}" wx:key="code" data-code="{{item.code}}" bindtap="onPick">
-      <image wx:if="{{item.image}}" class="res-img" src="{{item.image}}" mode="aspectFill" />
-      <view wx:else class="res-img res-emoji"><view class="ico ico-food-bowl ico--ink" style="width:60rpx;height:60rpx"></view></view>
-      <view class="res-info">
-        <view class="res-name ellipsis">{{item.name}}</view>
-        <view class="res-brand ellipsis">{{item.brand || '未知品牌'}}</view>
+  <!-- ============== 识别结果（09） ============== -->
+  <view wx:elif="{{view === 'result'}}" class="result">
+    <view class="status-spacer" style="{{statusBarStyle}}"></view>
+    <view class="r-nav">
+      <view class="r-back" bindtap="backToCamera"><view class="ico ico-arrowleft ico--ink" style="width:40rpx;height:40rpx"></view></view>
+      <view class="r-done" bindtap="saveAndExit">完成</view>
+    </view>
+
+    <scroll-view scroll-y class="r-scroll">
+      <view class="r-title">{{photo.name}}</view>
+      <view class="r-conf">识别置信度: {{photo.confText}}</view>
+
+      <!-- 食物照片 -->
+      <view class="r-photo-card">
+        <image wx:if="{{photo.img}}" class="r-photo" src="{{photo.img}}" mode="aspectFill" />
+        <view wx:else class="r-photo-ph">历史记录不保留原图</view>
       </view>
-      <view wx:if="{{item.nutriScore}}" class="ns ns-{{item.nutriScore}}">{{item.nutriScore}}</view>
-      <text class="arrow"> ›</text>
+
+      <!-- 营养成分（估算） -->
+      <view class="r-card">
+        <view class="r-card-head">
+          <text class="r-card-title">营养成分（估算）</text>
+          <text class="r-unit" wx:if="{{photo.weight}}">单位（每份{{photo.weight}}g）</text>
+        </view>
+        <view class="r-nutri">
+          <view class="r-nutri-row"><view class="dot dot-kcal"></view><text class="r-n-name">热量</text><text class="r-n-val">{{photo.kcal == null ? '—' : photo.kcal}} kcal</text></view>
+          <view class="r-nutri-row"><view class="dot dot-pro"></view><text class="r-n-name">蛋白质</text><text class="r-n-val">{{photo.protein == null ? '—' : photo.protein}} g</text></view>
+          <view class="r-nutri-row"><view class="dot dot-carb"></view><text class="r-n-name">碳水化合物</text><text class="r-n-val">{{photo.carb == null ? '—' : photo.carb}} g</text></view>
+          <view class="r-nutri-row"><view class="dot dot-fat"></view><text class="r-n-name">脂肪</text><text class="r-n-val">{{photo.fat == null ? '—' : photo.fat}} g</text></view>
+        </view>
+      </view>
+
+      <!-- 包含食物 -->
+      <view class="r-card" wx:if="{{photo.items.length}}">
+        <view class="r-card-head"><text class="r-card-title">包含食物</text></view>
+        <view class="r-food" wx:for="{{photo.items}}" wx:key="name">
+          <view class="r-food-name">{{item.name}}</view>
+          <view class="r-food-weight">{{item.weight}}</view>
+        </view>
+      </view>
+
+      <view class="r-note">⚠ 识别结果仅供参考，请以实际为准</view>
+      <view class="r-bottom-gap"></view>
+    </scroll-view>
+
+    <!-- 底部操作：重新识别 / 加入记录 -->
+    <view class="r-foot">
+      <view class="r-btn ghost" bindtap="backToCamera">重新识别</view>
+      <view class="r-btn primary" bindtap="saveAndExit">加入记录</view>
     </view>
   </view>
-
-  <!-- 商品详情 -->
-  <block wx:if="{{mode === 'product' && product}}">
-    <view class="card detail">
-      <view class="detail-head">
-        <image wx:if="{{product.image}}" class="detail-img" src="{{product.image}}" mode="aspectFill" />
-        <view wx:else class="detail-img detail-emoji"><view class="ico ico-food-bowl ico--ink" style="width:80rpx;height:80rpx"></view></view>
-        <view class="detail-meta">
-          <view class="detail-name">{{product.name}}</view>
-          <view class="detail-brand">{{product.brand || '未知品牌'}}</view>
-          <view class="badges">
-            <view wx:if="{{product.nutriScore}}" class="ns ns-{{product.nutriScore}}">营养评分 {{product.nutriScore}}</view>
-            <view wx:if="{{product.novaGroup}}" class="tag">NOVA {{product.novaGroup}}</view>
-            <view wx:if="{{product.servingSize}}" class="tag">每份 {{product.servingSize}}</view>
-          </view>
-        </view>
-      </view>
-
-      <!-- 每 100g 营养 -->
-      <view class="section-title">每 100g 营养</view>
-      <view class="nutri">
-        <view class="nutri-item"><text class="nutri-val">{{product.per100g.kcal != null ? product.per100g.kcal : '—'}}</text><text class="nutri-lab">热量 kcal</text></view>
-        <view class="nutri-item"><text class="nutri-val">{{product.per100g.protein != null ? product.per100g.protein : '—'}}</text><text class="nutri-lab">蛋白质 g</text></view>
-        <view class="nutri-item"><text class="nutri-val">{{product.per100g.fat != null ? product.per100g.fat : '—'}}</text><text class="nutri-lab">脂肪 g</text></view>
-        <view class="nutri-item"><text class="nutri-val">{{product.per100g.carbs != null ? product.per100g.carbs : '—'}}</text><text class="nutri-lab">碳水 g</text></view>
-        <view class="nutri-item"><text class="nutri-val">{{product.per100g.sugars != null ? product.per100g.sugars : '—'}}</text><text class="nutri-lab">糖 g</text></view>
-        <view class="nutri-item"><text class="nutri-val">{{product.per100g.salt != null ? product.per100g.salt : '—'}}</text><text class="nutri-lab">盐 g</text></view>
-      </view>
-
-      <!-- 记录表单 -->
-      <view class="section-title">记录到今日饮食</view>
-      <view class="form-row">
-        <text class="form-lab">餐别</text>
-        <picker class="form-picker" mode="selector" range="{{meals}}" value="{{mealIndex}}" bindchange="onMealChange">
-          <view class="form-picker-val">{{meals[mealIndex]}} <text class="arrow">›</text></view>
-        </picker>
-      </view>
-      <view class="form-row">
-        <text class="form-lab">份量(g)</text>
-        <input class="form-input" type="digit" value="{{grams}}" bindinput="onGramsInput" />
-      </view>
-      <view class="form-preview" wx:if="{{scaled}}">本次约 <text class="hl">{{scaled.kcal != null ? scaled.kcal : '—'}}</text> kcal · 蛋白 {{scaled.protein}}g · 碳水 {{scaled.carbs}}g · 脂肪 {{scaled.fat}}g</view>
-      <button class="btn-primary add-btn" hover-class="btn-hover" bindtap="addToDiet">记录到今日饮食</button>
-      <view class="go-advice" bindtap="goAdvice">查看饮食建议 ›</view>
-    </view>
-  </block>
-
-  <!-- 拍照识别结果 -->
-  <block wx:if="{{mode === 'camera' && photo}}">
-    <view class="card detail">
-      <view class="section-title">AI 拍照识别结果</view>
-      <view class="photo-name">{{photo.name}}</view>
-      <view class="photo-kcal">{{photo.total_calories != null ? photo.total_calories : '—'}}<text class="unit">kcal</text></view>
-      <view class="photo-meta">约 {{photo.total_weight_g != null ? photo.total_weight_g : '—'}} g · 置信度 {{photo.confidenceText}}</view>
-      <view class="conf-bar"><view class="conf-fill" style="width:{{photo.confidencePct}}%"></view></view>
-      <view wx:if="{{photo.mock}}" class="mock-tag">示例数据（未接入真实模型）</view>
-      <view wx:if="{{photo.note}}" class="note">{{photo.note}}</view>
-
-      <view class="section-title">记录到今日饮食</view>
-      <view class="form-row">
-        <text class="form-lab">餐别</text>
-        <picker class="form-picker" mode="selector" range="{{meals}}" value="{{mealIndex}}" bindchange="onMealChange">
-          <view class="form-picker-val">{{meals[mealIndex]}} <text class="arrow">›</text></view>
-        </picker>
-      </view>
-      <button class="btn-primary add-btn" hover-class="btn-hover" bindtap="recordPhoto">记录到今日饮食</button>
-      <view class="go-advice" bindtap="goAdvice">查看饮食建议 ›</view>
-    </view>
-  </block>
-
-  <!-- 骨架屏：商品详情加载中 -->
-  <block wx:if="{{loading && mode === 'product'}}">
-    <view class="card detail">
-      <view class="detail-head">
-        <view class="sk sk-detail-img"></view>
-        <view class="detail-meta">
-          <view class="sk sk-line w70"></view>
-          <view class="sk sk-line w50"></view>
-          <view class="sk-badges">
-            <view class="sk sk-badge"></view>
-            <view class="sk sk-badge"></view>
-          </view>
-        </view>
-      </view>
-      <view class="section-title">每 100g 营养</view>
-      <view class="nutri">
-        <view class="nutri-item" wx:for="{{[1,2,3,4,5,6]}}" wx:key="*this">
-          <view class="sk sk-val"></view>
-          <view class="sk sk-lab"></view>
-        </view>
-      </view>
-      <view class="section-title">记录到今日饮食</view>
-      <view class="form-row">
-        <view class="sk sk-line w30"></view>
-        <view class="sk sk-picker"></view>
-      </view>
-      <view class="sk sk-btn"></view>
-    </view>
-  </block>
-
-  <!-- 骨架屏：拍照识别加载中 -->
-  <block wx:if="{{loading && mode === 'camera'}}">
-    <view class="card detail">
-      <view class="section-title">AI 拍照识别结果</view>
-      <view class="sk sk-photo-name"></view>
-      <view class="sk sk-photo-kcal"></view>
-      <view class="sk sk-line w50"></view>
-      <view class="sk sk-conf"></view>
-      <view class="section-title">记录到今日饮食</view>
-      <view class="form-row">
-        <view class="sk sk-line w30"></view>
-      </view>
-      <view class="sk sk-btn"></view>
-    </view>
-  </block>
-
-  <!-- 骨架屏：名称搜索加载中 -->
-  <block wx:if="{{loading && mode === 'search'}}">
-    <view class="card">
-      <view class="section-title">搜索结果（点选查看营养）</view>
-      <view class="res" wx:for="{{[1,2,3]}}" wx:key="*this">
-        <view class="sk sk-res-img"></view>
-        <view class="res-info">
-          <view class="sk sk-line w70"></view>
-          <view class="sk sk-line w50"></view>
-        </view>
-        <view class="sk sk-ns"></view>
-      </view>
-    </view>
-  </block>
-
-  <view class="bottom-gap" />
 </view>

@@ -52,6 +52,109 @@
 /* 小号完成度环（76px），复用全局 .ring 渐变，仅覆写尺寸 */
 .goal-ring { --size: 152rpx; --w: 16rpx; }
 
+/* 推荐依据说明 / 降级提示条 */
+.goal-note {
+  display: flex; align-items: center; justify-content: space-between; gap: 16rpx;
+  margin: -14rpx 32rpx 24rpx;
+  font-size: 22rpx; color: var(--n-500); line-height: 1.4;
+}
+.goal-note .gn-text { flex: 1; min-width: 0; }
+.goal-note .gn-fix {
+  flex: none; font-weight: 700; color: var(--primary-text);
+  padding: 8rpx 18rpx; border-radius: 999rpx;
+  background: var(--primary-tint, rgba(124,184,0,.12));
+}
+
+/* T6：体重变化导致推荐更新提示条 */
+.update-hint {
+  display: flex; align-items: center; gap: 14rpx;
+  margin: 0 32rpx 20rpx; padding: 18rpx 22rpx;
+  background: var(--primary-tint, rgba(124,184,0,.12));
+  border: 1rpx solid rgba(124,184,0,.30);
+  border-radius: var(--r-m);
+}
+.update-hint .uh-ico {
+  flex: none; width: 14rpx; height: 14rpx; border-radius: 50%;
+  background: var(--primary-text);
+}
+.update-hint .uh-text {
+  flex: 1; min-width: 0; font-size: 23rpx; font-weight: 600; color: var(--primary-text);
+}
+.update-hint .uh-close { flex: none; font-size: 24rpx; color: var(--primary-text); opacity: .7; }
+
+/* T6：近 30 天趋势卡 */
+.trend-card { margin: 0 32rpx 36rpx; padding: 28rpx 28rpx 24rpx; }
+.tc-head { margin-bottom: 16rpx; }
+.tc-title { font-size: 26rpx; font-weight: 800; color: var(--n-900); letter-spacing: 0.01em; }
+.trend-empty {
+  font-size: 23rpx; color: var(--n-500); line-height: 1.5;
+  padding: 24rpx 4rpx 8rpx;
+}
+.trend-caption {
+  display: flex; justify-content: space-between; gap: 16rpx;
+  margin-bottom: 12rpx; font-size: 22rpx; font-weight: 600;
+}
+.trend-caption .tc-w { color: var(--n-600); }
+.trend-caption .tc-k { color: var(--primary-text); }
+.trend-wrap { position: relative; width: 100%; height: 360rpx; }
+.trend-canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; }
+.trend-image { width: 100%; height: 100%; display: block; }
+.trend-legend {
+  display: flex; gap: 36rpx; margin-top: 12rpx;
+  font-size: 21rpx; color: var(--n-600);
+}
+.trend-legend .lg { display: flex; align-items: center; gap: 10rpx; }
+.trend-legend .lg-dot { width: 18rpx; height: 18rpx; border-radius: 50%; flex: none; }
+.trend-legend .lg-dot.kcal { background: #C8FF00; border: 1rpx solid #A6C24A; }
+.trend-legend .lg-dot.weight { background: transparent; border: 2rpx dashed #9AA0A6; }
+
+/* T6：手动覆盖入口 + 目标卡「手动」标签 */
+.goal-adjust {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 0 32rpx 24rpx; padding: 20rpx 26rpx;
+  background: var(--card); border: 1rpx solid var(--n-200);
+  border-radius: var(--r-m); box-shadow: var(--shadow-card);
+}
+.goal-adjust .ga-text { font-size: 25rpx; font-weight: 700; color: var(--n-800); }
+.goal-adjust .ga-caret { font-size: 30rpx; color: var(--n-400); }
+.goal-card .kcal .kcal-tag,
+.kcal-tag {
+  margin-left: 12rpx; font-size: 20rpx; font-weight: 700; color: var(--primary-text);
+  background: var(--primary-tint, rgba(124,184,0,.12));
+  padding: 4rpx 12rpx; border-radius: 999rpx; vertical-align: middle;
+}
+
+/* T6：手动覆盖调整 sheet */
+.ie-row {
+  display: flex; align-items: center; gap: 18rpx;
+  margin: 8rpx 4rpx 4rpx;
+}
+.ie-step {
+  width: 76rpx; height: 76rpx; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40rpx; font-weight: 700; color: var(--n-800);
+  background: var(--card-gray, #F2F2EE); border-radius: var(--r-m);
+}
+.ie-input {
+  flex: 1; min-width: 0; height: 76rpx; text-align: center;
+  font-size: 38rpx; font-weight: 800; color: var(--n-900);
+  background: var(--card-gray, #F2F2EE); border-radius: var(--r-m);
+  font-variant-numeric: tabular-nums;
+}
+.ie-unit { flex: none; font-size: 24rpx; color: var(--n-500); }
+.ie-hint { font-size: 22rpx; color: var(--n-500); margin: 14rpx 4rpx 4rpx; line-height: 1.4; }
+.ie-actions { display: flex; gap: 18rpx; margin-top: 20rpx; }
+.ie-actions .btn-reset {
+  flex: 1; height: 84rpx; display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 700; color: var(--n-700);
+  background: var(--card-gray, #F2F2EE); border-radius: var(--r-m);
+}
+.ie-actions .btn-save {
+  flex: 1; height: 84rpx; display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 800; color: var(--ink, #0A0A0A);
+  background: var(--primary); border-radius: var(--r-m);
+}
+
 /* ===== 营养概览（3 列） ===== */
 .nutrition-overview {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 20rpx;

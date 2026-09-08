@@ -14,8 +14,10 @@
   gap: 16rpx;
   padding: 28rpx 32rpx 16rpx;
 }
-.tb-title { font-size: var(--fs-section); font-weight: 800; color: #fff; }
-.tb-sub { font-size: var(--fs-caption); color: rgba(255, 255, 255, 0.78); }
+.tb-title { font-size: var(--fs-section); font-weight: 800; color: #0A0A0A; }
+/* 副标题压在页面顶部亮绿渐变（--primary-deep → --primary → --primary-tint）上，
+   白字对比度不足 1.2:1 几乎不可见 → 改半透明深墨，最亮处仍有 5.4:1 */
+.tb-sub { font-size: var(--fs-caption); color: rgba(10, 10, 10, 0.62); }
 
 /* 当前周期进度 */
 .prog {
@@ -28,9 +30,9 @@
 }
 .prog-top { display: flex; align-items: center; justify-content: space-between; }
 .prog-name { font-size: var(--fs-title); font-weight: 800; color: var(--text); }
-.prog-week { font-size: var(--fs-body); font-weight: 700; color: var(--primary-deep); }
+.prog-week { font-size: var(--fs-body); font-weight: 700; color: var(--primary-text); }
 .prog-phase { margin-top: 12rpx; display: flex; flex-direction: column; gap: 4rpx; }
-.prog-phase-label { font-size: var(--fs-body); font-weight: 700; color: var(--primary-deep); }
+.prog-phase-label { font-size: var(--fs-body); font-weight: 700; color: var(--primary-text); }
 .prog-phase-intent { font-size: var(--fs-caption); color: var(--text-sub); line-height: 1.5; }
 .prog-rx { display: flex; gap: 12rpx; margin-top: 20rpx; }
 .prog-rx-item {
@@ -47,7 +49,7 @@
   text-align: center;
   font-size: var(--fs-body);
   font-weight: 700;
-  color: var(--primary-deep);
+  color: var(--primary-text);
   background: var(--primary-tint);
   border-radius: 18rpx;
   padding: 18rpx 0;
@@ -71,7 +73,7 @@
 .cyc-tags { display: flex; gap: 12rpx; margin-top: 12rpx; }
 .cyc-tag {
   font-size: var(--fs-caption);
-  color: var(--primary-deep);
+  color: var(--primary-text);
   background: var(--primary-tint);
   border: 1rpx solid rgba(46, 207, 176, 0.30);
   border-radius: 999rpx;
@@ -147,7 +149,7 @@
   text-align: center;
   border-radius: 24rpx;
   background: var(--primary);
-  color: #fff;
+  color: #0A0A0A;
   font-size: var(--fs-head);
   font-weight: 700;
   box-shadow: var(--shadow-mint);

@@ -7,6 +7,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 pillow
+requests            # vision_llm.py 调多模态大模型（OpenAI 兼容 chat.completions）
 
 # 真实模型（CalorieScan 推理）—— 部署真实模式时取消注释并安装
 # 注意：torch / ultralytics / segment-anything 体积大，建议用官方 CUDA 构建以发挥 GPU

@@ -349,7 +349,7 @@ const store = {
     };
     wx.setStorageSync('uu_fitness_backup', backup);
     // 重置为默认值，使所有页面显示空状态
-    data.profile = { gender: '', goal: '减重', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0 };
+    data.profile = { gender: '', goal: '减重', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: 3, age: null, activityLevel: 'moderate', intakeOverride: null };
     data.weightRecords = [];
     data.trainingLogs = [];
     data.meals = [];
@@ -366,6 +366,12 @@ const store = {
     const u = g().userInfo;
     if (nickname !== undefined && nickname !== null) u.nickname = nickname;
     if (avatar !== undefined && avatar !== null) u.avatar = avatar;
+    this.persist();
+  },
+  // 每周训练目标次数（周度复盘「完成度」分母；范围 1–14）
+  setWeeklyTarget(n) {
+    const v = Math.max(1, Math.min(14, Math.round(Number(n) || 3)));
+    g().profile.weeklyTarget = v;
     this.persist();
   }
 };

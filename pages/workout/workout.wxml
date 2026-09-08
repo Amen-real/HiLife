@@ -1,8 +1,9 @@
 <!-- pages/workout/workout.wxml —— 训练执行页（全部动作可滚动列表 + 单卡展开，参考 ui-workout-redesign.html） -->
-<view class="page" wx:if="{{!finished}}">
+<view class="page {{theme}}" wx:if="{{!finished}}">
+  <nav-bar title="训练中" show-back="{{true}}" />
 
-  <!-- 顶部操作栏：计时器 + 播放/暂停 + 完成 -->
-  <view class="wo-top">
+  <!-- 顶部操作栏：计时器 + 播放/暂停 + 完成（sticky 偏移 navH，避让吸顶的自定义导航栏） -->
+  <view class="wo-top" style="--nav-h: {{navH}}px">
     <view class="wo-timer-wrap">
       <text class="wo-timer">{{workoutClock}}</text>
       <view class="wo-clock-toggle" hover-class="press" bindtap="toggleClock">
@@ -52,7 +53,7 @@
 
       <!-- 展开内容 -->
       <view class="wo-ex-expanded" wx:if="{{expandedId === item.id}}">
-        <view class="wo-note-ph" bindtap="editNote" data-ai="{{ai}}">点击输入备注</view>
+        <view class="wo-note-ph {{item.note ? 'filled' : ''}}" bindtap="editNote" data-ai="{{ai}}">{{item.note || '点击输入备注'}}</view>
 
         <view class="wo-timer-toggle-row">
           <view class="wo-timer-toggle" bindtap="togglePerSetTimer" data-ai="{{ai}}">
@@ -137,7 +138,7 @@
 </view>
 
   <!-- 添加动作 overlay（从全量动作库选择动作，追加到当前训练计划） -->
-  <view class="repl-mask" wx:if="{{showAdd}}" catchtouchmove="noop">
+  <view class="repl-mask {{theme}}" wx:if="{{showAdd}}" catchtouchmove="noop">
     <view class="repl-pop">
       <view class="repl-head">
         <text class="repl-title">添加动作</text>
@@ -170,7 +171,7 @@
   </view>
 
 <!-- 训练计时 最小化悬浮球（可拖拽贴边，倒计时后台继续） -->
-<movable-area class="float-area" wx:if="{{showTrain && trainMinimized}}">
+<movable-area class="float-area {{theme}}" wx:if="{{showTrain && trainMinimized}}">
   <movable-view class="mini-float" direction="all" damping="40" friction="6"
     x="{{trainBall.x}}" y="{{trainBall.y}}"
     bindtap="expandTrain" bindtouchend="onTrainBallEnd">
@@ -182,7 +183,7 @@
 </movable-area>
 
 <!-- 训练计时 overlay（5秒准备 + 60秒训练）—— 复用休息计时弹窗 UI -->
-<view class="rest-mask" wx:if="{{showTrain && !trainMinimized}}" catchtouchmove="noop">
+<view class="rest-mask {{theme}}" wx:if="{{showTrain && !trainMinimized}}" catchtouchmove="noop">
   <view class="rest-pop">
     <view class="rest-pop-mini" hover-class="press" bindtap="minimizeTrain"></view>
     <view wx:if="{{trainPhase === 'ready'}}" class="train-ready-dot"></view>
@@ -198,7 +199,7 @@
 </view>
 
 <!-- 组间休息 最小化悬浮球（可拖拽贴边，倒计时后台继续） -->
-<movable-area class="float-area" wx:if="{{showRest && restMinimized}}">
+<movable-area class="float-area {{theme}}" wx:if="{{showRest && restMinimized}}">
   <movable-view class="mini-float" direction="all" damping="40" friction="6"
     x="{{restBall.x}}" y="{{restBall.y}}"
     bindtap="expandRest" bindtouchend="onRestBallEnd">
@@ -210,7 +211,7 @@
 </movable-area>
 
 <!-- 组间休息倒计时悬浮窗（三档切换 + ±微调 + 完成休息）；最后一组完成时切换为「训练完成」保存态 -->
-<view class="rest-mask" wx:if="{{showRest && !restMinimized}}" catchtouchmove="noop">
+<view class="rest-mask {{theme}}" wx:if="{{showRest && !restMinimized}}" catchtouchmove="noop">
   <view class="rest-pop">
     <view class="rest-pop-mini" hover-class="press" bindtap="minimizeRest"></view>
     <view wx:if="{{restKind === 'done'}}" class="ico ico-trophy ico--primary" style="width:92rpx;height:92rpx" />
@@ -239,7 +240,7 @@
 </view>
 
 <!-- 动作历史 overlay（当前选中动作的每组明细：次数/重量/训练时长/休息时长） -->
-<view class="hist-mask" wx:if="{{showHistory}}" catchtouchmove="noop">
+<view class="hist-mask {{theme}}" wx:if="{{showHistory}}" catchtouchmove="noop">
   <view class="hist-pop">
     <view class="hist-head">
       <text class="hist-title">动作历史</text>
@@ -263,7 +264,7 @@
 </view>
 
 <!-- 替换动作 overlay（从动作库选择其他动作替换当前动作，保留已有组数据） -->
-<view class="repl-mask" wx:if="{{showReplace}}" catchtouchmove="noop">
+<view class="repl-mask {{theme}}" wx:if="{{showReplace}}" catchtouchmove="noop">
   <view class="repl-pop">
     <view class="repl-head">
       <text class="repl-title">替换动作</text>
@@ -297,7 +298,7 @@
 </view>
 
 <!-- 完成态 -->
-<view class="page finished" wx:if="{{finished}}">
+<view class="page finished {{theme}}" wx:if="{{finished}}">
   <view class="done-emoji"><view class="ico ico-trophy ico--primary" style="width:120rpx;height:120rpx"></view></view>
   <view class="done-title">训练完成</view>
   <view class="done-sub">正在保存…</view>

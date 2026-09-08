@@ -125,7 +125,7 @@ Page({
       cycleStartedAt: todayStr()
     });
     store.setActivePlan(created.id);
-    store.applyPlanToSelected(created);
+    // 计划流程不写 selectedActions（训练页已选列表只存手动勾选），训练中页由 workout 从 activePlan 解析
     wx.showToast({ title: '已导入周期计划', icon: 'success' });
     setTimeout(() => wx.switchTab({ url: '/pages/home/home' }), 900);
   },

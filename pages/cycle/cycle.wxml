@@ -1,5 +1,6 @@
 <!-- pages/cycle/cycle.wxml —— 周期规划页（Phase 2） -->
 <view class="page">
+  <nav-bar show-back="{{true}}" />
   <view class="topbar">
     <view class="tb-title">周期规划</view>
     <view class="tb-sub">循证周期化 · 跨周进阶</view>

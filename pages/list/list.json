@@ -1,6 +1,8 @@
 {
   "usingComponents": {
-    "training-review": "/components/training-review/training-review"
+    "training-review": "/components/training-review/training-review",
+    "nav-bar": "/components/nav-bar/nav-bar"
   },
-  "navigationBarTitleText": "记录列表"
+  "navigationBarTitleText": "记录列表",
+  "navigationStyle": "custom"
 }

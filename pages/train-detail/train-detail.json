@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "训练记录详情",
-  "usingComponents": {}
+  "usingComponents": {
+    "nav-bar": "/components/nav-bar/nav-bar"
+  },
+  "navigationStyle": "custom"
 }

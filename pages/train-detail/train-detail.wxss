@@ -14,7 +14,7 @@
 .act-card { padding: 24rpx 28rpx; }
 .act-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
 .act-name { font-size: var(--fs-head); font-weight: 700; color: var(--text); }
-.act-sets { font-size: var(--fs-label); color: var(--primary-deep); font-weight: 700; background: var(--primary-light); border-radius: 10rpx; padding: 6rpx 16rpx; }
+.act-sets { font-size: var(--fs-label); color: var(--primary-text); font-weight: 700; background: var(--primary-light); border-radius: 10rpx; padding: 6rpx 16rpx; }
 
 .set-row { display: flex; align-items: center; padding: 14rpx 0; border-bottom: 1rpx solid var(--line); font-size: var(--fs-body); }
 .set-row:last-child { border-bottom: none; }

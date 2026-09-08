@@ -1,5 +1,6 @@
 <!-- pages/settings/settings.wxml -->
 <view class="page">
+  <nav-bar title="健康数据" show-back="{{true}}" />
   <view class="card">
     <view class="form-row">
       <text class="form-label">性别</text>
@@ -17,9 +18,19 @@
       <text class="form-label">目标体重 (kg)</text>
       <input class="form-input" type="digit" placeholder="如 65" value="{{targetWeight}}" bindinput="onTarget" />
     </view>
-    <view class="form-row no-border">
+    <view class="form-row">
       <text class="form-label">身高 (cm)</text>
       <input class="form-input" type="digit" placeholder="如 175" value="{{height}}" bindinput="onHeight" />
+    </view>
+    <view class="form-row">
+      <text class="form-label">年龄 (岁)</text>
+      <input class="form-input" type="digit" placeholder="如 28" value="{{age}}" bindinput="onAge" />
+    </view>
+    <view class="form-row no-border">
+      <text class="form-label">活动水平</text>
+      <picker mode="selector" range="{{activityLevels}}" value="{{activityIndex}}" bindchange="pickActivity">
+        <view class="form-value">{{activityLevels[activityIndex]}}<text class="arrow"> ›</text></view>
+      </picker>
     </view>
   </view>
 

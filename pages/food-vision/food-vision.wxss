@@ -12,14 +12,14 @@
   border-radius: 24rpx;
   background: var(--primary-light);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12rpx; color: var(--primary-deep);
+  gap: 12rpx; color: var(--primary-text);
 }
 .scan .cam {
   width: 96rpx; height: 96rpx; border-radius: 24rpx;
   background: var(--primary); display: flex; align-items: center; justify-content: center;
   font-size: var(--fs-page);
 }
-.scan .stxt { font-size: var(--fs-head); font-weight: 700; color: var(--primary-deep); }
+.scan .stxt { font-size: var(--fs-head); font-weight: 700; color: var(--primary-text); }
 .scan .ssub { font-size: var(--fs-label); color: var(--text-sub); }
 .scan-alt {
   display: flex; align-items: center; justify-content: center; gap: 10rpx;
@@ -58,7 +58,7 @@
 .f-cal { font-size: var(--fs-head); font-weight: 700; color: var(--accent); font-feature-settings: "tnum" 1; }
 
 .btn-record {
-  background: var(--primary); color: #fff; font-size: var(--fs-label);
+  background: var(--primary); color: #0A0A0A; font-size: var(--fs-label);
   padding: 8rpx 26rpx; border-radius: 999rpx; font-weight: 600;
 }
 

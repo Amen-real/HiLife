@@ -5,25 +5,18 @@
 /* ===== 头部（玻璃卡，与首页 hero / 全局玻璃体系一致） ===== */
 .profile-head {
   margin: 24rpx 32rpx;
-  background: var(--glass-strong);
-  border: 1rpx solid var(--glass-border);
-  border-radius: 36rpx;
-  box-shadow: var(--shadow-mint);
+  background: var(--card);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-card);
   padding: 36rpx 32rpx;
   color: var(--text);
   position: relative;
   overflow: hidden;
 }
-/* 柔和薄荷光晕（玻璃高光，呼应玻璃拟态光反射） */
-.profile-head:after {
-  content: ""; position: absolute; right: -60rpx; top: -60rpx;
-  width: 220rpx; height: 220rpx; border-radius: 50%;
-  background: radial-gradient(circle, rgba(46,207,176,0.30), rgba(46,207,176,0) 70%);
-  pointer-events: none; /* 纯装饰，避免盖住右上角「退出」按钮吞掉点击 */
-}
 .profile-head .av {
   width: 112rpx; height: 112rpx; border-radius: 50%;
-  background: var(--primary-tint); color: var(--primary-deep); font-size: var(--fs-display); font-weight: 800;
+  background: var(--primary-tint); color: var(--primary-text); font-size: var(--fs-display); font-weight: 800;
   display: flex; align-items: center; justify-content: center;
 }
 .avatar-img { width: 112rpx; height: 112rpx; border-radius: 50%; display: block; }
@@ -47,7 +40,7 @@
 .pn { font-size: var(--fs-title); font-weight: 700; color: var(--text); }
 .ps { font-size: var(--fs-label); color: var(--text-sub); }
 .login-btn {
-  flex: 0 0 auto; background: linear-gradient(135deg, var(--primary), var(--primary-deep)); color: #fff;
+  flex: 0 0 auto; background: linear-gradient(135deg, var(--primary), var(--primary-deep)); color: #0A0A0A;
   border-radius: 999rpx; font-size: var(--fs-body); font-weight: 600;
   padding: 0 36rpx; height: 72rpx; line-height: 72rpx; border: none;
   box-shadow: var(--shadow-mint);
@@ -66,7 +59,7 @@
   background: transparent; border: none; padding: 0; min-height: 48rpx;
 }
 .logout-link {
-  flex-shrink: 0; font-size: var(--fs-label); color: var(--primary-deep);
+  flex-shrink: 0; font-size: var(--fs-label); color: var(--primary-text);
   padding: 10rpx 20rpx; border-radius: 24rpx; background: var(--primary-tint);
 }
 .logout-link:active { opacity: 0.6; }
@@ -147,7 +140,7 @@
   width: 100%; height: 88rpx;
   display: flex; align-items: center; justify-content: center;
   border-radius: 20rpx; font-size: var(--fs-head); font-weight: 700;
-  background: var(--primary); color: #fff;
+  background: var(--primary); color: #0A0A0A;
   border: none; margin-bottom: 18rpx; padding: 0;
 }
 .export-share-btn::after { border: none; }
@@ -177,6 +170,11 @@
   --card: #161616;
   --bg:   rgba(255, 255, 255, 0.06);
 
+  /* 绿色文字：浅色用的深橄榄绿在黑底上只有 3.8:1，翻成品牌亮绿 */
+  --primary-text: #C8FF00;
+  /* 头像/标签的浅绿底（#F2FFD6）在暗色下必须一起翻，否则亮绿字压浅绿底会糊成一片 */
+  --primary-tint: rgba(200, 255, 0, 0.12);
+
   background: #0A0A0A;
   color: var(--text);
 }
@@ -186,6 +184,7 @@
 
 /* 卡片阴影去掉（暗色下无意义） */
 .page.theme-dark .card { box-shadow: none; }
+.page.theme-dark .profile-head { box-shadow: none; }
 
 /* 健康卡四个指标 icon：浅色是亮彩渐变，暗色改用品牌绿系淡底，避免在黑底上发灰 */
 .page.theme-dark .hg-ic-goal { background: rgba(200, 255, 0, 0.16); }

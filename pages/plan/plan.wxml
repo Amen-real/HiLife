@@ -1,33 +1,85 @@
-<!-- pages/plan/plan.wxml —— 严格对齐 03-plan.html（HiLiLife 设计系统） -->
+<!-- pages/plan/plan.wxml —— 训练 Dashboard + 训练计划卡片（按《训练计划页 UI 全量整改执行指令》） -->
 <view class="page {{theme}}">
+  <!-- 顶部自定义状态栏：标题「训练计划」（原页面内 .header 标题块已移除） -->
+  <nav-bar title="训练计划" show-back="{{false}}" />
 
   <!-- ============== 列表模式 ============== -->
   <block wx:if="{{mode === 'list'}}">
 
-    <!-- HEADER：我的计划 / 模板推荐 双标题（对齐数据页 .header） -->
-    <view class="header">
-      <view class="lead">
-        <view class="title {{seg==='mine' ? 'active' : ''}}" data-seg="mine" bindtap="switchSeg">我的计划</view>
-        <view class="title {{seg==='tpl' ? 'active' : ''}}" data-seg="tpl" bindtap="switchSeg">模板推荐</view>
+    <!-- TABS -->
+    <view class="tabs">
+      <view class="tab {{seg==='mine' ? 'on' : ''}}" data-seg="mine" bindtap="switchSeg">
+        <text class="tab-t">我的计划</text>
+        <view class="tab-bar"></view>
+      </view>
+      <view class="tab {{seg==='tpl' ? 'on' : ''}}" data-seg="tpl" bindtap="switchSeg">
+        <text class="tab-t">模板推荐</text>
+        <view class="tab-bar"></view>
       </view>
     </view>
 
     <!-- ============== 我的计划 ============== -->
     <scroll-view wx:if="{{seg==='mine'}}" class="scroll" scroll-y>
       <view class="section">
+
+        <!-- 本周训练 Dashboard -->
+        <view class="dash">
+          <view class="dash-inner">
+            <view class="dash-label">本周训练</view>
+            <view class="dash-count">
+              <text class="dc-num">{{week.done}}</text>
+              <text class="dc-sep">/</text>
+              <text class="dc-total">{{week.target}}</text>
+              <text class="dc-unit">次</text>
+            </view>
+            <view class="dash-bar-row">
+              <view class="dash-bar"><view class="dash-bar-fill" style="{{week.barStyle}}"></view></view>
+              <text class="dc-pct">{{week.pct}}%</text>
+            </view>
+            <view class="dash-foot">
+              <view class="dash-stat">
+                <view class="ico ico-calendar ds-ico"></view>
+                <text class="ds-t">已训练</text>
+                <text class="ds-num">{{week.done}}</text>
+                <text class="ds-unit">天</text>
+              </view>
+              <view class="dash-stat-sep"></view>
+              <view class="dash-stat">
+                <view class="ico ico-flame ds-ico"></view>
+                <text class="ds-t">连续</text>
+                <text class="ds-num">{{week.streak}}</text>
+                <text class="ds-unit">天</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 计划卡片列表 -->
         <view wx:if="{{plans.length}}" class="plans">
-          <!-- 计划卡片：标题 + chev + meta + 进度条（对齐 03 .plan），整卡点击 = 开始训练 -->
-          <view class="plan" wx:for="{{plans}}" wx:key="id" data-id="{{item.id}}" bindtap="startPlan" hover-class="plan-hover">
-            <view class="row-top">
-              <view class="title">{{item.name}}</view>
-              <view class="chev" aria-hidden="true">›</view>
+          <view class="plan {{item.featured ? 'featured' : ''}}" wx:for="{{plans}}" wx:key="id" data-id="{{item.id}}" bindtap="openPlanDetail">
+            <view class="plan-body">
+              <view wx:if="{{item.todayTag}}" class="plan-tag tag-today tag-today-top">今日</view>
+              <view class="row-top">
+                <view class="title">{{item.name}}</view>
+                <view class="more" catchtap="openMenu" data-id="{{item.id}}"><view class="ico ico-more"></view></view>
+              </view>
+              <view wx:if="{{item.goal || item.level}}" class="plan-tags">
+                <text wx:if="{{item.goal}}" class="plan-tag">{{item.goal}}</text>
+                <text wx:if="{{item.level}}" class="plan-tag">{{item.level}}</text>
+              </view>
+              <view class="plan-data">
+                <view class="pd"><view class="ico ico-calendar pd-ico"></view><text>{{item.count}} 个动作</text></view>
+                <view class="pd"><view class="ico ico-clock pd-ico"></view><text>{{item.minutes}} 分钟</text></view>
+                <view class="pd"><view class="ico ico-flame pd-ico"></view><text>{{item.kcal}} kcal</text></view>
+              </view>
+              <view class="plan-bottom">
+                <view class="plan-status">
+                  <view class="dot {{item.statusDot}}"></view>
+                  <text class="ps-text {{item.statusCls}}">{{item.statusText}}</text>
+                </view>
+                <view class="plan-cta" catchtap="startPlan" data-id="{{item.id}}">开始训练<view class="ico ico-arrowright cta-ico"></view></view>
+              </view>
             </view>
-            <view class="meta"><text class="label">{{item.count}} 个动作</text></view>
-            <view class="progress-row">
-              <text class="progress-label">{{item.isActive ? '已设为今日计划' : '未使用'}}</text>
-              <text class="progress-pct">{{item.isActive ? '100%' : '0%'}}</text>
-            </view>
-            <view class="progress"><i class="{{item.isActive ? 'on' : ''}}"></i></view>
           </view>
         </view>
 
@@ -36,7 +88,12 @@
           <view class="empty-ico"><view class="ico ico-plan ico--ink" style="width:72rpx;height:72rpx"></view></view>
           <view class="empty-title">还没有训练计划</view>
           <view class="empty-hint">新建一套，首页即可看到今天练什么</view>
-          <view class="btn-primary empty-btn" bindtap="goCreate">新建计划</view>
+          <view class="btn-add empty-btn" bindtap="goCreate"><view class="btn-add-left"><view class="add-ico"><view class="ico ico-plus"></view></view><text>新建训练计划</text></view><view class="btn-add-arrow"><view class="ico ico-arrowright"></view></view></view>
+        </view>
+
+        <!-- 常驻新建入口（次级白按钮） -->
+        <view wx:if="{{plans.length}}" class="add-plan-row">
+          <view class="btn-add" bindtap="goCreate"><view class="btn-add-left"><view class="add-ico"><view class="ico ico-plus"></view></view><text>新建训练计划</text></view><view class="btn-add-arrow"><view class="ico ico-arrowright"></view></view></view>
         </view>
       </view>
     </scroll-view>
@@ -46,24 +103,107 @@
       <view class="section">
         <view class="section-label">推荐模板</view>
         <view class="recs">
-          <!-- 推荐卡片：缩略图 + 标题 + 副标题 + chev（对齐 03 .rec），点击展开详情 -->
-          <view class="rec" wx:for="{{programs}}" wx:key="id" data-id="{{item.id}}" bindtap="toggleProgram" hover-class="rec-hover">
-            <view class="photo" style="background:{{item.thumbBg}}">
-              <text class="photo-emoji">{{item.emoji}}</text>
-              <view class="photo-accent" style="background:{{item.accent}}"></view>
+          <view class="rec" wx:for="{{programs}}" wx:key="id" data-id="{{item.id}}" bindtap="openProgram" hover-class="rec-hover">
+            <view class="photo" style="{{item.thumbStyle}}">
+              <view class="ico ico-{{item.icon}}" style="{{item.icoStyle}}"></view>
+              <view class="photo-accent" style="{{item.accentStyle}}"></view>
             </view>
             <view class="body">
               <view class="t">{{item.name}}</view>
               <view class="sub">{{item.sub}}</view>
             </view>
-            <view class="chev-wrap" aria-hidden="true">›</view>
+            <view class="chev-wrap">›</view>
           </view>
         </view>
       </view>
     </scroll-view>
+
+    <!-- ============== 更多菜单（⋯） ============== -->
+    <view class="sheet-mask" wx:if="{{showMenu}}" bindtap="closeMenu">
+      <view class="sheet sheet-menu" catchtap="noop">
+        <view class="sm-title">{{menuName}}</view>
+        <view class="sm-item" data-act="edit" bindtap="menuAction"><view class="ico ico-edit"></view><text>编辑计划</text></view>
+        <view class="sm-item" data-act="use" bindtap="menuAction"><view class="ico ico-calendar"></view><text>导入今日训练</text></view>
+        <view class="sm-item danger" data-act="delete" bindtap="menuAction"><view class="ico ico-delete"></view><text>删除计划</text></view>
+        <view class="sm-cancel" bindtap="closeMenu">取消</view>
+      </view>
+    </view>
+
+    <!-- ============== 计划详情（查看） ============== -->
+    <view class="sheet-mask" wx:if="{{showPlanDetail}}" bindtap="closePlanDetail">
+      <view class="sheet sheet-detail" catchtap="noop">
+        <view class="pd-head">
+          <view class="pd-title">{{planDetail.name}}</view>
+          <view class="pd-close" bindtap="closePlanDetail">✕</view>
+        </view>
+        <view wx:if="{{planDetail.goal || planDetail.level}}" class="pd-tags">
+          <text wx:if="{{planDetail.goal}}" class="plan-tag">{{planDetail.goal}}</text>
+          <text wx:if="{{planDetail.level}}" class="plan-tag">{{planDetail.level}}</text>
+        </view>
+        <view class="pd-data">
+          <view class="pd"><view class="ico ico-dumbbell pd-ico"></view><text>{{planDetail.count}} 个动作</text></view>
+          <view class="pd"><view class="ico ico-clock pd-ico"></view><text>{{planDetail.minutes}} 分钟</text></view>
+          <view class="pd"><view class="ico ico-flame pd-ico"></view><text>{{planDetail.kcal}} kcal</text></view>
+        </view>
+        <scroll-view class="pd-body" scroll-y>
+          <view class="pd-act" wx:for="{{planDetail.actions}}" wx:key="name">
+            <view class="pd-act-idx">{{index + 1}}</view>
+            <view class="pd-act-name">{{item.name}}</view>
+            <view class="pd-act-param">{{item.setsCount}} 组 · {{item.reps}}</view>
+          </view>
+        </scroll-view>
+        <view class="pd-foot">
+          <view class="pd-cta ghost" catchtap="useAsToday" data-id="{{planDetail.id}}">导入今日训练</view>
+          <view class="pd-cta primary" catchtap="startPlan" data-id="{{planDetail.id}}">开始训练 →</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ============== 模板详情弹层 ============== -->
+    <view class="tpl-mask" wx:if="{{showTpl}}" bindtap="closeTpl">
+      <view class="tpl-sheet" catchtap="noop">
+        <view class="tpl-head">
+          <view class="tpl-thumb" style="{{tplDetail.thumbStyle}}">
+            <view class="ico ico-{{tplDetail.icon}}" style="{{tplDetail.icoStyle}}"></view>
+          </view>
+          <view class="tpl-htext">
+            <view class="tpl-name">{{tplDetail.name}}</view>
+            <view class="tpl-tags">
+              <text class="tpl-tag">{{tplDetail.level}}</text>
+              <text class="tpl-tag">{{tplDetail.daysPerWeek}}天/周</text>
+              <text class="tpl-tag">{{tplDetail.goal}}</text>
+            </view>
+          </view>
+          <view class="tpl-close" bindtap="closeTpl">✕</view>
+        </view>
+
+        <scroll-view class="tpl-body" scroll-y>
+          <view class="tpl-desc">{{tplDetail.desc}}</view>
+
+          <view class="tpl-day" wx:for="{{tplDetail.days}}" wx:key="idx">
+            <view class="tpl-day-head">
+              <view class="tpl-day-name">{{item.name}}</view>
+              <view class="tpl-day-focus">{{item.focus}}</view>
+            </view>
+            <view class="tpl-act" wx:for="{{item.actions}}" wx:key="exerciseId">
+              <view class="tpl-act-idx">{{index + 1}}</view>
+              <view class="tpl-act-main">
+                <view class="tpl-act-name">{{item.name}}</view>
+                <view class="tpl-act-note" wx:if="{{item.note}}">{{item.note}}</view>
+              </view>
+              <view class="tpl-act-param">
+                <text class="tpl-sets">{{item.setsCount}} 组</text>
+                <text class="tpl-reps">× {{item.reps}}</text>
+              </view>
+            </view>
+            <view class="tpl-day-import" data-pid="{{tplDetail.id}}" data-di="{{index}}" bindtap="importDay">导入此训练日</view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
   </block>
 
-  <!-- ============== 新建模式 ============== -->
+  <!-- ============== 新建 / 编辑模式 ============== -->
   <block wx:else>
     <view class="topbar">
       <view class="tb-back" bindtap="backToList">‹ 返回</view>
@@ -73,13 +213,26 @@
 
     <view class="card">
       <view class="field-label">计划名称</view>
-      <!-- 非受控输入：输入暂存实例变量，避免整页重渲染丢字 -->
       <input class="name-input" placeholder="如：练胸日 / 全身循环" value="{{planName}}" bindinput="onPlanName" />
     </view>
 
     <view class="card">
+      <view class="field-label">训练目标</view>
+      <view class="chip-row">
+        <view wx:for="{{goalOptions}}" wx:key="*this" class="chip {{goal===item ? 'on' : ''}}" data-v="{{item}}" bindtap="onGoal">{{item}}</view>
+      </view>
+      <view class="field-label" style="margin-top:20rpx">难度</view>
+      <view class="chip-row">
+        <view wx:for="{{levelOptions}}" wx:key="*this" class="chip {{level===item ? 'on' : ''}}" data-v="{{item}}" bindtap="onLevel">{{item}}</view>
+      </view>
+      <view class="field-label" style="margin-top:20rpx">每周训练天数</view>
+      <input class="num-input" type="number" placeholder="如 3" value="{{daysPerWeek}}" bindinput="onDaysPerWeek" />
+      <view class="field-label" style="margin-top:20rpx">计划说明</view>
+      <textarea class="desc-input" placeholder="简单描述这套计划的安排与注意点" value="{{desc}}" bindinput="onDesc" maxlength="200" />
+    </view>
+
+    <view class="card">
       <view class="field-label">选择动作（{{pickedCount}}）</view>
-      <!-- 分类 tab（复用训练页模式，单分类渲染，不一次渲染千条） -->
       <scroll-view scroll-x class="cat-tabs">
         <view wx:for="{{catList}}" wx:key="*this"
               class="cat-tab {{activeCat === item ? 'on' : ''}}" data-cat="{{item}}" bindtap="switchCat">{{item}}</view>
@@ -94,6 +247,17 @@
             <text class="pool-cat">{{item.part || item.category}}</text>
           </view>
           <view class="pool-check">{{pickedMap[item.id] ? '✓' : ''}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{pickedList.length}}">
+      <view class="field-label">已选动作 · 组数/次数（{{pickedCount}}）</view>
+      <view class="pick-row" wx:for="{{pickedList}}" wx:key="actionId">
+        <view class="pick-name">{{item.nameZh || item.name}}</view>
+        <view class="pick-params">
+          <view class="pf"><text class="pf-l">组</text><input class="pf-i" type="number" value="{{item.setsCount}}" data-aid="{{item.actionId}}" bindinput="onActionSets" /></view>
+          <view class="pf"><text class="pf-l">次</text><input class="pf-i" value="{{item.reps}}" data-aid="{{item.actionId}}" bindinput="onActionReps" /></view>
         </view>
       </view>
     </view>

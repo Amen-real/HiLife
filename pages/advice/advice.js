@@ -6,15 +6,9 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const media = require('../../utils/media.js').media;
 const vision = require('../../utils/foodvision.js');
+const nutrition = require('../../utils/nutrition.js');
 
-// 每日宏量营养素建议（g），对齐 07-diet.html 营养概览数值
-const MACRO_GOAL = { p: 140, c: 220, f: 70 };
 const COLOR = { p: '#6F9F00', c: '#FF9500', f: '#FFB020' }; // 蛋白质/碳水/脂肪 配色
-
-// 每日建议摄入总热量（环形图满值），按目标微调
-function intakeTargetOf(goal) {
-  return goal === '增肌' ? 2400 : (goal === '减脂' || goal === '减重') ? 1800 : 2100;
-}
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function todayStr() {
@@ -25,6 +19,21 @@ function dateOf(ts) {
   if (!ts) return '';
   const d = new Date(ts);
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+// T6：把 'YYYY-MM-DD' 解析为本地零点 Date
+function parseDate(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+
+// T6：近 30 天每笔体重记录对应「当时」的推荐热量（其余参数取当前 profile，仅体重随时间变化）
+function buildTrendPoints(weightRecords, profile) {
+  const list = (weightRecords || [])
+    .filter(r => r && r.weight != null && !isNaN(Number(r.weight)))
+    .slice(-30);
+  return list.map(r => {
+    const w = Number(r.weight);
+    const rec = nutrition.recommendIntake(Object.assign({}, profile, { currentWeight: w }));
+    return { date: r.date, weight: w, kcal: rec.kcal };
+  });
 }
 
 // 饮食记录餐别（顺序固定，即便当天为空也展示，方便添加）；含 蔬果 分类
@@ -115,11 +124,24 @@ Page({
     intakeTarget: 2100,
     intakePct: 0,
     ringStyle: '--pct: 0',
-    nutrients: [
-      { key: '蛋白质', goal: MACRO_GOAL.p, swatchStyle: 'background:' + COLOR.p },
-      { key: '碳水', goal: MACRO_GOAL.c, swatchStyle: 'background:' + COLOR.c },
-      { key: '脂肪', goal: MACRO_GOAL.f, swatchStyle: 'background:' + COLOR.f }
-    ],
+    nutrients: [],
+    intakeMethod: 'full',
+    intakeNote: '',
+    showProfileTip: false,
+    activityLabel: '',
+    // T6：体重变化自动重算提示 + 近 30 天趋势
+    intakeUpdated: false,
+    intakeUpdateMsg: '',
+    trendImage: '',
+    trendEmpty: true,
+    trendSummary: null,
+    // T6：手动覆盖（intakeOverride）
+    intakeOverride: null,
+    overrideActive: false,
+    recommendedKcal: 0,
+    showIntakeEdit: false,
+    intakeEditValue: '',
+    intakeEditRecommended: 0,
     // 饮食建议：5 类筛选 + 当前类食物（cloud:// 已解析）
     categoryKeys: FOOD_GROUPS.map(g => g.key),
     currentCategory: '早餐',
@@ -151,9 +173,31 @@ Page({
   // 依据选中日期的饮食记录聚合：完成度环 + 三大营养素缺口 + 五餐分组
   refresh() {
     const st = store.get();
-    const goal = (st.profile && st.profile.goal) || '维持';
-    const intakeTarget = intakeTargetOf(goal);
+    const prof = st.profile || {};
+    const goal = prof.goal || '减重';
+    const rec = nutrition.recommendIntake(prof);
+    const override = (prof.intakeOverride != null) ? Number(prof.intakeOverride) : null;
+    const overrideActive = override != null && isFinite(override) && override > 0;
+    const intakeTarget = overrideActive ? override : rec.kcal;
+    const macroGoal = nutrition.recommendMacros({ kcal: intakeTarget, goal, weight: prof.currentWeight });
     const date = this.data.selectedDate || todayStr();
+
+    // T6：体重变化自动重算提示——对比上次渲染的体重，变化时标「推荐已更新」（手动覆盖时不提示，目标以覆盖值为准）
+    const newW = prof.currentWeight != null ? Number(prof.currentWeight) : null;
+    let intakeUpdated = false, intakeUpdateMsg = '';
+    if (!overrideActive && this._prevWeight != null && newW != null && newW !== this._prevWeight) {
+      intakeUpdated = true;
+      intakeUpdateMsg = '因体重变化，推荐已更新（' + this._prevWeight + '→' + newW + 'kg）';
+    }
+    this._prevWeight = newW;
+
+    // T6：近 30 天趋势（推荐热量随体重变化）
+    const trendPts = buildTrendPoints(st.weightRecords, prof);
+    const trendReady = trendPts.length >= 2;
+    const trendSummary = trendReady ? {
+      w0: trendPts[0].weight, w1: trendPts[trendPts.length - 1].weight,
+      k0: trendPts[0].kcal, k1: trendPts[trendPts.length - 1].kcal
+    } : null;
     const meals = (st.meals || []).filter(m => dateOf(m.time) === date);
     const sum = meals.reduce((a, m) => {
       a.cal += Number(m.calories) || 0;
@@ -192,22 +236,216 @@ Page({
 
     // 三大营养素进度（占建议值比例，封顶 100%），供 Hero 进度条着色，与营养概览 swatch 同色系
     const macroDefs = [
-      { key: '蛋白质', val: sum.p, goal: MACRO_GOAL.p, color: COLOR.p },
-      { key: '碳水', val: sum.c, goal: MACRO_GOAL.c, color: COLOR.c },
-      { key: '脂肪', val: sum.f, goal: MACRO_GOAL.f, color: COLOR.f }
+      { key: '蛋白质', val: sum.p, goal: macroGoal.p, color: COLOR.p },
+      { key: '碳水', val: sum.c, goal: macroGoal.c, color: COLOR.c },
+      { key: '脂肪', val: sum.f, goal: macroGoal.f, color: COLOR.f }
     ];
     const macros = macroDefs.map(m => {
       const pct = m.goal ? Math.min(100, Math.round(m.val / m.goal * 100)) : 0;
       return { key: m.key, val: m.val, goal: m.goal, color: m.color, fillStyle: 'width:' + pct + '%' };
     });
 
+    // 营养概览（建议值来自 recommendMacros，随体重/目标动态变化）
+    const nutrients = [
+      { key: '蛋白质', goal: macroGoal.p, swatchStyle: 'background:' + COLOR.p },
+      { key: '碳水', goal: macroGoal.c, swatchStyle: 'background:' + COLOR.c },
+      { key: '脂肪', goal: macroGoal.f, swatchStyle: 'background:' + COLOR.f }
+    ];
+
+    // 推荐依据说明 + 降级提示
+    let intakeNote = '';
+    if (overrideActive) {
+      intakeNote = '已手动设定 ' + intakeTarget + ' kcal（推荐 ' + rec.kcal + '）';
+    } else if (rec.method === 'full') {
+      intakeNote = '已按 性别/身高/体重/年龄 + ' + nutrition.activityLabel(prof.activityLevel) + '活动量 计算';
+    } else if (rec.method === 'estimated-age') {
+      intakeNote = '年龄未填·暂用 30 岁估算，建议到「健康数据」补全';
+    } else {
+      intakeNote = '身体数据不全（缺 ' + rec.missing.join('/') + '）· 暂用目标预设值';
+    }
+    const showProfileTip = rec.method === 'goal-default' && !overrideActive;
+    const activityLabelText = nutrition.activityLabel(prof.activityLevel);
+
     this.setData({
       intakeTarget, intakePct, ringStyle: '--pct: ' + intakePct, mealGroups, currentFoods,
       intakeSum: sum,  // 饮食记录页 hero 用
       macros,
+      nutrients,
+      intakeMethod: rec.method,
+      intakeNote,
+      showProfileTip,
+      activityLabel: activityLabelText,
+      intakeUpdated,
+      intakeUpdateMsg,
+      intakeOverride: override,
+      overrideActive,
+      recommendedKcal: rec.kcal,
+      trendImage: trendReady ? this.data.trendImage : '',
+      trendEmpty: !trendReady,
+      trendSummary,
       todayDate: todayStr(),
       selectedDate: date,
       intakeLabel: isToday ? '今日摄入' : '摄入'
+    }, () => {
+      if (trendReady) this.drawTrend(trendPts);
+    });
+  },
+
+  // 跳转「健康数据」补全身体数据（降级提示条用）
+  goSettings() {
+    wx.navigateTo({ url: '/pages/settings/settings' });
+  },
+
+  // T6：关闭「推荐已更新」提示
+  dismissUpdateHint() {
+    this.setData({ intakeUpdated: false, intakeUpdateMsg: '' });
+  },
+
+  // T6：手动覆盖——打开目标热量调整 sheet
+  openIntakeEdit() {
+    if (!auth.requireLogin()) return;
+    const prof = (store.get().profile) || {};
+    const rec = nutrition.recommendIntake(prof);
+    const override = (prof.intakeOverride != null) ? Number(prof.intakeOverride) : null;
+    const base = override != null ? override : rec.kcal;
+    this.setData({
+      showIntakeEdit: true,
+      intakeEditValue: String(base),
+      intakeEditRecommended: rec.kcal,
+      overrideActive: override != null
+    });
+  },
+  onIntakeEdit(e) { this.setData({ intakeEditValue: e.detail.value }); },
+  closeIntakeEdit() { this.setData({ showIntakeEdit: false }); },
+  // 步进微调（±10 kcal，夹在合理区间）
+  stepIntake(e) {
+    const d = Number(e.currentTarget.dataset.d) || 0;
+    const cur = parseInt(this.data.intakeEditValue, 10) || 0;
+    let v = cur + d;
+    if (v < 800) v = 800;
+    if (v > 6000) v = 6000;
+    this.setData({ intakeEditValue: String(v) });
+  },
+  saveIntakeOverride() {
+    const v = parseInt(this.data.intakeEditValue, 10);
+    if (isNaN(v) || v < 800 || v > 6000) {
+      wx.showToast({ title: '请输入 800–6000 间热量', icon: 'none' });
+      return;
+    }
+    store.updateProfile({ intakeOverride: v });
+    this.setData({ showIntakeEdit: false });
+    this.refresh();
+    wx.showToast({ title: '已设定目标', icon: 'success' });
+  },
+  resetIntakeOverride() {
+    store.updateProfile({ intakeOverride: null });
+    this.setData({ showIntakeEdit: false });
+    this.refresh();
+    wx.showToast({ title: '已恢复推荐', icon: 'success' });
+  },
+
+  // T6：近 30 天趋势图（推荐热量 + 体重 双轴）
+  // 离屏 canvas 绘制 -> 导出图片，规避原生 canvas 不跟随滚动 / 真机层级问题
+  drawTrend(list) {
+    if (!list || list.length < 2) { return; }
+    const q = wx.createSelectorQuery().in(this);
+    q.select('#kcalChart').fields({ node: true, size: true }).exec(res => {
+      if (!res || !res[0] || !res[0].node) { setTimeout(() => this.drawTrend(list), 80); return; }
+      const canvas = res[0].node;
+      const ctx = canvas.getContext('2d');
+      const info = (wx.getWindowInfo && wx.getWindowInfo()) || wx.getSystemInfoSync();
+      const dpr = info.pixelRatio || 2;
+      const W = res[0].width, H = res[0].height;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, W, H);
+
+      const padL = 46, padR = 46, padT = 26, padB = 28;
+      const plotW = W - padL - padR, plotH = H - padT - padB;
+      const MS = 86400000;
+
+      // X 轴按真实日期定位
+      const first = parseDate(list[0].date), last = parseDate(list[list.length - 1].date);
+      let startMs = first.getTime() - MS;
+      let endMs = last.getTime() + MS;
+      if (endMs - startMs < MS * 3) endMs = startMs + MS * 3;
+      const totalMs = endMs - startMs;
+      const xAt = (dateStr) => {
+        let t = (parseDate(dateStr).getTime() - startMs) / totalMs;
+        t = Math.max(0, Math.min(1, t));
+        return padL + plotW * t;
+      };
+
+      // Y 左轴：推荐热量 kcal
+      const kcalVals = list.map(p => p.kcal);
+      let kLo = Math.min.apply(null, kcalVals), kHi = Math.max.apply(null, kcalVals);
+      if (kLo === kHi) { kLo -= 100; kHi += 100; }
+      const kSpan = kHi - kLo;
+      kLo = Math.floor((kLo - kSpan * 0.15) / 50) * 50;
+      kHi = Math.ceil((kHi + kSpan * 0.15) / 50) * 50;
+      const kRange = (kHi - kLo) || 1;
+      const yK = v => padT + plotH - ((v - kLo) / kRange) * plotH;
+
+      // Y 右轴：体重 kg
+      const wVals = list.map(p => p.weight);
+      let wLo = Math.min.apply(null, wVals), wHi = Math.max.apply(null, wVals);
+      if (wLo === wHi) { wLo -= 1; wHi += 1; }
+      const wSpan = wHi - wLo;
+      wLo = Math.floor((wLo - wSpan * 0.15) * 10) / 10;
+      wHi = Math.ceil((wHi + wSpan * 0.15) * 10) / 10;
+      const wRange = (wHi - wLo) || 1;
+      const yW = v => padT + plotH - ((v - wLo) / wRange) * plotH;
+
+      // 网格 + 双侧刻度
+      ctx.font = '15px sans-serif'; ctx.textBaseline = 'middle';
+      const ticks = 4;
+      for (let t = 0; t <= ticks; t++) {
+        const y = padT + plotH * t / ticks;
+        ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1; ctx.setLineDash([3, 5]);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.textAlign = 'right'; ctx.fillStyle = '#B5B5B0';
+        ctx.fillText(String(Math.round(kHi - kRange * t / ticks)), padL - 10, y);
+        ctx.textAlign = 'left'; ctx.fillStyle = '#9AA0A6';
+        ctx.fillText((wHi - wRange * t / ticks).toFixed(1), W - padR + 10, y);
+      }
+
+      // 体重线（右轴，虚线灰）
+      ctx.beginPath();
+      list.forEach((p, i) => { const x = xAt(p.date), y = yW(p.weight); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.strokeStyle = 'rgba(120,130,140,0.55)'; ctx.lineWidth = 2.5; ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]);
+
+      // 推荐热量：面积 + 绿线（左轴）
+      const pts = list.map(p => ({ x: xAt(p.date), y: yK(p.kcal), date: p.date }));
+      const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+      grad.addColorStop(0, 'rgba(200,255,0,0.30)'); grad.addColorStop(1, 'rgba(200,255,0,0)');
+      ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+      ctx.lineTo(pts[pts.length - 1].x, padT + plotH);
+      ctx.lineTo(pts[0].x, padT + plotH); ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+      ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+      ctx.strokeStyle = '#C8FF00'; ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+
+      // 最新点高亮
+      const lastPt = pts[pts.length - 1];
+      ctx.beginPath(); ctx.arc(lastPt.x, lastPt.y, 11, 0, Math.PI * 2); ctx.fillStyle = 'rgba(200,255,0,0.25)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(lastPt.x, lastPt.y, 6.5, 0, Math.PI * 2); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+      ctx.lineWidth = 4; ctx.strokeStyle = '#C8FF00'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(lastPt.x, lastPt.y, 3, 0, Math.PI * 2); ctx.fillStyle = '#C8FF00'; ctx.fill();
+
+      // X 轴日期刻度
+      ctx.fillStyle = '#B5B5B0'; ctx.font = '15px sans-serif'; ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+      const n = list.length, xCount = Math.min(5, n);
+      for (let k = 0; k < xCount; k++) {
+        const idx = Math.round((n - 1) * k / (xCount - 1));
+        const p = list[idx];
+        const [, m, d] = p.date.split('-');
+        ctx.fillText(parseInt(m, 10) + '/' + parseInt(d, 10), xAt(p.date), padT + plotH + 8);
+      }
+
+      wx.canvasToTempFilePath({ canvas, success: (r) => this.setData({ trendImage: r.tempFilePath }), fail: () => {} }, this);
     });
   },
 

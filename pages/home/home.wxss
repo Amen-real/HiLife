@@ -5,25 +5,57 @@
   padding: 0 0 calc(128rpx + env(safe-area-inset-bottom));
   min-height: 100vh;
   background: var(--n-50);
+  position: relative;
+}
+
+/* ============== 背景图（人物铺满顶部，自定义导航栏下盖住原生标题） ============== */
+.hero-bg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+}
+.page-body {
+  position: relative;
+  z-index: 1;
+}
+.status-bar-spacer { width: 100%; }
+.hero-top { padding: 14rpx 38rpx 4rpx; }
+.brand-name {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: var(--n-900);
+  letter-spacing: -0.01em;
 }
 
 /* ============== HERO（顶部问候，纯文字，无 appbar / 无卡片背景） ============== */
 .hero {
   position: relative;
-  padding: 36rpx 32rpx 12rpx;
+  padding: 12rpx 32rpx 12rpx;
 }
 .hero-text {
   position: relative;
+  top: 20rpx;             /* 整体下移：与品牌行拉开间距（relative 不影响下方卡片布局） */
 }
 .hero-greet {
+  display: flex;
+  flex-direction: column;          /* 问候语 / 用户名 两行纵向排列 */
+  gap: 4rpx;
   font-size: 46rpx;
   font-weight: 800;
   color: var(--n-900);            /* 浅色深字 / 深色白字，自动跟主题翻转 */
   letter-spacing: -0.02em;
   line-height: 58rpx;
 }
+.hero-greet .greet-line { line-height: 58rpx; }
+.hero-greet .user-line {
+  line-height: 58rpx;
+  color: var(--n-900);
+}
 .hero-sub {
-  margin-top: 10rpx;
+  margin-top: 20rpx;               /* 较此前 10rpx 再下移，与问候区拉开更多呼吸位 */
   font-size: 25rpx;
   font-weight: 500;
   color: var(--n-600);            /* 次级灰，浅深主题均清晰 */
@@ -39,58 +71,105 @@
   box-sizing: border-box;
 }
 
-/* ============== 1+2 打卡合并卡 ============== */
-.checkin-group { padding: 0; overflow: hidden; }
-.checkin {
-  padding: 31rpx 35rpx;
-  display: flex; align-items: center; gap: 27rpx;
-  background: var(--card-gray);
+/* ============== 1+2 打卡合并卡（卡内含右侧进度环，对齐参考图） ==============
+   结构：.section.checkin-section > .card.checkin-group (flex 行) > [.checkin-main, .ring-wrap]
+   - .checkin-main  左 60%（flex 1.8，今日打卡进度 + 健身天数/连续打卡）
+   - .ring-wrap     右 40%（flex 1.2，进度环，写在卡片内部右侧）
+   - .section.checkin-section margin-top:144rpx 把卡片整体再下移，露出更多背景图人物手臂
+*/
+.section.checkin-section {
+  margin: 50rpx 0 24rpx;  /* 顶部 50rpx（较最初 144rpx 累计上移 94rpx，整组卡片随之整体上移）；底部 24rpx = 全页标准区块间距（由 .card 的 margin 决定） */
+  padding: 0 32rpx;
 }
-.checkin .meta { flex: 1 1 auto; min-width: 0; }
-.checkin .label { font-size: 23rpx; font-weight: 600; color: var(--n-600); }
+.checkin-group {
+  display: flex;           /* 卡内：左文字块 + 右进度环 两列 */
+  align-items: center;     /* 环垂直居中于文字块 */
+  position: relative;      /* 定位锚点：火焰图标绝对定位到右下角 */
+  width: 500rpx;          /* 卡片固定宽 500rpx（卡内左 60%≈300rpx 文字 + 右 40%≈200rpx 环区） */
+  min-height: 272rpx;     /* 卡片再加高：内容垂直居中，上下留出更多呼吸位 */
+  padding: 0;
+  overflow: hidden;
+  margin: 0;               /* 覆盖 .card 默认 24rpx 32rpx，外边距由父 section 控 */
+  border: none;            /* 去掉 1rpx 边框：透明角处不再残留边框弧线；卡片靠 box-shadow 定义边缘，圆角保留 */
+  /* 右上角柔化透明：背景图从卡角平滑透出（不用硬挖角/mask，避免生切感）。
+     透明核心 30rpx、到 150rpx 渐变为实色卡底；配合卡片自身 border-radius 圆角，
+     边框呈平滑弧线、不显突兀。位于 .ring-wrap 顶部空白区，不碰进度环（环顶距卡顶≈84rpx）。 */
+  background: radial-gradient(circle at 100% 0, transparent 0, transparent 55rpx, var(--card) 220rpx);
+}
+.checkin-main {
+  flex: 1.8 1 0;           /* 左列：1.8/(1.8+1.2)=60% ≈300rpx */
+  min-width: 0;
+}
+.ring-wrap {
+  flex: 1.2 1 0;           /* 右列（环区）：40% ≈200rpx，环 144rpx 左右各留 ≈28rpx */
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 环在卡内右侧空间居中 */
+}
+.checkin {
+  padding: 18rpx 24rpx;
+  /* 灰色背景已去除，与卡片白底融为一体；环已移入 .ring-wrap（卡内右侧），本块只保留内文垂直布局 */
+}
+.checkin .label {
+  display: flex; align-items: center; gap: 8rpx;
+  font-size: 24rpx; font-weight: 800; color: var(--n-900);
+}
+.dot-green {
+  width: 14rpx; height: 14rpx;
+  border-radius: 50%;
+  background-color: var(--primary);
+  flex: none;
+}
 .checkin .val {
-  margin-top: 12rpx;
+  margin-top: 6rpx;
   font-family: var(--f-en, sans-serif);
-  font-size: 42rpx; font-weight: 700; line-height: 54rpx;
+  font-size: 40rpx; font-weight: 700; line-height: 48rpx;
   letter-spacing: -0.02em;
   color: var(--n-900);
-  display: flex; align-items: baseline; gap: 8rpx;
+  display: flex; align-items: baseline; gap: 6rpx;
 }
-.checkin .val .x { font-size: 35rpx; color: var(--n-500); font-weight: 600; }
-.checkin .val .total { font-size: 27rpx; color: var(--n-600); font-weight: 500; margin-left: 4rpx; }
+.checkin .val .x { font-size: 30rpx; color: var(--n-900); font-weight: 600; }
+.checkin .val .total { font-size: 30rpx; color: var(--n-900); font-weight: 700; }
+.checkin .val .total-label { font-size: 25rpx; color: var(--n-600); font-weight: 500; margin-left: 4rpx; }
 
-/* 进度环（复用全局 .ring，显式尺寸） */
-.checkin .ring { --size: 146rpx; --w: 15rpx; }
+/* 进度环（独立于卡片右侧）：覆盖全局 .ring 的 --size=146 + .ring-span=36rpx */
+.ring-wrap .ring { --size: 144rpx; --w: 14rpx; }
+.ring-wrap .ring > .ring-span { font-size: 30rpx; }
 
 .stats {
   display: flex;
+  margin-top: 12rpx;       /* 整体下移一点：与上方 .checkin 拉开间距 */
   border-top: 1rpx solid var(--n-200);
-  padding: 27rpx 0;
+  padding: 14rpx 0;
   background: var(--white);
 }
 .stat {
   flex: 1;
-  padding: 0 31rpx;
+  padding: 0 16rpx;
   display: flex; align-items: center; justify-content: space-between;
   gap: 8rpx;
 }
 .stat + .stat { border-left: 1rpx solid var(--n-200); }
-.stat .label { font-size: 23rpx; color: var(--n-600); font-weight: 500; }
+.stat .label {
+  display: flex; align-items: center; justify-content: center; gap: 4rpx; white-space: nowrap;
+  font-size: 23rpx; color: var(--n-600); font-weight: 500;
+}
+/* 标签前缀图标（日历/闪电）：复用全局 styles/icons.wxss 的 .ico-*（mask 方案、URL 编码、可跟随主题），此处仅覆盖尺寸与颜色 */
+.stat .label .ico {
+  width: 18rpx; height: 18rpx;
+  background-color: var(--n-600);
+  flex: none;
+}
 .stat .val {
-  margin-top: 6rpx;
+  margin-top: 3rpx;
   font-family: var(--f-en, sans-serif);
-  font-size: 42rpx; font-weight: 800; line-height: 54rpx;
+  font-size: 36rpx; font-weight: 800; line-height: 44rpx;
   letter-spacing: -0.02em;
   color: var(--n-900);
-  display: flex; align-items: baseline; gap: 4rpx;
+  display: flex; align-items: baseline; justify-content: center; gap: 4rpx;
 }
-.stat .val .unit { font-size: 23rpx; color: var(--n-500); font-weight: 600; margin-left: 4rpx; }
-.stat .ic {
-  width: 62rpx; height: 62rpx; border-radius: 19rpx;
-  display: grid; place-items: center;
-  flex: none;
-  background: #FFF1D6;
-}
+.stat .val .unit { font-size: 20rpx; color: var(--n-500); font-weight: 600; margin-left: 4rpx; }
 
 /* ============== 区块标题（左内缩 32rpx 与卡片左缘对齐） ============== */
 .section { padding: 0; margin: 0; }
@@ -152,69 +231,150 @@
 }
 
 /* ============== 4 今日饮食 ============== */
-.diet { padding: 27rpx 31rpx; }
-.diet .top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 23rpx;
+/* 标题前缀：绿竖条 + 右侧「查看详情」文字 + 标准 chev 箭头（复用 .section-label.with-arrow 的 flex 布局，箭头与「体重趋势」同款） */
+.section-label .label-left {
+  display: flex; align-items: center;
 }
+.section-label .label-bar {
+  width: 7rpx; height: 30rpx;
+  background-color: var(--primary);
+  border-radius: 4rpx;
+  margin-right: 12rpx;
+  flex: none;
+}
+.section-label .label-link {
+  display: flex; align-items: center; gap: 6rpx;
+  font-size: 23rpx; font-weight: 500; color: var(--n-600);
+}
+
+.diet {
+  padding: 24rpx 28rpx;
+  display: flex; align-items: stretch;
+  gap: 16rpx;
+}
+.diet-main { flex: 1 1 auto; min-width: 0; }
+.diet-side {
+  flex: none; width: 170rpx;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-left: 1rpx solid var(--n-200);
+  padding-left: 18rpx;
+}
+
+.diet .top { margin-bottom: 12rpx; }
 .diet .top .num {
-  font-family: var(--f-en, sans-serif);
-  font-size: 42rpx; font-weight: 800; letter-spacing: -0.02em;
-  line-height: 54rpx;
-  color: var(--n-900);
-  display: flex; align-items: baseline; gap: 8rpx;
+  display: flex; align-items: baseline; gap: 4rpx;
+  color: var(--n-600);
 }
-.diet .top .num .target { font-size: 27rpx; color: var(--n-600); font-weight: 500; }
-.diet .top .pct {
+.diet .top .num .big {
   font-family: var(--f-en, sans-serif);
-  font-size: 42rpx; font-weight: 800;
-  color: var(--n-900);
+  font-size: 42rpx; font-weight: 800; color: var(--n-900);
+  letter-spacing: -0.02em; line-height: 50rpx;
+}
+.diet .top .num .target { font-size: 24rpx; color: var(--n-600); font-weight: 500; }
+/* 摄入进度百分比：放在 .num 同一行最右（pct 百分比 + 标签并排，margin-left:auto 推右） */
+.diet .top .num .pct-block {
+  display: flex; align-items: baseline; gap: 6rpx;
+  margin-left: auto;
+}
+.diet .top .num .pct {
+  font-family: var(--f-en, sans-serif);
+  font-size: 28rpx; font-weight: 800; color: var(--n-900);
   letter-spacing: -0.02em;
 }
+.diet .top .num .pct-label {
+  font-size: 20rpx; color: var(--n-600); font-weight: 500;
+}
+
 .diet .progress {
-  height: 12rpx; border-radius: 999rpx;
+  height: 10rpx; border-radius: 999rpx;
   background: var(--n-200);
   overflow: hidden;
-  margin-bottom: 27rpx;
+  margin-bottom: 20rpx;
 }
 .diet .progress .fill {
   display: block; height: 100%;
-  background: linear-gradient(90deg, #0A0A0A 0%, #2A3310 50%, #A6C24A 100%);
+  background: var(--primary);
   border-radius: 999rpx;
   transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.diet .nut {
-  display: flex;
-}
+
+.diet .nut { display: flex; }
 .diet .nut .col {
   flex: 1;
-  padding: 0 8rpx;
+  padding: 0 6rpx;
   border-right: 1rpx solid var(--n-200);
 }
-.diet .nut .col:last-child { border-right: none; }
-.diet .nut .col.fat-col {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12rpx;
-}
+.diet .nut .col:first-child { padding-left: 0; }
+.diet .nut .col:last-child { border-right: none; padding-right: 0; }
+
 .diet .nut .col .name {
-  font-size: 23rpx; color: var(--n-600); font-weight: 500;
+  display: flex; align-items: center; gap: 6rpx;
+  font-size: 21rpx; color: var(--n-600); font-weight: 500;
 }
-.diet .nut .col .v {
-  margin-top: 8rpx;
-  font-family: var(--f-en, sans-serif);
-  font-size: 25rpx; font-weight: 700; color: var(--n-900);
-  letter-spacing: -0.01em;
-  line-height: 36rpx;
-}
-.diet .nut .col .v .unit { font-size: 21rpx; color: var(--n-500); font-weight: 600; margin-left: 4rpx; }
-.diet .nut .col .v.carb,
-.diet .nut .col .v.carb .unit { color: var(--success); }
-.diet .nut .col .v.fat,
-.diet .nut .col .v.fat .unit { color: var(--orange); }
-.diet .nut .nut-arrow {
-  width: 46rpx; height: 46rpx; flex: none;
-  display: grid; place-items: center;
+.diet .nut .col .name .dot {
+  width: 10rpx; height: 10rpx;
   border-radius: 50%;
+  flex: none;
+}
+.dot-protein { background: #C8FF00; }
+.dot-carb     { background: #4A90E2; }
+.dot-fat      { background: #FF9500; }
+
+.diet .nut .col .v {
+  margin-top: 4rpx;
+  font-family: var(--f-en, sans-serif);
+  font-size: 24rpx; font-weight: 700; color: var(--n-900);
+  letter-spacing: -0.01em; line-height: 32rpx;
+}
+.diet .nut .col .v .unit { font-size: 20rpx; color: var(--n-500); font-weight: 600; margin-left: 2rpx; }
+
+.diet .nut .col .bar {
+  margin-top: 6rpx;
+  height: 10rpx; border-radius: 999rpx;
+  background: var(--n-200);
+  overflow: hidden;
+}
+.diet .nut .col .bar-fill {
+  display: block; height: 100%;
+  border-radius: 999rpx;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bar-protein { background: #C8FF00; }
+.bar-carb     { background: #4A90E2; }
+.bar-fat      { background: #FF9500; }
+
+/* 右侧：添加饮食（摄入进度已移到 .diet-main .top .num 下） */
+.diet-side .add-meal {
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 12rpx;
+}
+.diet-side .add-circle {
+  width: 110rpx; height: 110rpx;
+  border-radius: 50%;
+  background: #ECF7C8;
+  display: grid; place-items: center;
+  position: relative;
+  border: 2rpx solid #C8FF00;
+}
+.diet-side .add-circle .ico-foodbowl {
+  width: 54rpx; height: 54rpx;
+  background-color: #2A3310;
+}
+.diet-side .add-btn {
+  position: absolute;
+  right: -8rpx; bottom: -8rpx;
+  width: 42rpx; height: 42rpx;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #0A0A0A;
+  font-size: 30rpx; font-weight: 700;
+  display: grid; place-items: center;
+  line-height: 1;
+  box-shadow: 0 4rpx 10rpx rgba(200, 255, 0, 0.35);
+}
+.diet-side .add-text {
+  margin-top: 12rpx;
+  font-size: 24rpx; color: var(--n-600); font-weight: 500;
 }
 
 /* ============== 5 体重趋势 ============== */
@@ -222,7 +382,11 @@
   padding: 31rpx 35rpx;
   display: flex; align-items: center; gap: 31rpx;
 }
-.weight .meta { flex: 1 1 auto; min-width: 0; }
+.weight .meta {
+  flex: 1 1 0; min-width: 0;
+  border-right: 1rpx solid var(--n-200);
+  padding-right: 24rpx;
+}
 .weight .meta .num {
   font-family: var(--f-en, sans-serif);
   font-size: 54rpx; font-weight: 800; line-height: 65rpx;
@@ -239,7 +403,7 @@
 }
 .weight .meta .delta.up { color: var(--accent); }
 .weight .meta .delta .arr { font-size: 20rpx; }
-.weight .chart { flex: 1 1 auto; min-width: 0; }
+.weight .chart { flex: 3 1 0; min-width: 0; }
 .spark-canvas { width: 100%; height: 123rpx; display: block; }
 
 .bottom-gap { height: 20rpx; }
@@ -298,18 +462,17 @@
 .page.theme-dark .card { box-shadow: none; }
 
 /* 打卡火焰图标块：浅色是硬编码 #FFF1D6（橙调），暗色改用品牌绿淡底 */
-.page.theme-dark .stat .ic { background: rgba(200, 255, 0, 0.12); }
 
 /* 进度环：conic 轨道转半透白、进度用品牌绿、中心白字 */
-.page.theme-dark .checkin .ring {
+.page.theme-dark .ring-wrap .ring {
   background: conic-gradient(
     rgba(200, 255, 0, 0.20) 0%,
     #C8FF00 calc(var(--pct) * 1%),
     rgba(255, 255, 255, 0.08) calc(var(--pct) * 1%) 100%
   );
 }
-.page.theme-dark .checkin .ring::before { background: var(--card); }
-.page.theme-dark .checkin .ring .ring-span { color: #FFFFFF; }
+.page.theme-dark .ring-wrap .ring::before { background: var(--card); }
+.page.theme-dark .ring-wrap .ring .ring-span { color: #FFFFFF; }
 
 /* 饮食进度条填充：浅色是暗墨渐变（黑底上会整条消失），暗色改用亮绿 + 光晕 */
 .page.theme-dark .diet .progress .fill {
@@ -317,11 +480,16 @@
   box-shadow: 0 0 10rpx rgba(200, 255, 0, 0.5);
 }
 /* 完成百分比：暗色下点亮成品牌绿（对齐参考图） */
-.page.theme-dark .diet .top .pct { color: #C8FF00; }
+.page.theme-dark .diet .top .num .pct { color: #C8FF00; }
 
-/* 脂肪量：浅色 --orange #FF9500 在黑底偏暗，提亮一档 */
-.page.theme-dark .diet .nut .col .v.fat,
-.page.theme-dark .diet .nut .col .v.fat .unit { color: #FFB340; }
+/* 添加饮食圆形按钮：浅色淡绿底（#ECF7C8）在暗底过于刺眼，暗色改用深绿底 + 品牌绿描边，图标翻绿 */
+.page.theme-dark .diet-side .add-circle {
+  background: #1E2A0A;
+  border-color: #C8FF00;
+}
+.page.theme-dark .diet-side .add-circle .ico-foodbowl {
+  background-color: #C8FF00;
+}
 
 /* —— 偏好降级：尊重系统减弱动效 —— */
 @media (prefers-reduced-motion: reduce) {

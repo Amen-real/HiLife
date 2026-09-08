@@ -1,5 +1,6 @@
 <!-- pages/favorites/favorites.wxml —— 我的收藏：列出已收藏的动作，点击查看详情 / 可取消收藏 -->
 <view class="page">
+  <nav-bar show-back="{{true}}" />
 
   <view class="head">
     <text class="title">我的收藏</text>
