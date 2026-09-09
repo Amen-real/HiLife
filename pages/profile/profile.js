@@ -174,8 +174,6 @@ Page({
 
   goSettings() { wx.navigateTo({ url: '/pages/settings/settings' }); },
 
-  goPlan() { wx.navigateTo({ url: '/pages/plan/plan' }); },
-
   // 点击「隐私政策」→ 进入隐私政策页查看完整内容
   goPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); },
 

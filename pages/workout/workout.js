@@ -84,7 +84,8 @@ Page({
     overlayPoster: '',
     // 动作历史
     showHistory: false,
-    histAction: null,     // 当前展开动作（历史 overlay 只展示选中动作的每组明细）
+    histAction: null,     // 当前展开动作（历史 overlay 只展示选中动作）
+    hist: null,           // 历史汇总：上次日期/每组对比/最佳重量容量（打开时由 buildActionHistory 计算）
     // 替换动作
     showReplace: false,
     replaceAi: -1,          // 待替换的动作索引
@@ -328,6 +329,8 @@ Page({
         if (s.done) { doneSets++; doneVol += vol; }
         else { aDone = false; if (firstUndone < 0) firstUndone = i; }
         s.current = (a.id === expandedId && firstUndone === i);
+        // 休息时长展示为 MM:SS（WXML 不支持函数调用，必须在 JS 预格式化）
+        s.restText = (Number(s.restSec) || 0) > 0 ? fmtClock(Number(s.restSec)) : '';
       });
       if (aDone) doneActions++;
       a.volText = aDoneVol.toFixed(1) + '/' + aTotalVol.toFixed(1);
@@ -524,19 +527,16 @@ Page({
     let nextIndex = ai, nextSet = si + 1, restKind;
     if (hasMoreSet) restKind = 'set';
     else if (hasMoreAction) { restKind = 'action'; nextIndex = ai + 1; nextSet = 0; }
-    else restKind = 'done';
+    // 末组（无更多组、也无更多动作）同样弹休息计时：
+    // 之前判成 'done' 直接 return，导致「单动作单组」点完 ✓ 什么弹窗都没有（2026-09-09 反馈）。
+    // 'done'（训练完成/保存）不再由本函数触发，保存只走顶栏「完成」。
+    else restKind = 'last';
 
-    this._afterRest = (restKind === 'done') ? null : { nextIndex, nextSet };
+    this._afterRest = (restKind === 'last') ? null : { nextIndex, nextSet };
     this._activeActionIndex = ai;
     this._activeSetIndex = si;
 
     const stats = this.decorate(actions);
-    // 最后一个动作的末组完成：不弹任何「训练完成」强制保存弹窗，直接停留在训练中页面；
-    // 用户可继续「添加动作」或点顶栏「完成(.wo-done-btn)」才保存整次训练。
-    if (restKind === 'done') {
-      this.setData({ actions, stats });
-      return;
-    }
     this.setData(Object.assign(
       { actions, showRest: true, restLeft: this.data.restTotal, restKind, restMinimized: false, actNo: si, showTrain: false, stats }
     ));
@@ -575,9 +575,9 @@ Page({
       this._activeActionIndex = null;
       this._activeSetIndex = null;
     }
-    // 兜底：末组完成已不再弹休息/保存弹窗（停留在训练中页，由顶栏「完成」保存）；
-    // 若因历史状态仍进入 done 态，仅关闭弹窗、绝不自动保存（整次训练的保存只走 .wo-done-btn）。
-    if (this.data.restKind === 'done') {
+    // 收尾态（'last' 末组 / 'done' 历史态）：只关闭弹窗，不跳转下一组、绝不自动保存
+    // ——整次训练的保存只走顶栏「完成(.wo-done-btn)」。
+    if (this.data.restKind === 'done' || this.data.restKind === 'last') {
       this.setData({ showRest: false });
       return;
     }
@@ -669,14 +669,70 @@ Page({
 
   noop() {},
 
-  // 动作历史：只展示当前选中（展开）动作的每组明细，而非全部动作
+  // 动作历史：本次明细 + 上次同动作每组对比（↑↓）+ 历史最佳重量/容量
   openHistory(e) {
     const ai = Number(e.currentTarget.dataset.ai);
     const a = this.data.actions[ai];
     if (!a) return;
-    this.setData({ showHistory: true, histAction: a });
+    this.setData({ showHistory: true, histAction: a, hist: this.buildActionHistory(a) });
   },
-  closeHistory() { this.setData({ showHistory: false, histAction: null }); },
+  closeHistory() { this.setData({ showHistory: false, histAction: null, hist: null }); },
+
+  // 汇总某动作的历史（数据源：store.trainingLogs，已按日期倒序；本次会话尚未保存，故首条即「上次」）
+  buildActionHistory(a) {
+    const logs = (store.get().trainingLogs || []);
+    // 跨场次匹配同动作：优先 id，退化到 name+equip（自建动作可能无 id / 同名不同器械）
+    const same = (it) => (it.id && a.id && it.id === a.id) ||
+      (!it.id && !a.id && it.name === (a.nameZh || a.name) && (it.equip || '') === (a.equip || ''));
+    const hits = [];
+    logs.forEach(log => {
+      (log.actions || []).forEach(it => { if (same(it)) hits.push({ date: log.date, it: it }); });
+    });
+    const prev = hits[0] || null;
+    const num = (v) => { const n = Number(v); return isFinite(n) ? n : 0; };
+    // 历史最佳：所有场次所有组的最大重量；最佳容量 = 单场次 Σ(次数×重量) 最大值
+    let bestWeight = 0, bestVolume = 0;
+    hits.forEach(h => {
+      let vol = 0;
+      (h.it.setsDetail || []).forEach(s => {
+        const w = num(s.weight), r = num(s.reps);
+        if (w > bestWeight) bestWeight = w;
+        vol += w * r;
+      });
+      if (vol > bestVolume) bestVolume = vol;
+    });
+    // 本次每组：附带相对上次同组序的重量/次数变化（null = 无可比数据）
+      const prevSets = (prev && prev.it.setsDetail) || [];
+      const sets = (a.sets || []).map((s, i) => {
+        const w = num(s.weight), r = num(s.reps);
+        const p = prevSets[i];
+        // 相对上次同组序的变化；无可比数据（首次训练/该组上次为空）则不给标记
+        let dw = null, dr = null;
+        if (p && (num(p.weight) > 0 || num(p.reps) > 0)) {
+          if (w > 0 && num(p.weight) > 0) dw = w - num(p.weight);
+          if (r > 0 && num(p.reps) > 0) dr = r - num(p.reps);
+        }
+        return {
+          no: i + 1,
+          reps: s.reps || '-',
+          weight: s.weight || '-',
+          trainSec: s.trainSec || 0,
+          restSec: s.restSec || 0,
+          rpe: (s.rpe != null && s.rpe !== '') ? String(s.rpe) : '',
+          dw: dw, dwAbs: dw === null ? 0 : Math.abs(dw), hasDw: dw !== null,
+          dr: dr, drAbs: dr === null ? 0 : Math.abs(dr), hasDr: dr !== null && dr !== 0
+        };
+      });
+    return {
+      hasHistory: hits.length > 0,
+      sessions: hits.length,
+      prevDate: prev ? prev.date : '',
+      prevSets: prevSets.map((s, i) => ({ no: i + 1, reps: s.reps || '-', weight: s.weight || '-', rpe: s.rpe || '' })),
+      bestWeight: bestWeight,
+      bestVolume: bestVolume,
+      sets: sets
+    };
+  },
 
   // 替换动作：打开选择浮层（候选 = 全量动作库排除当前动作）
   replaceAction(e) {

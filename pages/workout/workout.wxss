@@ -204,6 +204,9 @@
 .wo-set-row {
   display: flex;
   align-items: center;
+  /* 组内 5 个参数（组号 / 重量 / 次数 / ⏱✓ / 休息）平均分布：
+     space-between 让剩余空间被 4 个间隙等分；gap 仅作最小间距兜底 */
+  justify-content: space-between;
   gap: 12rpx;
   margin-top: 14rpx;
   padding: 14rpx 20rpx;
@@ -284,14 +287,14 @@
   font-feature-settings: "tnum";
 }
 
-/* 每组休息时长（✓ 右侧显示，如 00:10） */
+/* 每组休息时长（✓ 右侧显示，如 00:10）。放大至 --fs-body 与行内重量/次数/训练秒对齐 */
 .wo-set-rest {
-  font-size: var(--fs-caption);
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: 700;
   color: var(--info);
   font-feature-settings: "tnum";
   flex-shrink: 0;
-  min-width: 80rpx;
+  min-width: 96rpx;
   text-align: center;
 }
 
@@ -596,7 +599,8 @@
   align-items: center;
   justify-content: space-between;
 }
-.hist-set-no { font-size: var(--fs-body); font-weight: 600; color: var(--primary); }
+/* 组号原为 var(--primary)（#C8FF00 字压浅底≈1.1:1 隐形），按绿字铁律改 --primary-text */
+.hist-set-no { font-size: var(--fs-body); font-weight: 600; color: var(--primary-text); }
 .hist-set-rep { font-size: var(--fs-body); color: var(--text-sub); }
 .hist-set-line2 {
   margin-top: 8rpx;
@@ -604,6 +608,50 @@
   color: var(--text-weak);
 }
 .hist-dot { margin: 0 12rpx; }
+
+/* ── 历史面板：概览条 / 分段标题 / 升降标记 ── */
+.hist-summary {
+  display: flex;
+  align-items: stretch;
+  gap: 12rpx;
+  margin: 16rpx 0 8rpx;
+}
+.hs-item {
+  flex: 1;
+  background: var(--bg);
+  border-radius: 16rpx;
+  padding: 14rpx 8rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.hs-k { font-size: var(--fs-caption); color: var(--text-weak); line-height: 1.4; }
+.hs-v { font-size: var(--fs-label); font-weight: 700; color: var(--text); line-height: 1.4; }
+.hist-sec-t {
+  margin: 24rpx 0 12rpx;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text-sub);
+}
+.hist-empty {
+  margin-top: 8rpx;
+  font-size: var(--fs-label);
+  color: var(--text-weak);
+  text-align: center;
+}
+/* 相对上次的变化：涨=红(#F2545B) / 跌=绿(深橄榄 --primary-text)，中国市场红涨绿跌 */
+.hist-delta {
+  margin-left: 12rpx;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  padding: 2rpx 10rpx;
+  border-radius: 999rpx;
+  background: var(--bg);
+  color: var(--text-weak);
+}
+.hist-delta.up { color: #F2545B; background: rgba(242, 84, 91, 0.12); }
+.hist-delta.down { color: var(--primary-text); background: var(--primary-tint); }
+.hist-set-past { opacity: 0.85; }
 
 /* ── 替换动作 overlay（底部上滑选择列表） ── */
 .repl-mask {

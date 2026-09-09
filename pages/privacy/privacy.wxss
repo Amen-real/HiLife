@@ -2,8 +2,9 @@
 .page {
   min-height: 100vh;
   padding: 32rpx 32rpx 80rpx;
-  /* 与全局 page 渐变同款、端点对齐，避免内容短于视口或 overscroll 时出现接缝/断层 */
-  background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%);
+  /* 旧版竖渐变底（深绿→亮绿→#FFF1E8 桃色）已弃用，统一为现行暖白底 --n-50 */
+  background: var(--n-50);
+  color: var(--text);
 }
 .sec { margin-bottom: 36rpx; }
 .h { font-size: var(--fs-head); font-weight: 700; color: var(--text); margin-bottom: 14rpx; }

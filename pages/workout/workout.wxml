@@ -90,7 +90,7 @@
                 </block>
                 <text wx:else>✓</text>
               </view>
-              <text class="wo-set-rest" wx:if="{{set.restSec}}">{{set.restSec > 9 ? set.restSec : '0' + set.restSec}}</text>
+              <text class="wo-set-rest" wx:if="{{set.restText}}">{{set.restText}}</text>
             </block>
             <!-- 未开启每组计时：原始 ✓ + ⋯ -->
             <block wx:else>
@@ -232,7 +232,7 @@
       <view class="pop-pill" hover-class="press" bindtap="minimizeRest">最小化</view>
     </view>
     <view class="pop-title">{{restKind === 'done' ? '训练完成' : '休息计时'}}</view>
-    <view class="pop-sub" wx:if="{{restKind !== 'done'}}">{{restKind === 'action' ? '动作间休息' : '组间休息'}} · 第 {{actNo + 1}} 组完成</view>
+    <view class="pop-sub" wx:if="{{restKind !== 'done'}}">{{restKind === 'action' ? '动作间休息' : (restKind === 'last' ? '最后一组完成' : '组间休息')}} · 第 {{actNo + 1}} 组完成</view>
     <view class="pop-sub" wx:else>全部动作完成 · 点击下方按钮保存</view>
     <view wx:if="{{restKind === 'done'}}" class="rest-pop-emoji solid"><view class="ico ico-trophy ico--ink" style="width:60rpx;height:60rpx" /></view>
     <view wx:else class="pop-ring" style="{{restRingStyle}}">
@@ -252,26 +252,66 @@
   </view>
 </view>
 
-<!-- 动作历史 overlay（当前选中动作的每组明细：次数/重量/训练时长/休息时长） -->
+<!-- 动作历史 overlay：本次明细 + 上次同动作每组对比（↑↓）+ 历史最佳重量/容量 -->
 <view class="hist-mask {{theme}}" wx:if="{{showHistory}}" catchtouchmove="noop">
   <view class="hist-pop">
     <view class="hist-head">
       <text class="hist-title">动作历史</text>
       <view class="hist-close" bindtap="closeHistory">✕</view>
     </view>
-    <scroll-view class="hist-body" scroll-y wx:if="{{histAction}}">
+    <scroll-view class="hist-body" scroll-y wx:if="{{histAction && hist}}">
       <view class="hist-act-name">{{histAction.nameZh || histAction.name}}</view>
-      <view class="hist-set" wx:for="{{histAction.sets}}" wx:for-item="s" wx:for-index="si" wx:key="si">
+
+      <!-- 概览：上次日期 / 最佳重量 / 最佳容量 / 历史场次 -->
+      <view class="hist-summary">
+        <view class="hs-item">
+          <text class="hs-k">上次</text>
+          <text class="hs-v">{{hist.prevDate || '暂无'}}</text>
+        </view>
+        <view class="hs-item">
+          <text class="hs-k">最佳重量</text>
+          <text class="hs-v">{{hist.bestWeight ? hist.bestWeight + 'kg' : '-'}}</text>
+        </view>
+        <view class="hs-item">
+          <text class="hs-k">最佳容量</text>
+          <text class="hs-v">{{hist.bestVolume ? hist.bestVolume + 'kg' : '-'}}</text>
+        </view>
+        <view class="hs-item">
+          <text class="hs-k">历史场次</text>
+          <text class="hs-v">{{hist.sessions}}</text>
+        </view>
+      </view>
+      <view wx:if="{{!hist.hasHistory}}" class="hist-empty">保存本次训练后即可看到历史对比</view>
+
+      <!-- 本次每组明细（含相对上次同组的变化） -->
+      <view class="hist-sec-t">本次 · 每组明细</view>
+      <view class="hist-set" wx:for="{{hist.sets}}" wx:for-item="s" wx:key="no">
         <view class="hist-set-line1">
-          <text class="hist-set-no">第{{si + 1}}组</text>
-          <text class="hist-set-rep">{{s.reps || '-'}} 次 × {{s.weight || '-'}} kg</text>
+          <text class="hist-set-no">第{{s.no}}组</text>
+          <text class="hist-set-rep">{{s.reps}} 次 × {{s.weight}} kg</text>
+          <text wx:if="{{s.hasDw}}" class="hist-delta {{s.dw > 0 ? 'up' : (s.dw < 0 ? 'down' : '')}}">{{s.dw > 0 ? '↑' : (s.dw < 0 ? '↓' : '=')}}{{s.dw !== 0 ? s.dwAbs + 'kg' : ''}}</text>
+          <text wx:if="{{s.hasDr}}" class="hist-delta {{s.dr > 0 ? 'up' : 'down'}}">{{s.dr > 0 ? '↑' : '↓'}}{{s.drAbs}}次</text>
         </view>
         <view class="hist-set-line2">
           <text>训练 {{s.trainSec || '-'}}s</text>
           <text class="hist-dot">·</text>
           <text>休息 {{s.restSec || '-'}}s</text>
+          <text wx:if="{{s.rpe}}" class="hist-dot">·</text>
+          <text wx:if="{{s.rpe}}">RPE {{s.rpe}}</text>
         </view>
       </view>
+
+      <!-- 上次同动作每组数据 -->
+      <block wx:if="{{hist.hasHistory}}">
+        <view class="hist-sec-t">上次 {{hist.prevDate}} · 每组</view>
+        <view class="hist-set hist-set-past" wx:for="{{hist.prevSets}}" wx:for-item="s" wx:key="no">
+          <view class="hist-set-line1">
+            <text class="hist-set-no">第{{s.no}}组</text>
+            <text class="hist-set-rep">{{s.reps}} 次 × {{s.weight}} kg</text>
+            <text wx:if="{{s.rpe}}" class="hist-dot">RPE {{s.rpe}}</text>
+          </view>
+        </view>
+      </block>
     </scroll-view>
   </view>
 </view>

@@ -117,7 +117,8 @@
 .dm-mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(15,23,42,.45); display: flex; align-items: flex-end; z-index: 3000; }
 /* 底部预留 custom-tab-bar 高度（88rpx 内容 + 安全区），否则独立渲染的 tabBar 会浮在弹层之上遮住底部按钮/提示。
    微信 custom-tab-bar 不在页面 z-index 堆叠内，页面内 fixed 遮罩无法盖住它，只能靠预留空间避让。 */
-.dm-sheet { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding-bottom: calc(98rpx + env(safe-area-inset-bottom)); box-shadow: 0 -10rpx 40rpx rgba(15,23,42,.2); animation: hist-up .26s ease; }
+/* 弹层底必须用 var(--card)：硬编码 #fff 在深色模式下是白底配白字（--text:#FFFFFF）＝隐形 */
+.dm-sheet { width: 100%; background: var(--card); border-radius: 32rpx 32rpx 0 0; padding-bottom: calc(98rpx + env(safe-area-inset-bottom)); box-shadow: 0 -10rpx 40rpx rgba(15,23,42,.2); animation: hist-up .26s ease; }
 .dm-head { display: flex; align-items: center; justify-content: space-between; padding: 32rpx 32rpx 12rpx; }
 .dm-title { font-size: var(--fs-title); font-weight: 800; color: var(--text); }
 .dm-close { width: 56rpx; height: 56rpx; border-radius: 50%; background: var(--bg); color: var(--text-sub); font-size: var(--fs-head); display: flex; align-items: center; justify-content: center; }
@@ -125,7 +126,8 @@
 .dm-list { padding: 4rpx 0; }
 .dm-item { display: flex; align-items: center; justify-content: space-between; padding: 30rpx 32rpx; border-top: 1rpx solid var(--line); }
 .dm-t { font-size: var(--fs-head); font-weight: 600; color: var(--text); }
-.dm-ar { color: var(--line-strong); font-size: var(--fs-title); }
+/* 用 --text-weak 而非 --line-strong：后者在深色下仅 rgba(255,255,255,.20)，箭头几乎看不见 */
+.dm-ar { color: var(--text-weak); font-size: var(--fs-title); }
 .dm-item.danger .dm-t { color: #F2545B; }
 .dm-hint { font-size: var(--fs-caption); color: var(--text-weak); text-align: center; padding: 24rpx 48rpx 0; line-height: 1.5; }
 @keyframes hist-up { from { transform: translateY(100%); } to { transform: translateY(0); } }

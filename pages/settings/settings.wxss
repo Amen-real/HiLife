@@ -8,7 +8,9 @@
 }
 .form-row.no-border { border-bottom: none; }
 .form-label { font-size: var(--fs-head); }
-.form-value { font-size: var(--fs-body); color: var(--primary); display: flex; align-items: center; }
+/* 绿字铁律：--primary(#C8FF00) 在暖白底上仅约 1.1:1 等于隐形，
+   一律改用 --primary-text（浅底 #4C7300 ~5:1；深色块翻为 #C8FF00） */
+.form-value { font-size: var(--fs-body); color: var(--primary-text); display: flex; align-items: center; }
 .arrow { color: var(--text-weak); margin-left: 6rpx; }
 .form-input { text-align: right; font-size: var(--fs-body); color: var(--text); }
 
@@ -43,6 +45,8 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+  /* 绿字：浅色的深橄榄绿在黑底上只有 3.8:1，翻成品牌亮绿 */
+  --primary-text: #C8FF00;
 
   background: var(--n-50);
   color: var(--text);

@@ -61,9 +61,8 @@
     </view>
   </view>
 
-  <!-- 菜单（我的计划 / 体重目标 / 深色主题 / 数据管理 / 隐私政策） -->
+  <!-- 菜单（体重目标 / 深色主题 / 数据管理 / 隐私政策） -->
   <view class="menu card">
-    <view class="mi" bindtap="goPlan"><view class="mi-ic"><view class="ico ico-plan ico--ink" style="width:40rpx;height:40rpx"></view></view><view class="mi-t">我的计划</view><view class="mi-ar">›</view></view>
     <view class="mi" bindtap="goSettings"><view class="mi-ic"><view class="ico ico-goal ico--ink" style="width:40rpx;height:40rpx"></view></view><view class="mi-t">体重目标</view><view class="mi-ar">›</view></view>
     <view class="mi">
       <view class="mi-ic"><view class="ico ico-moon ico--ink" style="width:40rpx;height:40rpx"></view></view>
