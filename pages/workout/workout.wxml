@@ -10,8 +10,8 @@
         <text class="wo-clock-ico">{{clockRunning ? '❚❚' : '▶'}}</text>
       </view>
     </view>
-    <view class="wo-done-btn" hover-class="press" bindtap="finishWorkout">完成</view>
-    <view class="wo-min-btn" hover-class="press" bindtap="minimizePage"><view class="wo-min-ico"></view></view>
+    <view class="wo-done-btn" hover-class="press" bindtap="finishWorkout">完成训练</view>
+    <view class="wo-min-btn" hover-class="press" bindtap="minimizePage"><view class="ico ico-minimize ico--ink" style="width:30rpx;height:30rpx"></view></view>
   </view>
 
   <!-- 训练信息头 -->
@@ -48,7 +48,7 @@
                   wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si"></view>
           </view>
         </view>
-        <view class="wo-ex-gear" catchtap="replaceAction" data-ai="{{ai}}"></view>
+        <view class="wo-ex-gear" catchtap="replaceAction" data-ai="{{ai}}"><view class="ico ico-swap ico--ink" style="width:30rpx;height:30rpx"></view></view>
       </view>
 
       <!-- 展开内容 -->
@@ -170,72 +170,85 @@
     </view>
   </view>
 
-<!-- 训练计时 最小化悬浮球（可拖拽贴边，倒计时后台继续） -->
-<movable-area class="float-area {{theme}}" wx:if="{{showTrain && trainMinimized}}">
-  <movable-view class="mini-float" direction="all" damping="40" friction="6"
-    x="{{trainBall.x}}" y="{{trainBall.y}}"
-    bindtap="expandTrain" bindtouchend="onTrainBallEnd">
-    <view class="mini-inner">
-      <text class="mini-label">{{trainPhase === 'ready' ? '准备' : '训练'}}</text>
-      <text class="mini-num">{{trainLeft}}</text>
-    </view>
-  </movable-view>
-</movable-area>
-
-<!-- 训练计时 overlay（5秒准备 + 60秒训练）—— 复用休息计时弹窗 UI -->
-<view class="rest-mask {{theme}}" wx:if="{{showTrain && !trainMinimized}}" catchtouchmove="noop">
-  <view class="rest-pop">
-    <view class="rest-pop-mini" hover-class="press" bindtap="minimizeTrain"></view>
-    <view wx:if="{{trainPhase === 'ready'}}" class="train-ready-dot"></view>
-    <view wx:else class="train-work-dot"></view>
-    <view class="rest-pop-title">{{trainPhase === 'ready' ? '准备' : '训练中'}}</view>
-    <view class="rest-pop-sub">{{trainPhase === 'ready' ? '即将开始 · 放轻松' : '保持节奏 · 还剩 ' + trainLeft}}</view>
-    <view class="rest-ring">
-      <text class="rest-num">{{trainLeft}}</text>
-    </view>
-    <view class="rest-track"><view class="rest-fill" style="width:{{trainFillWidth}}"></view></view>
-    <button class="rest-skip" hover-class="press" bindtap="cancelTrain">{{trainPhase === 'ready' ? '取消' : '结束训练'}}</button>
+<!-- 训练计时 最小化悬浮球（fixed 自管拖拽贴边；进度环 + 深色圆心，参考图「计时最小化」方案） -->
+<view wx:if="{{showTrain && trainMinimized}}"
+      class="mini-float"
+      style="{{trainBallStyle}}"
+      data-key="train"
+      bindtap="expandTrain"
+      bindtouchstart="onBallTouchStart"
+      catchtouchmove="onBallTouchMove"
+      bindtouchend="onBallTouchEnd">
+  <view class="mini-ring" style="{{trainBallRingStyle}}"></view>
+  <view class="mini-core">
+    <text class="mini-num">{{trainLeft}}</text>
+    <text class="mini-total">{{trainTotal}}</text>
   </view>
 </view>
 
-<!-- 组间休息 最小化悬浮球（可拖拽贴边，倒计时后台继续） -->
-<movable-area class="float-area {{theme}}" wx:if="{{showRest && restMinimized}}">
-  <movable-view class="mini-float" direction="all" damping="40" friction="6"
-    x="{{restBall.x}}" y="{{restBall.y}}"
-    bindtap="expandRest" bindtouchend="onRestBallEnd">
-    <view class="mini-inner">
-      <text class="mini-label">休息</text>
-      <text class="mini-num">{{restLeft}}</text>
+<!-- 训练计时 overlay（5秒准备 + 60秒训练）—— 深色卡 + 大进度环，参考图「计时开始倒计时」方案 -->
+<view class="rest-mask {{theme}}" wx:if="{{showTrain && !trainMinimized}}" catchtouchmove="noop">
+  <view class="rest-pop dark">
+    <view class="pop-head">
+      <text class="pop-label">TRAINING TIMER</text>
+      <view class="rest-pop-mini" hover-class="press" bindtap="minimizeTrain"></view>
     </view>
-  </movable-view>
-</movable-area>
+    <view class="pop-ring" style="{{trainRingStyle}}">
+      <view class="pop-ring-core">
+        <text class="pop-phase">{{trainPhase === 'ready' ? '准备' : '训练中'}}</text>
+        <text class="pop-num">{{trainLeft}}</text>
+        <view class="pop-total-pill"><text>总共 {{trainTotal}} 秒</text></view>
+      </view>
+    </view>
+    <view class="pop-btns">
+      <view wx:if="{{trainPhase === 'ready'}}" class="pop-btn ghost" hover-class="press" bindtap="cancelTrain">取消</view>
+      <view class="pop-btn primary" hover-class="press" bindtap="{{trainPhase === 'ready' ? 'skipTrain' : 'cancelTrain'}}">{{trainPhase === 'ready' ? '跳过' : '结束训练'}}</view>
+    </view>
+  </view>
+</view>
 
-<!-- 组间休息倒计时悬浮窗（三档切换 + ±微调 + 完成休息）；最后一组完成时切换为「训练完成」保存态 -->
+<!-- 组间休息 最小化悬浮球（fixed 自管拖拽贴边；进度环 + 深色圆心） -->
+<view wx:if="{{showRest && restMinimized}}"
+      class="mini-float"
+      style="{{restBallStyle}}"
+      data-key="rest"
+      bindtap="expandRest"
+      bindtouchstart="onBallTouchStart"
+      catchtouchmove="onBallTouchMove"
+      bindtouchend="onBallTouchEnd">
+  <view class="mini-ring" style="{{restBallRingStyle}}"></view>
+  <view class="mini-core">
+    <text class="mini-num">{{restClock}}</text>
+    <text class="mini-total">{{restTotal}}</text>
+  </view>
+</view>
+
+<!-- 组间休息倒计时悬浮窗（±微调 + 震动开关 + 完成）；最后一组完成时切换为「训练完成」保存态。参考图「休息计时」方案 -->
 <view class="rest-mask {{theme}}" wx:if="{{showRest && !restMinimized}}" catchtouchmove="noop">
-  <view class="rest-pop">
-    <view class="rest-pop-mini" hover-class="press" bindtap="minimizeRest"></view>
-    <view wx:if="{{restKind === 'done'}}" class="ico ico-trophy ico--primary" style="width:92rpx;height:92rpx" />
-    <view wx:else class="rest-pop-emoji"><view class="ico ico-train ico--ink" style="width:60rpx;height:60rpx" /></view>
-    <view class="rest-pop-title">{{restKind === 'done' ? '训练完成' : (restKind === 'action' ? '动作间休息' : '组间休息')}}</view>
-    <view class="rest-pop-sub">{{restKind === 'done' ? '全部动作完成 · 点击保存' : '第 ' + (actNo + 1) + ' 组完成 · 放松一下'}}</view>
-    <view class="rest-ring" wx:if="{{restKind !== 'done'}}">
-      <text class="rest-num">{{restLeft}}</text>
+  <view class="rest-pop dark">
+    <view class="pop-head">
+      <view wx:if="{{restKind !== 'done'}}" class="pop-pill {{vibrateOn ? 'on' : ''}}" hover-class="press" bindtap="toggleVibrate">手机震动</view>
+      <view wx:else class="pop-pill-ghost"></view>
+      <view class="pop-pill" hover-class="press" bindtap="minimizeRest">最小化</view>
     </view>
-    <view class="rest-opts" wx:if="{{restKind !== 'done'}}">
-      <view class="rest-opt {{restSelected === idx ? 'on' : ''}}"
-            wx:for="{{restOptions}}" wx:for-index="idx" wx:key="*this"
-            data-sec="{{item}}" bindtap="changeRest">{{item}}</view>
+    <view class="pop-title">{{restKind === 'done' ? '训练完成' : '休息计时'}}</view>
+    <view class="pop-sub" wx:if="{{restKind !== 'done'}}">{{restKind === 'action' ? '动作间休息' : '组间休息'}} · 第 {{actNo + 1}} 组完成</view>
+    <view class="pop-sub" wx:else>全部动作完成 · 点击下方按钮保存</view>
+    <view wx:if="{{restKind === 'done'}}" class="rest-pop-emoji solid"><view class="ico ico-trophy ico--ink" style="width:60rpx;height:60rpx" /></view>
+    <view wx:else class="pop-ring" style="{{restRingStyle}}">
+      <view class="pop-ring-core">
+        <text class="pop-num big">{{restClock}}</text>
+        <text class="pop-total">{{restTotal}}</text>
+      </view>
     </view>
-    <view class="rest-step" wx:if="{{restKind !== 'done'}}">
-      <view class="rest-step-btn" data-delta="-10" bindtap="adjustRest">−10</view>
-      <view class="rest-step-btn" data-delta="10" bindtap="adjustRest">+10</view>
+    <view class="pop-btns row" wx:if="{{restKind !== 'done'}}">
+      <view class="pop-btn ghost sq" hover-class="press" bindtap="adjustRest" data-delta="-10">−10s</view>
+      <view class="pop-btn ghost sq" hover-class="press" bindtap="adjustRest" data-delta="10">+10s</view>
+      <view class="pop-btn primary" hover-class="press" bindtap="skipRest">完成</view>
     </view>
-    <view class="rest-track" wx:if="{{restKind !== 'done'}}"><view class="rest-fill" style="width:{{restFillWidth}}"></view></view>
-    <view class="rest-vib" wx:if="{{restKind !== 'done'}}" bindtap="toggleVibrate">
-      <text class="rest-vib-label">休息结束震动提示</text>
-      <view class="rest-vib-switch {{vibrateOn ? 'on' : ''}}"><view class="rest-vib-dot" /></view>
+    <view class="pop-btns" wx:else>
+      <view class="pop-btn primary" hover-class="press" bindtap="skipRest">保存训练</view>
     </view>
-    <button class="rest-skip" hover-class="press" bindtap="skipRest">{{restKind === 'done' ? '保存训练' : '完成休息，继续 ›'}}</button>
   </view>
 </view>
 

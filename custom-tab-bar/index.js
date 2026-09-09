@@ -6,18 +6,22 @@ const theme = require('../utils/theme.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
+// 悬浮药丸设计尺寸（rpx），参考图「训练最小化」方案（收窄迭代：300→248→220→192→回退 220；104→88→84）
+const PILL_W_RPX = 220;
+const PILL_H_RPX = 84;
+const MARGIN_RPX = 24;
+
 Component({
   data: {
     selected: 0,
     // 'theme-light' | 'theme-dark'，由 tab 页 onShow 注入；此处仅作启动兜底
     theme: (theme.get() === theme.DARK ? 'theme-dark' : 'theme-light'),
-    // 全局训练计时悬浮窗
+    // 全局训练计时悬浮药丸
     showWo: false,
     woClock: '00:00',
     woRunning: false,
-    // 悬浮窗可拖拽位置（movable-view 坐标，单位 px，相对于全屏 movable-area）
-    woX: 0,
-    woY: 0,
+    // 药丸位置：JS 拼的完整内联 style（left/top px，单 mustache 合规）
+    woStyle: '',
     list: [
       { pagePath: '/pages/home/home', text: '首页', icon: 'home' },
       { pagePath: '/pages/training/training', text: '训练', icon: 'train' },
@@ -29,25 +33,25 @@ Component({
   lifetimes: {
     attached() {
       try {
-        // 计算悬浮窗初始位置（右下角，浮于底栏之上）。rpx→px：px = rpx * windowWidth / 750
+        // 计算药丸初始位置（右下角，浮于底栏之上）。rpx→px：px = rpx * windowWidth / 750
         const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
         const W = info.windowWidth || 375;
         const H = info.windowHeight || 667;
         const toPx = (r) => r * W / 750;
-        const pill = toPx(136);
-        const margin = toPx(32);
         const safeBottom = (info.safeAreaInsets && info.safeAreaInsets.bottom) || 0;
         const tabH = toPx(110) + safeBottom;
         this._winW = W;
-        this._pillPx = pill;
-        this._woX = W - pill - margin;
-        this._woY = H - pill - tabH - toPx(20);
-        this._woStartX = this._woX;
-        this._woStartY = this._woY;
+        this._winH = H;
+        this._pillW = toPx(PILL_W_RPX);
+        this._pillH = toPx(PILL_H_RPX);
+        this._margin = toPx(MARGIN_RPX);
+        this._woX = W - this._pillW - this._margin;
+        this._woY = H - this._pillH - tabH - toPx(20);
+        this.setData({ woStyle: this.woStyle(this._woX, this._woY) });
 
         this._unsub = workoutSession.subscribe(() => this.refreshWo());
         this.refreshWo();
-        // 悬浮窗显示且计时进行中时，按真实时间每秒刷新 woClock（训练页已卸载也能继续走表）
+        // 药丸显示且计时进行中时，按真实时间每秒刷新 woClock（训练页已卸载也能继续走表）
         this._woTick = setInterval(() => {
           if (this.data.showWo && this.data.woRunning) {
             const sec = workoutSession.getElapsed();
@@ -97,35 +101,48 @@ Component({
         woRunning: !!(sess && sess.running)
       });
     },
-    // 悬浮窗拖拽：开始记录起点
-    onWoFloatStart() {
-      this._startX = this._woX != null ? this._woX : 0;
-      this._startY = this._woY != null ? this._woY : 0;
-      this._moved = false;
+
+    // —— 药丸 fixed + 自管 touch 拖拽（不用 movable-view） ——
+    woStyle(x, y) {
+      return 'left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px';
     },
-    // 拖拽中：同步坐标（避免 1s 计时 setData 把药丸重置回初始位），并标记是否产生位移
-    onWoFloatChange(e) {
-      const d = e.detail;
-      if (d && typeof d.x === 'number') {
-        this._woX = d.x;
-        this._woY = d.y;
-        this.setData({ woX: d.x, woY: d.y });
-        if (this._startX != null && (Math.abs(d.x - this._startX) > 8 || Math.abs(d.y - this._startY) > 8)) {
-          this._moved = true;
-        }
-      }
+    clampWo(x, y) {
+      const maxX = Math.max(this._margin, this._winW - this._pillW - this._margin);
+      const maxY = Math.max(this._margin, this._winH - this._pillH - this._margin);
+      return {
+        x: Math.max(this._margin, Math.min(maxX, x)),
+        y: Math.max(this._margin, Math.min(maxY, y))
+      };
     },
-    // 拖拽结束：松手自动贴左/右边缘（保持当前高度），若发生过位移则抑制紧随的 tap（避免误打开训练页）
-    onWoFloatEnd() {
-      const W = this._winW || 375;
-      const pill = this._pillPx || (136 * W / 750);
-      const margin = 32 * W / 750;
-      const x = this._woX != null ? this._woX : 0;
-      const targetX = (x + pill / 2 < W / 2) ? margin : (W - pill - margin);
-      this.setData({ woX: targetX });
-      if (this._moved) this._suppressTap = true;
+    applyWo(x, y) {
+      this._woX = x; this._woY = y;
+      this.setData({ woStyle: this.woStyle(x, y) });
     },
-    // 点击悬浮窗：训练中页已在栈中则返回，否则重新进入（自动恢复进度）。
+    onWoTouchStart(e) {
+      const t = e.touches[0];
+      this._drag = { sx: t.clientX, sy: t.clientY, ox: this._woX, oy: this._woY, moved: false, last: { x: this._woX, y: this._woY } };
+    },
+    onWoTouchMove(e) {
+      const d = this._drag;
+      if (!d) return;
+      const t = e.touches[0];
+      if (!d.moved && (Math.abs(t.clientX - d.sx) > 4 || Math.abs(t.clientY - d.sy) > 4)) d.moved = true;
+      const p = this.clampWo(d.ox + (t.clientX - d.sx), d.oy + (t.clientY - d.sy));
+      d.last = p;
+      this.applyWo(p.x, p.y);
+    },
+    // 松手贴左/右边缘（保持当前高度）；发生过位移则抑制紧随的 tap（避免误打开训练页）
+    onWoTouchEnd() {
+      const d = this._drag;
+      this._drag = null;
+      if (!d) return;
+      if (d.moved) this._suppressTap = true;
+      const p = d.last || { x: this._woX, y: this._woY };
+      const x = (p.x + this._pillW / 2 < this._winW / 2) ? this._margin : (this._winW - this._pillW - this._margin);
+      const s = this.clampWo(x, p.y);
+      this.applyWo(s.x, s.y);
+    },
+    // 点击药丸：训练中页已在栈中则返回，否则重新进入（自动恢复进度）。
     // 若刚结束拖拽（_suppressTap），本次点击仅作取消，不打开。
     openWorkout() {
       if (this._suppressTap) { this._suppressTap = false; return; }

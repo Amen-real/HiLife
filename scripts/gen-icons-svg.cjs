@@ -50,6 +50,10 @@ const ICONS = {
   copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
   share: '<circle cx="6" cy="12" r="2.1" fill="#000"/><circle cx="18" cy="6" r="2.1" fill="#000"/><circle cx="18" cy="18" r="2.1" fill="#000"/><path d="M8 11l8-4M8 13l8 4"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.2 5.4"/><path d="M20 5v5h-5"/>',
+  // 最小化：画中画（外层窗口 + 右下角小实心悬浮窗），表意「收起为悬浮窗」而非下载
+  minimize: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="12.5" width="6.5" height="4.5" rx="1" fill="#000" stroke="none"/>',
+  // 替换 / 交换：双向对开箭头（替换动作 = 换一个，区别于 refresh 的"重来"）
+  swap: '<path d="M17 3.5 20.5 7 17 10.5"/><path d="M20.5 7H7.2"/><path d="M7 13.5 3.5 17 7 20.5"/><path d="M3.5 17h13.3"/>',
   play: '<path d="M8 5.5v13l11-6.5z" fill="#000" stroke="none"/>',
   pause: '<rect x="8" y="5" width="2.4" height="14" rx="1.1" fill="#000" stroke="none"/><rect x="13.6" y="5" width="2.4" height="14" rx="1.1" fill="#000" stroke="none"/>',
   camera: '<rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.4"/><path d="M8.5 7l1.2-2h4.6l1.2 2"/>',

@@ -7,6 +7,7 @@ const auth = require('../../utils/auth.js');
 const media = require('../../utils/media.js').media;
 const vision = require('../../utils/foodvision.js');
 const nutrition = require('../../utils/nutrition.js');
+const theme = require('../../utils/theme.js');
 
 const COLOR = { p: '#6F9F00', c: '#FF9500', f: '#FFB020' }; // 蛋白质/碳水/脂肪 配色
 
@@ -118,6 +119,7 @@ function emojiFor(name) {
 Page({
   data: {
     view: 'advice',
+    theme: 'theme-light',
     todayDate: todayStr(),
     selectedDate: todayStr(),
     intakeLabel: '今日摄入',
@@ -158,6 +160,9 @@ Page({
   },
 
   onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
     // 非 tab 页，不高亮底部栏
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: -1 });

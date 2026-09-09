@@ -1,5 +1,6 @@
 // pages/weight-record/weight-record.js —— 10（记录 + 大数字）在上，11（趋势筛选 + 统计 + 图表 + 记录列表）在下
 const store = require('../../utils/store.js');
+const theme = require('../../utils/theme.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function fmtDate(d) {            // 'YYYY-MM-DD' -> 'YYYY/MM/DD'
@@ -87,6 +88,7 @@ function buildAllTicks(startMs, totalDays, spanDays, padL, plotW) {
 
 Page({
   data: {
+    theme: 'theme-light',
     current: { weight: '--', dateText: '' },
     change: { sign: '', value: '0.0' },
     empty: false,
@@ -110,7 +112,12 @@ Page({
     inputDateText: ''
   },
 
-  onShow() { this.loadData(); },
+  onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
+    this.loadData();
+  },
 
   loadData() {
     const all = store.getWeightStats(0).list;          // 全部，升序

@@ -1,5 +1,5 @@
 <!-- pages/advice/advice.wxml —— 对齐 07-diet.html（HiLiLife 饮食建议 · 浅色 + 荧光绿） -->
-<view class="page">
+<view class="page {{theme}}">
   <nav-bar show-back="{{true}}" />
 
   <!-- 顶部切换：饮食建议 | 饮食记录 -->

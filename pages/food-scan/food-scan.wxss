@@ -201,3 +201,37 @@
 .r-btn { flex: 1; height: 88rpx; line-height: 88rpx; text-align: center; border-radius: 999rpx; font-size: 30rpx; font-weight: 700; }
 .r-btn.ghost { background: var(--n-100); color: var(--n-900); }
 .r-btn.primary { background: var(--primary); color: #0A0A0A; }
+
+/* ══════════════════════════════════════════════════════════════
+   深色主题覆盖（.page.theme-dark）—— 手法同 home.wxss：重定义 CSS 变量
+   取景态（.page-dark）本就是原生暗色设计，与主题无关；主题类主要驱动结果/历史态翻转
+   ══════════════════════════════════════════════════════════════ */
+.page.theme-dark {
+  --n-50:  #0A0A0A;
+  --n-100: #1E1E1E;
+  --n-200: rgba(255, 255, 255, 0.10);
+  --n-300: rgba(255, 255, 255, 0.16);
+  --n-400: rgba(255, 255, 255, 0.30);
+  --n-500: rgba(255, 255, 255, 0.42);
+  --n-600: rgba(255, 255, 255, 0.55);
+  --n-700: rgba(255, 255, 255, 0.75);
+  --n-800: rgba(255, 255, 255, 0.88);
+  --n-900: #FFFFFF;
+
+  --text:        #FFFFFF;
+  --text-sub:    rgba(255, 255, 255, 0.70);
+  --text-weak:   rgba(255, 255, 255, 0.45);
+  --line:        rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.20);
+
+  --card:      #161616;
+  --white:     #161616;
+  --card-gray: #1E1E1E;
+  --bg:        rgba(255, 255, 255, 0.06);
+
+  --success: #C8FF00;
+
+  background: var(--n-50);
+  color: var(--text);
+}
+.page.theme-dark .card { box-shadow: none; }

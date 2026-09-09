@@ -1,5 +1,5 @@
 <!-- pages/settings/settings.wxml -->
-<view class="page">
+<view class="page {{theme}}">
   <nav-bar title="健康数据" show-back="{{true}}" />
   <view class="card">
     <view class="form-row">

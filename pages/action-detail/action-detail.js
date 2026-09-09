@@ -3,9 +3,11 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const { media, resolveUrl } = require('../../utils/media.js');
 const { collectSlugs, buildMuscles, targetCn, drawBody } = require('../../utils/bodymap.js');
+const theme = require('../../utils/theme.js');
 
 Page({
   data: {
+    theme: 'theme-light',
     act: null,
     heroSrc: '',
     heroBadge: '',
@@ -14,6 +16,12 @@ Page({
     muscles: { front: [], back: [] },
     history: [],
     showVideoOverlay: false
+  },
+
+  onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
   },
 
   onLoad() {

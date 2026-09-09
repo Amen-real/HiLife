@@ -49,11 +49,11 @@
 
 修饰类可叠加；尺寸用 `style` 覆盖 `.ico` 的 `width/height`（rpx）。
 
-## 图标清单（66）
+## 图标清单（74）
 
 - **导航/Tab**：home, train, plan, user
-- **通用操作**：plus, close, check, search, settings, more, back, arrowleft, arrowright, chevrondown, chevronup, edit, delete, share, refresh, play, pause, camera, album, zoom
-- **状态/反馈**：info, warning, success, error, staron, staroff, flame, trophy, goal, idea, chart, clock, trendingup, heart, hearton, calendar, target, myaction, pulse（心率线，用于「耐力」目标模板）
+- **通用操作**：plus, close, check, search, settings, more, back, arrowleft, arrowright, chevrondown, chevronup, edit, delete, copy, share, refresh, minimize（画中画悬浮窗，训练页收起为悬浮球）, swap（双向对开箭头，替换动作）, play, pause, camera, album, zoom
+- **状态/反馈**：info, warning, success, error, staron, staroff, flame, trophy, goal, idea, chart, clock, trendingup, heart, hearton, calendar, lightning, target, myaction, pulse（心率线，用于「耐力」目标模板）
 - **健身/身体**：scale, body, musclefront, muscleback, arm, chest, core, leg, shoulder, dumbbell
 - **饮食/食物**：foodbowl, foodegg, foodfish, foodmeat, foodnoodle, foodrice, foodsalad, veg, breakfast, lunch, dinner, snack, diet, water
 

@@ -1,5 +1,6 @@
 // pages/train-detail/train-detail.js
 const store = require('../../utils/store.js');
+const theme = require('../../utils/theme.js');
 
 // 秒 -> 友好文案（例：90 -> "1分30秒"，45 -> "45s"）
 function fmtSec(sec) {
@@ -13,10 +14,17 @@ function fmtSec(sec) {
 
 Page({
   data: {
+    theme: 'theme-light',
     date: '',
     sessionLabel: '',
     log: null,
     summary: { actions: 0, sets: 0, train: '0s', rest: '0s' }
+  },
+
+  onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
   },
 
   onLoad(options) {

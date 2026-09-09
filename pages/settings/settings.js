@@ -1,6 +1,7 @@
 // pages/settings/settings.js
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const theme = require('../../utils/theme.js');
 const GOALS = ['减重', '增肌', '塑形', '保持'];
 // 活动量档位：展示文案与 store.profile.activityLevel 取值一一对应（系数映射见 utils/nutrition.js）
 const ACTIVITY_LEVELS = ['久坐', '轻度', '中度', '高度', '运动员'];
@@ -8,6 +9,7 @@ const ACTIVITY_KEYS = ['sedentary', 'light', 'moderate', 'high', 'athlete'];
 
 Page({
   data: {
+    theme: 'theme-light',
     gender: '',
     goal: '减重',
     targetWeight: '',
@@ -19,6 +21,12 @@ Page({
     genders: ['男', '女'],
     genderIndex: 0,
     goalIndex: 0
+  },
+
+  onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
   },
 
   onLoad() {

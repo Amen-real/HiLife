@@ -6,6 +6,7 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const vision = require('../../utils/foodvision.js');
+const theme = require('../../utils/theme.js');
 
 const HISTORY_KEY = 'hh_food_scan_history';
 
@@ -19,6 +20,7 @@ function mealByHour(h) {
 
 Page({
   data: {
+    theme: 'theme-light',
     view: 'camera',       // camera=取景 | analyzing=识别中 | result=识别结果 | history=识别历史
     flash: false,         // 闪光灯（torch）
     camError: false,      // 相机权限被拒/不可用
@@ -34,6 +36,10 @@ Page({
   },
 
   onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）。
+    // 取景态本就是原生暗色设计（.page-dark），主题类主要影响结果/历史态（var(--n-50) 系）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: -1 }); // 非 tab 页，不高亮
     }

@@ -2,11 +2,13 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const vision = require('../../utils/foodvision.js');
+const theme = require('../../utils/theme.js');
 
 const MEAL_TYPES = ['早餐', '午餐', '晚餐', '加餐'];
 
 Page({
   data: {
+    theme: 'theme-light',
     loading: false,
     result: null,        // { foods:[], total:{}, note, mock, provider }
     error: '',
@@ -26,6 +28,9 @@ Page({
   },
 
   onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
     // 从其他入口记录后回到本页，刷新今日列表
     this.computeToday();
   },

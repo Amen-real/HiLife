@@ -1,5 +1,5 @@
 <!-- pages/review/review.wxml —— 复用训练复盘组件（外层 .page 用于承载自定义导航栏） -->
-<view class="page">
+<view class="page {{theme}}">
   <nav-bar title="训练复盘" show-back="{{true}}" />
   <training-review />
 </view>

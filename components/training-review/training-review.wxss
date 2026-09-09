@@ -122,7 +122,8 @@
 /* ===== Section title ===== */
 .section-title {
   font-size: 30rpx; font-weight: 800;
-  color: #111111;
+  /* var() 随宿主页面主题翻转（.page.theme-dark 重定义 --n-900），组件自身无需感知主题 */
+  color: var(--n-900, #111111);
   letter-spacing: -0.01em;
   margin: 0 8rpx 20rpx;
 }

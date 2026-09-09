@@ -3,6 +3,7 @@ const exercises = require('../../utils/exercises.js');
 const { media, thumb } = require('../../utils/media.js');
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
+const theme = require('../../utils/theme.js');
 
 // 按 id 回查完整动作对象：自建动作优先（id 唯一且可能覆盖内置），其次遍历内置库各部位
 function findActionById(id) {
@@ -22,10 +23,14 @@ function findActionById(id) {
 
 Page({
   data: {
+    theme: 'theme-light',
     list: []
   },
 
   onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
     this.refresh();
   },
 

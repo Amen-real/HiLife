@@ -521,3 +521,53 @@
   .seg-top-item, .sheet-opt { transition: none; }
   .spinner { animation: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   深色主题覆盖（.page.theme-dark）
+   手法同 home.wxss：重定义 CSS 变量，整棵子树自动翻转；
+   仅「硬编码颜色 / 回退写法 / 强调元素」需要单独覆盖。
+   ══════════════════════════════════════════════════════════════ */
+.page.theme-dark {
+  /* —— 中性灰阶反转（暖白 → 暖黑）—— */
+  --n-50:  #0A0A0A;
+  --n-100: #1E1E1E;
+  --n-200: rgba(255, 255, 255, 0.10);
+  --n-300: rgba(255, 255, 255, 0.16);
+  --n-400: rgba(255, 255, 255, 0.30);
+  --n-500: rgba(255, 255, 255, 0.42);
+  --n-600: rgba(255, 255, 255, 0.55);
+  --n-700: rgba(255, 255, 255, 0.75);
+  --n-800: rgba(255, 255, 255, 0.88);
+  --n-900: #FFFFFF;
+
+  /* —— 语义色 —— */
+  --text:        #FFFFFF;
+  --text-sub:    rgba(255, 255, 255, 0.70);
+  --text-weak:   rgba(255, 255, 255, 0.45);
+  --line:        rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.20);
+
+  /* —— 表面 —— */
+  --card:      #161616;
+  --white:     #161616;
+  --card-gray: #1E1E1E;
+  --bg:        rgba(255, 255, 255, 0.06);
+
+  /* 本页 var(--ink, #0A0A0A) 回退写法的兜底：深色下翻白 */
+  --ink: #FFFFFF;
+
+  /* 成功色在暗底上提亮为品牌绿 */
+  --success: #C8FF00;
+
+  /* 绿色文字/浅绿底：深色下必须翻亮绿字 + 深底 tint（对比度铁律） */
+  --primary-text: #C8FF00;
+  --primary-tint: rgba(200, 255, 0, 0.12);
+
+  background: var(--n-50);
+  color: var(--text);
+}
+
+/* 图标 ink 变体（sheet 里的相机/碗图标）翻白 */
+.page.theme-dark .ico--ink { background-color: #FFFFFF; }
+/* 暗底上卡片阴影无意义，去掉 */
+.page.theme-dark .card { box-shadow: none; }

@@ -75,9 +75,9 @@ Page({
     trainTotal: 0,
     trainMinimized: false,
     trainBall: { x: 0, y: 0 },
+    trainBallStyle: '',
     restBall: { x: 0, y: 0 },
-    trainRing: 100,
-    restRing: 100,
+    restBallStyle: '',
     // 视频放大覆盖层（参数化，替换原单动作 act.video）
     showVideoOverlay: false,
     overlayVideo: '',
@@ -102,9 +102,12 @@ Page({
     finished: false,
     // 添加动作
     showAdd: false,
-    // 进度条宽度（预计算为 "XX%" 字符串，避免行内 style 的 }}% 解析错误）
-    trainFillWidth: '0%',
-    restFillWidth: '0%',
+    // 弹窗/悬浮球进度环（conic-gradient 完整 CSS 字符串，由 JS 拼接，单 mustache 合规）
+    trainRingStyle: '',
+    trainBallRingStyle: '',
+    restRingStyle: '',
+    restBallRingStyle: '',
+    restClock: '00:00',
     // 自定义导航栏总高（px，状态栏 + 44px 导航栏）：供 .wo-top 的 sticky top 偏移，避免与吸顶导航栏重叠
     navH: 0
   },
@@ -202,14 +205,61 @@ Page({
     const info = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync());
     this._winW = info.windowWidth;
     this._winH = info.windowHeight || (info.windowWidth * 1.6);
-    this._topY = Math.round(24 * info.windowWidth / 750);
+    // 默认顶部 y = 自定义导航栏（fixed, z-index 999, 高 = 状态栏 + 44）之下，
+    // 否则球会被导航栏整只盖住（z-index 150 < 999，2026-09-08「看不到悬浮球」真凶）
+    this._topY = (info.statusBarHeight || 20) + 44 + Math.round(24 * info.windowWidth / 750);
+    // 悬浮球像素尺寸（WXSS 120rpx），用于精确计算贴边位置
+    this._ballPx = Math.round(120 * info.windowWidth / 750);
     const pillW = info.windowWidth * 0.32;
     this._pillW = pillW;
-    this.setData({
-      trainBall: { x: this._winW + 1, y: this._topY },
-      restBall: { x: this._winW + 1, y: this._topY }
-    });
+    // 不再用 movable-view（其 x/y 应用时机在真机不可控，曾致球整只停在屏外不可见），
+    // 改为 fixed 定位 + 自管拖拽：位置完全由 JS 拼的 style 字符串决定，所见即所得
+    this.applyBall('train', this.defaultBall());
+    this.applyBall('rest', this.defaultBall());
+    // 恢复离开前最小化的训练/休息倒计时球（如有）
+    this.restoreMiniTimer(sess);
     this.initBeeps();
+  },
+
+  // 悬浮球默认位置：右缘贴边、顶部对齐
+  defaultBall() {
+    return { x: Math.max(0, this._winW - this._ballPx), y: this._topY };
+  },
+  // 位置合法性兜底（storage 脏数据 / 屏幕尺寸变化后回读）
+  clampBall(p) {
+    const maxX = Math.max(0, this._winW - this._ballPx);
+    const maxY = Math.max(0, this._winH - this._ballPx);
+    return {
+      x: isFinite(p && p.x) ? Math.max(0, Math.min(maxX, p.x)) : maxX,
+      y: isFinite(p && p.y) ? Math.max(0, Math.min(maxY, p.y)) : this._topY
+    };
+  },
+  // 位置对象 → 内联 style（单 mustache 完整 CSS 字符串，符合 wxml 红线）
+  ballStyle(p) {
+    return 'left:' + Math.round(p.x) + 'px;top:' + Math.round(p.y) + 'px';
+  },
+  // 统一写某个球（key: 'train' | 'rest'）的位置与样式
+  applyBall(key, p) {
+    this.setData({
+      [key === 'train' ? 'trainBall' : 'restBall']: p,
+      [key === 'train' ? 'trainBallStyle' : 'restBallStyle']: this.ballStyle(p)
+    });
+  },
+  // 进度环样式：conic-gradient 扇形（12 点方向起顺时针），JS 拼完整 CSS 字符串（单 mustache 红线）
+  // 常量色值直写（不走 CSS 变量）：弹窗为固定深色卡（参考图方案），不随页面主题翻转
+  ringStyle(left, total, color) {
+    const pct = total > 0 ? Math.max(0, Math.min(100, Math.round((left / total) * 100))) : 0;
+    return 'background: conic-gradient(' + color + ' ' + pct + '%, rgba(255,255,255,.10) 0deg)';
+  },
+  // 训练计时（弹窗 + 最小化球）环统一重绘：剩余占比，荧光绿
+  paintTrain() {
+    const ring = this.ringStyle(this.data.trainLeft, this.data.trainTotal, '#C8FF00');
+    this.setData({ trainRingStyle: ring, trainBallRingStyle: ring });
+  },
+  // 休息计时（弹窗 + 最小化球）环统一重绘：剩余占比，能量橙（DESIGN.md 休息语义色）
+  paintRest() {
+    const ring = this.ringStyle(this.data.restLeft, this.data.restTotal, '#FF9500');
+    this.setData({ restRingStyle: ring, restBallRingStyle: ring, restClock: fmtClock(this.data.restLeft) });
   },
 
   // 把当前进度快照进全局会话（离开训练页前调用，确保悬浮窗与恢复为最新状态）
@@ -218,12 +268,48 @@ Page({
     // 签名与 onLoad 保持一致：从当前会话动作列表推导
     // （计划来源时 selectedActions 为空，不能再用它算签名；onLoad 时 sel 与 actions 的 id 一一对应）
     const sig = (this.data.actions || []).map(a => a.id).sort().join(',');
+    // 最小化倒计时球快照：离开页面（最小化成药丸）后球随页面销毁，回来时据此恢复
+    let miniTimer = null;
+    if (this.data.showTrain && this.data.trainMinimized) {
+      miniTimer = {
+        kind: 'train', phase: this.data.trainPhase,
+        left: this.data.trainLeft, total: this.data.trainTotal,
+        ai: this._trainAi, si: this._trainSi, ts: Date.now()
+      };
+    } else if (this.data.showRest && this.data.restMinimized) {
+      miniTimer = { kind: 'rest', left: this.data.restLeft, total: this.data.restTotal, ts: Date.now() };
+    }
     workoutSession.update({
       signature: sig,
       actions: this.data.actions,
       planName: this.data.planName,
-      expandedId: this.data.expandedId
+      expandedId: this.data.expandedId,
+      miniTimer: miniTimer
     });
+  },
+
+  // 恢复离开前最小化的倒计时球：按墙上时间折算剩余秒数，已倒数完则静默丢弃（不做完成副作用）
+  restoreMiniTimer(sess) {
+    const mini = sess && sess.miniTimer;
+    workoutSession.update({ miniTimer: null });
+    if (!mini || !(mini.left > 0)) return;
+    const left = mini.left - Math.floor((Date.now() - (mini.ts || Date.now())) / 1000);
+    if (left <= 0) return;
+    if (mini.kind === 'train') {
+      const a = this.data.actions[mini.ai];
+      const set = a && a.sets && a.sets[mini.si];
+      if (!set || set.done) return;
+      this._trainAi = mini.ai; this._trainSi = mini.si;
+      this.setData({ showTrain: true, trainPhase: mini.phase, trainLeft: left, trainTotal: mini.total, trainMinimized: true });
+      this.paintTrain();
+      if (mini.phase === 'work') this._trainWorkStartedAt = Date.now() - (mini.total - left) * 1000;
+      this.clearTrainTimer();
+      this._trainTimer = setInterval(() => this.trainTick(), 1000);
+    } else {
+      this.setData({ showRest: true, restLeft: left, restTotal: mini.total, restKind: 'set', restMinimized: true });
+      this.paintRest();
+      this.startRest();
+    }
   },
 
   // 派生字段：stats 汇总 + 每动作 volText（已完成/目标容量）+ 每组的 current（展开动作的第一个未完成组）
@@ -341,29 +427,46 @@ Page({
     const set = a && a.sets && a.sets[si];
     if (set && set.done) return;
     this._trainAi = ai; this._trainSi = si;
-    this.setData({ showTrain: true, trainPhase: 'ready', trainLeft: 5, trainTotal: 5, trainMinimized: false, trainFillWidth: '100%' });
+    this.setData({ showTrain: true, trainPhase: 'ready', trainLeft: 5, trainTotal: 5, trainMinimized: false });
     this.clearTrainTimer();
-    this._trainTimer = setInterval(() => {
-      const left = this.data.trainLeft - 1;
-      if (this.data.trainPhase === 'ready') {
-        if (left > 0) {
-          this.setData({ trainLeft: left, trainRing: Math.round(left / this.data.trainTotal * 100), trainFillWidth: Math.round(left / this.data.trainTotal * 100) + '%' });
-          this.playBeep(left === 1 ? 'last' : 'tick');
-          return;
-        }
-        this.setData({ trainPhase: 'work', trainLeft: 60, trainTotal: 60, trainRing: 100, trainFillWidth: '100%' });
-        this._trainWorkStartedAt = Date.now();
-        this.playBeep('go');
-        return;
-      }
+    this.paintTrain();
+    this._trainTimer = setInterval(() => this.trainTick(), 1000);
+  },
+  // 训练计时每秒 tick（openTrain / skipTrain 共用）
+  trainTick() {
+    const left = this.data.trainLeft - 1;
+    if (this.data.trainPhase === 'ready') {
       if (left > 0) {
-        this.setData({ trainLeft: left, trainRing: Math.round(left / this.data.trainTotal * 100), trainFillWidth: Math.round(left / this.data.trainTotal * 100) + '%' });
+        this.setData({ trainLeft: left });
+        this.paintTrain();
+        this.playBeep(left === 1 ? 'last' : 'tick');
         return;
       }
-      this.clearTrainTimer();
-      this.recordTrainSec(this._trainAi, this._trainSi, 60);
-      this.completeSet(this._trainAi, this._trainSi);
-    }, 1000);
+      this.enterWorkPhase();
+      return;
+    }
+    if (left > 0) {
+      this.setData({ trainLeft: left });
+      this.paintTrain();
+      return;
+    }
+    this.clearTrainTimer();
+    this.recordTrainSec(this._trainAi, this._trainSi, 60);
+    this.completeSet(this._trainAi, this._trainSi);
+  },
+  // 准备 → 训练 阶段切换（倒计时走完 / 「跳过」共用）
+  enterWorkPhase() {
+    this.setData({ trainPhase: 'work', trainLeft: 60, trainTotal: 60 });
+    this.paintTrain();
+    this._trainWorkStartedAt = Date.now();
+    this.playBeep('go');
+  },
+  // 弹窗「跳过」：准备阶段直接进入训练（训练阶段无跳过语义，按钮隐藏）
+  skipTrain() {
+    if (this.data.trainPhase !== 'ready' || !this._trainTimer) return;
+    this.clearTrainTimer();
+    this.enterWorkPhase();
+    this._trainTimer = setInterval(() => this.trainTick(), 1000);
   },
 
   // 训练计时弹窗：手动「结束训练」→ 记录实际时长并标记该组完成；「取消」→ 直接关闭
@@ -435,8 +538,9 @@ Page({
       return;
     }
     this.setData(Object.assign(
-      { actions, showRest: true, restLeft: this.data.restTotal, restRing: 100, restFillWidth: '100%', restKind, restMinimized: false, actNo: si, showTrain: false, stats }
+      { actions, showRest: true, restLeft: this.data.restTotal, restKind, restMinimized: false, actNo: si, showTrain: false, stats }
     ));
+    this.paintRest();
     this.startRest();
   },
 
@@ -447,7 +551,8 @@ Page({
       const left = this.data.restLeft - 1;
       if (left <= 0) this.endRest(true);
       else {
-        this.setData({ restLeft: left, restRing: Math.round(left / this.data.restTotal * 100), restFillWidth: Math.round(left / this.data.restTotal * 100) + '%' });
+        this.setData({ restLeft: left });
+        this.paintRest();
         if (left <= 5) this.playBeep(left === 1 ? 'last' : 'tick');
       }
     }, 1000);
@@ -486,26 +591,55 @@ Page({
   skipRest() { this.endRest(false); },
 
   minimizeTrain() {
-    const p = wx.getStorageSync('hh_train_ball') || { x: this._winW + 1, y: this._topY };
-    this.setData({ trainMinimized: true, trainBall: p });
+    const p = this.clampBall(wx.getStorageSync('hh_train_ball'));
+    this.setData({
+      trainMinimized: true, trainBall: p, trainBallStyle: this.ballStyle(p),
+      trainBallRingStyle: this.ringStyle(this.data.trainLeft, this.data.trainTotal, '#C8FF00')
+    });
   },
-  expandTrain() { this.setData({ trainMinimized: false }); },
+  expandTrain() { if (this._guardBallTap()) return; this.setData({ trainMinimized: false }); },
   minimizeRest() {
-    const p = wx.getStorageSync('hh_rest_ball') || { x: this._winW + 1, y: this._topY };
-    this.setData({ restMinimized: true, restBall: p });
+    const p = this.clampBall(wx.getStorageSync('hh_rest_ball'));
+    this.setData({
+      restMinimized: true, restBall: p, restBallStyle: this.ballStyle(p),
+      restBallRingStyle: this.ringStyle(this.data.restLeft, this.data.restTotal, '#FF9500')
+    });
   },
-  expandRest() { this.setData({ restMinimized: false }); },
-  onTrainBallEnd(e) {
-    const w = this._winW;
-    const nx = e.detail.x < w / 2 ? 0 : w + 1;
-    this.setData({ 'trainBall.x': nx });
-    wx.setStorageSync('hh_train_ball', { x: nx, y: e.detail.y });
+  expandRest() { if (this._guardBallTap()) return; this.setData({ restMinimized: false }); },
+
+  // —— 悬浮球自管拖拽（fixed + touch 事件，替代 movable-view） ——
+  // 拖拽后紧接着的 tap 需要屏蔽，否则轻拖一下会误触发展开
+  _guardBallTap() {
+    if (this._ballTapBlock) { this._ballTapBlock = false; return true; }
+    return false;
   },
-  onRestBallEnd(e) {
-    const w = this._winW;
-    const nx = e.detail.x < w / 2 ? 0 : w + 1;
-    this.setData({ 'restBall.x': nx });
-    wx.setStorageSync('hh_rest_ball', { x: nx, y: e.detail.y });
+  onBallTouchStart(e) {
+    const key = e.currentTarget.dataset.key;
+    const t = e.touches[0];
+    const p = key === 'train' ? this.data.trainBall : this.data.restBall;
+    this._ballDrag = { key, sx: t.clientX, sy: t.clientY, ox: p.x, oy: p.y, moved: false, last: p };
+  },
+  onBallTouchMove(e) {
+    const d = this._ballDrag;
+    if (!d) return;
+    const t = e.touches[0];
+    if (!d.moved && (Math.abs(t.clientX - d.sx) > 3 || Math.abs(t.clientY - d.sy) > 3)) d.moved = true;
+    const p = this.clampBall({ x: d.ox + (t.clientX - d.sx), y: d.oy + (t.clientY - d.sy) });
+    d.last = p;
+    this.applyBall(d.key, p);
+  },
+  onBallTouchEnd() {
+    const d = this._ballDrag;
+    this._ballDrag = null;
+    if (!d || !d.moved) return; // 未移动 = 点击，展开交给 bindtap
+    this._ballTapBlock = true;
+    // 贴边吸附：球心在左半屏吸左缘(x=0)，否则吸右缘(x=winW-ballPx)；y 保持在松手处
+    const snapped = this.clampBall({
+      x: (d.last.x + this._ballPx / 2) < this._winW / 2 ? 0 : this._winW - this._ballPx,
+      y: d.last.y
+    });
+    this.applyBall(d.key, snapped);
+    wx.setStorageSync(d.key === 'train' ? 'hh_train_ball' : 'hh_rest_ball', snapped);
   },
 
   adjustRest(e) {
@@ -513,8 +647,8 @@ Page({
     let sec = this.data.restLeft + d;
     if (sec < 5) sec = 5;
     if (sec > 600) sec = 600;
-    const ring = Math.min(100, Math.round(sec / this.data.restTotal * 100));
-    this.setData({ restLeft: sec, restRing: ring, restFillWidth: ring + '%' });
+    this.setData({ restLeft: sec });
+    this.paintRest();
   },
   changeRest(e) {
     const sec = Number(e.currentTarget.dataset.sec);
@@ -523,7 +657,8 @@ Page({
     store.get().restTimer = sec;
     store.persist();
     this.clearRest();
-    this.setData({ restTotal: sec, restLeft: sec, restSelected: idx, restRing: 100, restFillWidth: '100%' });
+    this.setData({ restTotal: sec, restLeft: sec, restSelected: idx });
+    this.paintRest();
     this.startRest();
   },
   toggleVibrate() {

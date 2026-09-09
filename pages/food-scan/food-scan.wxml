@@ -1,5 +1,5 @@
 <!-- pages/food-scan/food-scan.wxml —— 拍照识别（对齐 08-拍照识别 / 09-食物识别结果） -->
-<view class="page {{view === 'result' ? 'page-result' : 'page-dark'}}">
+<view class="page {{theme}} {{view === 'result' ? 'page-result' : 'page-dark'}}">
 
   <!-- ============== 取景态（08）：live camera + cover-view 覆盖层 ============== -->
   <block wx:if="{{view === 'camera'}}">

@@ -4,6 +4,7 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const exercises = require('../../utils/exercises.js');
 const cycles = require('../../presets/cycles.js');
+const theme = require('../../utils/theme.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function parseDate(s) { const p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
@@ -45,6 +46,7 @@ function buildPlanActions(day) {
 
 Page({
   data: {
+    theme: 'theme-light',
     cycles: [],          // 周期模板列表（展示用）
     hasActiveCycle: false,
     // 当前周期进度（若有激活的周期计划）
@@ -63,7 +65,12 @@ Page({
     });
   },
 
-  onShow() { this.loadProgress(); },
+  onShow() {
+    // 主题：同步自身（「我的 → 深色主题」开关持久化在 Storage）
+    const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
+    this.setData({ theme: themeCls });
+    this.loadProgress();
+  },
 
   // 计算当前激活周期计划的周进度（基于 cycleStartedAt）
   loadProgress() {

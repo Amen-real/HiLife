@@ -13,13 +13,19 @@
   </view>
 </view>
 
-<!-- 全局训练计时悬浮窗：训练中页最小化/离开后仍可在 tab 页显示，点击返回/恢复训练。
-     用 movable-area + movable-view 实现可拖拽（松手自动贴左右边），浮于所有 tab 页之上。 -->
-<movable-area class="wo-float-area {{theme}}" wx:if="{{showWo}}">
-  <movable-view class="wo-float {{woRunning ? 'running' : ''}}" direction="all" damping="30" friction="6"
-    x="{{woX}}" y="{{woY}}" bindtouchstart="onWoFloatStart" bindchange="onWoFloatChange" bindtouchend="onWoFloatEnd" catchtap="openWorkout">
-    <text class="wo-float-ico">⏱</text>
-    <text class="wo-float-clock">{{woClock}}</text>
-    <text class="wo-float-tip">返回训练</text>
-  </movable-view>
-</movable-area>
+<!-- 全局训练计时悬浮药丸：训练中页最小化/离开后仍可在 tab 页显示，点击返回/恢复训练。
+     参考图「训练最小化」方案：深色胶囊 = 「训练进行中」小标 + 荧光绿大字计时 + 圆形 ← 展开钮。
+     fixed + 自管 touch 拖拽（不用 movable-view：x/y 应用时机真机不可控），松手贴左/右边缘。 -->
+<view wx:if="{{showWo}}"
+      class="wo-pill {{woRunning ? 'running' : ''}}"
+      style="{{woStyle}}"
+      bindtouchstart="onWoTouchStart"
+      catchtouchmove="onWoTouchMove"
+      bindtouchend="onWoTouchEnd"
+      bindtap="openWorkout">
+  <view class="wo-pill-txt">
+    <text class="wo-pill-label">训练进行中</text>
+    <text class="wo-pill-clock">{{woClock}}</text>
+  </view>
+  <view class="wo-pill-back"><text class="wo-pill-arrow">←</text></view>
+</view>

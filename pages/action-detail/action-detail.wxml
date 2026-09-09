@@ -1,5 +1,5 @@
 <!-- pages/action-detail/action-detail.wxml —— 对齐 04-action.html（HiLiLife 设计系统） -->
-<view class="page" wx:if="{{act}}">
+<view class="page {{theme}}" wx:if="{{act}}">
   <nav-bar title="动作详情" show-back="{{true}}" />
 
   <!-- ============== TITLE BLOCK ============== -->
