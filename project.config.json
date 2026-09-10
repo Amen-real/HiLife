@@ -33,6 +33,30 @@
       {
         "value": ".html",
         "type": "suffix"
+      },
+      {
+        "value": ".md",
+        "type": "suffix"
+      },
+      {
+        "value": ".log",
+        "type": "suffix"
+      },
+      {
+        "value": ".cjs",
+        "type": "suffix"
+      },
+      {
+        "value": ".py",
+        "type": "suffix"
+      },
+      {
+        "value": ".zip",
+        "type": "suffix"
+      },
+      {
+        "value": ".gitignore",
+        "type": "file"
       }
     ],
     "include": []
