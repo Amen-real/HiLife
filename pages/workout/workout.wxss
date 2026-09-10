@@ -204,10 +204,10 @@
 .wo-set-row {
   display: flex;
   align-items: center;
-  /* 组内 5 个参数（组号 / 重量 / 次数 / ⏱✓ / 休息）平均分布：
-     space-between 让剩余空间被 4 个间隙等分；gap 仅作最小间距兜底 */
+  /* 组内 6 个参数（组号 / 重量 / 次数 / ⏱✓ / 休息 / 删除✕）分布：
+     删除 ✕ 定宽 56rpx，休息列 flex:1 吸收剩余空间；gap 由 12 收窄到 8rpx 腾出位置 */
   justify-content: space-between;
-  gap: 12rpx;
+  gap: 8rpx;
   margin-top: 14rpx;
   padding: 14rpx 20rpx;
   background: var(--bg);
@@ -293,9 +293,37 @@
   font-weight: 700;
   color: var(--info);
   font-feature-settings: "tnum";
-  flex-shrink: 0;
+  flex: 1;
   min-width: 96rpx;
   text-align: center;
+}
+
+/* 删除本组：组行行尾 ✕（红色危险态；该动作只剩 1 组时由 wxml 隐藏） */
+.wo-set-del {
+  position: relative;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #F2545B;
+  background: rgba(242, 84, 91, 0.10);
+  border: 1rpx solid rgba(242, 84, 91, 0.45);
+  box-sizing: border-box;
+}
+.wo-set-del:active { background: rgba(242, 84, 91, 0.24); }
+/* 触控热区扩到约 88rpx（视觉尺寸不变，满足 44px 最小触控目标），不影响行内布局 */
+.wo-set-del::after {
+  content: '';
+  position: absolute;
+  left: -16rpx;
+  right: -16rpx;
+  top: -16rpx;
+  bottom: -16rpx;
 }
 
 /* 每组 RPE 录入行（自觉费力度 1–10，供复盘努力度维度） */
@@ -976,3 +1004,76 @@
 .rest-mask.theme-dark .rest-pop,
 .hist-mask.theme-dark .hist-pop,
 .repl-mask.theme-dark .repl-pop { background: #161616; }
+
+/* ═══════ 单动作操作菜单（头部 ⋯）：锚定齿轮下方的悬浮小窗 ═══════ */
+.exmenu-mask {
+  position: fixed;
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.20);
+  z-index: 3200;
+}
+.exmenu-pop {
+  position: fixed;
+  min-width: 300rpx;
+  max-width: 70vw;
+  background: var(--card);
+  border: 1rpx solid var(--line);
+  border-radius: 20rpx;
+  box-shadow: 0 12rpx 40rpx rgba(15, 23, 42, 0.22);
+  padding: 8rpx 0;
+  z-index: 3201;
+  transform-origin: top right;
+  animation: exmenu-in .18s ease;
+}
+.exmenu-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-sub);
+  padding: 14rpx 24rpx 10rpx;
+  border-bottom: 1rpx solid var(--line);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exmenu-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 22rpx 24rpx;
+}
+.exmenu-item:active { background: var(--bg); }
+.exmenu-ic {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 12rpx;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.exmenu-ic.danger-ic {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #F2545B;
+  background: rgba(242, 84, 91, 0.12);
+}
+.exmenu-t {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+.exmenu-item.danger .exmenu-t { color: #F2545B; }
+@keyframes exmenu-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* 深色：悬浮小窗底色 + 删除项可见度补偿（#F2545B 压 #161616 ≈ 5.4:1，达标） */
+.exmenu-mask.theme-dark { background: rgba(0, 0, 0, 0.45); }
+.exmenu-mask.theme-dark .exmenu-pop { background: #161616; }
+.page.theme-dark .wo-set-del {
+  background: rgba(242, 84, 91, 0.16);
+  border-color: rgba(242, 84, 91, 0.60);
+}

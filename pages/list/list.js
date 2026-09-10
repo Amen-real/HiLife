@@ -215,12 +215,15 @@ Page({
     }
     // 同日可能多场，合并所有 actions
     const allActions = [];
-    let totalSec = 0;
+    let totalSec = 0;        // 纯训练秒（供 kcal 估算：休息不产热，不计入）
+    let totalFullSec = 0;    // 训练 + 组间休息 = 整个训练时长（数据页大数字口径，与「我的」页 todayTraining 一致）
     log.forEach(l => {
       (l.actions || []).forEach(a => {
-        // a.setsDetail 里 trainSec 累加
+        // a.setsDetail 里 trainSec / restSec 分别累加
         const sec = (a.setsDetail || []).reduce((s, sd) => s + (sd.trainSec || 0), 0);
+        const rest = (a.setsDetail || []).reduce((s, sd) => s + (sd.restSec || 0), 0);
         totalSec += sec;
+        totalFullSec += sec + rest;
         allActions.push({
           name: a.name,
           meta: (a.sets || 0) + '组 × ' + (a.reps || 0) + '次',
@@ -236,7 +239,7 @@ Page({
       record: {
         hasData: true,
         dateLabel: fmtDateSlash(iso),
-        duration: fmtDuration(totalSec),
+        duration: fmtDuration(totalFullSec),
         calories: String(estKcal(totalSec)),
         actionCount: allActions.length,
         actions: allActions

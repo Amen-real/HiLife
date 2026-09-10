@@ -48,7 +48,7 @@
                   wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si"></view>
           </view>
         </view>
-        <view class="wo-ex-gear" catchtap="replaceAction" data-ai="{{ai}}"><view class="ico ico-swap ico--ink" style="width:30rpx;height:30rpx"></view></view>
+        <view class="wo-ex-gear" id="gear-{{item.id}}" catchtap="openActionMenu" data-ai="{{ai}}"><view class="ico ico-more ico--ink" style="width:30rpx;height:30rpx"></view></view>
       </view>
 
       <!-- 展开内容 -->
@@ -97,6 +97,9 @@
               <view class="wo-set-check {{set.done ? 'checked' : ''}}"
                     data-ai="{{ai}}" data-si="{{si}}" catchtap="completeSetTap">✓</view>
             </block>
+            <!-- 删除本组：只剩 1 组时隐藏（此时应删整个动作），避免动作变成 0 组 -->
+            <view class="wo-set-del" wx:if="{{item.sets.length > 1}}"
+                  data-ai="{{ai}}" data-si="{{si}}" catchtap="deleteSet">✕</view>
           </view>
 
           <!-- 每组 RPE 步进器：− / 数值 / ＋（空记录显示 —，点 ＋ 从 7 起） -->
@@ -347,6 +350,25 @@
         <view class="repl-foot" wx:if="{{replaceFiltered.length < replaceFullLen}}">上拉加载更多（{{replaceFiltered.length}}/{{replaceFullLen}}）</view>
         <view class="repl-foot done" wx:else>已加载全部</view>
       </scroll-view>
+  </view>
+</view>
+
+<!-- 单动作操作菜单（头部 ⋯）：锚定齿轮下方的悬浮小窗，点空白处关闭 -->
+<view class="exmenu-mask {{theme}}" wx:if="{{showActionMenu}}" bindtap="closeActionMenu" catchtouchmove="noop">
+  <view class="exmenu-pop" style="{{menuPosStyle}}" catchtap="noop">
+    <view class="exmenu-title">{{menuActionName}}</view>
+    <view class="exmenu-item" bindtap="menuGoDetail">
+      <view class="exmenu-ic"><view class="ico ico-info ico--ink" style="width:30rpx;height:30rpx"></view></view>
+      <text class="exmenu-t">动作详情</text>
+    </view>
+    <view class="exmenu-item" bindtap="menuReplaceAction">
+      <view class="exmenu-ic"><view class="ico ico-swap ico--ink" style="width:30rpx;height:30rpx"></view></view>
+      <text class="exmenu-t">替换动作</text>
+    </view>
+    <view class="exmenu-item danger" bindtap="menuDeleteAction">
+      <view class="exmenu-ic danger-ic">✕</view>
+      <text class="exmenu-t">删除动作</text>
+    </view>
   </view>
 </view>
 

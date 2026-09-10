@@ -91,6 +91,11 @@ Page({
     replaceAi: -1,          // 待替换的动作索引
     replaceTargetId: '',     // 待替换的动作 id
     replaceTargetName: '',   // 待替换的动作名（标题显示）
+    // 单动作操作菜单（头部 ⋯）：动作详情 / 替换动作 / 删除动作
+    showActionMenu: false,
+    menuAi: -1,              // 菜单指向的动作索引
+    menuActionName: '',      // 菜单标题显示的动作名
+    menuPosStyle: '',        // 悬浮小窗位置（完整 CSS 串，锚定被点 ⋯ 下方；单 mustache 合规）
     // 替换/添加浮层的搜索 + 分类过滤
     replKeyword: '',
     replCat: '全部',
@@ -408,6 +413,55 @@ Page({
     this.setData({ actions, stats });
   },
 
+  // 组行行尾 ✕ → 删除该组
+  // 入口在该动作只剩 1 组时被 wxml 隐藏（避免动作变成 0 组，此时应删整个动作），这里再做一次兜底
+  // 该组已填数据或已完成 → 二次确认；空组直接删
+  deleteSet(e) {
+    const ai = Number(e.currentTarget.dataset.ai);
+    const si = Number(e.currentTarget.dataset.si);
+    const a = this.data.actions[ai];
+    const set = a && a.sets && a.sets[si];
+    if (!a || !set) return;
+    if (!a.sets || a.sets.length <= 1) return;
+
+    const hasData = !!set.done
+      || (set.weight !== '' && set.weight != null)
+      || (set.reps !== '' && set.reps != null);
+
+    const doDelete = () => {
+      // 正在给该动作计时：删的正是这一组 → 停表；删在它之前 → 索引前移，
+      // 否则计时结束回调 completeSet(ai, si) 会打到错位后的组
+      if (this._trainAi === ai) {
+        if (this._trainSi === si) {
+          this.clearTrainTimer();
+          this.setData({ showTrain: false });
+        } else if (this._trainSi > si) {
+          this._trainSi -= 1;
+        }
+      }
+      const actions = this.data.actions.slice();
+      const act = Object.assign({}, actions[ai]);
+      act.sets = act.sets.slice();
+      act.sets.splice(si, 1);
+      actions[ai] = act;
+      const stats = this.decorate(actions);
+      this.setData({ actions, stats });
+      this.snapshotSession();   // 组数已变，立刻同步会话（onHide 也会快照，这里保证即时一致）
+    };
+
+    if (hasData) {
+      wx.showModal({
+        title: '删除本组',
+        content: '将删除第 ' + (si + 1) + ' 组（' + (set.weight || '-') + 'kg × ' + (set.reps || '-') + '次）',
+        confirmText: '删除',
+        confirmColor: '#F2545B',
+        success: (r) => { if (r.confirm) doDelete(); }
+      });
+    } else {
+      doDelete();
+    }
+  },
+
   // 组行 ✓ → 完成该组（触发训练计时或弹休息）
   completeSetTap(e) {
     const ai = Number(e.currentTarget.dataset.ai);
@@ -565,25 +619,27 @@ Page({
     this.clearRest();
     if (byTimer && this.data.vibrateOn) wx.vibrateShort({ type: 'medium', fail() {} });
     const ai = this._activeActionIndex, si = this._activeSetIndex;
+    const actions = this.data.actions.slice();
     if (ai != null && si != null) {
       const realSec = this._restStartedAt ? Math.round((Date.now() - this._restStartedAt) / 1000) : this.data.restTotal;
-      const actions = this.data.actions.slice();
       actions[ai] = Object.assign({}, actions[ai]);
       actions[ai].sets = actions[ai].sets.slice();
       actions[ai].sets[si] = Object.assign({}, actions[ai].sets[si], { restSec: realSec });
-      this.setData({ actions });
       this._activeActionIndex = null;
       this._activeSetIndex = null;
     }
     // 收尾态（'last' 末组 / 'done' 历史态）：只关闭弹窗，不跳转下一组、绝不自动保存
     // ——整次训练的保存只走顶栏「完成(.wo-done-btn)」。
     if (this.data.restKind === 'done' || this.data.restKind === 'last') {
-      this.setData({ showRest: false });
+      // restSec → restText(MM:SS) 必须经 decorate 重算后再 setData：
+      // 此前该分支只写 restSec、不重算 restText，单动作单组休息结束后行内
+      // .wo-set-rest 一直空着，要等下次触发 decorate 的交互才「延迟」出现（2026-09-10 反馈）
+      const stats = this.decorate(actions);
+      this.setData({ actions, stats, showRest: false });
       return;
     }
     const target = this._afterRest || { nextIndex: 0, nextSet: 0 };
     const newExpandedId = this.data.actions[target.nextIndex] ? this.data.actions[target.nextIndex].id : this.data.expandedId;
-    const actions = this.data.actions.slice();
     const stats = this.decorate(actions, newExpandedId);
     this.setData({ showRest: false, restLeft: this.data.restTotal, expandedId: newExpandedId, actions, stats });
   },
@@ -735,6 +791,99 @@ Page({
   },
 
   // 替换动作：打开选择浮层（候选 = 全量动作库排除当前动作）
+  /* ===== 单动作操作菜单（头部 ⋯）：动作详情 / 替换动作 / 删除动作 ===== */
+  openActionMenu(e) {
+    const ai = Number(e.currentTarget.dataset.ai);
+    const a = this.data.actions[ai];
+    if (!a) return;
+    // 量取被点 ⋯ 的视口位置，把悬浮小窗（fixed）锚定在其下方、贴右对齐，并夹在屏内不压导航栏
+    const doOpen = (posStyle) => {
+      this.setData({
+        showActionMenu: true,
+        menuAi: ai,
+        menuActionName: a.nameZh || a.name || '',
+        menuPosStyle: posStyle || 'top: 120px; right: 24px;'
+      });
+    };
+    wx.createSelectorQuery()
+      .select('#gear-' + a.id)
+      .boundingClientRect(rect => {
+        let posStyle = '';
+        if (rect) {
+          const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
+          const winW = info.windowWidth;
+          const winH = info.windowHeight || Math.round(info.windowWidth * 1.6);
+          let top = rect.bottom + 6;
+          const menuH = 190;   // 小窗估算高度(px)：标题 + 3 个菜单项
+          if (top + menuH > winH - 12) top = winH - 12 - menuH;
+          if (top < 64) top = 64;   // 不压吸顶的自定义导航栏
+          let right = winW - rect.right;
+          if (right < 12) right = 12;
+          posStyle = 'top:' + Math.round(top) + 'px; right:' + Math.round(right) + 'px;';
+        }
+        doOpen(posStyle);
+      })
+      .exec();
+  },
+  closeActionMenu() { this.setData({ showActionMenu: false }); },
+
+  // 动作详情：优先取动作库完整数据（含 steps / equip / category），写入 store 后跳转
+  // （action-detail 的 onLoad 从 store.get().currentAction 取数，不带 url 参数）
+  menuGoDetail() {
+    const ai = this.data.menuAi;
+    const a = this.data.actions[ai];
+    if (!a) return;
+    let full = a;
+    const lib = this.buildLibrary();
+    const hit = lib.find(x => x.id === a.id);
+    if (hit) full = hit;
+    store.get().currentAction = full;
+    this.setData({ showActionMenu: false });
+    wx.navigateTo({ url: '/pages/action-detail/action-detail' });
+  },
+
+  // 替换动作：复用既有 replaceAction（构造等价事件对象）
+  menuReplaceAction() {
+    const ai = this.data.menuAi;
+    this.setData({ showActionMenu: false });
+    this.replaceAction({ currentTarget: { dataset: { ai } } });
+  },
+
+  menuDeleteAction() {
+    const ai = this.data.menuAi;
+    const a = this.data.actions[ai];
+    if (!a) return;
+    const n = (a.sets || []).length;
+    wx.showModal({
+      title: '删除动作',
+      content: '将删除「' + (a.nameZh || a.name) + '」及其 ' + n + ' 组记录',
+      confirmText: '删除',
+      confirmColor: '#F2545B',
+      success: (r) => { if (r.confirm) this._doDeleteAction(ai); }
+    });
+  },
+  _doDeleteAction(ai) {
+    // 正在给该动作计时 → 停表；删在其之前 → 动作索引前移
+    if (this._trainAi === ai) {
+      this.clearTrainTimer();
+      this.setData({ showTrain: false });
+    } else if (this._trainAi > ai) {
+      this._trainAi -= 1;
+    }
+    const actions = this.data.actions.slice();
+    const removed = actions[ai];
+    actions.splice(ai, 1);
+    // 删的正是当前展开项 → 收起，避免 expandedId 指向已删除的动作
+    let expandedId = this.data.expandedId;
+    if (removed && expandedId === removed.id) expandedId = null;
+    const stats = this.decorate(actions, expandedId);
+    this.setData({ actions, stats, expandedId, showActionMenu: false });
+    // 必须显式快照：signature 由动作 id 推导，删动作会改变签名。
+    // 若不重快照，下次 onLoad 的 resolveWorkoutSource 签名比对失配 → 页面重建 → 删除被回滚
+    this.snapshotSession();
+    wx.showToast({ title: '已删除', icon: 'none' });
+  },
+
   replaceAction(e) {
     const ai = Number(e.currentTarget.dataset.ai);
     const a = this.data.actions[ai];
