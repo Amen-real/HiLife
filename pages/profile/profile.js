@@ -1,6 +1,7 @@
 // pages/profile/profile.js
 const store = require('../../utils/store.js');
 const theme = require('../../utils/theme.js');
+const nutrition = require('../../utils/nutrition.js');
 
 // 用户数据字段（导出/导入/清除只作用于这些，设备运行配置如 visionBackendUrl 等不纳入）
 const DATA_KEYS = [
@@ -165,7 +166,8 @@ Page({
     const latestWn = latestW != null ? Number(latestW) : null;
     const h = (p.height != null && p.height !== '') ? Number(p.height) : null;
     const health = {
-      goal: p.goal || '未设置',
+      // 目标词归一：历史数据里的「减重」显示为规范词「减脂」（与设置页、营养推荐同词表）
+      goal: nutrition.normalizeGoal(p.goal) || '未设置',
       weight: latestW != null ? latestW : '未记录',
       height: h != null ? h : '未设置',
       // 身高按 cm 校验（>80），避免误填米制时算出一个荒谬的 BMI
@@ -426,7 +428,9 @@ Page({
         this.closeDataMgr();
         const g = getApp().globalData;
         g.userInfo = { loggedIn: false, nickname: '', avatar: '' };
-        g.profile = { gender: '', goal: '减重', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0 };
+        // 与 utils/store.js logout() 里的重置对象保持完全一致（字段与默认值都对齐），
+        // 否则两处默认值会各自漂移：此前此处缺 weeklyTarget/age/activityLevel/intakeOverride
+        g.profile = { gender: '', goal: '减脂', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: 3, age: null, activityLevel: 'moderate', intakeOverride: null };
         g.selectedActions = [];
         g.trainingPlans = [];
         g.activePlanId = '';

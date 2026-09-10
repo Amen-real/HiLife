@@ -179,7 +179,7 @@ Page({
   refresh() {
     const st = store.get();
     const prof = st.profile || {};
-    const goal = prof.goal || '减重';
+    const goal = nutrition.normalizeGoal(prof.goal) || '减脂';
     const rec = nutrition.recommendIntake(prof);
     const override = (prof.intakeOverride != null) ? Number(prof.intakeOverride) : null;
     const overrideActive = override != null && isFinite(override) && override > 0;

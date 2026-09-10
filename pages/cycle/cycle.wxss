@@ -1,9 +1,11 @@
 /* pages/cycle/cycle.wxss —— 周期规划页（Phase 2） */
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 12%, var(--primary-tint) 38%, #FFF1E8 100%);
+  background: var(--n-50);          /* 暖白底，与全站一致；旧「青绿→桃色」竖渐变已弃用 */
   padding: 0 0 24rpx;
   box-sizing: border-box;
+  /* 品牌绿描边：浅色用深绿 alpha，深色块内翻成亮绿 alpha（否则深色下发暗浑浊） */
+  --tag-line: rgba(124, 184, 0, 0.30);
 }
 .bottom-gap { height: 48rpx; }
 
@@ -14,10 +16,10 @@
   gap: 16rpx;
   padding: 28rpx 32rpx 16rpx;
 }
-.tb-title { font-size: var(--fs-section); font-weight: 800; color: #0A0A0A; }
-/* 副标题压在页面顶部亮绿渐变（--primary-deep → --primary → --primary-tint）上，
-   白字对比度不足 1.2:1 几乎不可见 → 改半透明深墨，最亮处仍有 5.4:1 */
-.tb-sub { font-size: var(--fs-caption); color: rgba(10, 10, 10, 0.62); }
+/* 必须走 var(--text)：旧版页面底是亮绿渐变，才敢硬编码 #0A0A0A；
+   现在浅色底是暖白、深色底是 #0A0A0A，硬编码黑字会让深色模式整条标题黑底黑字不可见 */
+.tb-title { font-size: var(--fs-section); font-weight: 800; color: var(--text); }
+.tb-sub { font-size: var(--fs-caption); color: var(--text-sub); }
 
 /* 当前周期进度 */
 .prog {
@@ -75,7 +77,7 @@
   font-size: var(--fs-caption);
   color: var(--primary-text);
   background: var(--primary-tint);
-  border: 1rpx solid rgba(46, 207, 176, 0.30);
+  border: 1rpx solid var(--tag-line);
   border-radius: 999rpx;
   padding: 6rpx 18rpx;
 }
@@ -184,6 +186,13 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+
+  /* 绿色文字：浅色用的深橄榄绿在黑底上只有 3.8:1，翻成品牌亮绿 */
+  --primary-text: #C8FF00;
+  /* 浅绿底（#F2FFD6）必须一起翻，否则亮绿字压浅绿底会糊成一片 */
+  --primary-tint: rgba(200, 255, 0, 0.12);
+  /* 标签描边同步翻成亮绿 */
+  --tag-line: rgba(200, 255, 0, 0.30);
 
   background: var(--n-50);
   color: var(--text);

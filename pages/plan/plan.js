@@ -45,13 +45,16 @@ function resolveExerciseName(id, fallback) {
 }
 
 // 推荐模板缩略图：深色渐变块 + 目标图标（mask 图标体系，颜色由 accent 决定）。
-// 图标映射：增肌=arm / 力量=dumbbell / 减脂=flame / 耐力=pulse / 全身=body / 通用=all
+// 图标映射：增肌=arm / 力量=dumbbell / 减脂=flame / 耐力=pulse / 全身=body / 通用=body
+// 注：'通用' 曾被注释标记为 all 却漏建键，导致预设计划「新手·全身入门」静默落到 DEFAULT_THUMB；
+//     此处补齐。给 body 图标（全身性计划）以与兜底态区分，且与 '全身' 语义一致。
 const GOAL_THUMB = {
   '增肌': { icon: 'arm', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' },
   '力量': { icon: 'dumbbell', bg: 'linear-gradient(180deg,#1E2A4A,#0A0F1E)', accent: '#3E8BFF' },
   '减脂': { icon: 'flame', bg: 'linear-gradient(180deg,#3A1F1F,#1A0A0A)', accent: '#FF9500' },
   '耐力': { icon: 'pulse', bg: 'linear-gradient(180deg,#1E3A2A,#0A1A12)', accent: '#6F9F00' },
-  '全身': { icon: 'body', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' }
+  '全身': { icon: 'body', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' },
+  '通用': { icon: 'body', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' }
 };
 const DEFAULT_THUMB = { icon: 'all', bg: 'linear-gradient(180deg,#2C2C2C,#0A0A0A)', accent: '#C8FF00' };
 

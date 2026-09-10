@@ -142,7 +142,7 @@ Page({
     const rec = nutrition.recommendIntake(prof);
     const overrideNum = (prof.intakeOverride != null) ? Number(prof.intakeOverride) : null;
     const dietTarget = (overrideNum != null && isFinite(overrideNum) && overrideNum > 0) ? overrideNum : rec.kcal;
-    const macroGoal = nutrition.recommendMacros({ kcal: dietTarget, goal: prof.goal || '减重', weight: prof.currentWeight });
+    const macroGoal = nutrition.recommendMacros({ kcal: dietTarget, goal: nutrition.normalizeGoal(prof.goal) || '减脂', weight: prof.currentWeight });
     const dietPct = intake > 0 ? Math.min(100, Math.round((intake / dietTarget) * 100)) : 0;
     // 三营养素目标（g）与进度条宽度百分比（对齐 .card diet 右侧三色小进度条）
     const pGoal = macroGoal.p, cGoal = macroGoal.c, fGoal = macroGoal.f;

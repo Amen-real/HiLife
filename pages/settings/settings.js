@@ -2,7 +2,9 @@
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const theme = require('../../utils/theme.js');
-const GOALS = ['减重', '增肌', '塑形', '保持'];
+const nutrition = require('../../utils/nutrition.js');
+// 目标词表唯一真源在 utils/nutrition.js（GOALS），此处不再本地重复定义，避免两处漂移
+const GOALS = nutrition.GOALS;
 // 活动量档位：展示文案与 store.profile.activityLevel 取值一一对应（系数映射见 utils/nutrition.js）
 const ACTIVITY_LEVELS = ['久坐', '轻度', '中度', '高度', '运动员'];
 const ACTIVITY_KEYS = ['sedentary', 'light', 'moderate', 'high', 'athlete'];
@@ -11,7 +13,7 @@ Page({
   data: {
     theme: 'theme-light',
     gender: '',
-    goal: '减重',
+    goal: GOALS[0],
     targetWeight: '',
     height: '',
     age: '',
@@ -31,15 +33,18 @@ Page({
 
   onLoad() {
     const p = store.get().profile;
+    // 历史数据里 goal 可能是别名（如「减重」），先归一成规范词再定位下标，
+    // 否则 indexOf 返回 -1 会被 Math.max(0,…) 兜到第一项 → 用户一保存就被静默改写
+    const goal = nutrition.normalizeGoal(p.goal) || GOALS[0];
     this.setData({
       gender: p.gender || '',
-      goal: p.goal || '减重',
+      goal,
       targetWeight: p.targetWeight || '',
       height: p.height || '',
       age: p.age || '',
       activityIndex: Math.max(0, ACTIVITY_KEYS.indexOf(p.activityLevel || 'moderate')),
       genderIndex: p.gender === '女' ? 1 : 0,
-      goalIndex: Math.max(0, GOALS.indexOf(p.goal || '减重'))
+      goalIndex: Math.max(0, GOALS.indexOf(goal))
     });
   },
 

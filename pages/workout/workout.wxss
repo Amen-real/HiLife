@@ -104,7 +104,7 @@
   border-radius: 20rpx;
   flex-shrink: 0;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--primary-tint), rgba(46, 207, 176, 0.12));
+  background: linear-gradient(135deg, var(--primary-tint), rgba(124, 184, 0, 0.12));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,7 +142,7 @@
 .wo-dots { display: flex; gap: 10rpx; margin-top: 12rpx; }
 .wo-dot { width: 14rpx; height: 14rpx; border-radius: 50%; background: var(--line-strong); }
 .wo-dot.done { background: var(--primary); }
-.wo-dot.active { background: var(--primary-deep); box-shadow: 0 0 0 6rpx rgba(46, 207, 176, 0.25); }
+.wo-dot.active { background: var(--primary-deep); box-shadow: 0 0 0 6rpx rgba(124, 184, 0, 0.25); }
 
 /* ---- 展开态 ---- */
 .wo-ex-expanded { margin-top: 20rpx; }
@@ -190,7 +190,7 @@
   padding: 8rpx 20rpx;
   border-radius: 999rpx;
   background: var(--primary-tint);
-  border: 1rpx solid rgba(46, 207, 176, 0.30);
+  border: 1rpx solid rgba(124, 184, 0, 0.30);
 }
 .wo-sw-ico { font-size: var(--fs-label); line-height: 1; }
 .wo-sw-val {
@@ -751,7 +751,7 @@
   height: 80rpx;
   border-radius: 18rpx;
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--primary-tint), rgba(46,207,176,.12));
+  background: linear-gradient(135deg, var(--primary-tint), rgba(124, 184, 0, 0.12));
 }
 .repl-info { flex: 1; min-width: 0; }
 .repl-name {

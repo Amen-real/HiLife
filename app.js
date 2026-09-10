@@ -14,7 +14,7 @@ App({
     // 健康档案
     profile: {
       gender: '',          // '' | '男' | '女'
-      goal: '减重',        // 减重 | 增肌 | 塑形 | 保持
+      goal: '减脂',        // 减脂 | 增肌 | 塑形 | 保持（词表真源：utils/nutrition.js GOALS）
       targetWeight: null,  // kg
       height: null,        // cm
       currentWeight: null, // kg

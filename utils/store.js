@@ -349,7 +349,7 @@ const store = {
     };
     wx.setStorageSync('uu_fitness_backup', backup);
     // 重置为默认值，使所有页面显示空状态
-    data.profile = { gender: '', goal: '减重', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: 3, age: null, activityLevel: 'moderate', intakeOverride: null };
+    data.profile = { gender: '', goal: '减脂', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: 3, age: null, activityLevel: 'moderate', intakeOverride: null };
     data.weightRecords = [];
     data.trainingLogs = [];
     data.meals = [];

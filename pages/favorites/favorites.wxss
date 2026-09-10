@@ -1,6 +1,6 @@
 /* pages/favorites/favorites.wxss —— 对齐训练页 action-card 视觉 */
-/* 竖直渐变底（顶部青绿→底部桃色），与其它页统一；min-height:100vh 保证短内容也铺满 */
-.page { padding: 24rpx 0 40rpx; min-height: 100vh; background: linear-gradient(180deg, var(--primary-deep) 0%, var(--primary) 14%, var(--primary-tint) 40%, #FFF1E8 100%); }
+/* 暖白底，与全站一致；旧「青绿→桃色」竖渐变已弃用（深色块内 variable 覆盖为 #0A0A0A） */
+.page { padding: 24rpx 0 40rpx; min-height: 100vh; background: var(--n-50); }
 
 /* ===== 标题 ===== */
 .head { display: flex; align-items: baseline; justify-content: space-between; padding: 8rpx 28rpx 20rpx; }

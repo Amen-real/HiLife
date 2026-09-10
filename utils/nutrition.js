@@ -36,24 +36,45 @@ function activityLabel(level) {
   return a.label;
 }
 
+// ============ 身体目标词表：唯一真源 ============
+// 「减脂」与「减重」历史上被两个模块分别使用（settings 用减重、计划库与营养用减脂），
+// 语义完全相同（都走赤字分支），但会让用户在两个页面看到两个词指同一件事。
+// 现统一以「减脂」为规范词，历史值经 normalizeGoal 归一，不改动任何算法分支。
+const GOALS = ['减脂', '增肌', '塑形', '保持'];
+
+// 历史/口语别名 → 规范词（减肥、减重 均归一为 减脂）
+const GOAL_ALIAS = {
+  '减重': '减脂',
+  '减肥': '减脂',
+  '增重': '增肌'
+};
+
+// 归一化身体目标：未知值原样返回（避免把用户自定义值吞掉），空值返回 ''
+function normalizeGoal(goal) {
+  if (!goal) return '';
+  return GOAL_ALIAS[goal] || goal;
+}
+
 // 目标预设值（L2 降级回退）：与旧 intakeTargetOf 一致
 function goalDefault(goal) {
-  if (goal === '增肌') return 2400;
-  if (goal === '减脂' || goal === '减重') return 1800;
-  if (goal === '塑形') return 2000;
+  const g = normalizeGoal(goal);
+  if (g === '增肌') return 2400;
+  if (g === '减脂') return 1800;
+  if (g === '塑形') return 2000;
   return 2100; // 保持
 }
 
 // TDEE → 目标热量
-//   增肌 ×1.10；减脂/减重 ×0.80 且不低于 BMR；塑形 ×0.90；保持 = TDEE
+//   增肌 ×1.10；减脂 ×0.80 且不低于 BMR；塑形 ×0.90；保持 = TDEE
 function adjustForGoal(tdee, bmr, goal) {
+  const g = normalizeGoal(goal);
   let v;
-  if (goal === '增肌') v = tdee * 1.10;
-  else if (goal === '减脂' || goal === '减重') v = tdee * 0.80;
-  else if (goal === '塑形') v = tdee * 0.90;
+  if (g === '增肌') v = tdee * 1.10;
+  else if (g === '减脂') v = tdee * 0.80;
+  else if (g === '塑形') v = tdee * 0.90;
   else v = tdee; // 保持
   v = Math.round(v);
-  if ((goal === '减脂' || goal === '减重') && v < bmr) v = Math.round(bmr);
+  if (g === '减脂' && v < bmr) v = Math.round(bmr);
   return v;
 }
 
@@ -66,7 +87,7 @@ function recommendIntake(profile) {
   const height = num(p.height);
   const age = num(p.age);
   const level = p.activityLevel || 'moderate';
-  const goal = p.goal || '减重';
+  const goal = normalizeGoal(p.goal) || '减脂';
 
   const criticalMissing = [];
   if (!gender) criticalMissing.push('性别');
@@ -106,11 +127,11 @@ function recommendIntake(profile) {
 // 推荐三大营养素（g）：蛋白按体重（g/kg），脂肪按热量占比，碳水取剩余热量
 function recommendMacros(opts) {
   const kcal = opts.kcal || 0;
-  const goal = opts.goal || '减重';
+  const goal = normalizeGoal(opts.goal) || '减脂';
   const weight = num(opts.weight) || 60;
   let pPerKg, fatPct;
   if (goal === '增肌') { pPerKg = 1.8; fatPct = 0.25; }
-  else if (goal === '减脂' || goal === '减重') { pPerKg = 2.0; fatPct = 0.25; }
+  else if (goal === '减脂') { pPerKg = 2.0; fatPct = 0.25; }
   else if (goal === '塑形') { pPerKg = 1.8; fatPct = 0.27; }
   else { pPerKg = 1.6; fatPct = 0.27; } // 保持
 
@@ -123,6 +144,8 @@ function recommendMacros(opts) {
 
 module.exports = {
   ACTIVITY,
+  GOALS,
+  normalizeGoal,
   recommendIntake,
   recommendMacros,
   activityLabel,
