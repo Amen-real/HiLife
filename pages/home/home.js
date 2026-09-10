@@ -6,6 +6,11 @@ const media = require('../../utils/media.js');
 const nutrition = require('../../utils/nutrition.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
+// 首页背景图：本地 static/ 随包发布（即时显示，无网络往返）；加载异常时 onBgError 回退云端 cloud://
+const BG_LOCAL = '/static/home-bg.jpg';
+const BG_LOCAL_DARK = '/static/home-bg-dark.jpg';
+const BG_CLOUD_REL = 'images/home-bg.jpg';
+const BG_CLOUD_REL_DARK = 'images/home-bg-dark.jpg';
 function fmtDate(d) {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
@@ -37,9 +42,9 @@ Page({
     greeting: '你好',
     nickname: '健身用户',
     sub: '',
-    // 背景图：人物铺满顶部（cloud:// 仅 <image src> 认得，必须用原生 <image> 渲染）；
+    // 背景图：人物铺满顶部（本地 static/ 随包发布，秒开；异常时 onBgError 回退云端）
     // 随主题切换：浅色用原人物图，深色用哑铃人物深底图（onShow 里按主题重算）
-    bgUrl: media.media('images/home-bg.jpg'),
+    bgUrl: BG_LOCAL,
     // 状态栏占位高度（自定义导航栏后手动注入）
     statusBarStyle: 'height: 0px',
     checkin: { done: 0, total: 3, pct: 0 },
@@ -66,8 +71,10 @@ Page({
     const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
     this.setData({ theme: themeCls });
 
-    // 首页背景随主题切换：深色用哑铃人物深底图，浅色用原人物图
-    this.setData({ bgUrl: media.media(themeCls === 'theme-dark' ? 'images/home-bg-dark.jpg' : 'images/home-bg.jpg') });
+    // 首页背景随主题切换：本地优先（static/），并记下云端地址供 onBgError 兜底
+    this._bgCloud = media.media(themeCls === 'theme-dark' ? BG_CLOUD_REL_DARK : BG_CLOUD_REL);
+    this._bgFallbackUsed = false;
+    this.setData({ bgUrl: themeCls === 'theme-dark' ? BG_LOCAL_DARK : BG_LOCAL });
 
     // 自定义导航栏：手动补状态栏高度占位 + 切换状态栏文字/背景色
     const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
@@ -82,6 +89,13 @@ Page({
       this.getTabBar().setData({ selected: 0, theme: themeCls });
     }
     this.refresh();
+  },
+
+  // 背景图加载失败兜底：本地 static/ 异常时回退云端 cloud://（每次进入只兜底一次，防循环）
+  onBgError() {
+    if (this._bgFallbackUsed || !this._bgCloud) return;
+    this._bgFallbackUsed = true;
+    this.setData({ bgUrl: this._bgCloud });
   },
 
   refresh() {

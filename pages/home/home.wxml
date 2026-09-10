@@ -2,8 +2,8 @@
      根节点 theme-light / theme-dark 由「我的 → 主题」开关控制（见 utils/theme.js） -->
 <view class="page {{theme}}">
 
-  <!-- 背景图：人物铺满顶部，盖住原生导航栏标题。cloud:// 仅 <image src> 认得，必须用原生 <image> 渲染（CSS url() 静默失败） -->
-  <image class="hero-bg" src="{{bgUrl}}" mode="widthFix" />
+  <!-- 背景图：人物铺满顶部，盖住原生导航栏标题。本地 static/ 优先（秒开），加载失败由 onBgError 回退 cloud:// -->
+  <image class="hero-bg" src="{{bgUrl}}" mode="widthFix" binderror="onBgError" />
 
   <view class="page-body">
     <!-- 状态栏占位：自定义导航栏后顶部交还 WebView，需手动补状态栏高度 -->
