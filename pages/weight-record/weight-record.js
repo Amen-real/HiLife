@@ -90,7 +90,10 @@ Page({
   data: {
     theme: 'theme-light',
     current: { weight: '--', dateText: '' },
-    change: { sign: '', value: '0.0' },
+    change: { sign: '', value: '0.0', dir: '' },   // dir: 'down'|'up'|'flat'|''（仅一条记录时为空）
+    goalGap: { show: false, text: '' },            // 距目标体重（需 profile.targetWeight）
+    bmi: { show: false, value: '--' },             // BMI（需 profile.height）
+    recCount: 0,                                   // 记录条数
     empty: false,
 
     // 11 模块
@@ -121,26 +124,54 @@ Page({
 
   loadData() {
     const all = store.getWeightStats(0).list;          // 全部，升序
+    const profile = store.get().profile || {};
     if (!all.length) {
       this.setData({
         current: { weight: '--', dateText: '' },
-        change: { sign: '', value: '0.0' },
+        change: { sign: '', value: '0.0', dir: '' },
+        goalGap: { show: false, text: '' },
+        bmi: { show: false, value: '--' },
+        recCount: 0,
         empty: true
       });
       return;
     }
 
     const last = all[all.length - 1];
-    let change = { sign: '', value: '0.0' };
+    let change = { sign: '', value: '0.0', dir: '' };
     if (all.length >= 2) {
       const prev = all[all.length - 2];
       const diff = Math.round((last.weight - prev.weight) * 10) / 10;
-      change = { sign: diff < 0 ? '−' : '+', value: round1(Math.abs(diff)) };
+      change = {
+        sign: diff < 0 ? '−' : '+',
+        value: round1(Math.abs(diff)),
+        dir: diff === 0 ? 'flat' : (diff < 0 ? 'down' : 'up')
+      };
+    }
+
+    // 距目标：设置过目标体重才展示；±0.05kg 内视为已达标（涨红跌绿沿用项目惯例：跌=绿）
+    let goalGap = { show: false, text: '' };
+    const tw = Number(profile.targetWeight);
+    if (tw > 0) {
+      const gap = Math.round((last.weight - tw) * 10) / 10;
+      goalGap = gap === 0
+        ? { show: true, text: '已达标' }
+        : { show: true, text: (gap < 0 ? '−' : '+') + round1(Math.abs(gap)) + 'kg' };
+    }
+
+    // BMI：需要身高（cm，>80 防误填米制）
+    let bmi = { show: false, value: '--' };
+    const h = Number(profile.height);
+    if (h > 80) {
+      bmi = { show: true, value: round1(last.weight / ((h / 100) * (h / 100))) };
     }
 
     this.setData({
       current: { weight: round1(last.weight), dateText: fmtDate(last.date) },
       change,
+      goalGap,
+      bmi,
+      recCount: all.length,
       empty: false
     });
 

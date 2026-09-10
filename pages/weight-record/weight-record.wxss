@@ -1,44 +1,78 @@
-/* pages/weight-record/weight-record.wxss —— 严格按 10-weight.html（暖白底 + 荧光绿） */
-.page { width: 100vw; box-sizing: border-box; min-height: 100vh; padding-top: 112rpx; }
+/* pages/weight-record/weight-record.wxss —— nav-bar 自带 .nb-wrap 静态占位，页面不再自留 padding */
+.page { width: 100vw; box-sizing: border-box; min-height: 100vh; }
 
-/* HEADER */
-.header {
-  position: fixed; left: 0; top: 0; right: 0;
-  z-index: 20;
-  height: 112rpx;
-  padding: 0 40rpx;
-  background: var(--n-50, #F7F7F5);
-  border-bottom: 1rpx solid var(--n-200);
-  display: flex; align-items: center; justify-content: space-between;
+/* HERO 卡片：label + 日期 chip / 大数字 + 涨跌 chip / mini 统计行（.card.hero-card 双类覆盖 .card 的边距内边距） */
+.card.hero-card {
+  width: calc(100vw - 80rpx);
+  margin: 12rpx auto 28rpx;
+  padding: 32rpx 36rpx 24rpx;
 }
-.header .h1 {
-  font-size: 44rpx; font-weight: 800; letter-spacing: -0.02em;
-  color: var(--n-900);
+.hero-top { display: flex; align-items: center; justify-content: space-between; }
+.hero-label {
+  font-size: 24rpx; font-weight: 700; color: var(--n-900);
+  letter-spacing: 0.04em;
 }
-
-/* HERO */
-.hero { width: calc(100vw - 80rpx); margin: 0 auto; padding: 8rpx 8rpx 16rpx; box-sizing: border-box; }
-.hero .kg {
+.date-chip {
+  font-family: var(--f-en); font-size: 22rpx; font-weight: 600;
+  color: var(--n-500); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  background: var(--n-100); border-radius: var(--r-pill);
+  padding: 8rpx 20rpx;
+}
+.hero-main { display: flex; align-items: flex-end; gap: 20rpx; margin-top: 8rpx; }
+.hero-main .kg {
   font-family: var(--f-en);
-  font-size: 112rpx; font-weight: 800;
+  font-size: 104rpx; font-weight: 800;
   color: var(--n-900);
   letter-spacing: -0.04em; line-height: 1;
   font-variant-numeric: tabular-nums;
   display: inline-flex; align-items: baseline;
 }
-.hero .kg .unit {
-  font-size: 52rpx; font-weight: 800; color: var(--n-700);
+.hero-main .kg .unit {
+  font-size: 48rpx; font-weight: 800; color: var(--n-700);
   margin-left: 12rpx; letter-spacing: -0.02em;
 }
-.hero .date {
-  margin-top: 16rpx;
-  font-family: var(--f-en); font-size: 26rpx; font-weight: 600;
-  color: var(--n-500); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
-}
-.hero .kg.editable { position: relative; }
+.hero-main .kg.editable { position: relative; }
 .kg-hover { opacity: 0.6; }
-.hero .edit-hint {
-  margin-top: 14rpx; font-size: 22rpx; color: var(--n-400); letter-spacing: 0;
+/* 涨跌 chip：跌=荧光绿语义（--primary-tint 底 + --primary-text 字）、涨=红、持平=中性灰 */
+.change-chip {
+  margin-bottom: 10rpx;
+  display: inline-flex; align-items: baseline;
+  font-family: var(--f-en); font-size: 26rpx; font-weight: 800;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  border-radius: var(--r-pill);
+  padding: 10rpx 22rpx;
+  background: var(--n-100); color: var(--n-600);
+}
+.change-chip .chip-vs {
+  font-size: 20rpx; font-weight: 600; opacity: 0.75;
+  margin-left: 8rpx;
+}
+.change-chip.down { background: var(--primary-tint, rgba(200, 255, 0, 0.16)); color: var(--primary-text); }
+.change-chip.up { background: rgba(242, 84, 91, 0.12); color: #F2545B; }
+/* mini 统计行：距目标 / BMI / 记录次数（wx:if 条件渲染，flex 等分自适应列数） */
+.hero-meta {
+  display: flex;
+  margin-top: 28rpx; padding-top: 24rpx;
+  border-top: 1rpx solid var(--n-100);
+}
+.hero-meta .meta-item { flex: 1; text-align: center; }
+.hero-meta .meta-item + .meta-item { border-left: 1rpx solid var(--n-100); }
+.hero-meta .meta-label {
+  font-size: 22rpx; font-weight: 600; color: var(--n-500);
+  margin-bottom: 8rpx; letter-spacing: 0.02em;
+}
+.hero-meta .meta-value {
+  font-family: var(--f-en); font-size: 30rpx; font-weight: 800;
+  color: var(--n-900); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  display: inline-flex; align-items: baseline;
+}
+.hero-meta .meta-unit {
+  font-size: 22rpx; font-weight: 700; color: var(--n-500);
+  margin-left: 4rpx;
+}
+.hero-card .edit-hint {
+  margin-top: 20rpx; text-align: center;
+  font-size: 22rpx; color: var(--n-400); letter-spacing: 0;
 }
 
 /* ===== 体重输入弹窗（用 wx:if 挂载/卸载，原生 input 隐藏即彻底移除，杜绝真机 placeholder 泄漏） ===== */
@@ -100,15 +134,6 @@
   font-size: 24rpx; font-weight: 700; color: var(--n-900);
   letter-spacing: 0.04em; margin-bottom: 16rpx;
 }
-
-/* 体重变化 */
-.change-row { display: flex; align-items: baseline; gap: 20rpx; }
-.change-row .delta {
-  font-family: var(--f-en); font-size: 52rpx; font-weight: 800;
-  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
-  color: #A6C24A; display: inline-flex; align-items: baseline;
-}
-.change-row .vs { font-size: 24rpx; font-weight: 600; color: var(--n-500); }
 
 .bottom-gap { height: 40rpx; }
 
@@ -277,6 +302,9 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+
+  --primary-text: #C8FF00;                  /* 绿底黑字铁律：深色下绿色文字翻亮绿 */
+  --primary-tint: rgba(200, 255, 0, 0.12);  /* 同步翻 tint，避免亮绿字压浅绿底 */
 
   background: var(--n-50);
   color: var(--text);

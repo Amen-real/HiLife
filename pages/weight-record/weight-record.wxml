@@ -1,18 +1,36 @@
 <!-- pages/weight-record/weight-record.wxml —— 10（记录 + 大数字）在上，11（趋势筛选 + 统计 + 图表 + 记录列表）在下 -->
 <view class="page {{theme}}">
-  <nav-bar show-back="{{true}}" />
+  <nav-bar title="体重记录" show-back="{{true}}" />
 
-  <!-- HEADER：体重记录 -->
-  <view class="header">
-    <view class="h1">体重记录</view>
-  </view>
-
-  <!-- HERO：当前体重（来自 10） -->
-  <view class="hero">
-      <view class="kg {{empty ? '' : 'editable'}}" bindtap="openInput" hover-class="kg-hover">{{current.weight}}<text class="unit">kg</text></view>
-      <view class="date" wx:if="{{!empty}}">{{current.dateText}}</view>
-      <view class="edit-hint" bindtap="openInput">点击数字记录今日体重</view>
+  <!-- HERO：当前体重卡片（label + 日期 chip / 大数字 + 涨跌 chip / 距目标·BMI·记录次数） -->
+  <view class="card hero-card">
+    <view class="hero-top">
+      <view class="hero-label">当前体重</view>
+      <view class="date-chip" wx:if="{{!empty}}">{{current.dateText}}</view>
     </view>
+    <view class="hero-main">
+      <view class="kg {{empty ? '' : 'editable'}}" bindtap="openInput" hover-class="kg-hover">{{current.weight}}<text class="unit">kg</text></view>
+      <view class="change-chip {{change.dir}}" wx:if="{{!empty && change.dir}}">
+        <block wx:if="{{change.dir === 'flat'}}">持平</block>
+        <block wx:else>{{change.sign}}{{change.value}}<text class="chip-vs">比昨天</text></block>
+      </view>
+    </view>
+    <view class="hero-meta" wx:if="{{!empty}}">
+      <view class="meta-item" wx:if="{{goalGap.show}}">
+        <view class="meta-label">距目标</view>
+        <view class="meta-value">{{goalGap.text}}</view>
+      </view>
+      <view class="meta-item" wx:if="{{bmi.show}}">
+        <view class="meta-label">BMI</view>
+        <view class="meta-value">{{bmi.value}}</view>
+      </view>
+      <view class="meta-item">
+        <view class="meta-label">记录次数</view>
+        <view class="meta-value">{{recCount}}<text class="meta-unit">次</text></view>
+      </view>
+    </view>
+    <view class="edit-hint" bindtap="openInput">点击数字记录今日体重</view>
+  </view>
 
     <!-- 空状态：无数据时不显示任何方框 -->
     <view class="empty-state" wx:if="{{empty}}">
@@ -20,17 +38,8 @@
       <view class="empty-sub">记录后这里会显示趋势、变化与历史</view>
     </view>
 
-    <!-- 有数据时：变化卡 + 趋势区 + 记录列表（默认无数据不渲染方框） -->
+    <!-- 有数据时：趋势区 + 记录列表（默认无数据不渲染方框） -->
     <block wx:if="{{!empty}}">
-
-      <!-- 体重变化（来自 10） -->
-      <view class="card">
-        <view class="label">体重变化</view>
-        <view class="change-row">
-          <text class="delta">{{change.sign}}{{change.value}}</text>
-          <text class="vs">比昨天</text>
-        </view>
-      </view>
 
       <!-- ===== 以下为 11-weight-trend.html 设计 ===== -->
 
