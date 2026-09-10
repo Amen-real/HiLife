@@ -1,304 +1,89 @@
-<!-- components/training-review/training-review.wxml -->
+<!-- components/training-review/training-review.wxml —— v2 两页结构：本次训练（默认）/ 进步趋势
+     设计原则：只回答三个问题——这次练得怎么样 / 最近趋势如何 / 下次怎么练 -->
 <view class="page">
 
-  <!-- ===== 主体滚动区 ===== -->
   <scroll-view class="scroll" scroll-y>
     <view class="body">
 
-      <!-- ===== 顶部 4 段 tab ===== -->
+      <!-- ===== 顶部 2 段 tab ===== -->
       <view class="tabs" role="tablist">
-        <view class="tab-item {{tab==='single'?'on':''}}" data-tab="single" bindtap="switchTab" role="tab">单次复盘</view>
-        <view class="tab-item {{tab==='rolling'?'on':''}}" data-tab="rolling" bindtap="switchTab" role="tab">滚动复盘</view>
-        <view class="tab-item {{tab==='baseline'?'on':''}}" data-tab="baseline" bindtap="switchTab" role="tab">基准对比</view>
-        <view class="tab-item {{tab==='weekly'?'on':''}}" data-tab="weekly" bindtap="switchTab" role="tab">周度复盘</view>
+        <view class="tab-item {{tab==='single'?'on':''}}" data-tab="single" bindtap="switchTab" role="tab">本次训练</view>
+        <view class="tab-item {{tab==='trend'?'on':''}}" data-tab="trend" bindtap="switchTab" role="tab">进步趋势</view>
       </view>
 
-      <!-- =============== 单次复盘（active） =============== -->
+      <!-- =============== 本次训练（默认） =============== -->
       <block wx:if="{{tab==='single'}}">
 
-        <!-- Exercise hero -->
-        <view class="exercise" wx:if="{{hero.name}}">
-          <view class="ex-icon">
-            <icon name="arm" size="40"></icon>
-          </view>
-          <view class="ex-meta">
-            <view class="ex-title">{{hero.name}}</view>
-            <view class="ex-sub">{{hero.date}} · 第 {{hero.setIdx}} 组<text class="accent"> / 共 {{hero.setTotal}} 组</text></view>
-          </view>
-        </view>
-        <view wx:else class="exercise empty">
-          <view class="ex-icon muted"><icon name="arm" size="40"></icon></view>
-          <view class="ex-meta">
-            <view class="ex-title">暂无训练记录</view>
-            <view class="ex-sub">完成一次训练后，这里会自动生成复盘</view>
-          </view>
+        <!-- 空状态 -->
+        <view wx:if="{{empty}}" class="placeholder">
+          <view class="ph-tit">还没有训练记录</view>
+          <view class="ph-hint">完成一次训练后，这里会自动生成复盘</view>
         </view>
 
-        <!-- 3 stat cards -->
-        <view class="stats">
-          <view class="stat">
-            <text class="lab">训练量</text>
-            <text class="val">{{stats.duration}}</text>
-          </view>
-          <view class="stat">
-            <text class="lab">消耗</text>
-            <text class="val">{{stats.kcal}}<text class="unit">kcal</text></text>
-          </view>
-          <view class="stat">
-            <text class="lab">完成度</text>
-            <text class="val">{{stats.completion}}<text class="unit">%</text></text>
-          </view>
-        </view>
+        <block wx:else>
+          <!-- 一句话结论卡 -->
+          <view class="verdict">{{verdict}}</view>
 
-        <!-- ===== 数据分析 ===== -->
-        <view class="section-title">数据分析</view>
-        <view class="analysis">
-          <view class="a-head">
-            <view class="a-left">
-              <view class="lab">训练量 (kg)</view>
-              <view class="big">{{analysis.totalLabel}}<text class="unit">kg</text></view>
+          <!-- 场次行：日期 + 动作/组数 + 历史场次切换 -->
+          <view class="session-row">
+            <view class="s-arrow {{selIdx >= logsCount - 1 ? 'dis' : ''}}" data-dir="older" bindtap="selSession" aria-label="上一场">‹</view>
+            <view class="s-mid">
+              <text class="s-date">{{sessionDate}}</text>
+              <text class="s-sub">{{sessionSub}}</text>
             </view>
-            <view class="delta" wx:if="{{analysis.deltaPct !== 0}}">较上次 <text class="up">{{analysis.deltaLabel}}</text></view>
-            <view class="delta" wx:else>较上次 <text class="up">—</text></view>
+            <view class="s-arrow {{selIdx <= 0 ? 'dis' : ''}}" data-dir="newer" bindtap="selSession" aria-label="下一场">›</view>
           </view>
-          <view class="chart">
-            <view class="grid" aria-hidden="true">
-              <view class="tick"><text>12k</text></view>
-              <view class="tick"><text>8k</text></view>
-              <view class="tick"><text>4k</text></view>
-            </view>
-            <view class="bars">
-              <view class="bar {{item.color}}"
-                    wx:for="{{analysis.bars}}"
-                    wx:key="date"
-                    style="{{item.style}}">
-                <text class="bar-val">{{item.label}}</text>
-              </view>
-            </view>
-            <view class="x-axis">
-              <text wx:for="{{analysis.xAxis}}"
-                    wx:key="*this"
-                    class="{{item.hot?'hot':''}}">{{item.label}}</text>
-            </view>
-          </view>
-        </view>
 
-        <!-- ===== RPE 分布 ===== -->
-        <view class="section-title">RPE 分布</view>
-        <view class="rpe-card">
-          <view class="rpe-row">
-            <view class="ring" style="{{rpe.ringStyle}}" aria-label="{{rpe.ariaLabel}}">
-              <view class="ring-center">
-                <view class="n">{{rpe.totalPct}}<text class="pct">%</text></view>
-                <view class="lab">总和</view>
-              </view>
+          <!-- 3 stat：时长 / 训练量 / 平均吃力 -->
+          <view class="stats">
+            <view class="stat">
+              <text class="lab">时长</text>
+              <text class="val">{{stats.duration}}</text>
             </view>
-            <view class="legend">
-              <view class="lg-row">
-                <text class="lg-dot" style="background:#2A3310"></text>
-                <text class="lg-name">RPE 10</text>
-                <text class="lg-pct">{{rpe.pct10}}%</text>
-              </view>
-              <view class="lg-row">
-                <text class="lg-dot" style="background:#C8FF00"></text>
-                <text class="lg-name">RPE 8–9</text>
-                <text class="lg-pct">{{rpe.pct8}}%</text>
-              </view>
-              <view class="lg-row">
-                <text class="lg-dot" style="background:#6F9F00"></text>
-                <text class="lg-name">RPE 6–7</text>
-                <text class="lg-pct">{{rpe.pct6}}%</text>
-              </view>
-              <view class="lg-row">
-                <text class="lg-dot" style="background:#B8D45A"></text>
-                <text class="lg-name">RPE ≤5</text>
-                <text class="lg-pct">{{rpe.pct5}}%</text>
-              </view>
+            <view class="stat">
+              <text class="lab">训练量</text>
+              <text class="val">{{stats.volume}}<text class="unit">kg</text></text>
             </view>
-          </view>
-        </view>
-
-        <!-- ===== 动作判断 ===== -->
-        <view class="section-title">动作判断</view>
-        <view class="pa-list">
-          <view class="pa-row" wx:for="{{perAction}}" wx:key="key">
-            <view class="pa-name">{{item.name}}</view>
-            <view class="pa-metrics">
-              <view class="pa-m">
-                <text class="pa-mv">{{item.vol}}</text>
-                <text class="pa-ml">容量kg</text>
-              </view>
-              <view class="pa-m">
-                <text class="pa-mv">{{item.peakW || '—'}}</text>
-                <text class="pa-ml">峰值kg</text>
-              </view>
-              <view class="pa-m">
-                <text class="pa-mv">{{item.e1rm || '—'}}</text>
-                <text class="pa-ml">强度e1RM</text>
-              </view>
-              <view class="pa-m">
-                <text class="pa-mv">{{item.avgRpe || '—'}}</text>
-                <text class="pa-ml">平均RPE</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- ===== 下次处方 ===== -->
-        <view class="section-title">下次处方</view>
-        <view class="rx-card">
-          <view class="rx-row" wx:for="{{perAction}}" wx:key="key">
-            <text class="rx-name">{{item.name}}</text>
-            <text class="rx-plan">{{item.plan}}</text>
-          </view>
-        </view>
-
-        <!-- ===== 本次训练感受（聚合动作级备注，无则不渲染） ===== -->
-        <block wx:if="{{feelings.length}}">
-          <view class="section-title">本次训练感受</view>
-          <view class="feel-card">
-            <view class="feel-row" wx:for="{{feelings}}" wx:key="key">
-              <text class="feel-name">{{item.name}}</text>
-              <text class="feel-note">{{item.note}}</text>
-            </view>
-          </view>
-        </block>
-
-      </block>
-
-      <!-- =============== 滚动复盘（active） =============== -->
-      <block wx:elif="{{tab==='rolling'}}">
-
-        <view class="rl-chips" wx:if="{{rolling.groups.length}}">
-          <view class="rl-chip {{rolling.selKey===item.key?'on':''}}" wx:for="{{rolling.groups}}" wx:key="key" data-key="{{item.key}}" bindtap="switchRollingGroup">
-            <text class="rl-chip-n">{{item.name}}</text><text wx:if="{{item.equip}}" class="rl-chip-eq">·{{item.equip}}</text>
-          </view>
-        </view>
-
-        <block wx:if="{{rolling.view}}">
-          <view class="rl-head">
-            <view class="rl-stat">
-              <text class="rl-v">{{rolling.view.count}}</text>
-              <text class="rl-l">可比场次</text>
-            </view>
-            <view class="rl-stat">
-              <text class="rl-v">{{rolling.view.firstDate || '—'}}</text>
-              <text class="rl-l">首练</text>
-            </view>
-            <view class="rl-stat">
-              <text class="rl-v">{{rolling.view.lastDate || '—'}}</text>
-              <text class="rl-l">最近</text>
+            <view class="stat">
+              <text class="lab">平均吃力</text>
+              <text class="val">{{stats.effort}}</text>
             </view>
           </view>
 
-          <block wx:if="{{rolling.view.enough}}">
-            <view class="section-title">容量趋势 · 跨场次</view>
-            <view class="rl-chart">
-              <view class="rl-bar" wx:for="{{rolling.view.bars}}" wx:key="date" style="{{item.style}}">
-                <text class="rl-bar-v">{{item.label}}</text>
-                <text class="rl-bar-e1">e1RM {{item.e1}}</text>
+          <!-- 逐动作表现：最好一组 + 比上次 + 内联下次建议 -->
+          <view class="section-title">逐动作表现</view>
+          <view class="pa-list">
+            <view class="pa-card" wx:for="{{perAction}}" wx:key="key">
+              <view class="pa-head">
+                <text class="pa-name">{{item.name}}</text>
+                <text class="pa-chip {{item.chip.cls}}">{{item.chip.text}}</text>
               </view>
+              <view class="pa-line">
+                <text class="pa-best">最好一组 {{item.best}}</text>
+                <text class="pa-meta">{{item.sets}} 组 · 吃力 {{item.rpeTxt}}</text>
+              </view>
+              <view class="pa-plan">{{item.plan}}</view>
             </view>
-            <view class="rl-xaxis">
-              <text class="rl-x" wx:for="{{rolling.view.bars}}" wx:key="date">{{item.date}}</text>
-            </view>
+          </view>
 
-            <view class="section-title">渐进建议</view>
-            <view class="rx-card">
-              <view class="rx-row">
-                <text class="rx-name">容量变化</text>
-                <text class="rx-plan">{{rolling.view.volDeltaPct>=0?'+':''}}{{rolling.view.volDeltaPct}}%（{{rolling.view.sessions[0].vol}} → {{rolling.view.sessions[rolling.view.sessions.length-1].vol}}）</text>
-              </view>
-              <view class="rx-row">
-                <text class="rx-name">强度 e1RM</text>
-                <text class="rx-plan">{{rolling.view.e1DeltaPct>=0?'+':''}}{{rolling.view.e1DeltaPct}}%</text>
-              </view>
-              <view class="rx-row">
-                <text class="rx-name">处方</text>
-                <text class="rx-plan">{{rolling.view.rec}}</text>
+          <!-- 本次训练感受（聚合动作级备注，无则不渲染） -->
+          <block wx:if="{{feelings.length}}">
+            <view class="section-title">训练感受</view>
+            <view class="feel-card">
+              <view class="feel-row" wx:for="{{feelings}}" wx:key="key">
+                <text class="feel-name">{{item.name}}</text>
+                <text class="feel-note">{{item.note}}</text>
               </view>
             </view>
           </block>
-
-          <view wx:else class="wk-empty">
-            样本不足（仅 {{rolling.view.count}} 次同动作同器械记录）。
-            <text class="rl-link" bindtap="switchTab" data-tab="single">再完成 1 次即可建立跨场对比</text>
-          </view>
         </block>
-
-        <view wx:else class="placeholder">
-          <view class="ph-ico">📈</view>
-          <view class="ph-tit">暂无可比数据</view>
-          <view class="ph-hint">完成至少 2 次同一动作的记录后，这里会显示渐进趋势</view>
-        </view>
 
       </block>
 
-      <!-- =============== 基准对比（active） =============== -->
-      <block wx:elif="{{tab==='baseline'}}">
+      <!-- =============== 进步趋势 =============== -->
+      <block wx:elif="{{tab==='trend'}}">
 
-        <view class="bl-head">
-          <view class="bl-ring" style="{{baseline.blRingStyle}}" aria-label="可靠样本 {{baseline.reliableCount}} 次">
-            <view class="bl-ring-c">
-              <text class="bl-n">{{baseline.reliableCount}}</text>
-              <text class="bl-l">可靠样本</text>
-            </view>
-          </view>
-          <view class="bl-meta">
-            <view class="bl-meta-t">RPE 校准进度</view>
-            <view class="bl-meta-d">已记录 <text class="bl-hl">{{baseline.reliableCount}}</text> / 2 次带 RPE 的训练</view>
-            <view class="bl-cal" bindtap="openRpeGuide">
-              <text class="wk-dot"></text> RPE 校准参考
-            </view>
-          </view>
-        </view>
-
-        <block wx:if="{{baseline.enough}}">
-          <view class="section-title">基准 vs 当前</view>
-          <view class="bl-cmp">
-            <view class="bl-col">
-              <view class="bl-col-t">基准 · {{baseline.baseDate}}</view>
-              <view class="bl-metric">
-                <text class="bl-mv">{{baseline.bRpe}}</text><text class="bl-mu">平均RPE</text>
-              </view>
-              <view class="bl-metric">
-                <text class="bl-mv">{{baseline.bVol}}</text><text class="bl-mu">总容量kg</text>
-              </view>
-            </view>
-            <view class="bl-arrow">→</view>
-            <view class="bl-col cur">
-              <view class="bl-col-t">当前 · {{baseline.curDate}}</view>
-              <view class="bl-metric">
-                <text class="bl-mv">{{baseline.cRpe}}</text><text class="bl-mu">平均RPE</text>
-              </view>
-              <view class="bl-metric">
-                <text class="bl-mv">{{baseline.cVol}}</text><text class="bl-mu">总容量kg</text>
-              </view>
-            </view>
-          </view>
-          <view class="bl-delta">
-            <text class="bl-d-chip {{baseline.rpeDelta>0?'up':(baseline.rpeDelta<0?'down':'flat')}}">RPE {{baseline.rpeDelta>0?'+':''}}{{baseline.rpeDelta}}</text>
-            <text class="bl-d-chip {{baseline.volDeltaPct>0?'up':(baseline.volDeltaPct<0?'down':'flat')}}">容量 {{baseline.volDeltaPct>0?'+':''}}{{baseline.volDeltaPct}}%</text>
-          </view>
-          <view class="section-title">解读</view>
-          <view class="rx-card">
-            <view class="rx-row">
-              <text class="rx-name">建议</text>
-              <text class="rx-plan">{{baseline.rec}}</text>
-            </view>
-          </view>
-        </block>
-
-        <view wx:else class="wk-empty">
-          尚不足 2 次带 RPE 的训练，暂无法生成基准线。
-          <text class="rl-link" bindtap="openRpeGuide">了解 RPE 并记录下一次训练</text>
-        </view>
-
-      </block>
-      <!-- =============== 周度复盘（active） =============== -->
-      <block wx:elif="{{tab==='weekly'}}">
-
-        <!-- 完成度 + 概览 -->
+        <!-- 周完成度 + 本周概况 -->
         <view class="wk-head">
           <view class="wk-ring" style="{{weekly.compStyle}}" aria-label="周完成度 {{weekly.completion}}%">
             <view class="wk-ring-center">
@@ -313,7 +98,7 @@
             </view>
             <view class="wk-meta-row">
               <view class="wk-mv">{{weekly.avgRpe || '—'}}</view>
-              <view class="wk-ml">本周平均 RPE</view>
+              <view class="wk-ml">本周平均吃力</view>
             </view>
             <view class="wk-target" bindtap="editWeeklyTarget">
               <text class="wk-dot"></text>
@@ -323,28 +108,31 @@
           </view>
         </view>
 
-        <!-- 力量进展 -->
-        <view class="section-title">力量进展 · 本周 vs 上周</view>
-        <view class="wk-prog" wx:if="{{weekly.prog.length}}">
-          <view class="wk-p-row" wx:for="{{weekly.prog}}" wx:key="name">
-            <view class="wk-p-name">{{item.name}}</view>
-            <view class="wk-p-bars">
-              <view class="wk-p-cur">{{item.cur}}<text class="wk-p-unit"> e1RM</text></view>
-              <view class="wk-p-delta {{item.delta > 0 ? 'up' : (item.delta < 0 ? 'down' : 'flat')}}">
-                <text wx:if="{{item.isNew}}" class="wk-new">新动作</text>
-                <text wx:elif="{{item.delta > 0}}">▲ +{{item.delta}}</text>
-                <text wx:elif="{{item.delta < 0}}">▼ {{item.delta}}</text>
-                <text wx:else>持平</text>
-              </view>
+        <!-- 关键动作：自动取场次最多的前 3 个，最好一组跨场趋势 -->
+        <view class="section-title">关键动作 · 最好成绩</view>
+        <block wx:if="{{keyActions.length}}">
+          <view class="ka-card" wx:for="{{keyActions}}" wx:key="key">
+            <view class="ka-head">
+              <text class="ka-name">{{item.name}}</text>
+              <text class="pa-chip {{item.chip.cls}}">{{item.chip.text}}</text>
+            </view>
+            <view class="ka-bars">
+              <view class="ka-bar {{item2.hot ? 'hot' : ''}}" wx:for="{{item.bars}}" wx:for-item="item2" wx:key="key" style="{{item2.style}}"></view>
+            </view>
+            <view class="ka-foot">
+              <text class="ka-txt">{{item.firstDate}} {{item.firstTxt}}</text>
+              <text class="ka-arrow">→</text>
+              <text class="ka-txt hot">{{item.lastDate}} {{item.lastTxt}}</text>
             </view>
           </view>
-        </view>
-        <view wx:else class="wk-empty">上周无同动作记录，继续训练即可看到力量对比</view>
+          <view class="guide-link" bindtap="openEffortGuide">吃力程度怎么选？</view>
+        </block>
+        <view wx:else class="wk-empty">还没有动作记录，完成一次训练后这里展示进步趋势</view>
 
-        <!-- 近 6 周 RPE 趋势 -->
-        <view class="section-title">努力度趋势 · 近 6 周</view>
+        <!-- 近 6 周努力度 -->
+        <view class="section-title">努力度 · 近 6 周</view>
         <view class="wk-weeks">
-          <view class="wk-w-col" wx:for="{{weekly.weeks}}" wx:key="label">
+          <view class="wk-w-col" wx:for="{{weeks}}" wx:key="key">
             <view class="wk-w-track">
               <view class="wk-w-bar {{item.has ? 'on' : 'off'}}" style="{{item.barStyle}}">
                 <text class="wk-w-val">{{item.has ? item.rpe : ''}}</text>

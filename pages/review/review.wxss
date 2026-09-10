@@ -29,6 +29,10 @@
 
   --success: #C8FF00;
 
+  --primary-text: #C8FF00;                  /* 绿底黑字铁律：深色下绿色文字翻亮绿 */
+  --primary-tint: rgba(200, 255, 0, 0.12);  /* 与 primary-text 成对翻转 */
+  --ink: #FFFFFF;                           /* 组件内 var(--ink) 深色兜底（同 advice 页） */
+
   background: var(--n-50);
   color: var(--text);
 }
