@@ -27,16 +27,11 @@ function fmtVol(v) {
   if (v >= 10000) return (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
   return String(Math.round(v));
 }
-function minutesFromLog(log) {
-  if (log.durationMin) return log.durationMin;
-  let sec = 0;
-  log.actions.forEach(a => setsOf(a).forEach(s => { sec += num(s.trainSec) || 0; }));
-  return Math.max(0, Math.round(sec / 60));
-}
 function durationSecOfLog(log) {
-  if (log.durationMin) return log.durationMin * 60;
+  if (log.durationMin) return log.durationMin * 60;   // 预留：若未来落库总时长字段则优先
+  // 整个训练时长 = Σ(trainSec + restSec)，与数据页 totalFullSec 口径一致；旧日志无 restSec 由 ||0 兜底
   let sec = 0;
-  log.actions.forEach(a => setsOf(a).forEach(s => { sec += num(s.trainSec) || 0; }));
+  log.actions.forEach(a => setsOf(a).forEach(s => { sec += (num(s.trainSec) || 0) + (num(s.restSec) || 0); }));
   return Math.max(0, Math.round(sec));
 }
 function loadOfLog(log) {
