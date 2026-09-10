@@ -326,19 +326,18 @@
   bottom: -16rpx;
 }
 
-/* 每组 RPE 录入行（自觉费力度 1–10，供复盘努力度维度） */
+/* 每组吃力程度录入行（4 档口语点选，内部映射 RPE 4/6/8/10，供复盘努力度维度） */
 .wo-rpe {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16rpx;
   margin-top: 8rpx;
-  padding: 8rpx 20rpx;
-  background: rgba(46, 207, 176, 0.06);
-  border: 1rpx solid rgba(46, 207, 176, 0.18);
+  padding: 12rpx 20rpx;
+  background: rgba(200, 255, 0, 0.06);
+  border: 1rpx solid rgba(200, 255, 0, 0.16);
   border-radius: 16rpx;
 }
-.wo-rpe.done { opacity: 0.55; }
-.wo-rpe-l { display: flex; align-items: baseline; gap: 12rpx; min-width: 0; }
+.wo-rpe-l { display: flex; flex-direction: column; gap: 4rpx; min-width: 0; flex-shrink: 0; }
 .wo-rpe-label {
   font-size: var(--fs-body);
   font-weight: 800;
@@ -350,37 +349,35 @@
   color: var(--text-weak);
   line-height: 1;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.wo-rpe-ctrl { display: flex; align-items: center; gap: 14rpx; flex-shrink: 0; }
-.wo-rpe-btn {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 50%;
-  background: var(--primary-tint);
-  border: 1rpx solid rgba(46, 207, 176, 0.40);
-  color: var(--primary-text);
-  font-size: var(--fs-head);
-  font-weight: 700;
+.wo-rpe-ctrl {
+  flex: 1; min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8rpx;
+}
+.wo-rpe-chip {
+  height: 56rpx;
+  border-radius: var(--r-pill);
+  background: var(--card);
+  border: 1rpx solid var(--n-200);
+  color: var(--n-600);
+  font-size: 22rpx;
+  font-weight: 600;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.12s ease, background 0.12s ease;
+  white-space: nowrap;
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
-.wo-rpe-btn:active { transform: scale(0.90); background: rgba(46, 207, 176, 0.30); }
-.wo-rpe-val {
-  min-width: 48rpx;
-  text-align: center;
-  font-size: var(--fs-title);
+.wo-rpe-chip:active { transform: scale(0.94); }
+.wo-rpe-chip.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #0A0A0A;
   font-weight: 800;
-  color: var(--text-weak);
-  font-feature-settings: "tnum";
-  line-height: 1;
 }
-.wo-rpe-val.set { color: var(--primary-text); }
-.wo-rpe-val.high { color: #E8743B; }
 
 /* 展开底部操作按钮 */
 .wo-ex-actions { display: flex; gap: 20rpx; margin-top: 28rpx; }

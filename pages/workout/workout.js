@@ -388,18 +388,17 @@ Page({
     this.setData({ ['actions[' + ai + '].sets[' + si + '].weight']: e.detail.value });
   },
 
-  // 每组 RPE 步进（1–10，空记录从 7 起调）：记录自觉费力度，供复盘努力度维度
-  stepRpe(e) {
+  // 每组吃力程度 4 档点选（很轻松4 / 有点累6 / 很累8 / 快力竭10）：
+  // 点一下即选，再点同档取消；已完成的组也允许补改（数据层仍存 1–10 原值，复盘口径不变）
+  pickEffort(e) {
     const ai = Number(e.currentTarget.dataset.ai);
     const si = Number(e.currentTarget.dataset.si);
-    const d = Number(e.currentTarget.dataset.d);
+    const v = Number(e.currentTarget.dataset.v);
     const set = this.data.actions[ai] && this.data.actions[ai].sets[si];
-    if (!set || set.done) return;
-    const base = (set.rpe !== '' && set.rpe != null) ? Number(set.rpe) : 7;
-    let v = base + d;
-    if (v < 1) v = 1;
-    if (v > 10) v = 10;
-    this.setData({ ['actions[' + ai + '].sets[' + si + '].rpe']: String(v) });
+    if (!set) return;
+    const cur = (set.rpe !== '' && set.rpe != null) ? Number(set.rpe) : 0;
+    const next = (cur === v) ? '' : String(v);
+    this.setData({ ['actions[' + ai + '].sets[' + si + '].rpe']: next });
   },
 
   // 展开卡底部「+ 新增一组」

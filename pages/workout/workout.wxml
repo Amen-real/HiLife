@@ -66,7 +66,7 @@
           </view>
         </view>
 
-        <!-- 组行 + 每组 RPE 录入（自觉费力度 1–10） -->
+        <!-- 组行 + 每组吃力程度录入（很轻松/有点累/很累/快力竭 4 档，内部映射 4/6/8/10） -->
         <block wx:for="{{item.sets}}" wx:for-item="set" wx:for-index="si" wx:key="si">
           <view class="wo-set-row {{set.done ? 'done' : ''}} {{set.current ? 'current' : ''}}">
             <view class="wo-set-no {{set.warmup ? 'warmup' : 'normal'}}">{{set.warmup ? '热' : (si + 1)}}</view>
@@ -102,16 +102,17 @@
                   data-ai="{{ai}}" data-si="{{si}}" catchtap="deleteSet">✕</view>
           </view>
 
-          <!-- 每组 RPE 步进器：− / 数值 / ＋（空记录显示 —，点 ＋ 从 7 起） -->
-          <view class="wo-rpe {{set.done ? 'done' : ''}}">
+          <!-- 每组吃力程度：4 档点选（点一下即选，再点同档取消；已完成的组仍可补改） -->
+          <view class="wo-rpe">
             <view class="wo-rpe-l">
-              <text class="wo-rpe-label">RPE</text>
-              <text class="wo-rpe-cap">自觉费力度 {{si + 1}}</text>
+              <text class="wo-rpe-label">吃力程度</text>
+              <text class="wo-rpe-cap">第 {{si + 1}} 组做完的感觉</text>
             </view>
             <view class="wo-rpe-ctrl">
-              <view class="wo-rpe-btn" data-ai="{{ai}}" data-si="{{si}}" data-d="-1" catchtap="stepRpe">−</view>
-              <text class="wo-rpe-val {{(set.rpe !== '' && set.rpe != null) ? 'set' : ''}} {{(set.rpe !== '' && set.rpe != null && Number(set.rpe) >= 9) ? 'high' : ''}}">{{set.rpe !== '' && set.rpe != null ? set.rpe : '—'}}</text>
-              <view class="wo-rpe-btn" data-ai="{{ai}}" data-si="{{si}}" data-d="1" catchtap="stepRpe">＋</view>
+              <view class="wo-rpe-chip {{set.rpe === '4' ? 'on' : ''}}" data-ai="{{ai}}" data-si="{{si}}" data-v="4" catchtap="pickEffort">很轻松</view>
+              <view class="wo-rpe-chip {{set.rpe === '6' ? 'on' : ''}}" data-ai="{{ai}}" data-si="{{si}}" data-v="6" catchtap="pickEffort">有点累</view>
+              <view class="wo-rpe-chip {{set.rpe === '8' ? 'on' : ''}}" data-ai="{{ai}}" data-si="{{si}}" data-v="8" catchtap="pickEffort">很累</view>
+              <view class="wo-rpe-chip {{set.rpe === '10' ? 'on' : ''}}" data-ai="{{ai}}" data-si="{{si}}" data-v="10" catchtap="pickEffort">快力竭</view>
             </view>
           </view>
         </block>
@@ -300,7 +301,7 @@
           <text class="hist-dot">·</text>
           <text>休息 {{s.restSec || '-'}}s</text>
           <text wx:if="{{s.rpe}}" class="hist-dot">·</text>
-          <text wx:if="{{s.rpe}}">RPE {{s.rpe}}</text>
+          <text wx:if="{{s.rpe}}">吃力 {{s.rpe}}</text>
         </view>
       </view>
 
@@ -311,7 +312,7 @@
           <view class="hist-set-line1">
             <text class="hist-set-no">第{{s.no}}组</text>
             <text class="hist-set-rep">{{s.reps}} 次 × {{s.weight}} kg</text>
-            <text wx:if="{{s.rpe}}" class="hist-dot">RPE {{s.rpe}}</text>
+            <text wx:if="{{s.rpe}}" class="hist-dot">吃力 {{s.rpe}}</text>
           </view>
         </view>
       </block>
