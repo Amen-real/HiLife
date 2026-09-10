@@ -8,34 +8,50 @@ const DATA_KEYS = [
   'weightRecords', 'trainingLogs', 'meals', 'favorites', 'customActions', 'reminderOn'
 ];
 
-function pad(n) { return n < 10 ? '0' + n : '' + n; }
-function todayStr() {
-  const d = new Date();
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-}
-// 日期偏移（delta 天），用于「昨日」
-function shiftDate(ds, delta) {
-  const p = ds.split('-');
-  const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
-  d.setDate(d.getDate() + delta);
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-}
-function fmtSec(s) {
-  s = Number(s) || 0;
-  if (s < 60) return s + '秒';
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return r ? (m + '分' + r + '秒') : (m + '分');
-}
-function weekday(ds) {
-  const parts = ds.split('-');
-  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-  return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
-}
 function bmi(w, h) {
   if (!w || !h) return '--';
   const v = Number(w) / Math.pow(Number(h) / 100, 2);
   return v.toFixed(1);
+}
+
+/* ===== 「我的」页派生数据用的纯函数（口径与数据页/复盘组件保持一致） ===== */
+const APP_VERSION = '1.0.0';
+function round1(v) { const n = Number(v); return isFinite(n) ? Math.round(n * 10) / 10 : 0; }
+// 大数字时长：3 小时以上给「3.2h」，不足 1 小时给「45m」
+function fmtDur(totalSec) {
+  const s = Number(totalSec) || 0;
+  if (s <= 0) return '0m';
+  if (s < 3600) return Math.round(s / 60) + 'm';
+  const h = s / 3600;
+  return (h >= 10 ? Math.round(h) : Math.round(h * 10) / 10) + 'h';
+}
+// 累计容量：12800 → '12.8k'（与复盘页 fmtVol 同款）
+function fmtVol(v) {
+  const n = Number(v) || 0;
+  if (n >= 10000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(Math.round(n));
+}
+// 称号：按训练天数分档，给正反馈而非考核
+function rankOf(days) {
+  const d = Number(days) || 0;
+  if (d <= 0) return '新手上路';
+  if (d < 7) return '初出茅庐';
+  if (d < 30) return '渐入佳境';
+  if (d < 100) return '稳定训练者';
+  if (d < 365) return '训练达人';
+  return '年度铁人';
+}
+// BMI 分档（中国成人标准）
+function bmiBucket(v) {
+  if (v < 18.5) return '偏瘦';
+  if (v < 24) return '正常';
+  if (v < 28) return '超重';
+  return '肥胖';
+}
+// BMI 刻度定位：显示区间 15–35，越界夹到两端避免滑块出框
+function bmiMarkStyle(v) {
+  const pct = Math.max(2, Math.min(98, (Number(v) - 15) / 20 * 100));
+  return 'left:' + pct.toFixed(1) + '%;';
 }
 
 Page({
@@ -45,7 +61,19 @@ Page({
     nickname: '',
     avatarText: '衡',
     avatarUrl: '',
+    // 账户主卡：称号 + 累计三连
+    heroTitle: '新手上路',
+    totals: { days: 0, dur: '0m', vol: '0' },
+    // 我的数据：四格概览 + 解读块
     health: { goal: '未设置', weight: '未记录', height: '未设置', bmi: '--' },
+    hasProfile: false,
+    bmi: { show: false, label: '', markStyle: 'left:0%;' },
+    goal: {
+      show: false, verb: '减', done: 0, total: 0,
+      from: '--', to: '--', pct: 0, fillStyle: 'width:0%;', remain: '0', weeks: 0
+    },
+    reminderOn: false,
+    version: APP_VERSION,
     showDataMgr: false,
     showExportShare: false,
     exportFilePath: '',
@@ -83,28 +111,117 @@ Page({
     });
   },
 
+  // 训练提醒：本页做本地开关（落 store.reminderOn），首次开启时说明提醒形式
+  // 注：真正的推送需服务端下发订阅消息，此处不做假承诺
+  tapReminder() {
+    const on = !this.data.reminderOn;
+    store.setReminder(on);
+    this.setData({ reminderOn: on });
+    if (on) {
+      wx.showModal({
+        title: '已开启训练提醒',
+        content: '将在你设定的训练日于小程序内提示。关闭可随时点回本项。',
+        confirmText: '知道了',
+        showCancel: false
+      });
+    } else {
+      wx.showToast({ title: '已关闭训练提醒', icon: 'none', duration: 1200 });
+    }
+  },
+
   refresh() {
     const g = store.get();
-    const p = g.profile;
+    const p = g.profile || {};
+    const logs = g.trainingLogs || [];
 
-    // 健康概览：当前目标 / 最新体重 / 身高 / BMI
+    /* ===== ① 账户主卡：累计三连（天数 / 时长 / 容量） ===== */
+    // 时长口径 = Σ(trainSec + restSec)，与数据页 totalFullSec、复盘页 durationSecOfLog 一致
+    // 容量口径 = Σ(重量 × 次数)，与复盘页 loadOfLog 一致
+    let totalSec = 0;
+    let totalVol = 0;
+    const activeDays = {};
+    logs.forEach(l => {
+      if (!l) return;
+      if (l.date) activeDays[l.date] = 1;
+      (l.actions || []).forEach(a => {
+        const sets = (a.setsDetail && a.setsDetail.length)
+          ? a.setsDetail
+          : (Array.isArray(a.sets) ? a.sets : []);
+        sets.forEach(s => {
+          totalSec += (Number(s.trainSec) || 0) + (Number(s.restSec) || 0);
+          totalVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+        });
+      });
+    });
+    const totals = {
+      days: Object.keys(activeDays).length,
+      dur: fmtDur(totalSec),
+      vol: fmtVol(totalVol)
+    };
+
+    /* ===== ② 我的数据：健康四格 ===== */
     const ws = store.getWeightStats();
-    const latestW = ws.latest;
-    const h = p.height != null ? Number(p.height) : null;
+    const latestW = ws.latest;                                   // '72.5' | null
+    const latestWn = latestW != null ? Number(latestW) : null;
+    const h = (p.height != null && p.height !== '') ? Number(p.height) : null;
     const health = {
       goal: p.goal || '未设置',
       weight: latestW != null ? latestW : '未记录',
       height: h != null ? h : '未设置',
-      bmi: bmi(latestW ? Number(latestW) : null, h)
+      // 身高按 cm 校验（>80），避免误填米制时算出一个荒谬的 BMI
+      bmi: bmi(latestWn, h > 80 ? h : null)
     };
+
+    // BMI 解读：身高按 cm 校验（>80 防误填米制）
+    const bmiVal = (latestWn && h > 80)
+      ? Math.round(latestWn / Math.pow(h / 100, 2) * 10) / 10
+      : 0;
+    const bmiInfo = bmiVal
+      ? { show: true, label: bmiBucket(bmiVal), markStyle: bmiMarkStyle(bmiVal) }
+      : { show: false, label: '', markStyle: 'left:0%;' };
+
+    // 距目标：起点取最早一条体重记录（无记录则以当前体重为起点，进度为 0）
+    const tw = Number(p.targetWeight);
+    let goalInfo = {
+      show: false, verb: '减', done: 0, total: 0,
+      from: '--', to: '--', pct: 0, fillStyle: 'width:0%;', remain: '0', weeks: 0
+    };
+    if (tw > 0 && latestWn != null) {
+      const all = store.getWeightStats(0).list;                  // 全部，按记录顺序（升序）
+      const startW = all.length ? Number(all[0].weight) : latestWn;
+      const fromW = (startW > 0) ? startW : latestWn;
+      const verb = tw < fromW ? '减' : '增';
+      const totalN = Math.abs(fromW - tw);
+      const doneN = Math.max(0, Math.abs(fromW - latestWn));     // 反向移动记 0，不出现负进度
+      const remainN = Math.abs(latestWn - tw);
+      const pct = totalN < 0.05 ? 100 : Math.max(0, Math.min(100, Math.round(doneN / totalN * 100)));
+      // 节奏预估：按每周 0.5kg 的安全速度估算，不足半公斤不再给周数
+      const weeks = remainN >= 0.5 ? Math.ceil(remainN / 0.5) : 0;
+      goalInfo = {
+        show: true, verb,
+        done: round1(doneN), total: round1(totalN),
+        from: round1(fromW), to: round1(tw),
+        pct, fillStyle: 'width:' + pct + '%;',
+        remain: round1(remainN), weeks
+      };
+    }
+
+    // 空态：热量推荐所需的「身高 + 体重 + 目标」三件套缺一即引导完善
+    const hasProfile = !!(h > 80 && latestWn && p.goal);
 
     this.setData({
       profile: p,
-      loggedIn: g.userInfo.loggedIn,
+      loggedIn: !!g.userInfo.loggedIn,
       nickname: g.userInfo.nickname,
       avatarUrl: g.userInfo.avatar || '',
       avatarText: g.userInfo.loggedIn ? (g.userInfo.nickname || '衡')[0] : '衡',
-      health
+      heroTitle: rankOf(p.fitnessDays),
+      totals,
+      health,
+      hasProfile,
+      bmi: bmiInfo,
+      goal: goalInfo,
+      reminderOn: !!g.reminderOn
     });
   },
 
@@ -176,11 +293,6 @@ Page({
 
   // 点击「隐私政策」→ 进入隐私政策页查看完整内容
   goPrivacy() { wx.navigateTo({ url: '/pages/privacy/privacy' }); },
-
-  comingSoon(e) {
-    const act = (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.act) || '该功能';
-    wx.showToast({ title: act + ' 开发中', icon: 'none' });
-  },
 
   /* ===== 数据管理面板：进入 / 关闭 ===== */
   openDataMgr() { this.setData({ showDataMgr: true }); },

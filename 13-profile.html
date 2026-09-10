@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HiLife · 「我的」页改造预览</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   预览说明
+   · 画布 390×844（iPhone 14），1rpx = 0.52px —— 与实际小程序等比
+   · 所有颜色/字号均取自 app.wxss 设计令牌，深色帧用与 profile.wxss
+     完全相同的「重定义变量」手法翻转，保证预览与真机一致
+   ══════════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html,body{margin:0}
+body{
+  background:#111312;
+  color:#EDEFEA;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+  padding:48px 24px 80px;
+}
+.head{max-width:1180px;margin:0 auto 40px}
+.head .eyebrow{
+  display:inline-block;padding:6px 14px;border-radius:999px;
+  background:rgba(200,255,0,.14);color:#C8FF00;
+  font-size:12px;font-weight:700;letter-spacing:.08em;
+}
+.head h1{margin:18px 0 10px;font-size:34px;line-height:1.25;letter-spacing:-.01em}
+.head h1 em{font-style:normal;color:#C8FF00}
+.head p{margin:0;max-width:760px;color:#A7ADA4;font-size:15px;line-height:1.75}
+
+/* ============ 帧布局 ============ */
+.stage{display:flex;flex-wrap:wrap;gap:46px 40px;justify-content:center;max-width:1700px;margin:0 auto}
+.shot{width:390px}
+.shot .cap{display:flex;align-items:center;gap:10px;margin:0 0 14px 4px}
+.shot .cap b{font-size:14px;font-weight:700;color:#EDEFEA}
+.shot .cap i{
+  font-style:normal;font-size:11px;font-weight:700;letter-spacing:.04em;
+  padding:3px 10px;border-radius:999px;background:#22262A;color:#9AA1A8;
+}
+.shot .cap i.b{background:rgba(200,255,0,.16);color:#C8FF00}
+.phone{
+  position:relative;width:390px;height:844px;border-radius:46px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 10px #1B1F21,0 0 0 11px #2E3438;
+  display:flex;flex-direction:column;
+}
+
+/* ══════════ 设计令牌（浅色，与 app.wxss 一一对应） ══════════ */
+.phone{
+  --primary:#C8FF00; --primary-deep:#7CB800; --primary-light:#E4FF6E;
+  --primary-tint:#F2FFD6; --primary-text:#4C7300;
+  --accent:#FF9500; --info:#3E8BFF; --error:#F2545B;
+  --n-50:#F7F7F5; --n-100:#F1F1EE; --n-200:#E8E8E4; --n-300:#D9D9D5; --n-500:#A0A0A0;
+  --text:#0A0A0A; --text-sub:#444; --text-weak:#A0A0A0;
+  --line:#E8E8E4; --line-strong:#D9D9D5;
+  --card:#fff; --bg:#F1F1EE; --glass-border:#E8E8E4;
+  --fs-caption:10.5px; --fs-label:12.5px; --fs-body:14.5px; --fs-head:16.5px;
+  --fs-title:18.5px; --fs-section:21px; --fs-display:27px;
+  --r-m:12.5px; --r-l:16.5px; --r-pill:999px;
+  --shadow-card:0 2px 8px rgba(0,0,0,.06);
+  --shadow-mint:0 6px 15px rgba(124,184,0,.30);
+  --f-en:"SF Pro Display","Helvetica Neue",system-ui,-apple-system,sans-serif;
+  background:var(--n-50);color:var(--text);
+}
+/* ══════════ 深色覆盖（与 profile.wxss .page.theme-dark 同构） ══════════ */
+.phone.dark{
+  --n-50:#0A0A0A; --n-100:#1E1E1E; --n-200:rgba(255,255,255,.10);
+  --n-300:rgba(255,255,255,.14); --n-500:rgba(255,255,255,.42);
+  --text:#FFFFFF; --text-sub:rgba(255,255,255,.70); --text-weak:rgba(255,255,255,.45);
+  --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.20);
+  --card:#161616; --bg:rgba(255,255,255,.06); --glass-border:rgba(255,255,255,.10);
+  --primary-text:#C8FF00; --primary-tint:rgba(200,255,0,.12);
+  --shadow-card:none; --shadow-mint:none;
+}
+
+/* ============ 状态栏 + 导航栏 ============ */
+.statusbar{height:47px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font-size:13px;font-weight:600;flex:0 0 auto}
+.statusbar .sig{display:flex;align-items:center;gap:5px}
+.statusbar .bat{width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;position:relative;opacity:.9}
+.statusbar .bat::after{content:"";position:absolute;left:1.4px;top:1.4px;bottom:1.4px;width:12px;background:currentColor;border-radius:1px}
+.statusbar .bat::before{content:"";position:absolute;right:-3.4px;top:3.2px;width:2px;height:4px;background:currentColor;border-radius:0 1px 1px 0}
+.navbar{height:44px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:var(--n-50);position:relative;z-index:2}
+.navbar b{font-size:17px;font-weight:700;color:var(--text)}
+
+/* ============ 滚动区 ============ */
+.screen{flex:1;overflow:hidden;padding:0 0 12px;position:relative}
+.screen::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:26px;pointer-events:none;
+  background:linear-gradient(to top,var(--n-50),transparent);
+}
+
+/* ══════════ ① 账户主卡 ══════════ */
+.hero-card{
+  position:relative;overflow:hidden;margin:12.5px 16.5px 0;padding:18.5px 16.5px 15.5px;
+  background:var(--card);border:1px solid var(--n-200);border-radius:var(--r-l);
+  box-shadow:var(--shadow-card);color:var(--text);
+}
+.hero-card::after{
+  content:"";position:absolute;right:-36px;top:-47px;width:146px;height:146px;border-radius:50%;
+  background:radial-gradient(circle,var(--primary-tint) 0%,rgba(255,255,255,0) 70%);pointer-events:none;
+}
+.phone.dark .hero-card::after{background:radial-gradient(circle,rgba(200,255,0,.16) 0%,rgba(0,0,0,0) 70%)}
+
+.hc-top{position:relative;z-index:1;display:flex;align-items:center;gap:12.5px}
+.avatar-btn{
+  width:58px;height:58px;border-radius:50%;overflow:hidden;flex:0 0 auto;
+  box-shadow:0 0 0 1.6px var(--primary);
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(140deg,#DFF77A,#A8D84A);
+  color:#243300;font-size:var(--fs-display);font-weight:800;
+}
+.hc-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.nick-input{
+  width:100%;height:29px;line-height:29px;color:var(--text);
+  font-size:var(--fs-title);font-weight:700;white-space:nowrap;overflow:hidden;
+}
+.hc-sub{display:flex;align-items:center;font-size:var(--fs-caption);color:var(--text-sub)}
+.hc-badge{
+  display:inline-block;margin-right:6px;padding:2.6px 8px;border-radius:var(--r-pill);
+  background:var(--primary);color:#0A0A0A;font-size:var(--fs-caption);font-weight:800;line-height:1.2;
+}
+.hc-gear{
+  flex:0 0 auto;width:33px;height:33px;border-radius:50%;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;color:var(--text);
+}
+.hc-stats{
+  position:relative;z-index:1;display:flex;margin-top:14.5px;padding-top:13.5px;
+  border-top:1px solid var(--line);
+}
+.hs-item{position:relative;flex:1;text-align:center}
+.hs-item+.hs-item::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:1px;height:23px;background:var(--line)}
+.hs-v{font-family:var(--f-en);font-size:var(--fs-title);font-weight:800;color:var(--text);line-height:1.1}
+.hs-u{margin-left:2px;font-size:var(--fs-caption);font-weight:600;color:var(--text-weak)}
+.hs-k{margin-top:4px;font-size:var(--fs-caption);color:var(--text-weak)}
+
+/* 访客态 */
+.guest-head{position:relative;z-index:1;display:flex;align-items:center;gap:11.5px}
+.guest-av{
+  flex:0 0 auto;width:50px;height:50px;border-radius:50%;background:var(--primary-tint);
+  display:flex;align-items:center;justify-content:center;color:var(--primary-text);
+}
+.guest-text{flex:1;min-width:0}
+.guest-title{font-size:var(--fs-head);font-weight:800;color:var(--text)}
+.guest-sub{margin-top:3px;font-size:var(--fs-caption);color:var(--text-sub)}
+.login-btn{
+  position:relative;z-index:1;width:100%;height:46px;line-height:46px;margin:13.5px 0 0;padding:0;
+  border:0;border-radius:var(--r-pill);
+  background:linear-gradient(135deg,var(--primary),var(--primary-deep));
+  color:#0A0A0A;font-size:var(--fs-head);font-weight:700;text-align:center;
+  box-shadow:var(--shadow-mint);font-family:inherit;
+}
+.phone.dark .login-btn{background:var(--primary)}
+.guest-tags{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:6px;margin-top:11.5px}
+.gt{padding:3.6px 9.5px;border-radius:var(--r-pill);background:var(--bg);color:var(--text-sub);font-size:var(--fs-caption);font-weight:600}
+
+/* ══════════ 通用分区卡 ══════════ */
+.sec-card{
+  margin:12.5px 16.5px 0;padding:14.5px 14.5px 12.5px;
+  background:var(--card);border:1px solid var(--n-200);border-radius:var(--r-l);
+  box-shadow:var(--shadow-card);
+}
+.phone.dark .sec-card{box-shadow:none}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11.5px}
+.sec-title{display:flex;align-items:center;gap:6px;font-size:var(--fs-head);font-weight:800;color:var(--text)}
+.sec-act{padding:3.6px 10.5px;border-radius:var(--r-pill);background:var(--primary-tint);color:var(--primary-text);font-size:var(--fs-label);font-weight:700}
+
+/* 四格概览 */
+.health-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.hg-item{
+  display:flex;align-items:center;gap:9.5px;padding:11.5px 10.5px;
+  background:var(--bg);border:1px solid var(--glass-border);border-radius:12.5px;
+}
+.hg-ic{
+  flex:0 0 auto;width:37.5px;height:37.5px;border-radius:10.5px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-label);font-weight:800;line-height:1;
+}
+.hg-ic-goal{background:linear-gradient(135deg,#F6FFDC,#E6FFA8)}
+.hg-ic-scale{background:linear-gradient(135deg,#EEF4FF,#D9E7FF)}
+.hg-ic-user{background:linear-gradient(135deg,#FFF2E7,#FFE1C9)}
+.hg-ic-bmi{background:var(--primary);color:#0A0A0A}
+.phone.dark .hg-ic-goal{background:rgba(200,255,0,.16)}
+.phone.dark .hg-ic-scale{background:rgba(62,139,255,.20)}
+.phone.dark .hg-ic-user{background:rgba(255,149,0,.18)}
+.hg-body{display:flex;flex-direction:column;min-width:0}
+.hg-v{font-size:var(--fs-title);font-weight:800;color:var(--text);line-height:1.15;white-space:nowrap}
+.hg-u{margin-left:2px;font-size:var(--fs-caption);font-weight:600;color:var(--text-sub)}
+.hg-k{margin-top:2px;font-size:var(--fs-caption);color:var(--text-sub)}
+
+/* 解读块 */
+.insight{margin-top:10px;padding:11.5px 12.5px;background:var(--bg);border-radius:var(--r-m)}
+.ins-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ins-title{font-size:var(--fs-label);font-weight:700;color:var(--text-sub)}
+.ins-chip{padding:3.6px 8px;border-radius:var(--r-pill);background:var(--card);color:var(--text);font-size:var(--fs-caption);font-weight:700;line-height:1.2}
+.ins-chip.brand{background:var(--primary);color:#0A0A0A}
+.multi{margin-top:10px}
+.multi:first-of-type{margin-top:10px}
+
+/* BMI 刻度条：15–35 映射 0–100%，四档分界 17.5% / 45% / 65% */
+.bmi-bar{
+  position:relative;height:8px;border-radius:var(--r-pill);
+  background:linear-gradient(90deg,#8FCBFF 0 17.5%,#7BD97F 17.5% 45%,#FFC24B 45% 65%,#FF8A80 65% 100%);
+}
+.bmi-mark{
+  position:absolute;top:50%;width:13.5px;height:13.5px;border-radius:50%;
+  background:var(--card);border:2.6px solid var(--text);transform:translate(-50%,-50%);
+  box-shadow:0 1px 4px rgba(0,0,0,.20);
+}
+.bmi-axis{position:relative;height:16px;margin-top:6px}
+.bmi-axis span{
+  position:absolute;transform:translateX(-50%);white-space:nowrap;
+  font-size:var(--fs-caption);color:var(--text-weak);
+}
+.bmi-axis span:nth-child(1){left:9%}
+.bmi-axis span:nth-child(2){left:31%}
+.bmi-axis span:nth-child(3){left:55%}
+.bmi-axis span:nth-child(4){left:82%}
+
+/* 距目标 */
+.goal-line{display:flex;align-items:baseline;gap:7px;margin-bottom:8px}
+.goal-now{font-family:var(--f-en);font-size:var(--fs-section);font-weight:800;color:var(--text)}
+.goal-arrow{font-size:var(--fs-body);color:var(--text-weak)}
+.goal-target{font-family:var(--f-en);font-size:var(--fs-section);font-weight:800;color:var(--primary-text)}
+.goal-unit{margin-left:2px;font-size:var(--fs-caption);font-weight:600;color:var(--text-weak)}
+.goal-track{height:8px;border-radius:var(--r-pill);background:var(--n-200);overflow:hidden}
+.goal-fill{height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--primary-light),var(--primary))}
+.goal-hint{margin-top:7px;font-size:var(--fs-caption);color:var(--text-sub)}
+
+/* 空态引导 */
+.guide-empty{
+  margin-top:10px;padding:13.5px 12.5px;border-radius:var(--r-m);
+  background:var(--primary-tint);border:1px dashed rgba(124,184,0,.35);
+}
+.ge-title{font-size:var(--fs-body);font-weight:700;color:var(--primary-text)}
+.ge-sub{margin-top:3px;font-size:var(--fs-caption);color:var(--text-sub)}
+.ge-btn{
+  display:inline-block;margin-top:9.5px;padding:0 16.5px;height:33px;line-height:33px;
+  border-radius:var(--r-pill);background:var(--primary);color:#0A0A0A;
+  font-size:var(--fs-label);font-weight:800;
+}
+
+/* 菜单 */
+.menu{margin-top:2px}
+.mi{display:flex;align-items:center;gap:10.5px;padding:13.5px 2px}
+.mi+.mi{border-top:1px solid var(--line)}
+.mi-ic{
+  flex:0 0 auto;width:33px;height:33px;border-radius:9.5px;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;color:var(--text);
+}
+.mi-t{flex:1;font-size:var(--fs-body);font-weight:600;color:var(--text)}
+.mi-note{font-size:var(--fs-label);color:var(--text-weak)}
+.mi-ar{font-size:var(--fs-head);line-height:1;color:var(--text-weak)}
+.mi.danger .mi-t{color:var(--error)}
+.mi.danger .mi-ic{background:rgba(242,84,91,.10);color:var(--error)}
+
+/* 原生 switch（等比缩到与菜单行协调） */
+.sw{flex:0 0 auto;width:43px;height:26px;border-radius:999px;background:var(--n-300);position:relative;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.sw.on{background:var(--primary)}
+.sw.on::after{transform:translateX(17px)}
+
+.attribution{padding:14.5px 16.5px 20px;text-align:center;font-size:var(--fs-caption);color:var(--text-weak);line-height:1.6}
+
+/* ============ 自定义 tabBar（深色药丸为全局组件，此处按浅色态还原） ============ */
+.tabbar{
+  flex:0 0 auto;height:78px;padding:8px 10px 0;display:flex;
+  background:var(--card);border-top:1px solid var(--line);
+}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-weak)}
+.tb b{font-size:10px;font-weight:600}
+.tb svg{width:22px;height:22px;display:block}
+.tb.on{color:var(--text)}
+.tb.on svg{color:var(--text)}
+
+/* ============ 图例 / 改动清单 ============ */
+.notes{max-width:1180px;margin:64px auto 0}
+.notes h2{font-size:20px;margin:0 0 6px;color:#EDEFEA}
+.notes .sub{margin:0 0 26px;color:#8D948B;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.note{
+  background:#181C1D;border:1px solid #262B2C;border-radius:14px;padding:18px 20px;
+}
+.note h3{margin:0 0 8px;font-size:15px;color:#EDEFEA;display:flex;align-items:center;gap:8px}
+.note h3 span{width:22px;height:22px;border-radius:7px;background:rgba(200,255,0,.14);color:#C8FF00;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.note p{margin:0;font-size:13.5px;line-height:1.72;color:#9AA1A8}
+.note p b{color:#D6DBD4;font-weight:700}
+.note p .was{color:#E8837A;text-decoration:line-through;text-decoration-color:rgba(232,131,122,.5)}
+.note p .now{color:#C8FF00;font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="eyebrow">HILIFE 微信小程序 · 页面改造</span>
+  <h1>「我的」页 —— 从<b>功能清单</b>改成<em>个人主页</em></h1>
+  <p>原来这一页是「头像 + 一张健康卡 + 一列开关」：数据只是把存储里的值原样搬出来，不给解读；未登录时是一片「--」；有效信息排在最后一屏。这版把信息架构重排为四组，并给每个数字补上「所以呢」。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ══════════ 帧 1：已登录 · 浅色 ══════════ -->
+  <div class="shot">
+    <div class="cap"><b>已登录 · 浅色</b><i>默认态</i></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="sig">▮▮▮ <span class="bat"></span></span></div>
+      <div class="navbar"><b>我的</b></div>
+      <div class="screen">
+
+        <!-- ① 账户主卡 -->
+        <div class="hero-card">
+          <div class="hc-top">
+            <div class="avatar-btn">衡</div>
+            <div class="hc-meta">
+              <div class="nick-input">阿衡</div>
+              <div class="hc-sub"><span class="hc-badge">训练达人</span>已坚持 168 天</div>
+            </div>
+            <div class="hc-gear">⚙</div>
+          </div>
+          <div class="hc-stats">
+            <div class="hs-item"><div class="hs-v">42<span class="hs-u">天</span></div><div class="hs-k">训练天数</div></div>
+            <div class="hs-item"><div class="hs-v">26.5h</div><div class="hs-k">累计时长</div></div>
+            <div class="hs-item"><div class="hs-v">186.4k</div><div class="hs-k">累计容量</div></div>
+          </div>
+        </div>
+
+        <!-- ② 我的数据 -->
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">我的数据</div><div class="sec-act">编辑</div></div>
+          <div class="health-grid">
+            <div class="hg-item"><div class="hg-ic hg-ic-goal">◎</div><div class="hg-body"><div class="hg-v">减脂</div><div class="hg-k">当前目标</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-scale">⚖</div><div class="hg-body"><div class="hg-v">72.5<span class="hg-u">kg</span></div><div class="hg-k">体重</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-user">☺</div><div class="hg-body"><div class="hg-v">178<span class="hg-u">cm</span></div><div class="hg-k">身高</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-bmi">BMI</div><div class="hg-body"><div class="hg-v">22.9</div><div class="hg-k">BMI 指数</div></div></div>
+          </div>
+
+          <div class="insight">
+            <div class="ins-head"><span class="ins-title">BMI 解读</span><span class="ins-chip">正常</span></div>
+            <div class="bmi-bar"><div class="bmi-mark" style="left:39.5%"></div></div>
+            <div class="bmi-axis"><span>偏瘦</span><span>正常</span><span>超重</span><span>肥胖</span></div>
+          </div>
+
+          <div class="insight">
+            <div class="ins-head"><span class="ins-title">距目标</span><span class="ins-chip brand">已减 5.5 / 10kg</span></div>
+            <div class="goal-line"><span class="goal-now">78<span class="goal-unit">kg</span></span><span class="goal-arrow">→</span><span class="goal-target">68<span class="goal-unit">kg</span></span></div>
+            <div class="goal-track"><div class="goal-fill" style="width:55%"></div></div>
+            <div class="goal-hint">还差 4.5kg 达标 · 按当前节奏约 9 周</div>
+          </div>
+        </div>
+
+        <!-- ③ 偏好 -->
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">偏好</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">◐</div><div class="mi-t">深色主题</div><div class="sw"></div></div>
+            <div class="mi"><div class="mi-ic">⏱</div><div class="mi-t">训练提醒</div><div class="mi-note">未开启</div></div>
+          </div>
+        </div>
+
+        <!-- ④ 关于与数据 -->
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">关于与数据</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">⚙</div><div class="mi-t">数据管理</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">隐私政策</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">版本</div><div class="mi-note">v1.0.0</div></div>
+            <div class="mi danger"><div class="mi-ic">☺</div><div class="mi-t">退出登录</div></div>
+          </div>
+        </div>
+
+        <div class="attribution">动作演示媒体 © Gym visual · gymvisual.com</div>
+      </div>
+      <div class="tabbar">
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg><b>首页</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><b>训练</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg><b>计划</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>数据</b></div>
+        <div class="tb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg><b>我的</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 帧 2：未登录 · 浅色 ══════════ -->
+  <div class="shot">
+    <div class="cap"><b>未登录 · 浅色</b><i>访客态</i></div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="sig">▮▮▮ <span class="bat"></span></span></div>
+      <div class="navbar"><b>我的</b></div>
+      <div class="screen">
+
+        <div class="hero-card">
+          <div class="guest-head">
+            <div class="guest-av">☺</div>
+            <div class="guest-text">
+              <div class="guest-title">登录，数据不丢</div>
+              <div class="guest-sub">微信一键登录 · 换机自动恢复</div>
+            </div>
+          </div>
+          <div class="login-btn">微信一键登录</div>
+          <div class="guest-tags"><span class="gt">云备份</span><span class="gt">跨设备同步</span><span class="gt">随时可退出</span></div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">我的数据</div><div class="sec-act">编辑</div></div>
+          <div class="health-grid">
+            <div class="hg-item"><div class="hg-ic hg-ic-goal">◎</div><div class="hg-body"><div class="hg-v">未设置</div><div class="hg-k">当前目标</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-scale">⚖</div><div class="hg-body"><div class="hg-v">未记录</div><div class="hg-k">体重</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-user">☺</div><div class="hg-body"><div class="hg-v">未设置</div><div class="hg-k">身高</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-bmi">BMI</div><div class="hg-body"><div class="hg-v">--</div><div class="hg-k">BMI 指数</div></div></div>
+          </div>
+
+          <div class="guide-empty">
+            <div class="ge-title">完善资料，解锁热量推荐</div>
+            <div class="ge-sub">身高体重 · 目标 · 活动量（约 30 秒）</div>
+            <div class="ge-btn">去完善</div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">偏好</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">◐</div><div class="mi-t">深色主题</div><div class="sw"></div></div>
+            <div class="mi"><div class="mi-ic">⏱</div><div class="mi-t">训练提醒</div><div class="mi-note">未开启</div></div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">关于与数据</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">⚙</div><div class="mi-t">数据管理</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">隐私政策</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">版本</div><div class="mi-note">v1.0.0</div></div>
+          </div>
+        </div>
+
+        <div class="attribution">动作演示媒体 © Gym visual · gymvisual.com</div>
+      </div>
+      <div class="tabbar">
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg><b>首页</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><b>训练</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg><b>计划</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>数据</b></div>
+        <div class="tb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg><b>我的</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 帧 3：已登录 · 深色 ══════════ -->
+  <div class="shot">
+    <div class="cap"><b>已登录 · 深色</b><i class="b">主题开关翻转</i></div>
+    <div class="phone dark">
+      <div class="statusbar"><span>9:41</span><span class="sig">▮▮▮ <span class="bat"></span></span></div>
+      <div class="navbar"><b>我的</b></div>
+      <div class="screen">
+
+        <div class="hero-card">
+          <div class="hc-top">
+            <div class="avatar-btn">衡</div>
+            <div class="hc-meta">
+              <div class="nick-input">阿衡</div>
+              <div class="hc-sub"><span class="hc-badge">训练达人</span>已坚持 168 天</div>
+            </div>
+            <div class="hc-gear">⚙</div>
+          </div>
+          <div class="hc-stats">
+            <div class="hs-item"><div class="hs-v">42<span class="hs-u">天</span></div><div class="hs-k">训练天数</div></div>
+            <div class="hs-item"><div class="hs-v">26.5h</div><div class="hs-k">累计时长</div></div>
+            <div class="hs-item"><div class="hs-v">186.4k</div><div class="hs-k">累计容量</div></div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">我的数据</div><div class="sec-act">编辑</div></div>
+          <div class="health-grid">
+            <div class="hg-item"><div class="hg-ic hg-ic-goal">◎</div><div class="hg-body"><div class="hg-v">减脂</div><div class="hg-k">当前目标</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-scale">⚖</div><div class="hg-body"><div class="hg-v">72.5<span class="hg-u">kg</span></div><div class="hg-k">体重</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-user">☺</div><div class="hg-body"><div class="hg-v">178<span class="hg-u">cm</span></div><div class="hg-k">身高</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-bmi">BMI</div><div class="hg-body"><div class="hg-v">22.9</div><div class="hg-k">BMI 指数</div></div></div>
+          </div>
+
+          <div class="insight">
+            <div class="ins-head"><span class="ins-title">BMI 解读</span><span class="ins-chip">正常</span></div>
+            <div class="bmi-bar"><div class="bmi-mark" style="left:39.5%"></div></div>
+            <div class="bmi-axis"><span>偏瘦</span><span>正常</span><span>超重</span><span>肥胖</span></div>
+          </div>
+
+          <div class="insight">
+            <div class="ins-head"><span class="ins-title">距目标</span><span class="ins-chip brand">已减 5.5 / 10kg</span></div>
+            <div class="goal-line"><span class="goal-now">78<span class="goal-unit">kg</span></span><span class="goal-arrow">→</span><span class="goal-target">68<span class="goal-unit">kg</span></span></div>
+            <div class="goal-track"><div class="goal-fill" style="width:55%"></div></div>
+            <div class="goal-hint">还差 4.5kg 达标 · 按当前节奏约 9 周</div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">偏好</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">◐</div><div class="mi-t">深色主题</div><div class="sw on"></div></div>
+            <div class="mi"><div class="mi-ic">⏱</div><div class="mi-t">训练提醒</div><div class="mi-note">已开启</div></div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">关于与数据</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">⚙</div><div class="mi-t">数据管理</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">隐私政策</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">版本</div><div class="mi-note">v1.0.0</div></div>
+            <div class="mi danger"><div class="mi-ic">☺</div><div class="mi-t">退出登录</div></div>
+          </div>
+        </div>
+
+        <div class="attribution">动作演示媒体 © Gym visual · gymvisual.com</div>
+      </div>
+      <div class="tabbar">
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg><b>首页</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><b>训练</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg><b>计划</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>数据</b></div>
+        <div class="tb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg><b>我的</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 帧 4：未登录 · 深色 ══════════ -->
+  <div class="shot">
+    <div class="cap"><b>未登录 · 深色</b><i>访客态 × 深色</i></div>
+    <div class="phone dark">
+      <div class="statusbar"><span>9:41</span><span class="sig">▮▮▮ <span class="bat"></span></span></div>
+      <div class="navbar"><b>我的</b></div>
+      <div class="screen">
+
+        <div class="hero-card">
+          <div class="guest-head">
+            <div class="guest-av">☺</div>
+            <div class="guest-text">
+              <div class="guest-title">登录，数据不丢</div>
+              <div class="guest-sub">微信一键登录 · 换机自动恢复</div>
+            </div>
+          </div>
+          <div class="login-btn">微信一键登录</div>
+          <div class="guest-tags"><span class="gt">云备份</span><span class="gt">跨设备同步</span><span class="gt">随时可退出</span></div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">我的数据</div><div class="sec-act">编辑</div></div>
+          <div class="health-grid">
+            <div class="hg-item"><div class="hg-ic hg-ic-goal">◎</div><div class="hg-body"><div class="hg-v">未设置</div><div class="hg-k">当前目标</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-scale">⚖</div><div class="hg-body"><div class="hg-v">未记录</div><div class="hg-k">体重</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-user">☺</div><div class="hg-body"><div class="hg-v">未设置</div><div class="hg-k">身高</div></div></div>
+            <div class="hg-item"><div class="hg-ic hg-ic-bmi">BMI</div><div class="hg-body"><div class="hg-v">--</div><div class="hg-k">BMI 指数</div></div></div>
+          </div>
+
+          <div class="guide-empty">
+            <div class="ge-title">完善资料，解锁热量推荐</div>
+            <div class="ge-sub">身高体重 · 目标 · 活动量（约 30 秒）</div>
+            <div class="ge-btn">去完善</div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">偏好</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">◐</div><div class="mi-t">深色主题</div><div class="sw on"></div></div>
+            <div class="mi"><div class="mi-ic">⏱</div><div class="mi-t">训练提醒</div><div class="mi-note">未开启</div></div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-head"><div class="sec-title">关于与数据</div></div>
+          <div class="menu">
+            <div class="mi"><div class="mi-ic">⚙</div><div class="mi-t">数据管理</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">隐私政策</div><div class="mi-ar">›</div></div>
+            <div class="mi"><div class="mi-ic">ⓘ</div><div class="mi-t">版本</div><div class="mi-note">v1.0.0</div></div>
+          </div>
+        </div>
+
+        <div class="attribution">动作演示媒体 © Gym visual · gymvisual.com</div>
+      </div>
+      <div class="tabbar">
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg><b>首页</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg><b>训练</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg><b>计划</b></div>
+        <div class="tb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>数据</b></div>
+        <div class="tb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg><b>我的</b></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════ 改动清单 ══════════ -->
+<div class="notes">
+  <h2>这次改了什么</h2>
+  <p class="sub">六处结构性调整，全部已落地到 <code>pages/profile/</code>。</p>
+  <div class="grid">
+    <div class="note">
+      <h3><span>1</span>信息架构：从「清单」到「四组」</h3>
+      <p>原来是 <b>头像+健康卡+一列开关</b> 混排——功能项性质不同却挤在一张卡里。<br>现在拆成 <b>①账户主卡 ②我的数据 ③偏好 ④关于与数据</b>：越个人化越靠上，越低频越靠下。<span class="was">设置 / 隐私 / 数据管理 / 版本 混在一起</span> → <span class="now">按「我是谁 / 我的身体状况 / 我的习惯 / 这个 App」分区</span>。</p>
+    </div>
+    <div class="note">
+      <h3><span>2</span>主卡承接「个人主页」职责</h3>
+      <p>昵称下面新增<b>称号徽章</b>（按训练天数分档：初出茅庐 → 年度铁人），并补上<b>累计三连</b>：训练天数 / 累计时长 / 累计容量。<br>时长用 <b>Σ(训练+休息)</b>、容量用 <b>Σ(重量×次数)</b>，与数据页、复盘页口径完全一致，不会两处对不上。</p>
+    </div>
+    <div class="note">
+      <h3><span>3</span>给数字配「所以呢」——BMI 解读</h3>
+      <p>原来只有一个裸的 22.9。<span class="was">22.9</span> → <span class="now">22.9 + 「正常」标签 + 四档刻度条</span>：15–35 映射成偏瘦/正常/超重/肥胖四色段，滑块精确定位到 39.5%，中国成人标准分界（18.5 / 24 / 28）。</p>
+    </div>
+    <div class="note">
+      <h3><span>4</span>给数字配「还差多少」——距目标进度</h3>
+      <p>新增起点→目标 + 进度条 + 节奏预估：<b>78kg → 68kg、已减 5.5/10kg、还差 4.5kg、约 9 周</b>（按每周 0.5kg 的安全速度）。<br>反向增重时进度夹在 0–100%，不出现负条；起点取最早一条体重记录，无需用户额外输入。</p>
+    </div>
+    <div class="note">
+      <h3><span>5</span>空态从「一片 --」改成有出口</h3>
+      <p>访客或未填资料时，四格不再只是 <span class="was">未设置 / 未记录 / --</span> 就结束，而是接一张<b>引导卡</b>：「完善资料，解锁热量推荐」+ 耗时预期（约 30 秒）+ <b>去完善</b> 按钮，直接跳设置页。登录卡也补齐价值点（云备份 / 跨设备同步 / 随时可退出）。</p>
+    </div>
+    <div class="note">
+      <h3><span>6</span>废弃功能退出主流程</h3>
+      <p>「退出登录」从主卡右上角（高频位置）移到<b>关于与数据</b>组最末，用红色 danger 行表达不可逆性，减少误触。<br>同时清掉这页遗留的旧<b>青色 <code>rgba(46,207,176)</code></b> 与已弃用的竖渐变底，底色统一为 <code>--n-50</code> 暖白；深色模式全部走同一套变量翻转。</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
