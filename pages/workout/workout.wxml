@@ -102,8 +102,8 @@
                   data-ai="{{ai}}" data-si="{{si}}" catchtap="deleteSet">✕</view>
           </view>
 
-          <!-- 每组吃力程度：4 档点选（点一下即选，再点同档取消；已完成的组仍可补改） -->
-          <view class="wo-rpe">
+          <!-- 每组吃力程度：做完该组（✓）后才出现，4 档点选（点一下即选，再点同档取消；可随时补改） -->
+          <view class="wo-rpe" wx:if="{{set.done}}">
             <view class="wo-rpe-l">
               <text class="wo-rpe-label">吃力程度</text>
               <text class="wo-rpe-cap">第 {{si + 1}} 组做完的感觉</text>
