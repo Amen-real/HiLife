@@ -229,12 +229,32 @@ const store = {
     if (!id) return null;
     return g().trainingPlans.find(p => p.id === id) || null;
   },
-  // 某个模板（programId）下的全部训练日计划，按 dayIndex 升序（A 日 → B 日 → C 日）
+  // 某模板（programId）下全部训练日计划，按 dayIndex 升序（A 日 → B 日 → C 日）
   getProgramPlans(programId) {
     if (!programId) return [];
     return g().trainingPlans
       .filter(p => p.programId === programId)
       .sort((a, b) => (Number(a.dayIndex) || 0) - (Number(b.dayIndex) || 0));
+  },
+  // 把某模板的第 0 个训练日设为「今日计划」（进入轮转队列）——计划页组头「设为使用中」
+  setActiveProgram(programId) {
+    const sibs = this.getProgramPlans(programId);
+    if (!sibs.length) return null;
+    g().activePlanId = sibs[0].id;
+    this.persist();
+    return sibs[0];
+  },
+  // 整套移除某模板的全部训练日计划——计划页组头「整套移除」。
+  // 若被删的计划正是当前激活计划，激活指针清空（首页今日推荐随之回退到自由训练/空态）。
+  removeProgramPlans(programId) {
+    if (!programId) return [];
+    const list = g().trainingPlans;
+    const drop = list.filter(p => p.programId === programId).map(p => p.id);
+    if (!drop.length) return [];
+    g().trainingPlans = list.filter(p => p.programId !== programId);
+    if (drop.indexOf(g().activePlanId) >= 0) g().activePlanId = '';
+    this.persist();
+    return drop;
   },
   // 模板计划轮转：把激活指针推进到同一模板的下一个训练日（A→B→C→A 循环）。
   // 调用时机 = 一次训练「保存完成」之后（见 workout.js saveWorkout），实现「练完 A 日，下次自动 B 日」。
@@ -294,12 +314,16 @@ const store = {
   /* ---------- 训练日志 ---------- */
   // 每次保存 = 一次独立训练场次（允许同一天多次训练，如"再练一次"），不再按日期合并覆盖
   // 每条记录带唯一 sid + createdAt，供列表/详情按场次精确定位；fitnessDays 按去重日期计训练天数
+  // planId / programId：本场训练归属的计划与所属模板（计划流才有；自由训练为空串）。
+  //   用途：计划页「方案组头本周进度」「卡片本周/今日已完成」按归属统计，避免各方案状态互相串台。
   saveTrainingLog(log) {
     const list = g().trainingLogs.slice();
     const entry = {
       sid: 't' + Date.now().toString(36) + Math.floor(Math.random() * 1000),
       date: log.date,
       createdAt: Date.now(),
+      planId: log.planId || '',
+      programId: log.programId || '',
       actions: log.actions || []
     };
     list.push(entry);

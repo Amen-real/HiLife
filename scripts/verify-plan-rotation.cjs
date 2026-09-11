@@ -8,9 +8,14 @@
  *      「今日计划」= 单指针 activePlanId，训练保存后由 store.advanceActivePlan() 推进。
  *
  * 本脚本防止回归，检查三项：
- *   A. 纯逻辑：utils/planRotation.js 的 nextPlanId / sortPlans / 命名函数（直接单测真实模块）
+ *   A. 纯逻辑：utils/planRotation.js 的 nextPlanId / groupPlans / 命名函数（直接单测真实模块）
  *   B. 数据端到端：用真实 presets/plans.js 模拟连续训练，验证 A→B→C→A 轮转与周目标口径
  *   C. 接线：store / plan / workout / home / wxml / wxss 是否按约定接入（字符串结构断言）
+ *
+ * 追加覆盖（多套方案并存治理）：
+ *   · 计划库允许并存多套模板 → groupPlans 分组（一套一组、手动计划聚一组、激活组置顶）
+ *   · 训练日志写入 planId/programId 归属 → 计划页按归属统计各组本周进度与完成态
+ *   · 修掉「练了 A 套，B 套的卡也全绿」的状态串台（非激活方案显示「未启用」）
  *
  * 用法：node scripts/verify-plan-rotation.cjs
  */
@@ -57,26 +62,46 @@ eq('B 模板 b1 \u2192 b0（自身长度 2 的环绕）', rot.nextPlanId(mixed, 
 const noIdx = [P('x', 'g', undefined), P('y', 'g', undefined)];
 eq('dayIndex 缺失视作 0（保持原序）', rot.nextPlanId(noIdx, 'x'), 'y');
 
-/* ============ A. sortPlans：分组置顶 + 组内升序 ============ */
-console.log('\n[A] sortPlans —— 激活组置顶、组内 A\u2192B\u2192C');
+/* ============ A. groupPlans：方案分组 + 组序 + 组内升序 ============ */
+console.log('\n[A] groupPlans —— 一套方案一组、激活组置顶、组内 A\u2192B\u2192C');
 const list = [
   P('m1', '', 0, '\u6211\u7684\u8ba1\u5212\u4e00'),
   P('pa', 'prog', 0, 'P \u00b7 A'), P('pb', 'prog', 1, 'P \u00b7 B'), P('pc', 'prog', 2, 'P \u00b7 C'),
   P('m2', '', 0, '\u6211\u7684\u8ba1\u5212\u4e8c')
 ];
 const snap = list.slice();
-// 说明：激活「组」置顶后，组内仍按 dayIndex 升序（A→B→C）——用户要求卡片固定展示 A/B/C 顺序，
-//      「今日」由卡片上的标签标识，而非把当天那张提到组内第一位。
-eq('激活 B \u2192 组置顶且组内仍是 A,B,C，手动计划随后',
-  rot.sortPlans(list, 'pb').map(p => p.id), ['pa', 'pb', 'pc', 'm1', 'm2']);
-eq('激活 C \u2192 同上（组内顺序不受激活项影响）',
-  rot.sortPlans(list, 'pc').map(p => p.id), ['pa', 'pb', 'pc', 'm1', 'm2']);
-eq('激活 A \u2192 A,B,C,然后手动计划',
-  rot.sortPlans(list, 'pa').map(p => p.id), ['pa', 'pb', 'pc', 'm1', 'm2']);
-eq('激活手动计划 \u2192 手动优先、模板组仍连续',
-  rot.sortPlans(list, 'm2').map(p => p.id), ['m2', 'm1', 'pa', 'pb', 'pc']);
-isTrue('sortPlans 不改动入参数组', JSON.stringify(list) === JSON.stringify(snap));
-eq('空入参不崩', rot.sortPlans([], 'x'), []);
+const keysOf = (g) => g.map(b => b.key);
+const idsOf = (g) => g.map(b => b.plans.map(p => p.id));
+
+// 组键：模板按 programId；手动计划全部归入 MANUAL_KEY（不会每张手动卡各成一组）
+eq('两组：prog + 手动组', keysOf(rot.groupPlans(list, 'pa')), ['prog', rot.MANUAL_KEY]);
+eq('手动计划聚合在同组且保持原序', rot.groupPlans(list, 'pa')[1].plans.map(p => p.id), ['m1', 'm2']);
+
+// 组序：激活组置顶；组内恒按 dayIndex 升序（A→B→C），与「激活的是哪天」无关
+eq('激活 A \u2192 模板组在前，组内 A,B,C',
+  idsOf(rot.groupPlans(list, 'pa')), [['pa', 'pb', 'pc'], ['m1', 'm2']]);
+eq('激活 B \u2192 组内顺序不受影响（仍 A,B,C）',
+  idsOf(rot.groupPlans(list, 'pb')), [['pa', 'pb', 'pc'], ['m1', 'm2']]);
+eq('激活手动计划 \u2192 手动组置顶',
+  idsOf(rot.groupPlans(list, 'm2')), [['m1', 'm2'], ['pa', 'pb', 'pc']]);
+eq('无激活（activePlanId 空）\u2192 保持计划库原序（按组首次出现）',
+  idsOf(rot.groupPlans(list, '')), [['m1', 'm2'], ['pa', 'pb', 'pc']]);
+
+// 多套模板并存：各自成组、互不掺和，激活的那套置顶
+const two = [
+  P('s0', 'strength', 0), P('s1', 'strength', 1), P('s2', 'strength', 2),
+  P('h0', 'ppl', 0), P('h1', 'ppl', 1), P('h2', 'ppl', 2)
+];
+eq('两套模板并存 \u2192 两组，激活组（ppl）置顶',
+  idsOf(rot.groupPlans(two, 'h0')), [['h0', 'h1', 'h2'], ['s0', 's1', 's2']]);
+eq('两套模板并存 \u2192 切到 strength 则它置顶',
+  idsOf(rot.groupPlans(two, 's2')), [['s0', 's1', 's2'], ['h0', 'h1', 'h2']]);
+
+isTrue('groupPlans 不改动入参数组', JSON.stringify(list) === JSON.stringify(snap));
+eq('空入参不崩', rot.groupPlans([], 'x'), []);
+eq('groupKeyOf：模板取 programId',
+  [rot.groupKeyOf({ id: 'p', programId: 'g' }), rot.groupKeyOf({ id: 'm' }), rot.groupKeyOf(null)],
+  ['g', rot.MANUAL_KEY, '']);
 
 /* ============ A. 命名函数 ============ */
 console.log('\n[A] dayFullName / dayLabel / programLabel');
@@ -117,7 +142,7 @@ const walk = [];
 for (let i = 0; i < 4; i++) { walk.push(cur); cur = rot.nextPlanId(bp, cur); }
 eq('连续 4 次完成训练的指针轨迹 = A,B,C,A', walk, ['x0', 'x1', 'x2', 'x0']);
 eq('周目标口径 = 模板 daysPerWeek', Number(big5.daysPerWeek), 3);
-eq('排序后卡片顺序 = A,B,C', rot.sortPlans(bp, 'x0').map(p => p.id), ['x0', 'x1', 'x2']);
+eq('分组后组内卡片顺序 = A,B,C', idsOf(rot.groupPlans(bp, 'x0'))[0], ['x0', 'x1', 'x2']);
 
 const single = progs.filter(p => p.days.length === 1);
 isTrue('存在单训练日模板（减脂/新手）', single.length >= 1);
@@ -130,13 +155,26 @@ isTrue('store.js 引入 planRotation', /require\(['"]\.\/planRotation\.js['"]\)/
 isTrue('store.js 定义 advanceActivePlan()', /advanceActivePlan\s*\(\s*\)\s*\{/.test(store));
 isTrue('advanceActivePlan 走 planRotation.nextPlanId', /planRotation\.nextPlanId\(/.test(store));
 isTrue('store.js 提供 getProgramPlans(programId)', /getProgramPlans\s*\(\s*programId\s*\)/.test(store));
+isTrue('store.js 提供 setActiveProgram(programId)', /setActiveProgram\s*\(\s*programId\s*\)/.test(store));
+isTrue('store.js 提供 removeProgramPlans(programId)', /removeProgramPlans\s*\(\s*programId\s*\)/.test(store));
+isTrue('removeProgramPlans 会清空被删的激活指针', /removeProgramPlans[\s\S]{0,400}?activePlanId\s*=\s*''/.test(store));
+isTrue('saveTrainingLog 写入 planId 归属', /planId:\s*log\.planId\s*\|\|\s*''/.test(store));
+isTrue('saveTrainingLog 写入 programId 归属', /programId:\s*log\.programId\s*\|\|\s*''/.test(store));
 
 const planJs = read('pages/plan/plan.js');
 isTrue('plan.js 定义 importProgram()', /importProgram\s*\(\s*e\s*\)\s*\{/.test(planJs));
 isTrue('importProgram 写 daysPerWeek', /daysPerWeek:\s*Number\(program\.daysPerWeek\)/.test(planJs));
 isTrue('plan.js 有 ensureProgramPlans（整套展开）', /ensureProgramPlans\s*\(/.test(planJs));
-isTrue('plan.js 用 planRotation.sortPlans 排卡片', /planRotation\.sortPlans\(/.test(planJs));
+isTrue('plan.js 用 planRotation.groupPlans 分组', /planRotation\.groupPlans\(/.test(planJs));
+isTrue('plan.js 定义组头操作 useProgram/removeProgram',
+  /useProgram\s*\(\s*e\s*\)\s*\{/.test(planJs) && /removeProgram\s*\(\s*e\s*\)\s*\{/.test(planJs));
 isTrue('computeWeek 目标仍取 active.daysPerWeek', /active\s*&&\s*active\.daysPerWeek/.test(planJs));
+// 串台修复：非激活计划不得再套用「今日已完成」（旧 bug：trainedToday 全局判定 →
+// 练了 A 套后 B 套的卡也全绿）。完成态必须由 lastDayByPlan（按 planId 归属）驱动。
+isTrue('完成态按 planId 归属统计（lastDayByPlan）', /lastDayByPlan\s*\[/.test(planJs));
+isTrue('非激活计划已无「trainedToday ? 今日已完成」分支', !/else\s*\{[\s\S]{0,120}trainedToday[\s\S]{0,60}今日已完成/.test(planJs));
+isTrue('未启用方案显示「未启用」', /'未启用'/.test(planJs));
+isTrue('激活组内非当天卡显示「待轮换」', /'待轮换'/.test(planJs));
 
 const wo = read('pages/workout/workout.js');
 const iLog = wo.indexOf('store.saveTrainingLog(');
@@ -144,6 +182,9 @@ const iAdv = wo.indexOf('store.advanceActivePlan()');
 isTrue('workout.js 调用 store.advanceActivePlan()', iAdv > 0);
 isTrue('轮转发生在 saveTrainingLog 之后', iLog > 0 && iAdv > iLog);
 isTrue('轮转仅限计划流（_woSource === "plan" 守卫）', /_woSource\s*===\s*['"]plan['"]/.test(wo));
+isTrue('saveTrainingLog 带 planId 归属', /planId:\s*plan\s*\?\s*plan\.id\s*:\s*''/.test(wo));
+isTrue('saveTrainingLog 带 programId 归属', /programId:\s*plan\s*\?\s*\(plan\.programId\s*\|\|\s*''\)\s*:\s*''/.test(wo));
+isTrue('归属取值在 advanceActivePlan 之前', wo.indexOf('planId: plan ? plan.id') > 0 && wo.indexOf('planId: plan ? plan.id') < iAdv);
 
 const homeJs = read('pages/home/home.js');
 isTrue('home.js 引入 planRotation', /require\(['"]\.\.\/\.\.\/utils\/planRotation\.js['"]\)/.test(homeJs));
@@ -151,12 +192,26 @@ isTrue('home.js 今日推荐标题用 dayFullName', /planRotation\.dayFullName\(
 
 const wxml = read('pages/plan/plan.wxml');
 isTrue('plan.wxml 有「导入整套」绑定 importProgram', /bindtap="importProgram"/.test(wxml));
-isTrue('plan.wxml 卡片渲染组名 item.showGroup', /\{\{item\.showGroup\}\}/.test(wxml));
+isTrue('plan.wxml 按 groups 渲染方案分组', /wx:for="\{\{groups\}\}"/.test(wxml) && /wx:for-item="g"/.test(wxml));
+isTrue('plan.wxml 组头显示方案名与训练日数', /\{\{g\.name\}\}/.test(wxml) && /g\.count/.test(wxml));
+isTrue('plan.wxml 组头显示本周进度', /g\.weekTarget/.test(wxml) && /g\.weekDone/.test(wxml));
+isTrue('plan.wxml 组头有「使用中」徽章与「设为使用中」',
+  /wx:if="\{\{g\.isActive\}\}"[\s\S]{0,200}使用中/.test(wxml) && /tap="useProgram"/.test(wxml));
+isTrue('plan.wxml 组头有「移除」整套绑定 removeProgram', /tap="removeProgram"/.test(wxml));
+isTrue('plan.wxml 组内卡片用 g.plans', /wx:for="\{\{g\.plans\}\}"/.test(wxml));
 isTrue('plan.wxml 卡片标题用 item.cardTitle', /\{\{item\.cardTitle\}\}/.test(wxml));
+isTrue('plan.wxml 旧的分组行 item.showGroup 已移除', !/\{\{item\.showGroup\}\}/.test(wxml));
+isTrue('菜单/详情文案改为「设为今日计划」（已导入的计划不该说「导入」）',
+  !/导入今日训练/.test(wxml) && /设为今日计划/.test(wxml));
 
 const wxss = read('pages/plan/plan.wxss');
 isTrue('plan.wxss 有 .tpl-import-all 主 CTA 样式', /\.tpl-import-all\s*\{/.test(wxss));
-isTrue('plan.wxss 有 .plan .plan-group 组名样式', /\.plan \.plan-group\s*\{/.test(wxss));
+isTrue('plan.wxss 有方案组头样式 .groups/.group-head', /\.groups\s*\{/.test(wxss) && /\.group-head\s*\{/.test(wxss));
+isTrue('plan.wxss 组头徽章/按钮走主题令牌',
+  /\.gh-badge\s*\{[^}]*var\(--lime\)/.test(wxss) && /\.gh-btn\s*\{[^}]*var\(--bg\)/.test(wxss));
+isTrue('plan.wxss 移除红字走 --danger-text（双主题可达 AA）',
+  /\.gh-del\s*\{[^}]*var\(--danger-text\)/.test(wxss) && /--danger-text:\s*#C4363B/.test(wxss) && /theme-dark[\s\S]{0,900}--danger-text:\s*#FF6B70/.test(wxss));
+isTrue('plan.wxss 旧 .plan-group 样式已移除', !/\.plan \.plan-group\s*\{/.test(wxss));
 isTrue('plan.wxss CTA 用主题令牌（非硬编码底色）', /\.tpl-import-all\s*\{[^}]*var\(--primary\)/.test(wxss));
 
 /* ============ 汇总 ============ */

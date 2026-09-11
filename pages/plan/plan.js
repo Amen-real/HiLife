@@ -123,15 +123,19 @@ function mondayOf(d) {
   return x;
 }
 
+// 本周（周一 00:00 ~ 下周一 00:00）的起止日期串，供 Dashboard 与方案组头进度共用同一口径
+function weekRange() {
+  const mon = mondayOf(new Date());
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 7);
+  return { monStr: fmtDate(mon), sunStr: fmtDate(sun) };
+}
+
 // 本周训练 Dashboard 数据：本周已训练天数 / 目标(active 计划的 daysPerWeek 或默认5) / 进度% / 连续天数
 function computeWeek() {
   const g = store.get();
   const logs = g.trainingLogs || [];
   const dates = new Set(logs.map(l => l.date));
-  const now = new Date();
-  const mon = mondayOf(now);
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 7);
-  const monStr = fmtDate(mon), sunStr = fmtDate(sun);
+  const { monStr, sunStr } = weekRange();
   let done = 0;
   dates.forEach(dt => { if (dt >= monStr && dt < sunStr) done++; });
   // 连续训练天数（截至今天）
@@ -160,7 +164,7 @@ Page({
     theme: 'theme-light',
     mode: 'list',          // list | create
     seg: 'mine',           // mine（我的计划） | tpl（模板推荐）
-    plans: [],
+    groups: [],            // 「我的计划」按方案分组：[{ key, name, isProgram, isActive, count, weekDone, weekTarget, plans:[卡] }]
     activePlanId: '',
     week: { done: 0, target: 5, pct: 0, streak: 0, barStyle: 'width:0%' },
     // 更多菜单
@@ -244,52 +248,90 @@ Page({
   loadPlans() {
     const g = store.get();
     const today = todayStr();
-    const trainedToday = (g.trainingLogs || []).some(l => l.date === today);
+    const { monStr, sunStr } = weekRange();
     const activeId = g.activePlanId;
-    let plans = (g.trainingPlans || []).map(p => {
-      const m = planMetrics(p);
-      const isActive = p.id === activeId;
-      const isTpl = !!p.programId;
-      let statusText, statusCls, statusDot;
-      if (isActive) {
-        if (trainedToday) { statusText = '今日已完成'; statusCls = 'done'; statusDot = 'solid'; }
-        else { statusText = '今日未训练'; statusCls = 'todo'; statusDot = 'hollow'; }
-      } else {
-        if (trainedToday) { statusText = '今日已完成'; statusCls = 'done'; statusDot = 'solid'; }
-        else { statusText = '未训练'; statusCls = 'idle'; statusDot = 'muted'; }
+    const logs = g.trainingLogs || [];
+
+    // —— 归属统计：本场训练属于哪张计划 / 哪套模板 ——
+    // 只有「计划流」的训练日志带 planId/programId（见 workout.saveWorkout）；自由训练二者为空。
+    const lastDayByPlan = {};      // planId -> 本周内最近一次训练日期
+    const daysByProgram = {};      // programId -> { date: true }，用于方案组头周进度
+    let freeTrainedToday = false;  // 今天是否有「未归属」的自由训练
+    logs.forEach(l => {
+      if (l.date === today && !l.planId) freeTrainedToday = true;
+      if (!l.date || l.date < monStr || l.date >= sunStr) return;
+      if (l.planId && (!lastDayByPlan[l.planId] || l.date > lastDayByPlan[l.planId])) {
+        lastDayByPlan[l.planId] = l.date;
       }
+      if (l.programId) {
+        if (!daysByProgram[l.programId]) daysByProgram[l.programId] = {};
+        daysByProgram[l.programId][l.date] = true;
+      }
+    });
+
+    // —— 分组：一套方案 = 一个组；无 programId 的手动计划归入同一个「自定义计划」组 ——
+    const buckets = planRotation.groupPlans(g.trainingPlans, activeId);
+    const activePlan = (g.trainingPlans || []).find(p => p.id === activeId) || null;
+    const activeGroupKey = planRotation.groupKeyOf(activePlan);
+
+    let flat = [];
+    const groups = buckets.map(b => {
+      const isTpl = b.key !== planRotation.MANUAL_KEY;
+      const isActiveGroup = !!activeId && b.key === activeGroupKey;
+      const cards = b.plans.map(p => {
+        const m = planMetrics(p);
+        const isActive = p.id === activeId;
+        const lastDay = lastDayByPlan[p.id] || '';
+        // 状态口径：完成态按「本场训练的归属」判定；未归属的自由训练只点亮当前激活计划。
+        // 这样多套方案并存时不会出现「练了 A 套，B 套的卡也全绿」的串台。
+        let statusText, statusCls, statusDot;
+        if (lastDay === today || (isActive && !lastDay && freeTrainedToday)) {
+          statusText = '今日已完成'; statusCls = 'done'; statusDot = 'solid';
+        } else if (lastDay) {
+          statusText = '本周已完成'; statusCls = 'done'; statusDot = 'solid';
+        } else if (isActive) {
+          statusText = '今日未训练'; statusCls = 'todo'; statusDot = 'hollow';
+        } else if (isActiveGroup) {
+          statusText = '待轮换'; statusCls = 'idle'; statusDot = 'muted';
+        } else {
+          statusText = '未启用'; statusCls = 'idle'; statusDot = 'muted';
+        }
+        return {
+          id: p.id,
+          name: p.name,
+          // 模板计划：卡片标题只显示训练日（A 日 · 下肢推 + 上肢推），方案名由组头承载
+          cardTitle: isTpl ? planRotation.dayFullName(p.name) : p.name,
+          goal: p.goal || '',
+          level: p.level || '',
+          count: m.count,
+          minutes: m.minutes,
+          kcal: m.kcal,
+          isActive,
+          featured: isActive,   // 当天所在卡作为「今日重点」
+          todayTag: isActive,   // [今日] Lime Green 标签
+          statusText, statusCls, statusDot
+        };
+      });
+      flat = flat.concat(cards);
+
+      const first = b.plans[0] || {};
+      const target = isTpl ? (Number(first.daysPerWeek) || 0) : 0;
+      const done = isTpl ? Object.keys(daysByProgram[b.key] || {}).length : 0;
       return {
-        id: p.id,
-        name: p.name,
-        // 模板计划：标题只显示训练日（A 日 · 下肢推 + 上肢推），上方加一行模板组名，卡片一眼可辨 A/B/C
-        cardTitle: isTpl ? planRotation.dayFullName(p.name) : p.name,
-        groupName: isTpl ? planRotation.programLabel(p.name) : '',
-        groupKey: p.programId || p.id,
-        dayIndex: Number(p.dayIndex) || 0,
-        count: m.count,
-        minutes: m.minutes,
-        kcal: m.kcal,
-        goal: p.goal || '',
-        level: p.level || '',
-        isActive,
-        featured: isActive,    // 首卡（active 计划）作为今日重点
-        todayTag: isActive,   // [今日] Lime Green 标签
-        statusText, statusCls, statusDot
+        key: b.key,
+        pid: isTpl ? b.key : '',
+        name: isTpl ? planRotation.programLabel(first.name) : '自定义计划',
+        isProgram: isTpl,
+        isActive: isActiveGroup,
+        count: cards.length,
+        weekDone: done,
+        weekTarget: target,
+        plans: cards
       };
     });
-    // 排序：激活计划所在「模板组」整体置顶，同组内按训练日顺序（A→B→C）排布
-    plans = planRotation.sortPlans(plans, activeId);
-    // 同组只有首张卡显示组名，避免「力量·基础五大项」连刷三遍
-    let prevGroup = null;
-    plans.forEach(p => {
-      p.showGroup = !!(p.groupName && p.groupKey !== prevGroup);
-      prevGroup = p.groupKey;
-    });
-    this.setData({
-      plans,
-      activePlanId: activeId,
-      week: computeWeek()
-    });
+
+    this._plansFlat = flat;
+    this.setData({ groups, activePlanId: activeId, week: computeWeek() });
   },
 
   // —— 新建 / 编辑 表单 ——
@@ -361,6 +403,45 @@ Page({
     this.loadPlans();
     this._syncHome();
     wx.showToast({ title: '已导入 ' + plans.length + ' 个训练日', icon: 'success' });
+  },
+
+  // 方案组头：「设为使用中」——把该模板的第 0 个训练日设为今日计划，让它进入轮转队列。
+  // 允许并存多套方案后，这是方案之间切换的唯一入口（不删旧方案，只改激活指针）。
+  useProgram(e) {
+    if (!auth.requireLogin()) return;
+    const pid = e.currentTarget.dataset.pid;
+    const plan = store.setActiveProgram(pid);
+    if (!plan) return;
+    this.loadPlans();
+    this._syncHome();
+    wx.showToast({ title: '已切换为「' + planRotation.dayFullName(plan.name) + '」', icon: 'none' });
+  },
+
+  // 方案组头：「整套移除」——删除该模板的全部训练日计划（二次确认）。
+  // 删的若是当前激活方案，activePlanId 会被清空，首页今日推荐随之回退（不擅自替用户改选另一套）。
+  removeProgram(e) {
+    if (!auth.requireLogin()) return;
+    const pid = e.currentTarget.dataset.pid;
+    const program = (presets.PROGRAMS || []).find(p => p.id === pid);
+    const name = program ? program.name : '该方案';
+    const sibs = store.getProgramPlans(pid);
+    if (!sibs.length) return;
+    const activeId = store.get().activePlanId;
+    const inUse = sibs.some(p => p.id === activeId);
+    wx.showModal({
+      title: '移除整套方案',
+      content: '将删除「' + name + '」的 ' + sibs.length + ' 个训练日计划'
+        + (inUse ? '（该方案正在使用，移除后首页今日推荐会清空）' : '')
+        + '。此操作不可撤销。',
+      confirmText: '移除', confirmColor: '#E5484D',
+      success: (res) => {
+        if (!res.confirm) return;
+        store.removeProgramPlans(pid);
+        this.loadPlans();
+        this._syncHome();
+        wx.showToast({ title: '已移除 ' + sibs.length + ' 个训练日', icon: 'none' });
+      }
+    });
   },
 
   // 导入单个训练日（模板内某天）：同样补齐 daysPerWeek，使其成为「今日计划」
@@ -576,7 +657,7 @@ Page({
   // —— 更多菜单 ——
   openMenu(e) {
     const id = e.currentTarget.dataset.id;
-    const p = this.data.plans.find(x => x.id === id);
+    const p = (this._plansFlat || []).find(x => x.id === id);
     this.setData({ showMenu: true, menuId: id, menuName: p ? p.name : '训练计划' });
   },
   closeMenu() { this.setData({ showMenu: false }); },

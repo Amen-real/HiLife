@@ -54,31 +54,52 @@
           </view>
         </view>
 
-        <!-- 计划卡片列表 -->
-        <view wx:if="{{plans.length}}" class="plans">
-          <view class="plan {{item.featured ? 'featured' : ''}}" wx:for="{{plans}}" wx:key="id" data-id="{{item.id}}" bindtap="openPlanDetail">
-            <view class="plan-body">
-              <view wx:if="{{item.todayTag}}" class="plan-tag tag-today tag-today-top">今日</view>
-              <view wx:if="{{item.showGroup}}" class="plan-group">{{item.groupName}}</view>
-              <view class="row-top">
-                <view class="title">{{item.cardTitle}}</view>
-                <view class="more" catchtap="openMenu" data-id="{{item.id}}"><view class="ico ico-more"></view></view>
-              </view>
-              <view wx:if="{{item.goal || item.level}}" class="plan-tags">
-                <text wx:if="{{item.goal}}" class="plan-tag">{{item.goal}}</text>
-                <text wx:if="{{item.level}}" class="plan-tag">{{item.level}}</text>
-              </view>
-              <view class="plan-data">
-                <view class="pd"><view class="ico ico-calendar pd-ico"></view><text>{{item.count}} 个动作</text></view>
-                <view class="pd"><view class="ico ico-clock pd-ico"></view><text>{{item.minutes}} 分钟</text></view>
-                <view class="pd"><view class="ico ico-flame pd-ico"></view><text>{{item.kcal}} kcal</text></view>
-              </view>
-              <view class="plan-bottom">
-                <view class="plan-status">
-                  <view class="dot {{item.statusDot}}"></view>
-                  <text class="ps-text {{item.statusCls}}">{{item.statusText}}</text>
+        <!-- 计划库：按「方案」分组（一套模板 = 一组；手动创建的计划归入「自定义计划」组） -->
+        <view wx:if="{{groups.length}}" class="groups">
+          <view class="group" wx:for="{{groups}}" wx:key="key" wx:for-item="g">
+
+            <!-- 方案组头：名称 · 训练日数 · 本周进度 · [使用中 / 设为使用中] [移除] -->
+            <view class="group-head">
+              <view class="gh-l">
+                <view class="gh-name">{{g.name}}</view>
+                <view class="gh-sub">
+                  <text>{{g.count}} 个{{g.isProgram ? '训练日' : '计划'}}</text>
+                  <text wx:if="{{g.weekTarget}}" class="gh-week"> · 本周 {{g.weekDone}}/{{g.weekTarget}}</text>
                 </view>
-                <view class="plan-cta" catchtap="startPlan" data-id="{{item.id}}">开始训练<view class="ico ico-arrowright cta-ico"></view></view>
+              </view>
+              <view wx:if="{{g.isProgram}}" class="gh-r">
+                <view wx:if="{{g.isActive}}" class="gh-badge">使用中</view>
+                <view wx:else class="gh-btn" catchtap="useProgram" data-pid="{{g.pid}}">设为使用中</view>
+                <view class="gh-btn gh-del" catchtap="removeProgram" data-pid="{{g.pid}}">移除</view>
+              </view>
+            </view>
+
+            <!-- 组内：训练日卡片（A 日 / B 日 / C 日…） -->
+            <view class="plans">
+              <view class="plan {{item.featured ? 'featured' : ''}}" wx:for="{{g.plans}}" wx:key="id" data-id="{{item.id}}" bindtap="openPlanDetail">
+                <view class="plan-body">
+                  <view wx:if="{{item.todayTag}}" class="plan-tag tag-today tag-today-top">今日</view>
+                  <view class="row-top">
+                    <view class="title">{{item.cardTitle}}</view>
+                    <view class="more" catchtap="openMenu" data-id="{{item.id}}"><view class="ico ico-more"></view></view>
+                  </view>
+                  <view wx:if="{{item.goal || item.level}}" class="plan-tags">
+                    <text wx:if="{{item.goal}}" class="plan-tag">{{item.goal}}</text>
+                    <text wx:if="{{item.level}}" class="plan-tag">{{item.level}}</text>
+                  </view>
+                  <view class="plan-data">
+                    <view class="pd"><view class="ico ico-calendar pd-ico"></view><text>{{item.count}} 个动作</text></view>
+                    <view class="pd"><view class="ico ico-clock pd-ico"></view><text>{{item.minutes}} 分钟</text></view>
+                    <view class="pd"><view class="ico ico-flame pd-ico"></view><text>{{item.kcal}} kcal</text></view>
+                  </view>
+                  <view class="plan-bottom">
+                    <view class="plan-status">
+                      <view class="dot {{item.statusDot}}"></view>
+                      <text class="ps-text {{item.statusCls}}">{{item.statusText}}</text>
+                    </view>
+                    <view class="plan-cta" catchtap="startPlan" data-id="{{item.id}}">开始训练<view class="ico ico-arrowright cta-ico"></view></view>
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -93,7 +114,7 @@
         </view>
 
         <!-- 常驻新建入口（次级白按钮） -->
-        <view wx:if="{{plans.length}}" class="add-plan-row">
+        <view wx:if="{{groups.length}}" class="add-plan-row">
           <view class="btn-add" bindtap="goCreate"><view class="btn-add-left"><view class="add-ico"><view class="ico ico-plus"></view></view><text>新建训练计划</text></view><view class="btn-add-arrow"><view class="ico ico-arrowright"></view></view></view>
         </view>
       </view>
@@ -124,7 +145,7 @@
       <view class="sheet sheet-menu" catchtap="noop">
         <view class="sm-title">{{menuName}}</view>
         <view class="sm-item" data-act="edit" bindtap="menuAction"><view class="ico ico-edit"></view><text>编辑计划</text></view>
-        <view class="sm-item" data-act="use" bindtap="menuAction"><view class="ico ico-calendar"></view><text>导入今日训练</text></view>
+        <view class="sm-item" data-act="use" bindtap="menuAction"><view class="ico ico-calendar"></view><text>设为今日计划</text></view>
         <view class="sm-item danger" data-act="delete" bindtap="menuAction"><view class="ico ico-delete"></view><text>删除计划</text></view>
         <view class="sm-cancel" bindtap="closeMenu">取消</view>
       </view>
@@ -154,7 +175,7 @@
           </view>
         </scroll-view>
         <view class="pd-foot">
-          <view class="pd-cta ghost" catchtap="useAsToday" data-id="{{planDetail.id}}">导入今日训练</view>
+          <view class="pd-cta ghost" catchtap="useAsToday" data-id="{{planDetail.id}}">设为今日计划</view>
           <view class="pd-cta primary" catchtap="startPlan" data-id="{{planDetail.id}}">开始训练 →</view>
         </view>
       </view>

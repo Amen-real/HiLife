@@ -1205,11 +1205,19 @@ Page({
         rpe: (s.rpe != null && s.rpe !== '') ? Number(s.rpe) : ''
       }))
     }));
-    store.saveTrainingLog({ date: todayStr(), actions: logActions });
+    // 计划流：记录本场训练归属的计划/模板（计划页按归属统计各组本周进度与完成态，避免方案间串台）。
+    // 必须在 advanceActivePlan 之前取——否则拿到的是「下一次」的日期计划。
+    const plan = (this._woSource === 'plan') ? store.getActivePlan() : null;
+    store.saveTrainingLog({
+      date: todayStr(),
+      actions: logActions,
+      planId: plan ? plan.id : '',
+      programId: plan ? (plan.programId || '') : ''
+    });
     store.clearSelected();
     // 计划流：完成一次训练后把「今日计划」指针推进到同一模板的下一个训练日（A→B→C→A）。
     // 手动动作流（_woSource='manual'）不轮转；首页今日推荐随 activePlanId 变化。
-    if (this._woSource === 'plan') {
+    if (plan) {
       const next = store.advanceActivePlan();
       if (next) console.log('[workout] 下次训练：' + next.name);
     }
