@@ -1207,6 +1207,12 @@ Page({
     }));
     store.saveTrainingLog({ date: todayStr(), actions: logActions });
     store.clearSelected();
+    // 计划流：完成一次训练后把「今日计划」指针推进到同一模板的下一个训练日（A→B→C→A）。
+    // 手动动作流（_woSource='manual'）不轮转；首页今日推荐随 activePlanId 变化。
+    if (this._woSource === 'plan') {
+      const next = store.advanceActivePlan();
+      if (next) console.log('[workout] 下次训练：' + next.name);
+    }
     wx.showToast({ title: '训练已保存', icon: 'success' });
     setTimeout(() => wx.navigateBack(), 1000);
   },

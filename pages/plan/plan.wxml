@@ -59,8 +59,9 @@
           <view class="plan {{item.featured ? 'featured' : ''}}" wx:for="{{plans}}" wx:key="id" data-id="{{item.id}}" bindtap="openPlanDetail">
             <view class="plan-body">
               <view wx:if="{{item.todayTag}}" class="plan-tag tag-today tag-today-top">今日</view>
+              <view wx:if="{{item.showGroup}}" class="plan-group">{{item.groupName}}</view>
               <view class="row-top">
-                <view class="title">{{item.name}}</view>
+                <view class="title">{{item.cardTitle}}</view>
                 <view class="more" catchtap="openMenu" data-id="{{item.id}}"><view class="ico ico-more"></view></view>
               </view>
               <view wx:if="{{item.goal || item.level}}" class="plan-tags">
@@ -178,7 +179,15 @@
         </view>
 
         <scroll-view class="tpl-body" scroll-y>
+          <!-- 主入口：一次导入整套（全部训练日 → 我的计划卡片；默认激活第一天，完成后自动轮换） -->
+          <view class="tpl-import-all" data-pid="{{tplDetail.id}}" bindtap="importProgram" hover-class="tpl-import-hover">
+            <view class="tia-main">导入整套计划</view>
+            <view class="tia-sub">{{tplDetail.dayCount}} 个训练日 · 每周 {{tplDetail.daysPerWeek}} 次 · 完成后自动轮换</view>
+          </view>
+
           <view class="tpl-desc">{{tplDetail.desc}}</view>
+
+          <view wx:if="{{tplDetail.multiDay}}" class="tpl-days-label">训练日 · {{tplDetail.dayCount}} 天</view>
 
           <view class="tpl-day" wx:for="{{tplDetail.days}}" wx:key="idx">
             <view class="tpl-day-head">
@@ -196,7 +205,7 @@
                 <text class="tpl-reps">× {{item.reps}}</text>
               </view>
             </view>
-            <view class="tpl-day-import" data-pid="{{tplDetail.id}}" data-di="{{index}}" bindtap="importDay">导入此训练日</view>
+            <view class="tpl-day-import" data-pid="{{tplDetail.id}}" data-di="{{index}}" bindtap="importDay">{{tplDetail.multiDay ? '设为今日' : '导入此训练日'}}</view>
           </view>
         </scroll-view>
       </view>

@@ -4,6 +4,7 @@ const auth = require('../../utils/auth.js');
 const exercises = require('../../utils/exercises.js');
 const presets = require('../../presets/plans.js');
 const theme = require('../../utils/theme.js');
+const planRotation = require('../../utils/planRotation.js');
 
 function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 function fmtDate(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
@@ -42,6 +43,38 @@ function resolveExerciseName(id, fallback) {
     if (f) return f.nameZh || f.name || fallback || id;
   }
   return fallback || id;
+}
+
+// 把「模板 → 某个训练日」落地为一个 store 计划；已存在（同 programId + dayIndex，或同名）则复用。
+// 关键：同步写入 goal / level / daysPerWeek —— 计划页「本周训练」目标、首页展示都依赖 daysPerWeek。
+function ensurePlanForDay(program, di, day) {
+  const name = program.name + ' · ' + day.name;
+  let plan = store.get().trainingPlans.find(p => p.programId === program.id && p.dayIndex === di)
+    || store.get().trainingPlans.find(p => p.name === name);
+  if (!plan) {
+    plan = store.addPlan({
+      name, programId: program.id, dayIndex: di, source: 'template',
+      goal: program.goal, level: program.level,
+      daysPerWeek: Number(program.daysPerWeek) || 0,
+      actions: buildPlanActions(day)
+    });
+  } else if (!plan.daysPerWeek || !plan.goal || !plan.level) {
+    // 老版本导入的模板计划缺 daysPerWeek / goal / level，就地补齐（不覆盖已有值）
+    store.updatePlan(plan.id, {
+      daysPerWeek: plan.daysPerWeek || Number(program.daysPerWeek) || 0,
+      goal: plan.goal || program.goal,
+      level: plan.level || program.level,
+      programId: plan.programId || program.id,
+      dayIndex: (plan.dayIndex != null ? plan.dayIndex : di)
+    });
+    plan = store.get().trainingPlans.find(p => p.id === plan.id) || plan;
+  }
+  return plan;
+}
+
+// 把整套模板展开为「我的计划」里的 N 张卡片，返回按 dayIndex 升序的计划数组。
+function ensureProgramPlans(program) {
+  return (program.days || []).map((day, di) => ensurePlanForDay(program, di, day));
 }
 
 // 推荐模板缩略图：深色渐变块 + 目标图标（mask 图标体系，颜色由 accent 决定）。
@@ -216,6 +249,7 @@ Page({
     let plans = (g.trainingPlans || []).map(p => {
       const m = planMetrics(p);
       const isActive = p.id === activeId;
+      const isTpl = !!p.programId;
       let statusText, statusCls, statusDot;
       if (isActive) {
         if (trainedToday) { statusText = '今日已完成'; statusCls = 'done'; statusDot = 'solid'; }
@@ -227,6 +261,11 @@ Page({
       return {
         id: p.id,
         name: p.name,
+        // 模板计划：标题只显示训练日（A 日 · 下肢推 + 上肢推），上方加一行模板组名，卡片一眼可辨 A/B/C
+        cardTitle: isTpl ? planRotation.dayFullName(p.name) : p.name,
+        groupName: isTpl ? planRotation.programLabel(p.name) : '',
+        groupKey: p.programId || p.id,
+        dayIndex: Number(p.dayIndex) || 0,
         count: m.count,
         minutes: m.minutes,
         kcal: m.kcal,
@@ -238,8 +277,14 @@ Page({
         statusText, statusCls, statusDot
       };
     });
-    // active 计划排最前，作为「今天最值得完成的训练」
-    plans.sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0));
+    // 排序：激活计划所在「模板组」整体置顶，同组内按训练日顺序（A→B→C）排布
+    plans = planRotation.sortPlans(plans, activeId);
+    // 同组只有首张卡显示组名，避免「力量·基础五大项」连刷三遍
+    let prevGroup = null;
+    plans.forEach(p => {
+      p.showGroup = !!(p.groupName && p.groupKey !== prevGroup);
+      prevGroup = p.groupKey;
+    });
     this.setData({
       plans,
       activePlanId: activeId,
@@ -276,6 +321,8 @@ Page({
     const th = GOAL_THUMB[p.goal] || DEFAULT_THUMB;
     const detail = Object.assign({
       id: p.id, name: p.name, goal: p.goal, level: p.level, daysPerWeek: p.daysPerWeek, desc: p.desc,
+      dayCount: (p.days || []).length,
+      multiDay: (p.days || []).length > 1,
       days: p.days.map((d, di) => ({
         idx: di, name: d.name, focus: d.focus,
         actions: d.actions.map(a => ({
@@ -288,6 +335,35 @@ Page({
   },
   closeTpl() { this.setData({ showTpl: false }); },
   noop() {},
+
+  // 同步首页数据（尽力而为，失败不影响本页；首页 onShow 也会再刷一次）
+  _syncHome() {
+    const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
+    const homePage = pages.find(p => p && p.route === 'pages/home/home');
+    if (homePage && typeof homePage.refresh === 'function') {
+      try { homePage.refresh(); }
+      catch (err) { console.error('[plan] home.refresh skipped:', err); }
+    }
+  },
+
+  // 一键导入整套模板（主入口）：把全部训练日生成为「我的计划」卡片，
+  // 默认激活第 0 天（A 日）；此后每完成一次训练自动轮转（见 store.advanceActivePlan）。
+  // 本周训练目标取自模板的 daysPerWeek（导入时已写入每个计划）。
+  importProgram(e) {
+    if (!auth.requireLogin()) return;
+    const pid = e.currentTarget.dataset.pid;
+    const program = (presets.PROGRAMS || []).find(p => p.id === pid);
+    if (!program) return;
+    const plans = ensureProgramPlans(program);
+    if (!plans.length) return;
+    store.setActivePlan(plans[0].id);
+    this.setData({ showTpl: false });
+    this.loadPlans();
+    this._syncHome();
+    wx.showToast({ title: '已导入 ' + plans.length + ' 个训练日', icon: 'success' });
+  },
+
+  // 导入单个训练日（模板内某天）：同样补齐 daysPerWeek，使其成为「今日计划」
   importDay(e) {
     if (!auth.requireLogin()) return;
     const pid = e.currentTarget.dataset.pid;
@@ -296,23 +372,12 @@ Page({
     if (!program) return;
     const day = program.days[di];
     if (!day) return;
-    const planName = program.name + ' · ' + day.name;
-    let plan = store.get().trainingPlans.find(
-      p => (p.programId === pid && p.dayIndex === di) || p.name === planName
-    );
-    if (!plan) {
-      plan = store.addPlan({
-        name: planName, programId: pid, dayIndex: di, source: 'template',
-        actions: buildPlanActions(day)
-      });
-    }
+    const plan = ensurePlanForDay(program, di, day);
     store.setActivePlan(plan.id);
     // 注意：计划流程不写 selectedActions（训练页「已选动作」只存手动勾选），今日推荐卡片由 activePlanId 驱动
     this.setData({ showTpl: false });
     this.loadPlans();
-    const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
-    const homePage = pages.find(p => p && p.route === 'pages/home/home');
-    if (homePage && typeof homePage.refresh === 'function') homePage.refresh();
+    this._syncHome();
     wx.showToast({ title: '已导入今日训练', icon: 'success' });
   },
 
@@ -460,13 +525,7 @@ Page({
     store.setActivePlan(id);
     // 刷新本页列表：让该卡片立即显示「今日」标签 + 「今日未训练」状态（isActive/featured/todayTag 由 activePlanId 推导）
     if (typeof this.loadPlans === 'function') this.loadPlans();
-    // 同步首页数据（尽力而为，失败不影响本页；首页 onShow 也会再刷一次）
-    const pages = (typeof getCurrentPages === 'function') ? getCurrentPages() : [];
-    const homePage = pages.find(p => p && p.route === 'pages/home/home');
-    if (homePage && typeof homePage.refresh === 'function') {
-      try { homePage.refresh(); }
-      catch (err) { console.error('[plan] home.refresh skipped:', err); }
-    }
+    this._syncHome();
     wx.showToast({ title: '已导入今日训练', icon: 'success' });
   },
   useAsToday(e) {

@@ -1,6 +1,9 @@
 // utils/store.js
 // 轻量全局状态管理：读写 getApp().globalData 并统一持久化
 
+// 模板计划轮转/排序的纯逻辑（零依赖小模块，直接 require 无启动开销）
+const planRotation = require('./planRotation.js');
+
 function app() {
   return getApp();
 }
@@ -225,6 +228,25 @@ const store = {
     const id = g().activePlanId;
     if (!id) return null;
     return g().trainingPlans.find(p => p.id === id) || null;
+  },
+  // 某个模板（programId）下的全部训练日计划，按 dayIndex 升序（A 日 → B 日 → C 日）
+  getProgramPlans(programId) {
+    if (!programId) return [];
+    return g().trainingPlans
+      .filter(p => p.programId === programId)
+      .sort((a, b) => (Number(a.dayIndex) || 0) - (Number(b.dayIndex) || 0));
+  },
+  // 模板计划轮转：把激活指针推进到同一模板的下一个训练日（A→B→C→A 循环）。
+  // 调用时机 = 一次训练「保存完成」之后（见 workout.js saveWorkout），实现「练完 A 日，下次自动 B 日」。
+  // 手动计划（无 programId）/ 单训练日模板 → 不轮转，返回 null。
+  advanceActivePlan() {
+    const cur = this.getActivePlan();
+    if (!cur) return null;
+    const nextId = planRotation.nextPlanId(g().trainingPlans, cur.id);
+    if (!nextId) return null;
+    g().activePlanId = nextId;
+    this.persist();
+    return this.getActivePlan();
   },
   // 计划动作 → 带预置组的训练动作（供「本次训练」使用；组数/次数/重量训练时填写，setsCount 默认 0 → 1 组空）
   // 关键：回查原始动作库补全 image/emoji/equip/video，否则训练/演示页无预览图（之前被写死成空串导致）

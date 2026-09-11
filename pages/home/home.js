@@ -4,6 +4,7 @@ const auth = require('../../utils/auth.js');
 const theme = require('../../utils/theme.js');
 const media = require('../../utils/media.js');
 const nutrition = require('../../utils/nutrition.js');
+const planRotation = require('../../utils/planRotation.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 // 首页背景图：本地 static/ 随包发布（即时显示，无网络往返）；加载异常时 onBgError 回退云端 cloud://
@@ -175,9 +176,14 @@ Page({
       let totalSets = 0;
       actions.forEach(a => { totalSets += Number(a.setsCount) || 0; });
       const minutes = Math.max(10, Math.round(totalSets * 1.5));
+      // 模板计划的 name 是「力量·基础五大项 · B 日 · 髋铰链 + 上肢拉」，
+      // 卡片位窄：标题只显示训练日（B 日 · 髋铰链 + 上肢拉），模板名放副标题。
+      const isTpl = !!activePlan.programId;
+      const title = isTpl ? planRotation.dayFullName(activePlan.name) : (activePlan.name || '今日训练');
+      const metric = actions.length + ' 个动作 · 约 ' + minutes + ' 分钟';
       suggest = {
-        title: activePlan.name || '今日训练',
-        sub: actions.length + ' 个动作 · 约 ' + minutes + ' 分钟',
+        title,
+        sub: isTpl ? (planRotation.programLabel(activePlan.name) + ' · ' + metric) : metric,
         hasPlan: true
       };
     } else if (sel.length > 0) {

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HiLife · 计划页「模板整套导入 + A/B/C 自动轮转」预览稿</title>
+<style>
+  /* ================= 令牌照搬（与 app.wxss 逐条对应，rpx→px 用 --r 精确换算：1rpx = 0.52px） ================= */
+  .phone{
+    --r:.52px;
+    --primary:#C8FF00; --primary-deep:#7CB800; --primary-light:#E4FF6E; --primary-tint:#F2FFD6;
+    --primary-text:#4C7300; --primary-ink:#0A0A0A;
+    --lime:#B7E600; --unfilled:#E8ECE2;
+    --n-950:#0A0A0A; --n-900:#111111; --n-700:#444444; --n-600:#707070; --n-500:#A0A0A0;
+    --n-400:#C7C7C2; --n-300:#D9D9D5; --n-200:#E8E8E4; --n-100:#F1F1EE; --n-50:#F7F7F5;
+    --white:#FFFFFF; --card:#FFFFFF; --card-gray:#EFEFEB; --bg:#F1F1EE;
+    --text:#0A0A0A; --text-sub:#444444; --text-weak:#A0A0A0;
+    --success:#6F9F00; --accent:#FF9500;
+    --f-en:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+    width:390px; height:844px; position:relative; overflow:hidden;
+    border-radius:46px; background:#F7F8F5; color:var(--text);
+    font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',-apple-system,sans-serif;
+    box-shadow:0 22px 60px rgba(0,0,0,.22), 0 0 0 10px #1b1b1b, 0 0 0 11px #333;
+  }
+  /* 深色：只重定义变量，与页面 .page.theme-dark 块同构（plan.wxss L287-328） */
+  .phone.dark{
+    --n-950:#FFFFFF; --n-900:#FFFFFF; --n-700:rgba(255,255,255,.70); --n-600:rgba(255,255,255,.55);
+    --n-500:rgba(255,255,255,.42); --n-400:rgba(255,255,255,.32); --n-300:rgba(255,255,255,.22);
+    --n-200:rgba(255,255,255,.10); --n-100:#1E1E1E; --n-50:#0A0A0A;
+    --white:#161616; --card:#161616; --card-gray:#1A1A1A; --bg:rgba(255,255,255,.06);
+    --text:#FFFFFF; --text-sub:rgba(255,255,255,.70); --text-weak:rgba(255,255,255,.45);
+    --success:#C8FF00; --lime:#C8FF00; --unfilled:rgba(255,255,255,.12);
+    --primary-text:#C8FF00; --primary-tint:rgba(200,255,0,.12);
+    background:#0A0A0A;
+  }
+
+  /* ================= 页面骨架 ================= */
+  .statusbar{ height:44px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 26px; font-size:13px; font-weight:600; color:var(--n-900); }
+  .statusbar .icons{ display:flex; gap:5px; align-items:center; }
+  .nav{ height:44px; display:flex; align-items:center; justify-content:center;
+    font-size:calc(34 * var(--r)); font-weight:700; color:var(--n-900); }
+  .body{ position:absolute; left:0; right:0; top:88px; bottom:0; overflow:hidden; padding-bottom:56px; }
+
+  /* tabs（plan.wxss L13-26） */
+  .tabs{ display:flex; align-items:center; gap:calc(46 * var(--r)); padding:calc(8 * var(--r)) calc(31 * var(--r)) calc(23 * var(--r)); }
+  .tab{ display:inline-flex; flex-direction:column; align-items:flex-start; }
+  .tab-t{ font-size:calc(42 * var(--r)); font-weight:500; color:var(--n-500); letter-spacing:-.01em; line-height:1.2; }
+  .tab.on .tab-t{ color:var(--n-900); font-weight:800; }
+  .tab-bar{ height:calc(6 * var(--r)); width:100%; margin-top:calc(10 * var(--r)); border-radius:999px; background:var(--lime); opacity:0; }
+  .tab.on .tab-bar{ opacity:1; }
+
+  /* Dashboard（plan.wxss L37-62） */
+  .dash{ width:calc(390px - calc(64 * var(--r))); margin:calc(16 * var(--r)) auto 0; box-sizing:border-box;
+    background:var(--white); border:1px solid rgba(0,0,0,.05); border-radius:calc(20 * var(--r));
+    padding:calc(18 * var(--r)) calc(24 * var(--r)) calc(16 * var(--r)); box-shadow:0 4px 20px rgba(0,0,0,.04); }
+  .dash-label{ font-size:calc(22 * var(--r)); font-weight:700; color:var(--n-700); letter-spacing:.04em; }
+  .dash-count{ display:flex; align-items:baseline; gap:calc(6 * var(--r)); margin-top:calc(4 * var(--r)); }
+  .dc-num{ font-family:var(--f-en); font-size:calc(44 * var(--r)); font-weight:800; color:var(--n-900); line-height:1; }
+  .dc-sep,.dc-total,.dc-unit{ font-size:calc(26 * var(--r)); color:var(--n-600); font-weight:600; }
+  .dash-bar-row{ display:flex; align-items:center; gap:calc(16 * var(--r)); margin-top:calc(10 * var(--r)); }
+  .dash-bar{ flex:1 1 auto; height:calc(10 * var(--r)); background:var(--unfilled); border-radius:999px; overflow:hidden; }
+  .dash-bar-fill{ height:100%; background:var(--lime); border-radius:999px; }
+  .dc-pct{ flex:none; font-family:var(--f-en); font-size:calc(24 * var(--r)); font-weight:800; color:var(--lime); }
+  .dash-foot{ display:flex; align-items:center; gap:calc(20 * var(--r)); margin-top:calc(10 * var(--r)); }
+  .dash-stat{ display:flex; align-items:center; gap:calc(6 * var(--r)); }
+  .dash-stat-sep{ width:1px; height:calc(24 * var(--r)); background:var(--n-300); }
+  .ds-num{ font-family:var(--f-en); font-size:calc(28 * var(--r)); font-weight:800; color:var(--n-900); }
+  .ds-t,.ds-unit{ font-size:calc(24 * var(--r)); color:var(--n-600); }
+
+  /* 计划卡片（plan.wxss L65-121 + 本次新增 .plan-group / cardTitle） */
+  .plans{ display:flex; flex-direction:column; gap:calc(20 * var(--r)); margin-top:calc(20 * var(--r)); padding:0 calc(32 * var(--r)); }
+  .plan{ position:relative; overflow:hidden; box-sizing:border-box; background:var(--white);
+    border:1px solid rgba(0,0,0,.05); border-radius:calc(20 * var(--r)); padding:calc(18 * var(--r));
+    box-shadow:0 4px 20px rgba(0,0,0,.04); }
+  .plan.featured{ border-color:rgba(183,230,0,.55); box-shadow:0 6px 24px rgba(183,230,0,.18); }
+  .plan-group{ font-size:calc(22 * var(--r)); font-weight:700; color:var(--n-500); letter-spacing:.02em; margin-bottom:calc(6 * var(--r)); }
+  .row-top{ display:flex; align-items:center; justify-content:space-between; gap:calc(16 * var(--r)); }
+  .plan .title{ flex:1 1 auto; min-width:0; font-size:calc(32 * var(--r)); font-weight:800; color:var(--n-900);
+    line-height:1.3; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .more{ flex:none; width:calc(56 * var(--r)); height:calc(56 * var(--r)); display:flex; align-items:center;
+    justify-content:center; border-radius:50%; background:var(--bg); color:var(--n-700); font-size:15px; letter-spacing:1px; }
+  .plan-tags{ display:flex; flex-wrap:wrap; gap:calc(12 * var(--r)); margin-top:calc(10 * var(--r)); }
+  .plan-tag{ font-size:calc(22 * var(--r)); font-weight:700; color:var(--n-600); background:var(--bg);
+    border-radius:999px; padding:calc(6 * var(--r)) calc(16 * var(--r)); }
+  .plan-tag.tag-today{ color:#111111; background:var(--lime); }
+  .tag-today-top{ align-self:flex-start; margin-bottom:calc(8 * var(--r)); }
+  .plan-data{ display:flex; flex-wrap:wrap; gap:calc(24 * var(--r)); margin-top:calc(10 * var(--r)); }
+  .pd{ display:flex; align-items:center; gap:calc(8 * var(--r)); font-size:calc(24 * var(--r)); color:var(--n-700); font-weight:600; }
+  .pd i{ width:calc(28 * var(--r)); height:calc(28 * var(--r)); border-radius:3px; background:var(--n-500); display:inline-block; }
+  .plan-bottom{ display:flex; align-items:center; justify-content:space-between; gap:calc(16 * var(--r)); margin-top:calc(12 * var(--r)); }
+  .plan-status{ display:flex; align-items:center; gap:calc(10 * var(--r)); }
+  .dot{ width:calc(16 * var(--r)); height:calc(16 * var(--r)); border-radius:50%; flex:none; }
+  .dot.solid{ background:var(--lime); }
+  .dot.hollow{ background:transparent; border:2px solid var(--n-400); box-sizing:border-box; }
+  .dot.muted{ background:transparent; border:2px solid var(--n-300); box-sizing:border-box; }
+  .ps-text{ font-size:calc(24 * var(--r)); font-weight:600; }
+  .ps-text.done{ color:#5E8C00; } .ps-text.todo{ color:var(--n-900); } .ps-text.idle{ color:var(--n-400); }
+  .plan-cta{ display:inline-flex; align-items:center; gap:calc(8 * var(--r)); height:calc(64 * var(--r));
+    padding:0 calc(28 * var(--r)); background:var(--lime); color:#111; border-radius:999px;
+    font-size:calc(26 * var(--r)); font-weight:700; }
+  .btn-add{ margin:calc(28 * var(--r)) calc(32 * var(--r)) 0; height:calc(108 * var(--r)); display:flex; align-items:center;
+    justify-content:center; background:#ECECE8; border-radius:calc(36 * var(--r)); font-size:calc(30 * var(--r));
+    font-weight:700; color:#1A1A1A; }
+  .phone.dark .btn-add{ background:rgba(255,255,255,.10); color:rgba(255,255,255,.92); }
+  .phone.dark .ps-text.done{ color:#C8FF00; }
+  .phone.dark .ps-text.todo{ color:rgba(255,255,255,.85); }
+  .phone.dark .ps-text.idle{ color:rgba(255,255,255,.40); }
+  .phone.dark .plan-cta{ color:#0A0A0A; }
+  .phone.dark .tag-today{ color:#111111; }
+
+  /* 模板详情弹层（plan.wxss L258-282） */
+  .tpl-mask{ position:absolute; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; }
+  .tpl-sheet{ width:100%; background:var(--white); border-radius:calc(28 * var(--r)) calc(28 * var(--r)) 0 0; overflow:hidden; }
+  .tpl-head{ display:flex; align-items:center; gap:calc(20 * var(--r)); padding:calc(28 * var(--r)) calc(28 * var(--r)) calc(20 * var(--r));
+    border-bottom:1px solid var(--n-200); position:relative; }
+  .tpl-thumb{ width:calc(96 * var(--r)); height:calc(96 * var(--r)); border-radius:calc(16 * var(--r)); flex:none;
+    display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#1E2A4A,#0A0F1E); color:#3E8BFF; font-size:22px; }
+  .tpl-name{ font-size:calc(32 * var(--r)); font-weight:800; color:var(--n-900); }
+  .tpl-tags{ display:flex; flex-wrap:wrap; gap:calc(10 * var(--r)); margin-top:calc(10 * var(--r)); }
+  .tpl-tag{ font-size:calc(20 * var(--r)); font-weight:700; color:var(--n-600); background:var(--bg); border-radius:999px; padding:calc(4 * var(--r)) calc(14 * var(--r)); }
+  .tpl-close{ position:absolute; right:calc(28 * var(--r)); top:calc(28 * var(--r)); width:calc(56 * var(--r)); height:calc(56 * var(--r));
+    border-radius:50%; background:var(--bg); color:var(--n-600); display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .tpl-body{ padding:calc(24 * var(--r)) calc(28 * var(--r)) calc(40 * var(--r)); }
+  /* ← 本次新增：整套导入主 CTA */
+  .tpl-import-all{ display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--primary); border-radius:calc(20 * var(--r)); padding:calc(22 * var(--r)) calc(24 * var(--r)); margin-bottom:calc(22 * var(--r)); }
+  .tia-main{ font-size:calc(30 * var(--r)); font-weight:800; color:#0A0A0A; letter-spacing:.01em; }
+  .tia-sub{ font-size:calc(21 * var(--r)); font-weight:600; color:rgba(10,10,10,.62); margin-top:calc(4 * var(--r)); }
+  .tpl-desc{ font-size:calc(26 * var(--r)); color:var(--n-600); line-height:1.6; background:var(--bg);
+    border-radius:calc(16 * var(--r)); padding:calc(20 * var(--r)) calc(24 * var(--r)); margin-bottom:calc(24 * var(--r)); }
+  .tpl-days-label{ font-size:calc(24 * var(--r)); font-weight:800; color:var(--n-700); margin-bottom:calc(16 * var(--r)); }
+  .tpl-day-head{ display:flex; align-items:baseline; gap:calc(14 * var(--r)); margin-bottom:calc(14 * var(--r)); }
+  .tpl-day-name{ font-size:calc(28 * var(--r)); font-weight:800; color:var(--n-900); }
+  .tpl-day-focus{ font-size:calc(22 * var(--r)); color:var(--n-500); }
+  .tpl-act{ display:flex; align-items:center; gap:calc(18 * var(--r)); padding:calc(18 * var(--r)) 0; border-bottom:1px solid var(--n-200); }
+  .tpl-act:last-of-type{ border-bottom:none; }
+  .tpl-act-idx{ width:calc(40 * var(--r)); height:calc(40 * var(--r)); flex:none; border-radius:50%; background:var(--primary-tint);
+    color:var(--success); display:flex; align-items:center; justify-content:center; font-size:calc(22 * var(--r)); font-weight:800; }
+  .tpl-act-main{ flex:1 1 auto; min-width:0; }
+  .tpl-act-name{ font-size:calc(27 * var(--r)); font-weight:600; color:var(--n-900); }
+  .tpl-act-note{ font-size:calc(21 * var(--r)); color:var(--n-500); margin-top:calc(4 * var(--r)); }
+  .tpl-act-param{ flex:none; display:flex; flex-direction:column; align-items:flex-end; }
+  .tpl-sets{ font-size:calc(24 * var(--r)); font-weight:700; color:var(--n-900); }
+  .tpl-reps{ font-size:calc(22 * var(--r)); color:var(--n-500); }
+  /* ← 本次降级为次级按钮（原为亮绿主色） */
+  .tpl-day-import{ margin-top:calc(16 * var(--r)); height:calc(72 * var(--r)); line-height:calc(72 * var(--r)); text-align:center;
+    background:var(--bg); color:var(--n-700); border-radius:999px; font-size:calc(26 * var(--r)); font-weight:700; }
+
+  /* 首页今日推荐卡（home.wxss L191-230） */
+  .hero{ padding:calc(24 * var(--r)) calc(32 * var(--r)) 0; }
+  .hero-h1{ font-size:calc(52 * var(--r)); font-weight:800; color:var(--n-900); letter-spacing:-.02em; }
+  .hero-sub{ font-size:calc(26 * var(--r)); color:var(--n-600); margin-top:calc(6 * var(--r)); }
+  .sec-head{ display:flex; align-items:center; justify-content:space-between; padding:calc(36 * var(--r)) calc(32 * var(--r)) calc(18 * var(--r)); }
+  .sec-title{ display:flex; align-items:center; gap:calc(12 * var(--r)); font-size:calc(32 * var(--r)); font-weight:800; color:var(--n-900); }
+  .label-bar{ width:calc(8 * var(--r)); height:calc(30 * var(--r)); border-radius:999px; background:var(--primary); }
+  .label-link{ font-size:calc(24 * var(--r)); color:var(--n-600); }
+  .suggest{ margin:0 calc(32 * var(--r)); padding:calc(27 * var(--r)) calc(31 * var(--r)); display:flex; align-items:center;
+    gap:calc(27 * var(--r)); background:var(--card-gray); border-radius:calc(24 * var(--r)); }
+  .suggest .photo{ width:calc(92 * var(--r)); height:calc(92 * var(--r)); border-radius:calc(23 * var(--r)); background:var(--n-100);
+    display:flex; align-items:center; justify-content:center; color:var(--primary-text); font-size:22px; flex:none; }
+  .suggest .bd{ flex:1 1 auto; min-width:0; }
+  .suggest .t1{ font-size:calc(29 * var(--r)); font-weight:700; color:var(--n-900); letter-spacing:-.01em; }
+  .suggest .t2{ margin-top:calc(8 * var(--r)); font-size:calc(23 * var(--r)); color:var(--n-600); font-weight:500; }
+  .suggest .cta{ flex:none; background:#C8FF00; color:#0A0A0A; font-size:calc(26 * var(--r)); font-weight:700;
+    padding:calc(18 * var(--r)) calc(26 * var(--r)); border-radius:999px; }
+  .phone.dark .suggest .photo{ color:#C8FF00; }
+
+  /* tabBar（简化示意：真机为 custom-tab-bar 隔离组件 + 药丸动效） */
+  .tabbar{ position:absolute; left:0; right:0; bottom:0; height:56px; background:var(--white);
+    border-top:1px solid var(--n-200); display:flex; align-items:center; justify-content:space-around;
+    font-size:11px; color:var(--n-500); }
+  .tabbar .it{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .tabbar .it.on{ color:var(--n-900); font-weight:700; }
+  .tabbar .ic{ width:19px; height:19px; border-radius:5px; background:var(--n-300); }
+  .tabbar .it.on .ic{ background:var(--primary); }
+
+  /* ================= 预览外壳 ================= */
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:#f0f0ec; color:#111;
+    font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',-apple-system,sans-serif; }
+  .wrap{ max-width:1560px; margin:0 auto; padding:46px 34px 90px; }
+  .eyebrow{ display:inline-block; font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+    color:#4C7300; background:#E9F7C9; border-radius:999px; padding:6px 13px; }
+  h1{ font-size:32px; font-weight:800; letter-spacing:-.02em; margin:16px 0 10px; }
+  .lead{ font-size:14px; line-height:1.75; color:#4a4a4a; max-width:820px; margin:0 0 8px; }
+  .stage{ display:flex; flex-wrap:wrap; gap:52px 44px; margin-top:42px; }
+  .shot{ display:flex; flex-direction:column; gap:14px; }
+  .cap{ display:flex; align-items:center; gap:9px; font-size:13px; font-weight:800; color:#1c1c1c; }
+  .cap .n{ width:22px; height:22px; border-radius:50%; background:#111; color:#C8FF00; font-size:12px;
+    display:flex; align-items:center; justify-content:center; }
+  .cap .st{ font-size:11px; font-weight:700; color:#6a6a6a; background:#e6e6e0; border-radius:999px; padding:3px 9px; }
+  .cap .new{ font-size:11px; font-weight:800; color:#0A0A0A; background:#C8FF00; border-radius:999px; padding:3px 9px; }
+  .notes{ margin-top:64px; background:#fff; border-radius:18px; padding:30px 34px; border:1px solid #e6e6e0; }
+  .notes h2{ font-size:17px; font-weight:800; margin:0 0 18px; }
+  .notes ul{ margin:0; padding-left:20px; }
+  .notes li{ font-size:13.5px; line-height:2; color:#333; }
+  .was{ color:#a33; text-decoration:line-through; }
+  .now{ color:#2c6b00; font-weight:700; background:#EFFBD2; border-radius:5px; padding:1px 6px; }
+  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; background:#f2f2ee; border-radius:4px; padding:1px 5px; }
+  .foot{ margin-top:26px; font-size:12.5px; color:#6a6a6a; line-height:1.9; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="eyebrow">微信小程序 · 计划页 14-plan-rotation</span>
+  <h1>「模板整套导入 + A/B/C 自动轮转」</h1>
+  <p class="lead">
+    选中推荐模板后，<b>我的计划</b> 会一次生成该模板的全部训练日卡片（力量·基础五大项 → A / B / C 三张），
+    并把默认训练日定为 <b>A 日</b>；本周训练目标取自模板的 <code>daysPerWeek</code>（即 0/3 起）。
+    每完成一次并保存训练，今日计划指针自动推进到下一个训练日（A → B → C → A 循环），
+    <b>首页「今日推荐」同步变化</b>。下方 5 帧按 1rpx = 0.52px 等比还原（390×844）。
+  </p>
+
+  <div class="stage">
+
+    <!-- ============ 帧 1：刚导入模板 ============ -->
+    <div class="shot">
+      <div class="cap"><span class="n">1</span>我的计划 · 刚导入「力量·基础五大项」<span class="st">浅色</span><span class="new">新</span></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons"><span>●●●</span><span>⌁</span><span>▮</span></span></div>
+        <div class="nav">训练计划</div>
+        <div class="body">
+          <div class="tabs">
+            <div class="tab on"><div class="tab-t">我的计划</div><div class="tab-bar"></div></div>
+            <div class="tab"><div class="tab-t">模板推荐</div><div class="tab-bar"></div></div>
+          </div>
+
+          <div class="dash">
+            <div class="dash-label">本周训练</div>
+            <div class="dash-count"><span class="dc-num">0</span><span class="dc-sep">/</span><span class="dc-total">3</span><span class="dc-unit">次</span></div>
+            <div class="dash-bar-row"><div class="dash-bar"><div class="dash-bar-fill" style="width:0%"></div></div><span class="dc-pct">0%</span></div>
+            <div class="dash-foot">
+              <div class="dash-stat"><i class="ds-num" style="font-style:normal">◷</i><span class="ds-t">已训练</span><span class="ds-num">0</span><span class="ds-unit">天</span></div>
+              <div class="dash-stat-sep"></div>
+              <div class="dash-stat"><i class="ds-num" style="font-style:normal">▲</i><span class="ds-t">连续</span><span class="ds-num">0</span><span class="ds-unit">天</span></div>
+            </div>
+          </div>
+
+          <div class="plans">
+            <div class="plan featured">
+              <div class="plan-tag tag-today tag-today-top">今日</div>
+              <div class="plan-group">力量·基础五大项</div>
+              <div class="row-top"><div class="title">A 日 · 下肢推 + 上肢推</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>24 分钟</span></div>
+                <div class="pd"><i></i><span>240 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot hollow"></div><span class="ps-text todo">今日未训练</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+
+            <div class="plan">
+              <div class="row-top"><div class="title">B 日 · 髋铰链 + 上肢拉</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>20 分钟</span></div>
+                <div class="pd"><i></i><span>200 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot muted"></div><span class="ps-text idle">未训练</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+
+            <div class="plan">
+              <div class="row-top"><div class="title">C 日 · 下肢+上肢辅助</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>18 分钟</span></div>
+                <div class="pd"><i></i><span>180 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot muted"></div><span class="ps-text idle">未训练</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-add">＋ 新建训练计划</div>
+        </div>
+        <div class="tabbar">
+          <div class="it"><div class="ic"></div>首页</div>
+          <div class="it"><div class="ic"></div>训练</div>
+          <div class="it on"><div class="ic"></div>计划</div>
+          <div class="it"><div class="ic"></div>数据</div>
+          <div class="it"><div class="ic"></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 帧 2：练完 A 日之后 ============ -->
+    <div class="shot">
+      <div class="cap"><span class="n">2</span>练完 A 日并保存 · 指针已推进到 B 日<span class="st">浅色</span><span class="new">新</span></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons"><span>●●●</span><span>⌁</span><span>▮</span></span></div>
+        <div class="nav">训练计划</div>
+        <div class="body">
+          <div class="tabs">
+            <div class="tab on"><div class="tab-t">我的计划</div><div class="tab-bar"></div></div>
+            <div class="tab"><div class="tab-t">模板推荐</div><div class="tab-bar"></div></div>
+          </div>
+
+          <div class="dash">
+            <div class="dash-label">本周训练</div>
+            <div class="dash-count"><span class="dc-num">1</span><span class="dc-sep">/</span><span class="dc-total">3</span><span class="dc-unit">次</span></div>
+            <div class="dash-bar-row"><div class="dash-bar"><div class="dash-bar-fill" style="width:33%"></div></div><span class="dc-pct">33%</span></div>
+            <div class="dash-foot">
+              <div class="dash-stat"><i class="ds-num" style="font-style:normal">◷</i><span class="ds-t">已训练</span><span class="ds-num">1</span><span class="ds-unit">天</span></div>
+              <div class="dash-stat-sep"></div>
+              <div class="dash-stat"><i class="ds-num" style="font-style:normal">▲</i><span class="ds-t">连续</span><span class="ds-num">1</span><span class="ds-unit">天</span></div>
+            </div>
+          </div>
+
+          <div class="plans">
+            <div class="plan">
+              <div class="plan-group">力量·基础五大项</div>
+              <div class="row-top"><div class="title">A 日 · 下肢推 + 上肢推</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>24 分钟</span></div>
+                <div class="pd"><i></i><span>240 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot solid"></div><span class="ps-text done">今日已完成</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+
+            <div class="plan featured">
+              <div class="plan-tag tag-today tag-today-top">今日</div>
+              <div class="row-top"><div class="title">B 日 · 髋铰链 + 上肢拉</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>20 分钟</span></div>
+                <div class="pd"><i></i><span>200 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot hollow"></div><span class="ps-text todo">今日未训练</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+
+            <div class="plan">
+              <div class="row-top"><div class="title">C 日 · 下肢+上肢辅助</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>18 分钟</span></div>
+                <div class="pd"><i></i><span>180 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot muted"></div><span class="ps-text idle">未训练</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-add">＋ 新建训练计划</div>
+        </div>
+        <div class="tabbar">
+          <div class="it"><div class="ic"></div>首页</div>
+          <div class="it"><div class="ic"></div>训练</div>
+          <div class="it on"><div class="ic"></div>计划</div>
+          <div class="it"><div class="ic"></div>数据</div>
+          <div class="it"><div class="ic"></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 帧 3：模板详情弹层 ============ -->
+    <div class="shot">
+      <div class="cap"><span class="n">3</span>模板推荐 · 详情弹层（导入整套入口）<span class="st">浅色</span><span class="new">新</span></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span class="icons"><span>●●●</span><span>⌁</span><span>▮</span></span></div>
+        <div class="nav">训练计划</div>
+        <div class="body">
+          <div class="tabs">
+            <div class="tab"><div class="tab-t">我的计划</div><div class="tab-bar"></div></div>
+            <div class="tab on"><div class="tab-t">模板推荐</div><div class="tab-bar"></div></div>
+          </div>
+          <div class="tpl-mask">
+            <div class="tpl-sheet">
+              <div class="tpl-head">
+                <div class="tpl-thumb">🏋</div>
+                <div style="flex:1 1 auto;min-width:0">
+                  <div class="tpl-name">力量·基础五大项</div>
+                  <div class="tpl-tags"><span class="tpl-tag">中级</span><span class="tpl-tag">3天/周</span><span class="tpl-tag">力量</span></div>
+                </div>
+                <div class="tpl-close">✕</div>
+              </div>
+              <div class="tpl-body">
+                <div class="tpl-import-all">
+                  <div class="tia-main">导入整套计划</div>
+                  <div class="tia-sub">3 个训练日 · 每周 3 次 · 完成后自动轮换</div>
+                </div>
+                <div class="tpl-desc">围绕深蹲、卧推、硬拉、肩推、引体五大复合动作构建绝对力量。每周 3 天，低次数高组数，渐进超负荷。</div>
+                <div class="tpl-days-label">训练日 · 3 天</div>
+
+                <div class="tpl-day-head"><span class="tpl-day-name">A 日 · 下肢推 + 上肢推</span><span class="tpl-day-focus">腿 / 胸 / 肩 / 三头</span></div>
+                <div class="tpl-act"><div class="tpl-act-idx">1</div><div class="tpl-act-main"><div class="tpl-act-name">器械深蹲</div><div class="tpl-act-note">杠铃深蹲，主项</div></div><div class="tpl-act-param"><span class="tpl-sets">5 组</span><span class="tpl-reps">× 5</span></div></div>
+                <div class="tpl-act"><div class="tpl-act-idx">2</div><div class="tpl-act-main"><div class="tpl-act-name">杠铃卧推</div><div class="tpl-act-note">杠铃卧推，主项</div></div><div class="tpl-act-param"><span class="tpl-sets">5 组</span><span class="tpl-reps">× 5</span></div></div>
+                <div class="tpl-day-import">设为今日</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 帧 4：首页今日推荐（深色） ============ -->
+    <div class="shot">
+      <div class="cap"><span class="n">4</span>首页「今日推荐」跟随轮转<span class="st">深色</span><span class="new">新</span></div>
+      <div class="phone dark">
+        <div class="statusbar"><span>9:41</span><span class="icons"><span>●●●</span><span>⌁</span><span>▮</span></span></div>
+        <div class="nav">首页</div>
+        <div class="body">
+          <div class="hero">
+            <div class="hero-h1">晚上好，阿砺</div>
+            <div class="hero-sub">今天也练一点吧</div>
+          </div>
+          <div class="sec-head">
+            <div class="sec-title"><span class="label-bar"></span><span>今日推荐</span></div>
+            <div class="label-link">查看全部 ›</div>
+          </div>
+          <div class="suggest">
+            <div class="photo">🏋</div>
+            <div class="bd">
+              <div class="t1">B 日 · 髋铰链 + 上肢拉</div>
+              <div class="t2">力量·基础五大项 · 4 个动作 · 约 20 分钟</div>
+            </div>
+            <div class="cta">开始训练</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="it on"><div class="ic"></div>首页</div>
+          <div class="it"><div class="ic"></div>训练</div>
+          <div class="it"><div class="ic"></div>计划</div>
+          <div class="it"><div class="ic"></div>数据</div>
+          <div class="it"><div class="ic"></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 帧 5：轮转到 C 日（深色） ============ -->
+    <div class="shot">
+      <div class="cap"><span class="n">5</span>再练一次 B 后 · 今日计划已是 C 日<span class="st">深色</span><span class="new">新</span></div>
+      <div class="phone dark">
+        <div class="statusbar"><span>9:41</span><span class="icons"><span>●●●</span><span>⌁</span><span>▮</span></span></div>
+        <div class="nav">训练计划</div>
+        <div class="body">
+          <div class="tabs">
+            <div class="tab on"><div class="tab-t">我的计划</div><div class="tab-bar"></div></div>
+            <div class="tab"><div class="tab-t">模板推荐</div><div class="tab-bar"></div></div>
+          </div>
+
+          <div class="dash">
+            <div class="dash-label">本周训练</div>
+            <div class="dash-count"><span class="dc-num">2</span><span class="dc-sep">/</span><span class="dc-total">3</span><span class="dc-unit">次</span></div>
+            <div class="dash-bar-row"><div class="dash-bar"><div class="dash-bar-fill" style="width:67%"></div></div><span class="dc-pct">67%</span></div>
+            <div class="dash-foot">
+              <div class="dash-stat"><i class="ds-num" style="font-style:normal">◷</i><span class="ds-t">已训练</span><span class="ds-num">2</span><span class="ds-unit">天</span></div>
+              <div class="dash-stat-sep"></div>
+              <div class="dash-stat"><i class="ds-num" style="font-style:normal">▲</i><span class="ds-t">连续</span><span class="ds-num">2</span><span class="ds-unit">天</span></div>
+            </div>
+          </div>
+
+          <div class="plans">
+            <div class="plan">
+              <div class="plan-group">力量·基础五大项</div>
+              <div class="row-top"><div class="title">A 日 · 下肢推 + 上肢推</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>24 分钟</span></div>
+                <div class="pd"><i></i><span>240 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot solid"></div><span class="ps-text done">今日已完成</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+
+            <div class="plan">
+              <div class="row-top"><div class="title">B 日 · 髋铰链 + 上肢拉</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>20 分钟</span></div>
+                <div class="pd"><i></i><span>200 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot solid"></div><span class="ps-text done">今日已完成</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+
+            <div class="plan featured">
+              <div class="plan-tag tag-today tag-today-top">今日</div>
+              <div class="row-top"><div class="title">C 日 · 下肢+上肢辅助</div><div class="more">•••</div></div>
+              <div class="plan-tags"><span class="plan-tag">力量</span><span class="plan-tag">中级</span></div>
+              <div class="plan-data">
+                <div class="pd"><i></i><span>4 个动作</span></div>
+                <div class="pd"><i></i><span>18 分钟</span></div>
+                <div class="pd"><i></i><span>180 kcal</span></div>
+              </div>
+              <div class="plan-bottom">
+                <div class="plan-status"><div class="dot hollow"></div><span class="ps-text todo">今日未训练</span></div>
+                <div class="plan-cta">开始训练 ›</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="it"><div class="ic"></div>首页</div>
+          <div class="it"><div class="ic"></div>训练</div>
+          <div class="it on"><div class="ic"></div>计划</div>
+          <div class="it"><div class="ic"></div>数据</div>
+          <div class="it"><div class="ic"></div>我的</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes">
+    <h2>这次改了什么（逐条）</h2>
+    <ul>
+      <li>导入入口：模板弹层新增主 CTA <b>「导入整套计划」</b>（亮绿底 + <code>#0A0A0A</code> 字），副标显示 <code>3 个训练日 · 每周 3 次 · 完成后自动轮换</code>；原「导入此训练日」降级为灰底次级按钮，多训练日模板改写「设为今日」。</li>
+      <li>计划卡片：<span class="was">力量·基础五大项 · A 日 · 下肢推 + 上肢推</span> → 标题只留训练日 <span class="now">A 日 · 下肢推 + 上肢推</span>，上方新增一行模板组名（同组仅首卡显示），A / B / C 一眼可辨。</li>
+      <li>卡片顺序：<span class="was">按 active 单个置顶（A,B,C → B,A,C）</span> → <span class="now">激活模板组整体置顶、组内恒按 A→B→C</span>，「今日」由卡片标签标识，不再靠位置。</li>
+      <li>本周目标：<span class="was">导入模板后无 daysPerWeek，兜底 5</span> → <span class="now">取模板 daysPerWeek，力量模板即 0/3 起</span>（增肌·推拉腿为 0/6）。</li>
+      <li>轮转：训练保存后 <code>store.advanceActivePlan()</code> 推进今日计划指针，<span class="now">A → B → C → A</span> 循环；仅计划流生效（手动勾选动作流不轮转），单训练日模板不轮转。</li>
+      <li>首页今日推荐：<span class="was">标题 = 完整计划名（力量·基础五大项 · B 日 · 髋铰链 + 上肢拉，两行折行）</span> → <span class="now">标题 = B 日 · 髋铰链 + 上肢拉，副标 = 模板名 · N 个动作 · 约 M 分钟</span>。</li>
+      <li>模板计划补齐 <code>goal / level / daysPerWeek</code>，卡片与详情页的「力量 / 中级」标签随之出现（此前模板计划不写 goal，标签行整行缺失）。</li>
+    </ul>
+    <div class="foot">
+      备注：HTML 里的图标用字符/方块示意 —— 真机图标走 <code>styles/icons.wxss</code> 的 <code>mask-image + data-URI</code>（<code>&lt;image&gt;</code> 不认 SVG data-URI）。
+      tabBar 为简化示意，真机为 <code>custom-tab-bar</code> 隔离组件（含药丸动效）。切页动效、下拉刷新等动态行为未在静态帧中体现。
+    </div>
+  </div>
+</div>
+</body>
+</html>
