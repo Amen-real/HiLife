@@ -3,61 +3,34 @@
 // 设计原则：只回答三个问题——这次练得怎么样 / 最近趋势如何 / 下次怎么练。
 // 术语策略：UI 层不出现 "RPE"，统一称「吃力程度」；数据层 setsDetail[].rpe 仍存 1–10 原值，历史数据无缝兼容。
 // 数据源：store.trainingLogs（saveWorkout 产出）。
+//
+// 口径（2026-09-11 定案，实现集中在 utils/dateRange.js + utils/trainingStats.js）：
+//   · 「本周」= 自然周（周一 00:00 起，半开区间），与计划页组头周进度同一口径；
+//   · 周目标优先级 = 计划 daysPerWeek > 个人设置 weeklyTarget > 默认 3；
+//   · 「结论」只比共同动作（轮转换动作不算退步），无共同动作降级比各动作自身历史。
 const store = require('../../utils/store.js');
+const dateRange = require('../../utils/dateRange.js');
+const stats = require('../../utils/trainingStats.js');
 
-const WEEK_TARGET = 3;       // 完成度参考基准（profile 未设置时）
-const CAL_PER_MIN = 8;       // kcal/分钟（与数据页一致）
+const EMPTY_RING = 'background: conic-gradient(from -90deg, #C8FF00 0% 0%, rgba(128,128,128,0.25) 0% 100%);';
 
-function pad(n) { return n < 10 ? '0' + n : '' + n; }
-function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
-function setsOf(a) {
-  if (a.setsDetail && a.setsDetail.length) return a.setsDetail;
-  if (Array.isArray(a.sets)) return a.sets;
-  return [];
-}
-function dateKey(d) {
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-}
-function actionKey(a) {
-  // 同动作 + 同器械 = 可比场次
-  return (a.id || a.name || '动作') + ' ' + (a.equip || '');
-}
 function fmtW(w) { return (w % 1 === 0) ? String(w) : w.toFixed(1); }
+// 训练量格式化（≥10000 走 k 缩写），仅本组件展示用
 function fmtVol(v) {
   if (v >= 10000) return (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
   return String(Math.round(v));
 }
-function durationSecOfLog(log) {
-  if (log.durationMin) return log.durationMin * 60;   // 预留：若未来落库总时长字段则优先
-  // 整个训练时长 = Σ(trainSec + restSec)，与数据页 totalFullSec 口径一致；旧日志无 restSec 由 ||0 兜底
-  let sec = 0;
-  log.actions.forEach(a => setsOf(a).forEach(s => { sec += (num(s.trainSec) || 0) + (num(s.restSec) || 0); }));
-  return Math.max(0, Math.round(sec));
-}
-function loadOfLog(log) {
-  // 训练量 = Σ 重量 × 次数
-  return log.actions.reduce((s, a) => s + setsOf(a).reduce((ss, x) => ss + (num(x.weight) || 0) * (num(x.reps) || 0), 0), 0);
-}
-// 一组动作的最好一组（重量最大，平手取次数多）：{ topW, reps }
-function bestSetOf(a) {
-  let topW = -1, reps = 0;
-  setsOf(a).forEach(x => {
-    const w = num(x.weight) || 0, r = num(x.reps) || 0;
-    if (w > topW || (w === topW && r > reps)) { topW = w; reps = r; }
-  });
-  return { topW: topW < 0 ? 0 : topW, reps };
-}
-// 逐动作下次建议（基于平均吃力程度；原始 RPE 口径不变）
-function planFor(avgRpe, hasRpe) {
-  if (!hasRpe) return '记录吃力程度后，这里给下次建议';
-  if (avgRpe >= 9) return '接近力竭 · 下次维持容量，谨慎加重';
-  if (avgRpe <= 6) return '状态轻松 · 下次可加重 2.5–5%';
-  return '强度适中 · 保持容量稳步推进';
-}
-
-const EMPTY_RING = 'background: conic-gradient(from -90deg, #C8FF00 0% 0%, rgba(128,128,128,0.25) 0% 100%);';
 
 Component({
+  properties: {
+    // 记录页选中日期 → 复盘打开时直接定位到该天的场次（''=保持默认最新一场）
+    focusDate: {
+      type: String,
+      value: '',
+      observer(v) { if (this._logs && this._logs.length) this._applyFocus(v); }
+    }
+  },
+
   data: {
     tab: 'single',
     empty: false,
@@ -69,11 +42,11 @@ Component({
     sessionSub: '',                             // '6 动作 · 18 组'
     verdict: '',                                // 一句话结论
     stats: { duration: '--:--', volume: '0', effort: '—' },
-    perAction: [],                              // {key,name,chip{cls,text},best,sets,rpeTxt,plan}
+    perAction: [],                              // {key,name,chip{cls,text},best,setsMeta,rpeTxt,plan,note}
     feelings: [],
 
     // ===== 进步趋势 =====
-    weekly: { weeklyTarget: 3, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING },
+    weekly: { weeklyTarget: 3, fromPlan: false, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING },
     keyActions: [],                             // top3 {key,name,count,chip{cls,text},firstTxt,lastTxt,bars[{key,style,hot}]}
     weeks: []                                   // 近 6 周 {key,label,rpe,has,barStyle}
   },
@@ -85,8 +58,10 @@ Component({
     /* ===== 主流程 ===== */
     rebuild() {
       const g = store.get();
-      const logsDesc = (g.trainingLogs || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+      const logsDesc = (g.trainingLogs || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
       this._logs = logsDesc;
+
+      const target = stats.weekTargetOf(g.profile, store.getActivePlan());
 
       if (!logsDesc.length) {
         this.setData({
@@ -94,87 +69,78 @@ Component({
           sessionDate: '', sessionSub: '', verdict: '',
           stats: { duration: '--:--', volume: '0', effort: '—' },
           perAction: [], feelings: [], keyActions: [], weeks: [],
-          weekly: { weeklyTarget: (g.profile && g.profile.weeklyTarget) || WEEK_TARGET, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING }
+          weekly: { weeklyTarget: target.target, fromPlan: target.fromPlan, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING }
         });
         return;
       }
 
-      const idx = Math.min(this.data.selIdx || 0, logsDesc.length - 1);
+      // 记录页选中的日期优先（用户手动翻过场次后 _focusOverride 置位，不再跟随）；
+      // 无匹配则回到「最新一场」
+      const fd = this._focusOverride ? '' : this.data.focusDate;
+      const focusIdx = fd ? logsDesc.findIndex(l => l.date === fd) : -1;
+      const idx = focusIdx >= 0 ? focusIdx : Math.min(this.data.selIdx || 0, logsDesc.length - 1);
+
       this.setData({ empty: false, logsCount: logsDesc.length });
       this.buildSession(idx);
       this.buildWeekly(logsDesc);
       this.buildKeyActions(logsDesc);
     },
 
+    // 记录页选中日期联动：定位到该天最近一场；无匹配则保持当前选择
+    _applyFocus(iso) {
+      if (!iso || this._focusOverride || !this._logs || !this._logs.length) return;
+      const i = this._logs.findIndex(l => l.date === iso);
+      if (i >= 0 && i !== this._selIdx) this.buildSession(i);
+    },
+
     /* ===== 本次训练 ===== */
     buildSession(idx) {
       const logs = this._logs;
       const log = logs[idx];
-      const prev = logs[idx + 1] || null;       // 上一场（更早）
       this._selIdx = idx;
 
       const actions = log.actions || [];
-      const totalSets = actions.reduce((s, a) => s + setsOf(a).length, 0);
-      const vol = loadOfLog(log);
-      const sec = durationSecOfLog(log);
+      const totalSets = actions.reduce((s, a) => s + stats.setsOf(a).length, 0);
+      const vol = stats.loadOfLog(log);
+      const sec = stats.durationSecOfLog(log);
+      const rpe = stats.avgRpeOfActions(actions);
 
-      // 平均吃力程度（全场）
-      let rs = 0, rn = 0;
-      actions.forEach(a => setsOf(a).forEach(s => {
-        const v = num(s.rpe); if (v > 0 && v <= 10) { rs += v; rn++; }
-      }));
-      const avgRpe = rn ? Math.round(rs / rn * 10) / 10 : 0;
-
-      // 一句话结论：本场 vs 上一场（全场口径）+ 吃力解读
-      let verdict = '';
-      if (prev) {
-        const pVol = loadOfLog(prev);
-        const pct = pVol ? Math.round((vol - pVol) / pVol * 100) : 0;
-        const volTxt = pct >= 5 ? '容量比上场 +' + pct + '%'
-          : (pct <= -5 ? '容量比上场 −' + Math.abs(pct) + '%' : '容量与上场持平');
-        let effTxt = '';
-        if (rn) {
-          if (avgRpe <= 6.4) effTxt = '吃力程度不高还有余量，下次可加重 2.5–5%';
-          else if (avgRpe >= 8.5) effTxt = '已接近力竭，下次维持容量优先恢复';
-          else effTxt = '强度适中，稳步推进即可';
-        } else {
-          effTxt = '记录吃力程度可获得下次建议';
-        }
-        verdict = volTxt + ' · ' + effTxt;
-      } else {
-        verdict = '首次记录 · 再完成一次训练即可开始对比';
-      }
+      // 一句话结论：只比共同动作（换动作不算退步），口径见 utils/trainingStats.buildVerdict
+      const verdict = stats.buildVerdict({ log, logsDesc: logs, idx, rpe }).text;
 
       // 逐动作表现
       const rows = actions.map((a, ai) => {
-        const ss = setsOf(a);
-        const aVol = ss.reduce((s, x) => s + (num(x.weight) || 0) * (num(x.reps) || 0), 0);
-        const best = bestSetOf(a);
+        const ss = stats.setsOf(a);
+        const aVol = stats.loadOfAction(a);
+        const best = stats.bestSetOf(a);
         const bestTxt = best.topW > 0 ? fmtW(best.topW) + 'kg × ' + best.reps : (best.reps ? '自重 × ' + best.reps : '—');
 
-        const rpes = ss.map(x => num(x.rpe)).filter(v => v > 0 && v <= 10);
+        const rpes = ss.map(x => stats.num(x.rpe)).filter(v => v > 0 && v <= 10);
         const rmin = rpes.length ? Math.round(Math.min.apply(null, rpes)) : 0;
         const rmax = rpes.length ? Math.round(Math.max.apply(null, rpes)) : 0;
         const rpeTxt = !rpes.length ? '—' : (rmin === rmax ? String(rmin) : rmin + '–' + rmax);
         const avgR = rpes.length ? Math.round(rpes.reduce((s, v) => s + v, 0) / rpes.length * 10) / 10 : 0;
 
-        // vs 上次（同动作同器械的最近更早场次）
+        // vs 上次（同动作同器械的最近更早场次）；用可比容量，自重动作退化为总次数
         let chip;
-        const prevRec = this.findPrev(actionKey(a), idx);
-        if (!prevRec) {
+        const prevVol = stats.findPrevVol(stats.actionKey(a), logs, idx);
+        if (prevVol == null) {
           chip = { cls: 'flat', text: '首次记录' };
         } else {
-          const pct = prevRec.vol ? Math.round((aVol - prevRec.vol) / prevRec.vol * 100) : 0;
-          if (pct >= 5) chip = { cls: 'up', text: '比上次 ↑' + pct + '%' };
-          else if (pct <= -5) chip = { cls: 'down', text: '比上次 ↓' + Math.abs(pct) + '%' };
+          const cap = stats.capacityOfAction(a);
+          const pct = prevVol ? Math.round((cap - prevVol) / prevVol * 100) : 0;
+          if (pct >= stats.DELTA_SESSION) chip = { cls: 'up', text: '比上次 ↑' + pct + '%' };
+          else if (pct <= -stats.DELTA_SESSION) chip = { cls: 'down', text: '比上次 ↓' + Math.abs(pct) + '%' };
           else chip = { cls: 'flat', text: '与上次持平' };
         }
 
         return {
           key: ai,
           name: (a.nameZh || a.name) || '动作',
-          chip, best: bestTxt, sets: ss.length, rpeTxt,
-          plan: planFor(avgR, rpes.length > 0),
+          chip, best,
+          setsMeta: stats.setsMetaOf(a),        // '3 组 × 12/10/8 次'（逐组聚合，不再只取末组）
+          rpeTxt,
+          plan: stats.actionAdvice(avgR, rpes.length > 0),
           note: (a.note || '').trim()
         };
       });
@@ -182,30 +148,17 @@ Component({
 
       this.setData({
         selIdx: idx,
-        sessionDate: log.date.replace(/-/g, '/'),
+        sessionDate: dateRange.fmtDateSlash(log.date),
         sessionSub: actions.length + ' 动作 · ' + totalSets + ' 组',
         verdict,
         stats: {
-          duration: Math.floor(sec / 60) + ':' + pad(sec % 60),
+          duration: Math.floor(sec / 60) + ':' + dateRange.pad2(sec % 60),
           volume: fmtVol(vol),
-          effort: rn ? avgRpe + '/10' : '—'
+          effort: rpe.count ? rpe.avg + '/10' : '—'
         },
         perAction: rows,
         feelings
       });
-    },
-
-    // 在 idx（不含）之前的更早场次中，找同动作最近一次的容量
-    findPrev(key, idx) {
-      const logs = this._logs;
-      for (let i = idx + 1; i < logs.length; i++) {
-        const hit = (logs[i].actions || []).find(a => actionKey(a) === key);
-        if (hit) {
-          const vol = setsOf(hit).reduce((s, x) => s + (num(x.weight) || 0) * (num(x.reps) || 0), 0);
-          return { vol };
-        }
-      }
-      return null;
     },
 
     // ‹ › 切换历史场次
@@ -213,67 +166,67 @@ Component({
       const dir = e.currentTarget.dataset.dir === 'older' ? 1 : -1;
       const idx = this._selIdx + dir;
       if (idx < 0 || idx >= this._logs.length) return;
+      // 手动翻过场次就解除「记录页日期联动」，否则下次 rebuild 又被拉回 focusDate。
+      // 组件随 tab 切换销毁重建，故这里的置位是本次驻留内有效。
+      this._focusOverride = true;
       this.buildSession(idx);
     },
 
     /* ===== 进步趋势 ===== */
-    // 周完成度 + 本周平均吃力 + 近 6 周努力度
+    // 周完成度 + 本周平均吃力 + 近 6 周努力度（全部按自然周，与计划页一致）
     buildWeekly(logsDesc) {
       const g = store.get();
-      const weeklyTarget = (g.profile && g.profile.weeklyTarget) || WEEK_TARGET;
-      const today = new Date();
-      const daysOf = (from, to) => {
-        const arr = [];
-        for (let i = to; i >= from; i--) { const d = new Date(today); d.setDate(d.getDate() - i); arr.push(dateKey(d)); }
-        return arr;
-      };
-      const thisWeek = daysOf(0, 6);
+      const target = stats.weekTargetOf(g.profile, store.getActivePlan());
+      const weeklyTarget = target.target;
+      const now = new Date();
 
-      const trainDays = new Set(logsDesc.filter(l => thisWeek.indexOf(l.date) >= 0).map(l => l.date)).size;
+      const wk = dateRange.weekRange(now);
+      const inThisWeek = l => dateRange.inRange(l.date, wk.monStr, wk.sunStr);
+
+      const trainDays = new Set(logsDesc.filter(inThisWeek).map(l => l.date)).size;
       const completion = weeklyTarget ? Math.min(100, Math.round(trainDays / weeklyTarget * 100)) : 0;
       const compStyle = 'background: conic-gradient(from -90deg, #C8FF00 0% ' + completion + '%, rgba(128,128,128,0.25) ' + completion + '% 100%);';
 
       let rs = 0, rn = 0;
-      logsDesc.filter(l => thisWeek.indexOf(l.date) >= 0).forEach(l => l.actions.forEach(a => setsOf(a).forEach(s => {
-        const v = num(s.rpe); if (v > 0) { rs += v; rn++; }
-      })));
+      logsDesc.filter(inThisWeek).forEach(l => { const r = stats.rpeSumOfActions(l.actions); rs += r.sum; rn += r.count; });
       const avgRpe = rn ? Math.round(rs / rn * 10) / 10 : 0;
 
-      // 近 6 周努力度（平均吃力）
+      // 近 6 周努力度（自然周桶，W-5 … 本周）
       const weeks = [];
       for (let w = 5; w >= 0; w--) {
-        const ds = daysOf(7 * w, 7 * w + 6);
+        const wr = dateRange.weekRangeOffset(now, -w);
         let s = 0, n = 0;
-        logsDesc.filter(l => ds.indexOf(l.date) >= 0).forEach(l => l.actions.forEach(a => setsOf(a).forEach(x => {
-          const v = num(x.rpe); if (v > 0) { s += v; n++; }
-        })));
+        logsDesc.filter(l => dateRange.inRange(l.date, wr.monStr, wr.sunStr)).forEach(l => {
+          const r = stats.rpeSumOfActions(l.actions); s += r.sum; n += r.count;
+        });
         const wrpe = n ? Math.round(s / n * 10) / 10 : 0;
         weeks.push({
           key: 'w' + w,
           label: w === 0 ? '本周' : 'W-' + w,
           rpe: wrpe,
           has: n > 0,
-          barStyle: n ? ('height: ' + Math.round(wrpe * 10) + '%;') : ''
+          // min-height 保证「有数据但很轻」的周也画得出柱子
+          barStyle: n ? ('height: ' + Math.max(6, Math.round(wrpe * 10)) + '%; min-height: 8%;') : ''
         });
       }
 
-      this.setData({ weekly: { weeklyTarget, trainDays, completion, avgRpe, compStyle }, weeks });
+      this.setData({ weekly: { weeklyTarget, fromPlan: target.fromPlan, trainDays, completion, avgRpe, compStyle }, weeks });
     },
 
-    // 关键动作：自动取场次最多的前 3 个动作，展示"最好一组"跨场趋势（免用户挑选）
+    // 关键动作：自动取场次最多的前 3 个动作，展示「最好一组」跨场趋势（免用户挑选）
     buildKeyActions(logsDesc) {
       const map = {};
-      logsDesc.forEach(l => l.actions.forEach(a => {
-        const k = actionKey(a);
+      logsDesc.forEach(l => (l.actions || []).forEach(a => {
+        const k = stats.actionKey(a);
         if (!map[k]) map[k] = { key: k, name: (a.nameZh || a.name) || '动作', sessions: [] };
-        const best = bestSetOf(a);
+        const best = stats.bestSetOf(a);
         map[k].sessions.push({ date: l.date, topW: best.topW, reps: best.reps });
       }));
       const groups = Object.keys(map).map(k => map[k]);
-      groups.forEach(g => g.sessions.sort((a, b) => a.date.localeCompare(b.date)));
+      groups.forEach(g => g.sessions.sort((a, b) => String(a.date).localeCompare(String(b.date))));
       // 场次多者优先；同场次取更近有记录的
       groups.sort((a, b) => b.sessions.length - a.sessions.length ||
-        b.sessions[b.sessions.length - 1].date.localeCompare(a.sessions[a.sessions.length - 1].date));
+        String(b.sessions[b.sessions.length - 1].date).localeCompare(String(a.sessions[a.sessions.length - 1].date)));
 
       const keyActions = groups.slice(0, 3).map(g => {
         const s = g.sessions;
@@ -289,8 +242,8 @@ Component({
         let chip;
         if (s.length >= 2 && s[0].topW > 0) {
           const pct = Math.round((last.topW - s[0].topW) / s[0].topW * 100);
-          chip = pct >= 3 ? { cls: 'up', text: '+' + pct + '%' }
-            : (pct <= -3 ? { cls: 'down', text: '−' + Math.abs(pct) + '%' } : { cls: 'flat', text: '持平' });
+          chip = pct >= stats.DELTA_TREND ? { cls: 'up', text: '+' + pct + '%' }
+            : (pct <= -stats.DELTA_TREND ? { cls: 'down', text: '−' + Math.abs(pct) + '%' } : { cls: 'flat', text: '持平' });
         } else {
           chip = { cls: 'flat', text: s.length + ' 场' };
         }
@@ -301,8 +254,8 @@ Component({
           chip,
           firstTxt: fmtOne(s[0]),
           lastTxt: fmtOne(last),
-          firstDate: s[0].date.slice(5).replace('-', '/'),
-          lastDate: last.date.slice(5).replace('-', '/'),
+          firstDate: String(s[0].date).slice(5).replace('-', '/'),
+          lastDate: String(last.date).slice(5).replace('-', '/'),
           bars
         };
       });
@@ -315,18 +268,32 @@ Component({
       this.setData({ tab: e.currentTarget.dataset.tab });
     },
 
+    // 空态 CTA：跳训练页开始第一次
+    goTrain() {
+      wx.switchTab({ url: '/pages/training/training' });
+    },
+
     openEffortGuide() {
       wx.showModal({
-        title: '吃力程度',
+        title: '吃力程度怎么选',
         showCancel: false,
-        content: '按做完这组的感觉选：\n\n快力竭 —— 完全做不动\n很累 —— 还剩 1 次\n有点累 —— 还剩 2–3 次\n很轻松 —— 游刃有余\n\n随手标一下，下次帮你决定加多少重量。'
+        content: '按「做完这组还剩几次」对照 1–10 分：\n\n'
+          + '9–10 快力竭 —— 完全做不动\n'
+          + '7–8  很累 —— 还剩 1 次\n'
+          + '5–6  有点累 —— 还剩 2–3 次\n'
+          + '1–4  很轻松 —— 游刃有余\n\n'
+          + '随手标一下，下次帮你决定加多少重量。'
       });
     },
 
-    // 进步趋势顶部「目标 N 次」点击修改（落 store.profile.weeklyTarget）
+    // 周目标：默认来自个人设置，可点改；若由计划（daysPerWeek）决定则不允许就地改
     editWeeklyTarget() {
+      if (this.data.weekly.fromPlan) {
+        wx.showToast({ title: '目标由当前计划的训练日数决定', icon: 'none' });
+        return;
+      }
       const g = store.get();
-      const cur = (g.profile && g.profile.weeklyTarget) || WEEK_TARGET;
+      const cur = stats.weekTargetOf(g.profile, null).target;
       wx.showModal({
         title: '每周训练目标',
         editable: true,
@@ -337,7 +304,7 @@ Component({
           const n = parseInt(r.content, 10);
           if (n > 0 && n < 15) {
             store.setWeeklyTarget(n);
-            this.buildWeekly(this._logs || []);
+            this.rebuild();
           }
         }
       });

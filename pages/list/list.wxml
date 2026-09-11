@@ -70,9 +70,10 @@
           <!-- 白底动作列表 -->
           <view class="ex-list">
             <view wx:for="{{record.actions}}"
-                  wx:key="name"
+                  wx:key="k"
                   class="ex-row"
                   hover-class="ex-row-hover"
+                  data-id="{{item.id}}"
                   data-name="{{item.name}}"
                   bindtap="openExercise">
               <view class="ex-thumb">
@@ -100,9 +101,10 @@
     </scroll-view>
   </block>
 
-  <!-- 训练复盘（内嵌组件，当前页直接显示，不再跳独立页） -->
+  <!-- 训练复盘（内嵌组件，当前页直接显示，不再跳独立页）
+       focus-date：把记录页选中的日期带过去，复盘直接打开那天的场次（''= 默认最新一场） -->
   <block wx:elif="{{tab === 'review'}}">
-    <training-review />
+    <training-review focus-date="{{selectedDate}}" />
   </block>
 
   <!-- 动作历史抽屉：点按训练记录动作弹出（组数 / 重量等） -->

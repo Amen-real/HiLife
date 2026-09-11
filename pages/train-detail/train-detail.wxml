@@ -26,7 +26,7 @@
     </view>
 
     <!-- 每个动作明细 -->
-    <view class="card act-card" wx:for="{{log.actions}}" wx:key="name" wx:for-item="act">
+    <view class="card act-card" wx:for="{{log.actions}}" wx:key="k" wx:for-item="act">
       <view class="act-head">
         <text class="act-name">{{act.name}}</text>
         <text class="act-sets">{{act.sets}} 组</text>

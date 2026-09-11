@@ -14,10 +14,11 @@
       <!-- =============== 本次训练（默认） =============== -->
       <block wx:if="{{tab==='single'}}">
 
-        <!-- 空状态 -->
+        <!-- 空状态：给一个能往下走的出口，而不是只报「空」 -->
         <view wx:if="{{empty}}" class="placeholder">
           <view class="ph-tit">还没有训练记录</view>
           <view class="ph-hint">完成一次训练后，这里会自动生成复盘</view>
+          <view class="ph-cta" bindtap="goTrain">去训练</view>
         </view>
 
         <block wx:else>
@@ -60,7 +61,7 @@
               </view>
               <view class="pa-line">
                 <text class="pa-best">最好一组 {{item.best}}</text>
-                <text class="pa-meta">{{item.sets}} 组 · 吃力 {{item.rpeTxt}}</text>
+                <text class="pa-meta">{{item.setsMeta}} · 吃力 {{item.rpeTxt}}</text>
               </view>
               <view class="pa-plan">{{item.plan}}</view>
             </view>
@@ -100,10 +101,10 @@
               <view class="wk-mv">{{weekly.avgRpe || '—'}}</view>
               <view class="wk-ml">本周平均吃力</view>
             </view>
-            <view class="wk-target" bindtap="editWeeklyTarget">
+            <view class="wk-target {{weekly.fromPlan ? 'locked' : ''}}" bindtap="editWeeklyTarget">
               <text class="wk-dot"></text>
               <text class="wk-target-txt">目标 {{weekly.weeklyTarget}} 次 / 周</text>
-              <text class="wk-edit">改</text>
+              <text class="wk-edit">{{weekly.fromPlan ? '由计划决定' : '改'}}</text>
             </view>
           </view>
         </view>

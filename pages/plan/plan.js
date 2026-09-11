@@ -5,10 +5,9 @@ const exercises = require('../../utils/exercises.js');
 const presets = require('../../presets/plans.js');
 const theme = require('../../utils/theme.js');
 const planRotation = require('../../utils/planRotation.js');
-
-function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-function fmtDate(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
-function todayStr() { return fmtDate(new Date()); }
+// 日期口径统一走 utils/dateRange.js（自然周，周一 00:00 起），避免各页各写一套
+const dateRange = require('../../utils/dateRange.js');
+const { todayStr } = dateRange;
 
 // 把预设训练日的动作展开为 store 计划动作（回查 exercises 补全展示字段）
 function buildPlanActions(day) {
@@ -113,31 +112,24 @@ function poolOf(cat) {
   return exercises.library[cat] || [];
 }
 
-// 本周一 00:00（周一为一周起点）
-function mondayOf(d) {
-  const x = new Date(d);
-  const day = x.getDay(); // 0=Sun..6=Sat
-  const diff = (day === 0 ? -6 : 1 - day);
-  x.setDate(x.getDate() + diff);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-// 本周（周一 00:00 ~ 下周一 00:00）的起止日期串，供方案组头「本周进度」使用
+// 本周（周一 00:00 ~ 下周一 00:00，半开区间 [monStr, sunStr)）的起止日期串，
+// 供方案组头「本周进度」使用。口径统一在 utils/dateRange.js —— 与训练复盘组件同一套自然周。
 function weekRange() {
-  const mon = mondayOf(new Date());
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 7);
-  return { monStr: fmtDate(mon), sunStr: fmtDate(sun) };
+  return dateRange.weekRange();
 }
 
 // 计划卡的派生指标：动作数 / 时长(分钟) / 预计消耗(kcal)
+// 注意：这里是**开练前的计划估算**（按计划组数 × 时长推），与记录页「训练消耗」
+// （按实际训练秒 × trainingStats.EST_KCAL_PER_MIN）是两套语义，故意不同——
+// 计划卡要保守给出「能消耗这么多」的承诺值，故取值更高。改名成常量避免被误当成同一口径。
+const PLAN_KCAL_PER_MIN = 10;
 function planMetrics(plan) {
   const acts = plan.actions || [];
   const count = acts.length;
   let totalSets = 0;
   acts.forEach(a => { totalSets += Number(a.setsCount) || 0; });
   const minutes = Math.max(10, Math.round(totalSets * 1.5));
-  const kcal = Math.max(60, Math.round(minutes * 10));
+  const kcal = Math.max(60, Math.round(minutes * PLAN_KCAL_PER_MIN));
   return { count, minutes, kcal };
 }
 

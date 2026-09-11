@@ -177,6 +177,16 @@
 }
 .ph-tit { font-size: 30rpx; font-weight: 800; color: var(--n-800); letter-spacing: -0.01em; }
 .ph-hint { font-size: 24rpx; font-weight: 500; color: var(--n-400); }
+/* 空态出口：亮绿底必配深字（对比度铁律） */
+.ph-cta {
+  margin-top: 32rpx;
+  padding: 18rpx 46rpx;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: #0A0A0A;
+  font-size: 26rpx; font-weight: 800; letter-spacing: 0.02em;
+}
+.ph-cta:active { opacity: 0.86; }
 
 /* ===== 进步趋势：周完成度 ===== */
 .wk-head {
@@ -217,6 +227,8 @@
   border-radius: var(--r-pill);
   padding: 4rpx 14rpx;
 }
+/* 目标由计划（daysPerWeek）决定时不可就地修改，退成中性标签 */
+.wk-target.locked .wk-edit { color: var(--n-600); background: var(--card-gray); }
 
 /* ===== 关键动作卡 ===== */
 .ka-card {

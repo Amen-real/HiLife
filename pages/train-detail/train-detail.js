@@ -1,6 +1,7 @@
 // pages/train-detail/train-detail.js
 const store = require('../../utils/store.js');
 const theme = require('../../utils/theme.js');
+const stats = require('../../utils/trainingStats.js');
 
 // 秒 -> 友好文案（例：90 -> "1分30秒"，45 -> "45s"）
 function fmtSec(sec) {
@@ -49,10 +50,12 @@ Page({
     const sessionLabel = dayLogs.length > 1 ? ('第' + sessionNo + '练') : '';
 
     // 汇总：总组数 / 总训练时长 / 总休息时长
+    // 每个动作补唯一键 k —— 同名动作在一场里出现两次时 wx:key="name" 会冲突导致列表错位
+    const actList = (log.actions || []).map((a, i) => Object.assign({}, a, { k: i }));
     let totalSets = 0, totalTrain = 0, totalRest = 0;
-    log.actions.forEach(a => {
-      totalSets += (a.sets || 0);
-      (a.setsDetail || []).forEach(s => {
+    actList.forEach(a => {
+      totalSets += stats.setsOf(a).length;
+      stats.setsOf(a).forEach(s => {
         totalTrain += Number(s.trainSec) || 0;
         totalRest += Number(s.restSec) || 0;
       });
@@ -61,9 +64,9 @@ Page({
     this.setData({
       date,
       sessionLabel,
-      log,
+      log: Object.assign({}, log, { actions: actList }),
       summary: {
-        actions: log.actions.length,
+        actions: actList.length,
         sets: totalSets,
         train: fmtSec(totalTrain),
         rest: fmtSec(totalRest)
