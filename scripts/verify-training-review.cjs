@@ -250,6 +250,108 @@ isTrue('\u7a7a\u6001 CTA \u6837\u5f0f\u5b58\u5728', has(TR_WXSS, '.ph-cta'));
 isTrue('\u52aa\u529b\u5ea6\u67f1\u6709 min-height\uff08\u4e0d\u4f1a\u77ee\u5230\u770b\u4e0d\u89c1\uff09', has(TR_JS, 'min-height: 8%'));
 isTrue('\u5403\u529b\u5f39\u7a97\u8865 1\u201310 \u6570\u503c\u6620\u5c04', has(TR_JS, '9\u201310') && has(TR_JS, '1\u20134'));
 
+/* ============ I. 组件数据形状（真实组件 + stub 宿主） ============ */
+// 为什么单独测：H 段全是「文件里有没有这段字符串」的结构断言，抓不到「把对象塞进文本字段」
+// 这类数据形状 bug。现实教训——把 bestSetOf() 的返回对象 {topW,reps} 直接赋给
+// perAction[].best，WXML 就渲染成「最好一组 [object Object]」。
+// 这里用 Component / getApp stub 加载【真实组件】，跑 rebuild()，再递归扫 setData 结果：
+// 任何会被当文本渲染的字段都不许是对象。
+console.log('\n[I] \u7ec4\u4ef6\u6570\u636e\u5f62\u72b6 \u2014\u2014 \u6587\u672c\u5b57\u6bb5\u4e0d\u5f97\u662f\u5bf9\u8c61');
+
+const fakeAppTR = {
+  globalData: {
+    trainingPlans: [], trainingLogs: [], activePlanId: '', selectedActions: [],
+    meals: [], weightRecords: [], customActions: [],
+    profile: { fitnessDays: 0, weeklyTarget: 3 }
+  },
+  persist() {}
+};
+global.getApp = () => fakeAppTR;
+global.wx = { showModal() {}, showToast() {}, switchTab() {}, navigateBack() {} };
+let TR_SPEC = null;
+global.Component = (spec) => { TR_SPEC = spec; };
+require(path.join(ROOT, 'components', 'training-review', 'training-review.js'));
+isTrue('\u771f\u5b9e\u7ec4\u4ef6\u5df2\u52a0\u8f7d\uff08Component \u88ab\u8c03\u7528\uff09', !!TR_SPEC && !!TR_SPEC.methods);
+
+const mkInst = () => Object.assign({}, TR_SPEC.methods, {
+  data: JSON.parse(JSON.stringify(TR_SPEC.data)),
+  setData(patch) { Object.keys(patch || {}).forEach(k => { this.data[k] = patch[k]; }); }
+});
+
+// 容器字段：本身就该是对象/数组，其子字段才是被渲染的文本
+const CONTAINERS = { perAction: 1, feelings: 1, keyActions: 1, weeks: 1, weekly: 1, stats: 1, chip: 1, bars: 1 };
+function sweepObjects(o, path, bads) {
+  if (!o || typeof o !== 'object') return;
+  Object.keys(o).forEach(k => {
+    const v = o[k];
+    if (v === null || v === undefined || typeof v !== 'object') return;
+    if (Array.isArray(v)) { v.forEach((x, i) => sweepObjects(x, path + '.' + k + '[' + i + ']', bads)); return; }
+    if (CONTAINERS[k]) { sweepObjects(v, path + '.' + k, bads); return; }
+    bads.push(path + '.' + k);
+  });
+}
+
+const S2 = (w, r, rpe) => ({ weight: w, reps: r, trainSec: 60, restSec: 30, rpe: rpe == null ? 7 : rpe });
+const A2 = (id, name, sets) => ({ id, name, nameZh: name, equip: '', setsDetail: sets, note: '' });
+const dayAgo = (i) => dateRange.shiftDaysISO(dateRange.todayStr(), -i);
+const mkLog = (sid, i, createdAt, actions, planId) => ({
+  sid, date: dayAgo(i), createdAt, planId: planId || '', programId: planId ? 'g1' : '', actions
+});
+
+fakeAppTR.globalData.trainingLogs = [
+  mkLog('l0', 1, 3, [A2('a1', '\u5367\u63a8', [S2(60, 10, 7), S2(60, 8, 8)]), A2('a2', '\u5f15\u4f53\u5411\u4e0a', [S2(0, 10, 6)])], 'p1'),
+  mkLog('l1', 3, 2, [A2('a1', '\u5367\u63a8', [S2(55, 10, 8)]), A2('a3', '\u6df1\u8e72', [S2(80, 5, 9)])], 'p1'),
+  mkLog('l2', 9, 1, [A2('a1', '\u5367\u63a8', [S2(50, 10, 7)])], '')
+];
+
+const I1 = mkInst();
+I1.rebuild();
+const bad1 = [];
+sweepObjects(I1.data, 'data', bad1);
+eq('I1 \u8bfb\u5230 3 \u573a\u6b21', I1.data.logsCount, 3);
+eq('I1 \u9012\u5f52\u626b\u63cf\uff1a\u65e0\u5bf9\u8c61\u5f53\u6587\u672c\u6e32\u67d3', bad1, []);
+isTrue('I1 perAction \u6709\u6570\u636e', I1.data.perAction.length > 0);
+isTrue('I1 perAction[].best \u662f\u5b57\u7b26\u4e32\uff08\u4e0d\u662f bestSetOf \u7684\u5bf9\u8c61\uff09',
+  typeof I1.data.perAction[0].best === 'string');
+isTrue('I1 perAction[].best \u542b\u91cd\u91cf\u4e0e\u6b21\u6570', /kg \u00d7 \d+/.test(I1.data.perAction[0].best));
+isTrue('I1 perAction[].setsMeta \u662f\u5b57\u7b26\u4e32', typeof I1.data.perAction[0].setsMeta === 'string');
+isTrue('I1 perAction[].plan \u662f\u5b57\u7b26\u4e32', typeof I1.data.perAction[0].plan === 'string');
+isTrue('I1 verdict \u662f\u5b57\u7b26\u4e32', typeof I1.data.verdict === 'string');
+isTrue('I1 stats \u4e09\u9879\u5747\u5b57\u7b26\u4e32',
+  ['duration', 'volume', 'effort'].every(k => typeof I1.data.stats[k] === 'string'));
+isTrue('I1 weekly.compStyle \u662f\u5b57\u7b26\u4e32', typeof I1.data.weekly.compStyle === 'string');
+eq('I1 weeks \u5171 6 \u6839\u67f1', I1.data.weeks.length, 6);
+isTrue('I1 weeks[].barStyle \u662f\u5b57\u7b26\u4e32', I1.data.weeks.every(w => typeof w.barStyle === 'string'));
+isTrue('I1 keyActions \u6709\u6570\u636e\u4e14 chip.text \u4e3a\u5b57\u7b26\u4e32',
+  I1.data.keyActions.length > 0 && typeof I1.data.keyActions[0].chip.text === 'string');
+isTrue('I1 bars[].hot \u662f\u5e03\u5c14', I1.data.keyActions[0].bars.every(b => typeof b.hot === 'boolean'));
+
+// 空态分支同样不许出现对象字段
+const I2 = mkInst();
+fakeAppTR.globalData.trainingLogs = [];
+I2.rebuild();
+const bad2 = [];
+sweepObjects(I2.data, 'data', bad2);
+eq('I2 \u7a7a\u6001\u65e0\u5bf9\u8c61\u5b57\u6bb5', bad2, []);
+eq('I2 empty=true', I2.data.empty, true);
+isTrue('I2 \u7a7a\u6001 weekly.compStyle \u4ecd\u4e3a\u5b57\u7b26\u4e32', typeof I2.data.weekly.compStyle === 'string');
+
+// 切场次 / 切 tab 不炸且状态自洽
+const I3 = mkInst();
+fakeAppTR.globalData.trainingLogs = [
+  mkLog('l0', 1, 2, [A2('a1', '\u5367\u63a8', [S2(60, 10, 7)])], ''),
+  mkLog('l1', 4, 1, [A2('a1', '\u5367\u63a8', [S2(50, 10, 7)])], '')
+];
+I3.rebuild();
+const dateNewest = I3.data.sessionDate;
+I3.selSession({ currentTarget: { dataset: { dir: 'older' } } });
+isTrue('I3 \u5411\u65e7\u5207\u573a\u6b21\u540e\u65e5\u671f\u53d8\u5316', I3.data.sessionDate !== dateNewest);
+isTrue('I3 \u5207\u573a\u6b21\u540e\u4ecd\u65e0\u5bf9\u8c61\u5b57\u6bb5', (() => { const b = []; sweepObjects(I3.data, 'data', b); return b.length === 0; })());
+I3.selSession({ currentTarget: { dataset: { dir: 'newer' } } });
+eq('I3 \u5411\u65b0\u5207\u56de\u6700\u65b0\u4e00\u573a', I3.data.sessionDate, dateNewest);
+I3.switchTab({ currentTarget: { dataset: { tab: 'trend' } } });
+eq('I3 \u5207\u5230\u8d8b\u52bf tab', I3.data.tab, 'trend');
+
 /* ============ 汇总 ============ */
 console.log('\n' + '-'.repeat(56));
 console.log('pass=' + pass + '  fail=' + fail);

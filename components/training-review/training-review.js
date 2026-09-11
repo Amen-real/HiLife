@@ -137,7 +137,8 @@ Component({
         return {
           key: ai,
           name: (a.nameZh || a.name) || '动作',
-          chip, best,
+          chip,
+          best: bestTxt,                        // 注意：必须给字符串，给 bestSetOf 的对象会渲染成 [object Object]
           setsMeta: stats.setsMetaOf(a),        // '3 组 × 12/10/8 次'（逐组聚合，不再只取末组）
           rpeTxt,
           plan: stats.actionAdvice(avgR, rpes.length > 0),
