@@ -172,7 +172,9 @@ isTrue('方案组头周目标取模板 daysPerWeek', /Number\(first\.daysPerWeek
 isTrue('computeWeek 已随 Dashboard 一并移除', !/computeWeek/.test(planJs));
 // 串台修复：非激活计划不得再套用「今日已完成」（旧 bug：trainedToday 全局判定 →
 // 练了 A 套后 B 套的卡也全绿）。完成态必须由 lastDayByPlan（按 planId 归属）驱动。
-isTrue('完成态按 planId 归属统计（lastDayByPlan）', /lastDayByPlan\s*\[/.test(planJs));
+isTrue('归属统计收敛到 planRotation 纯函数（weekDatesByKey/weekLastDay/weekDayCount）',
+  /planRotation\.weekDatesByKey\(/.test(planJs) && /planRotation\.weekLastDay\(/.test(planJs)
+  && /planRotation\.weekDayCount\(/.test(planJs));
 isTrue('非激活计划已无「trainedToday ? 今日已完成」分支', !/else\s*\{[\s\S]{0,120}trainedToday[\s\S]{0,60}今日已完成/.test(planJs));
 isTrue('未启用方案显示「未启用」', /'未启用'/.test(planJs));
 isTrue('激活组内非当天卡显示「待轮换」', /'待轮换'/.test(planJs));
@@ -218,6 +220,96 @@ isTrue('plan.wxss 旧 .plan-group 样式已移除', !/\.plan \.plan-group\s*\{/.
 isTrue('plan.wxss Dashboard 样式已移除',
   !/\.dash\s*\{/.test(wxss) && !/\.dc-num\s*\{/.test(wxss) && !/\.ds-num\s*\{/.test(wxss) && !/dash-stat-sep/.test(wxss));
 isTrue('plan.wxss CTA 用主题令牌（非硬编码底色）', /\.tpl-import-all\s*\{[^}]*var\(--primary\)/.test(wxss));
+
+/* ============ D. 归属统计端到端（真实 store + 真实纯函数） ============ */
+// 回答「计划页的『本周 0/3』能否正确记录到训练进度」：
+// stub 掉 getApp() 后加载【真实 utils/store.js】，完整走一遍
+// 导入整套模板 → 连续完成 3 次训练（写归属日志 + 推进指针）→ 用真实的
+// planRotation.weekDatesByKey / weekDayCount / weekLastDay 统计，验证 0/3 → 3/3。
+console.log('\n[D] 归属统计端到端（真实 store）');
+
+const p2 = (n) => (n < 10 ? '0' + n : '' + n);
+const fmtD = (d) => d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+// 本周一 / 下周一（与 plan.js weekRange 同口径：周日归上一周）
+const _mon = (() => {
+  const x = new Date();
+  const dw = x.getDay();
+  x.setDate(x.getDate() + (dw === 0 ? -6 : 1 - dw));
+  x.setHours(0, 0, 0, 0);
+  return x;
+})();
+const MON = fmtD(_mon);
+const SUN = fmtD(new Date(_mon.getFullYear(), _mon.getMonth(), _mon.getDate() + 7));
+const dayInWeek = (i) => fmtD(new Date(_mon.getFullYear(), _mon.getMonth(), _mon.getDate() + i));
+
+// stub getApp()：store.js 的读写全部经 getApp().globalData / getApp().persist()
+const fakeApp = {
+  globalData: {
+    trainingPlans: [], trainingLogs: [], activePlanId: '', selectedActions: [],
+    meals: [], weightRecords: [], profile: { fitnessDays: 0 }
+  },
+  persist() {}
+};
+global.getApp = () => fakeApp;
+const realStore = require(path.join(ROOT, 'utils', 'store.js'));
+
+// 按 plan.js ensurePlanForDay 落库的形状导入「力量·基础五大项」整套
+big5.days.forEach((d, di) => {
+  fakeApp.globalData.trainingPlans.push({
+    id: 'e2e' + di, programId: big5.id, dayIndex: di,
+    name: big5.name + ' \u00b7 ' + d.name,
+    daysPerWeek: Number(big5.daysPerWeek) || 0,
+    goal: big5.goal, level: big5.level, actions: d.actions || []
+  });
+});
+realStore.setActivePlan('e2e0');
+
+const weekByProgram = () => rot.weekDatesByKey(realStore.get().trainingLogs, 'programId', MON, SUN);
+const weekDone = () => rot.weekDayCount(weekByProgram(), big5.id);
+
+eq('导入后本周进度 = 0/3', weekDone(), 0);
+eq('组头周目标 = 模板 daysPerWeek（3）', Number(big5.daysPerWeek), 3);
+
+// 连续完成 3 次训练：取当前激活计划 → 写带归属的日志 → 推进指针（与 workout.saveWorkout 同序）
+const walked = [];
+for (let i = 0; i < 3; i++) {
+  const p = realStore.getActivePlan();
+  walked.push(p.id);
+  realStore.saveTrainingLog({
+    date: dayInWeek(i), actions: [], planId: p.id, programId: p.programId || ''
+  });
+  eq('完成第 ' + (i + 1) + ' 次后本周进度 = ' + (i + 1) + '/3', weekDone(), i + 1);
+  realStore.advanceActivePlan();
+}
+eq('三次训练分别归属 A/B/C 三张卡', walked, ['e2e0', 'e2e1', 'e2e2']);
+eq('三次落在三个不同训练日 → 计 3 天', weekDone(), 3);
+
+// 同一天再练一次：不重复累加（口径 = 训练「日数」，与 fitnessDays 一致）
+realStore.saveTrainingLog({ date: dayInWeek(0), actions: [], planId: 'e2e0', programId: big5.id });
+eq('同一天再练一次仍是 3/3', weekDone(), 3);
+
+// 自由训练（无 planId/programId）不污染任何方案进度
+const nBefore = realStore.get().trainingLogs.length;
+realStore.saveTrainingLog({ date: dayInWeek(1), actions: [], planId: '', programId: '' });
+isTrue('自由训练日志仍会写入', realStore.get().trainingLogs.length === nBefore + 1);
+eq('自由训练不计入方案进度', weekDone(), 3);
+
+// 上周的归属日志不计入本周
+realStore.saveTrainingLog({
+  date: fmtD(new Date(_mon.getFullYear(), _mon.getMonth(), _mon.getDate() - 7)),
+  actions: [], planId: 'e2e0', programId: big5.id
+});
+eq('上周日志不计入本周进度', weekDone(), 3);
+
+// 单卡完成态：按 planId 归属取本周最近一次完成日
+const byPlan = rot.weekDatesByKey(realStore.get().trainingLogs, 'planId', MON, SUN);
+eq('A 日卡最近完成日 = 本周第 1 天', rot.weekLastDay(byPlan, 'e2e0'), dayInWeek(0));
+eq('没训练过的计划无完成日', rot.weekLastDay(byPlan, 'nope'), '');
+
+// 两套方案并存：进度互不掺和
+realStore.get().trainingPlans.push({ id: 'h0', programId: 'other-prog', dayIndex: 0, name: 'Other \u00b7 X', daysPerWeek: 2, actions: [] });
+eq('另一套方案进度独立为 0', rot.weekDayCount(weekByProgram(), 'other-prog'), 0);
+eq('原方案进度不受影响', weekDone(), 3);
 
 /* ============ 汇总 ============ */
 console.log('\n' + '-'.repeat(52));

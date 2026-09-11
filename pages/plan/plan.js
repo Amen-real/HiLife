@@ -235,20 +235,10 @@ Page({
 
     // —— 归属统计：本场训练属于哪张计划 / 哪套模板 ——
     // 只有「计划流」的训练日志带 planId/programId（见 workout.saveWorkout）；自由训练二者为空。
-    const lastDayByPlan = {};      // planId -> 本周内最近一次训练日期
-    const daysByProgram = {};      // programId -> { date: true }，用于方案组头周进度
-    let freeTrainedToday = false;  // 今天是否有「未归属」的自由训练
-    logs.forEach(l => {
-      if (l.date === today && !l.planId) freeTrainedToday = true;
-      if (!l.date || l.date < monStr || l.date >= sunStr) return;
-      if (l.planId && (!lastDayByPlan[l.planId] || l.date > lastDayByPlan[l.planId])) {
-        lastDayByPlan[l.planId] = l.date;
-      }
-      if (l.programId) {
-        if (!daysByProgram[l.programId]) daysByProgram[l.programId] = {};
-        daysByProgram[l.programId][l.date] = true;
-      }
-    });
+    // 归集逻辑收敛到 planRotation 的纯函数（零依赖，可被 verify-plan-rotation.cjs 直接单测）。
+    const byProgram = planRotation.weekDatesByKey(logs, 'programId', monStr, sunStr); // 方案组头周进度
+    const byPlan = planRotation.weekDatesByKey(logs, 'planId', monStr, sunStr);       // 单卡完成态
+    const freeTrainedToday = logs.some(l => l && l.date === today && !l.planId);      // 今天有无未归属训练
 
     // —— 分组：一套方案 = 一个组；无 programId 的手动计划归入同一个「自定义计划」组 ——
     const buckets = planRotation.groupPlans(g.trainingPlans, activeId);
@@ -262,7 +252,7 @@ Page({
       const cards = b.plans.map(p => {
         const m = planMetrics(p);
         const isActive = p.id === activeId;
-        const lastDay = lastDayByPlan[p.id] || '';
+        const lastDay = planRotation.weekLastDay(byPlan, p.id);
         // 状态口径：完成态按「本场训练的归属」判定；未归属的自由训练只点亮当前激活计划。
         // 这样多套方案并存时不会出现「练了 A 套，B 套的卡也全绿」的串台。
         let statusText, statusCls, statusDot;
@@ -297,7 +287,7 @@ Page({
 
       const first = b.plans[0] || {};
       const target = isTpl ? (Number(first.daysPerWeek) || 0) : 0;
-      const done = isTpl ? Object.keys(daysByProgram[b.key] || {}).length : 0;
+      const done = isTpl ? planRotation.weekDayCount(byProgram, b.key) : 0;
       return {
         key: b.key,
         pid: isTpl ? b.key : '',

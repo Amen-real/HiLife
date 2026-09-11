@@ -66,6 +66,38 @@ function groupPlans(plans, activePlanId) {
   return buckets;
 }
 
+// —— 训练日志的「归属统计」（计划页按方案/按计划算本周进度与完成态）——
+// 把日志按归属字段归集到本周 [monStr, sunStr) 区间内，返回 { 归属键: { 日期: true } }：
+//   field='programId' → 方案组头「本周 x/y」（同一方案多个训练日去重成「训练日数」）
+//   field='planId'    → 单张计划卡「本周已完成 / 今日已完成」（取最近一次日期）
+// 无该字段（自由训练）或不在本周的日志一律不计。
+function weekDatesByKey(logs, field, monStr, sunStr) {
+  const out = {};
+  (logs || []).forEach(l => {
+    if (!l) return;
+    const k = l[field];
+    if (!k || !l.date) return;
+    if (l.date < monStr || l.date >= sunStr) return;
+    const bucket = out[k] || (out[k] = {});
+    bucket[l.date] = true;
+  });
+  return out;
+}
+
+// 某个归属键在本周的训练「日数」（去重日期数；同一天练两次只算 1 天）
+function weekDayCount(map, key) {
+  const b = map && map[key];
+  return b ? Object.keys(b).length : 0;
+}
+
+// 某个归属键在本周的最近一次训练日期（无则空串），用于「本周已完成 / 今日已完成」判定
+function weekLastDay(map, key) {
+  const b = map && map[key];
+  if (!b) return '';
+  const ds = Object.keys(b);
+  return ds.length ? ds.sort()[ds.length - 1] : '';
+}
+
 // 去掉模板名前缀，取训练日全名：
 //   '力量·基础五大项 · A 日 · 下肢推 + 上肢推' → 'A 日 · 下肢推 + 上肢推'
 //   '减脂·全身循环 · 全身循环'                → '全身循环'
@@ -96,4 +128,8 @@ function programLabel(planName) {
   return i >= 0 ? name.slice(0, i) : name;
 }
 
-module.exports = { nextPlanId, groupPlans, groupKeyOf, dayFullName, dayLabel, programLabel, MANUAL_KEY };
+module.exports = {
+  nextPlanId, groupPlans, groupKeyOf,
+  weekDatesByKey, weekDayCount, weekLastDay,
+  dayFullName, dayLabel, programLabel, MANUAL_KEY
+};
