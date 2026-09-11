@@ -168,7 +168,8 @@ isTrue('plan.js 有 ensureProgramPlans（整套展开）', /ensureProgramPlans\s
 isTrue('plan.js 用 planRotation.groupPlans 分组', /planRotation\.groupPlans\(/.test(planJs));
 isTrue('plan.js 定义组头操作 useProgram/removeProgram',
   /useProgram\s*\(\s*e\s*\)\s*\{/.test(planJs) && /removeProgram\s*\(\s*e\s*\)\s*\{/.test(planJs));
-isTrue('computeWeek 目标仍取 active.daysPerWeek', /active\s*&&\s*active\.daysPerWeek/.test(planJs));
+isTrue('方案组头周目标取模板 daysPerWeek', /Number\(first\.daysPerWeek\)/.test(planJs));
+isTrue('computeWeek 已随 Dashboard 一并移除', !/computeWeek/.test(planJs));
 // 串台修复：非激活计划不得再套用「今日已完成」（旧 bug：trainedToday 全局判定 →
 // 练了 A 套后 B 套的卡也全绿）。完成态必须由 lastDayByPlan（按 planId 归属）驱动。
 isTrue('完成态按 planId 归属统计（lastDayByPlan）', /lastDayByPlan\s*\[/.test(planJs));
@@ -203,6 +204,8 @@ isTrue('plan.wxml 卡片标题用 item.cardTitle', /\{\{item\.cardTitle\}\}/.tes
 isTrue('plan.wxml 旧的分组行 item.showGroup 已移除', !/\{\{item\.showGroup\}\}/.test(wxml));
 isTrue('菜单/详情文案改为「设为今日计划」（已导入的计划不该说「导入」）',
   !/导入今日训练/.test(wxml) && /设为今日计划/.test(wxml));
+// 顶部「本周训练」Dashboard 已按需求整块移除（周进度改由各方案组头承载）
+isTrue('plan.wxml 顶部 Dashboard 已移除', !/class="dash"/.test(wxml) && !/week\.barStyle/.test(wxml) && !/\{\{week\./.test(wxml));
 
 const wxss = read('pages/plan/plan.wxss');
 isTrue('plan.wxss 有 .tpl-import-all 主 CTA 样式', /\.tpl-import-all\s*\{/.test(wxss));
@@ -212,6 +215,8 @@ isTrue('plan.wxss 组头徽章/按钮走主题令牌',
 isTrue('plan.wxss 移除红字走 --danger-text（双主题可达 AA）',
   /\.gh-del\s*\{[^}]*var\(--danger-text\)/.test(wxss) && /--danger-text:\s*#C4363B/.test(wxss) && /theme-dark[\s\S]{0,900}--danger-text:\s*#FF6B70/.test(wxss));
 isTrue('plan.wxss 旧 .plan-group 样式已移除', !/\.plan \.plan-group\s*\{/.test(wxss));
+isTrue('plan.wxss Dashboard 样式已移除',
+  !/\.dash\s*\{/.test(wxss) && !/\.dc-num\s*\{/.test(wxss) && !/\.ds-num\s*\{/.test(wxss) && !/dash-stat-sep/.test(wxss));
 isTrue('plan.wxss CTA 用主题令牌（非硬编码底色）', /\.tpl-import-all\s*\{[^}]*var\(--primary\)/.test(wxss));
 
 /* ============ 汇总 ============ */

@@ -1,4 +1,4 @@
-<!-- pages/plan/plan.wxml —— 训练 Dashboard + 训练计划卡片（按《训练计划页 UI 全量整改执行指令》） -->
+<!-- pages/plan/plan.wxml —— 训练计划卡片（按方案分组渲染，对齐 03-plan.html） -->
 <view class="page {{theme}}">
   <!-- 顶部自定义状态栏：标题「训练计划」（原页面内 .header 标题块已移除） -->
   <nav-bar title="训练计划" show-back="{{false}}" />
@@ -21,38 +21,6 @@
     <!-- ============== 我的计划 ============== -->
     <scroll-view wx:if="{{seg==='mine'}}" class="scroll" scroll-y>
       <view class="section">
-
-        <!-- 本周训练 Dashboard -->
-        <view class="dash">
-          <view class="dash-inner">
-            <view class="dash-label">本周训练</view>
-            <view class="dash-count">
-              <text class="dc-num">{{week.done}}</text>
-              <text class="dc-sep">/</text>
-              <text class="dc-total">{{week.target}}</text>
-              <text class="dc-unit">次</text>
-            </view>
-            <view class="dash-bar-row">
-              <view class="dash-bar"><view class="dash-bar-fill" style="{{week.barStyle}}"></view></view>
-              <text class="dc-pct">{{week.pct}}%</text>
-            </view>
-            <view class="dash-foot">
-              <view class="dash-stat">
-                <view class="ico ico-calendar ds-ico"></view>
-                <text class="ds-t">已训练</text>
-                <text class="ds-num">{{week.done}}</text>
-                <text class="ds-unit">天</text>
-              </view>
-              <view class="dash-stat-sep"></view>
-              <view class="dash-stat">
-                <view class="ico ico-flame ds-ico"></view>
-                <text class="ds-t">连续</text>
-                <text class="ds-num">{{week.streak}}</text>
-                <text class="ds-unit">天</text>
-              </view>
-            </view>
-          </view>
-        </view>
 
         <!-- 计划库：按「方案」分组（一套模板 = 一组；手动创建的计划归入「自定义计划」组） -->
         <view wx:if="{{groups.length}}" class="groups">

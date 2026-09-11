@@ -34,34 +34,6 @@
 .section { width: 100%; box-sizing: border-box; padding: 12rpx 0 24rpx; }
 .section-label { font-size: 30rpx; font-weight: 800; color: var(--n-900); margin: 0 32rpx 20rpx; }
 
-/* ============== 本周训练 Dashboard ============== */
-.dash {
-  position: relative; overflow: hidden;
-  width: calc(100vw - 64rpx); margin: 16rpx auto 0;
-  box-sizing: border-box;
-  background: var(--white);
-  border: 1rpx solid rgba(0,0,0,0.05);
-  border-radius: 20rpx;
-  padding: 18rpx 24rpx 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.04);
-}
-.dash-inner { position: relative; z-index: 1; }
-.dash-label { font-size: 22rpx; font-weight: 700; color: var(--n-700); letter-spacing: .04em; }
-.dash-count { display: flex; align-items: baseline; gap: 6rpx; margin-top: 4rpx; }
-.dc-num { font-family: var(--f-en); font-size: 44rpx; font-weight: 800; color: var(--n-900); line-height: 1; font-variant-numeric: tabular-nums; }
-.dc-sep, .dc-total, .dc-unit { font-size: 26rpx; color: var(--n-600); font-weight: 600; }
-.dash-bar-row { display: flex; align-items: center; gap: 16rpx; margin-top: 10rpx; }
-.dash-bar-row .dash-bar { flex: 1 1 auto; margin-top: 0; }
-.dash-bar { height: 10rpx; background: var(--unfilled); border-radius: 999rpx; overflow: hidden; margin-top: 16rpx; }
-.dash-bar-fill { height: 100%; width: 0; background: var(--lime); border-radius: 999rpx; transition: width .6s var(--ease-out); }
-.dc-pct { flex: none; font-family: var(--f-en); font-size: 24rpx; font-weight: 800; color: var(--lime); font-variant-numeric: tabular-nums; }
-.dash-foot { display: flex; align-items: center; gap: 20rpx; margin-top: 10rpx; }
-.dash-stat { display: flex; align-items: center; gap: 6rpx; }
-.dash-stat-sep { width: 1rpx; height: 24rpx; background: var(--n-300); flex: none; }
-.ds-ico { width: 26rpx; height: 26rpx; background-color: var(--n-500); flex: none; }
-.ds-num { font-family: var(--f-en); font-size: 28rpx; font-weight: 800; color: var(--n-900); font-variant-numeric: tabular-nums; }
-.ds-t, .ds-unit { font-size: 24rpx; color: var(--n-600); }
-
 /* ============== 方案分组（我的计划：一套模板 = 一组） ============== */
 .groups { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 30rpx; margin-top: 20rpx; }
 .group { display: flex; flex-direction: column; }
@@ -343,8 +315,6 @@
   color: var(--text);
 }
 
-.page.theme-dark .dc-num, .page.theme-dark .ds-num { color: #FFFFFF; }
-.page.theme-dark .dc-total, .page.theme-dark .dc-sep, .page.theme-dark .dc-unit { color: rgba(255,255,255,.6); }
 .page.theme-dark .ps-text.done { color: #C8FF00; }
 .page.theme-dark .ps-text.todo { color: rgba(255,255,255,.85); }
 .page.theme-dark .ps-text.idle { color: rgba(255,255,255,.4); }
@@ -354,4 +324,3 @@
 .page.theme-dark .btn-add .add-ico { background-color: rgba(200,255,0,.20); }
 .page.theme-dark .btn-add .add-ico .ico { background-color: #C8FF00; }
 .page.theme-dark .btn-add-arrow .ico { background-color: rgba(255,255,255,.45); }
-.page.theme-dark .dash-stat-sep { background: rgba(255,255,255,.18); }

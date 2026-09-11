@@ -123,29 +123,11 @@ function mondayOf(d) {
   return x;
 }
 
-// 本周（周一 00:00 ~ 下周一 00:00）的起止日期串，供 Dashboard 与方案组头进度共用同一口径
+// 本周（周一 00:00 ~ 下周一 00:00）的起止日期串，供方案组头「本周进度」使用
 function weekRange() {
   const mon = mondayOf(new Date());
   const sun = new Date(mon); sun.setDate(mon.getDate() + 7);
   return { monStr: fmtDate(mon), sunStr: fmtDate(sun) };
-}
-
-// 本周训练 Dashboard 数据：本周已训练天数 / 目标(active 计划的 daysPerWeek 或默认5) / 进度% / 连续天数
-function computeWeek() {
-  const g = store.get();
-  const logs = g.trainingLogs || [];
-  const dates = new Set(logs.map(l => l.date));
-  const { monStr, sunStr } = weekRange();
-  let done = 0;
-  dates.forEach(dt => { if (dt >= monStr && dt < sunStr) done++; });
-  // 连续训练天数（截至今天）
-  let streak = 0;
-  const d = new Date(todayStr() + 'T00:00:00');
-  while (dates.has(fmtDate(d))) { streak++; d.setDate(d.getDate() - 1); }
-  const active = store.getActivePlan();
-  const target = (active && active.daysPerWeek) ? Number(active.daysPerWeek) : 5;
-  const pct = target > 0 ? Math.min(100, Math.round(done / target * 100)) : 0;
-  return { done, target, pct, streak, barStyle: 'width:' + pct + '%' };
 }
 
 // 计划卡的派生指标：动作数 / 时长(分钟) / 预计消耗(kcal)
@@ -166,7 +148,6 @@ Page({
     seg: 'mine',           // mine（我的计划） | tpl（模板推荐）
     groups: [],            // 「我的计划」按方案分组：[{ key, name, isProgram, isActive, count, weekDone, weekTarget, plans:[卡] }]
     activePlanId: '',
-    week: { done: 0, target: 5, pct: 0, streak: 0, barStyle: 'width:0%' },
     // 更多菜单
     showMenu: false,
     menuId: '',
@@ -331,7 +312,7 @@ Page({
     });
 
     this._plansFlat = flat;
-    this.setData({ groups, activePlanId: activeId, week: computeWeek() });
+    this.setData({ groups, activePlanId: activeId });
   },
 
   // —— 新建 / 编辑 表单 ——
