@@ -2,6 +2,11 @@
 const store = require('../../utils/store.js');
 const theme = require('../../utils/theme.js');
 const nutrition = require('../../utils/nutrition.js');
+const dateRange = require('../../utils/dateRange.js');
+const stats = require('../../utils/trainingStats.js');
+
+// 背景图：随包发布在 static/（packOptions.ignore 为空，static 不参与忽略）
+const BG_URL = '/static/my-bg.jpg';
 
 // 用户数据字段（导出/导入/清除只作用于这些，设备运行配置如 visionBackendUrl 等不纳入）
 const DATA_KEYS = [
@@ -54,6 +59,29 @@ function bmiMarkStyle(v) {
   const pct = Math.max(2, Math.min(98, (Number(v) - 15) / 20 * 100));
   return 'left:' + pct.toFixed(1) + '%;';
 }
+// BMI 分档 → 磁贴状态色调（与 bmiBucket 同一档位表，勿另开一套边界）
+function bmiToneOf(v) {
+  if (!v) return '';
+  if (v < 18.5) return 'low';
+  if (v < 24) return 'good';
+  return 'bad';
+}
+// 最近两笔体重之差 → 磁贴第三行。tone 按「是否朝目标走」给色，而不是一律「降=绿」：
+// 增肌的人涨 0.2kg 是好事，染成警示色会读反。
+function weightDeltaOf(all, goalWord) {
+  if (!all || all.length < 2) return { show: false, text: '', tone: '' };
+  const prev = Number(all[all.length - 2].weight);
+  const cur = Number(all[all.length - 1].weight);
+  const d = Math.round((cur - prev) * 10) / 10;
+  if (!isFinite(d) || d === 0) return { show: false, text: '', tone: '' };
+  const down = d < 0;
+  const good = (goalWord === '增肌') ? !down : down;
+  return {
+    show: true,
+    text: (down ? '↓ ' : '↑ ') + Math.abs(d) + ' kg',
+    tone: good ? 'good' : ''
+  };
+}
 
 Page({
   data: {
@@ -62,17 +90,25 @@ Page({
     nickname: '',
     avatarText: '衡',
     avatarUrl: '',
-    // 账户主卡：称号 + 累计三连
+    // Hero 背景图：本地 static/ 随包发布（秒开）；加载失败置 bgFailed 隐藏，露出页面底色
+    bgUrl: BG_URL,
+    bgFailed: false,
+    // 状态栏占位高度（navigationStyle=custom 后手动注入）
+    statusBarStyle: 'height: 0px',
+    // 账户主卡：称号 + 累计三连（days 训练天数 / streak 连续天数 / sessions 总训练次数）
     heroTitle: '新手上路',
-    totals: { days: 0, dur: '0m', vol: '0' },
+    totals: { days: 0, streak: 0, sessions: 0, month: 0, week: 0, weekTarget: 3, dur: '0m' },
     // 我的数据：四格概览 + 解读块
-    health: { goal: '未设置', weight: '未记录', height: '未设置', bmi: '--' },
+    health: { goal: '未设置', weight: '未记录', height: '未设置', bmi: '--', bmiLabel: '', bmiTone: '' },
+    weightDelta: { show: false, text: '', tone: '' },
     hasProfile: false,
     bmi: { show: false, label: '', markStyle: 'left:0%;' },
     goal: {
       show: false, verb: '减', done: 0, total: 0,
-      from: '--', to: '--', pct: 0, fillStyle: 'width:0%;', remain: '0', weeks: 0
+      from: '--', to: '--', pct: 0, fillStyle: 'width:0%;', remain: '0'
     },
+    // 我的训练：最近一场（无日志时 show=false，落空态）
+    train: { show: false, isToday: false, title: '', meta: '' },
     reminderOn: false,
     version: APP_VERSION,
     showDataMgr: false,
@@ -93,7 +129,33 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 4, theme: themeCls });
     }
+    // 自定义导航栏：手动补状态栏高度占位 + 状态栏文字随主题（Hero 是浅色人像图，浅色主题配黑字）
+    const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    this.setData({ statusBarStyle: 'height: ' + (info.statusBarHeight || 20) + 'px' });
+    wx.setNavigationBarColor({
+      frontColor: themeCls === 'theme-dark' ? '#ffffff' : '#000000',
+      backgroundColor: themeCls === 'theme-dark' ? '#0A0A0A' : '#F7F7F5'
+    });
     this.refresh();
+  },
+
+  // 背景图加载失败：只隐藏自己，不留破图占位（页面底色即 Hero 底色，观感不塌）
+  onBgError() { this.setData({ bgFailed: true }); },
+
+  // 最近一场训练 → 复盘页（逐动作明细 / 趋势都在组件里）
+  goReview() { wx.navigateTo({ url: '/pages/review/review' }); },
+
+  // 「查看全部」→ 数据 tab（训练历史 + 体重历史）
+  goHistory() { wx.switchTab({ url: '/pages/list/list' }); },
+
+  // 「关于我们」：版本 + 署名说明（媒体署名同时在页脚常驻，满足授权可见性要求）
+  tapAbout() {
+    wx.showModal({
+      title: '衡砺健身记录 v' + APP_VERSION,
+      content: '本地优先的健身记录工具：训练 / 体重 / 饮食数据默认只存本机，可导出备份后换机恢复。\n动作演示媒体 © Gym visual · gymvisual.com',
+      confirmText: '知道了',
+      showCancel: false
+    });
   },
 
   // 深色主题开关：切换后即时同步底栏；各 tab 页（首页等）在自身 onShow 里读取新值
@@ -135,15 +197,26 @@ Page({
     const p = g.profile || {};
     const logs = g.trainingLogs || [];
 
-    /* ===== ① 账户主卡：累计三连（天数 / 时长 / 容量） ===== */
+    /* ===== ① Hero 累计三连 + 训练维度小计 ===== */
     // 时长口径 = Σ(trainSec + restSec)，与数据页 totalFullSec、复盘页 durationSecOfLog 一致
     // 容量口径 = Σ(重量 × 次数)，与复盘页 loadOfLog 一致
     let totalSec = 0;
     let totalVol = 0;
-    const activeDays = {};
+    let sessions = 0;                              // 总训练次数（一场训练 = 一条日志）
+    let monthCount = 0;
+    let weekCount = 0;
+    const trainDates = new Set();                  // 训练日集合（去重）：「训练天数」与「连续天数」共用同一份
+    const today = dateRange.todayStr();
+    const wr = dateRange.weekRange(today);         // 自然周半开 [周一, 下周一)，与计划页/日期条同源
+    const monthPrefix = today.slice(0, 7);
     logs.forEach(l => {
       if (!l) return;
-      if (l.date) activeDays[l.date] = 1;
+      sessions++;
+      if (l.date) {
+        trainDates.add(l.date);
+        if (l.date.slice(0, 7) === monthPrefix) monthCount++;
+        if (dateRange.inRange(l.date, wr.monStr, wr.sunStr)) weekCount++;
+      }
       (l.actions || []).forEach(a => {
         const sets = (a.setsDetail && a.setsDetail.length)
           ? a.setsDetail
@@ -154,24 +227,36 @@ Page({
         });
       });
     });
+    // 周目标口径：计划 daysPerWeek > profile.weeklyTarget > 默认 3（单一真源在 trainingStats.weekTargetOf）
+    const weekTarget = stats.weekTargetOf(p, store.getActivePlan()).target;
     const totals = {
-      days: Object.keys(activeDays).length,
+      days: trainDates.size,
+      // 连续天数：从今天向前连续有训练的天数。回溯算法与首页「连续打卡」同源，只是集合不同
+      streak: dateRange.streakFromDates(trainDates, today),
+      sessions,
+      month: monthCount,
+      week: weekCount,
+      weekTarget,
       dur: fmtDur(totalSec),
       vol: fmtVol(totalVol)
     };
 
-    /* ===== ② 我的数据：健康四格 ===== */
+    /* ===== ② 我的数据：健康四格 + 体重变化 ===== */
     const ws = store.getWeightStats();
     const latestW = ws.latest;                                   // '72.5' | null
     const latestWn = latestW != null ? Number(latestW) : null;
     const h = (p.height != null && p.height !== '') ? Number(p.height) : null;
+    // 目标词归一：历史数据里的「减重」显示为规范词「减脂」（与设置页、营养推荐同词表）
+    const goalWord = nutrition.normalizeGoal(p.goal) || '';
+    const allW = store.getWeightStats(0).list;                    // 全部体重记录，升序（起点与变化都取这份）
     const health = {
-      // 目标词归一：历史数据里的「减重」显示为规范词「减脂」（与设置页、营养推荐同词表）
-      goal: nutrition.normalizeGoal(p.goal) || '未设置',
+      goal: goalWord || '未设置',
       weight: latestW != null ? latestW : '未记录',
       height: h != null ? h : '未设置',
       // 身高按 cm 校验（>80），避免误填米制时算出一个荒谬的 BMI
-      bmi: bmi(latestWn, h > 80 ? h : null)
+      bmi: bmi(latestWn, h > 80 ? h : null),
+      bmiLabel: '',
+      bmiTone: ''
     };
 
     // BMI 解读：身高按 cm 校验（>80 防误填米制）
@@ -181,31 +266,61 @@ Page({
     const bmiInfo = bmiVal
       ? { show: true, label: bmiBucket(bmiVal), markStyle: bmiMarkStyle(bmiVal) }
       : { show: false, label: '', markStyle: 'left:0%;' };
+    if (bmiVal) {
+      health.bmiLabel = bmiBucket(bmiVal);
+      health.bmiTone = bmiToneOf(bmiVal);
+    }
+    const weightDelta = weightDeltaOf(allW, goalWord);
 
     // 距目标：起点取最早一条体重记录（无记录则以当前体重为起点，进度为 0）
     const tw = Number(p.targetWeight);
     let goalInfo = {
       show: false, verb: '减', done: 0, total: 0,
-      from: '--', to: '--', pct: 0, fillStyle: 'width:0%;', remain: '0', weeks: 0
+      from: '--', to: '--', pct: 0, fillStyle: 'width:0%;', remain: '0'
     };
     if (tw > 0 && latestWn != null) {
-      const all = store.getWeightStats(0).list;                  // 全部，按记录顺序（升序）
-      const startW = all.length ? Number(all[0].weight) : latestWn;
+      const startW = allW.length ? Number(allW[0].weight) : latestWn;
       const fromW = (startW > 0) ? startW : latestWn;
       const verb = tw < fromW ? '减' : '增';
       const totalN = Math.abs(fromW - tw);
       const doneN = Math.max(0, Math.abs(fromW - latestWn));     // 反向移动记 0，不出现负进度
       const remainN = Math.abs(latestWn - tw);
       const pct = totalN < 0.05 ? 100 : Math.max(0, Math.min(100, Math.round(doneN / totalN * 100)));
-      // 节奏预估：按每周 0.5kg 的安全速度估算，不足半公斤不再给周数
-      const weeks = remainN >= 0.5 ? Math.ceil(remainN / 0.5) : 0;
       goalInfo = {
         show: true, verb,
         done: round1(doneN), total: round1(totalN),
         from: round1(fromW), to: round1(tw),
         pct, fillStyle: 'width:' + pct + '%;',
-        remain: round1(remainN), weeks
+        remain: round1(remainN)
       };
+    }
+
+    /* ===== ③ 我的训练：最近一场 ===== */
+    // 训练日志不落 image 字段，动作图只在内置动作库里（565KB，store 刻意懒加载不入本页）→ 缩略位用品牌图标
+    let train = { show: false, isToday: false, title: '', meta: '' };
+    let last = null;                                             // 日期最新的一场（同日多条取最后写入的）
+    logs.forEach(l => { if (l && l.date && (!last || l.date >= last.date)) last = l; });
+    if (last) {
+      const acts = last.actions || [];
+      // 训练名：归属计划仍在库里就用计划名；否则按动作分类（单一分类取分类名，多分类记「综合训练」），
+      // 与 workout 保存时的命名规则一致，避免同一场训练在两页叫不同名字。
+      let title = '';
+      if (last.planId) {
+        const hit = (g.trainingPlans || []).filter(x => x && x.id === last.planId)[0];
+        if (hit && hit.name) title = hit.name;
+      }
+      if (!title) {
+        const cats = [];
+        acts.forEach(a => { if (a && a.category && cats.indexOf(a.category) < 0) cats.push(a.category); });
+        title = cats.length ? (cats.length === 1 ? cats[0] : '综合训练') : '训练记录';
+      }
+      const sec = stats.durationSecOfLog(last);
+      const kcal = stats.estKcal(stats.trainSecOfLog(last));
+      const parts = [];
+      if (acts.length) parts.push(acts.length + ' 个动作');
+      if (sec > 0) parts.push(Math.max(1, Math.round(sec / 60)) + ' 分钟');
+      if (kcal > 0) parts.push(kcal + ' kcal');
+      train = { show: true, isToday: last.date === today, title, meta: parts.join(' · ') };
     }
 
     // 空态：热量推荐所需的「身高 + 体重 + 目标」三件套缺一即引导完善
@@ -220,9 +335,11 @@ Page({
       heroTitle: rankOf(p.fitnessDays),
       totals,
       health,
+      weightDelta,
       hasProfile,
       bmi: bmiInfo,
       goal: goalInfo,
+      train,
       reminderOn: !!g.reminderOn
     });
   },

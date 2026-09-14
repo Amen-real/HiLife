@@ -5,6 +5,7 @@ const theme = require('../../utils/theme.js');
 const media = require('../../utils/media.js');
 const nutrition = require('../../utils/nutrition.js');
 const planRotation = require('../../utils/planRotation.js');
+const dateRange = require('../../utils/dateRange.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 // 首页背景图：本地 static/ 随包发布（即时显示，无网络往返）；加载异常时 onBgError 回退云端 cloud://
@@ -25,16 +26,9 @@ function isToday(ts) {
   return fmtDate(d) === todayStr();
 }
 
-// 连续打卡天数：从今天往前数连续活跃（训练/体重/饮食任一）的天数
-function computeStreak(activeSet) {
-  let streak = 0;
-  const d = new Date(todayStr() + 'T00:00:00');
-  while (activeSet.has(fmtDate(d))) {
-    streak++;
-    d.setDate(d.getDate() - 1);
-  }
-  return streak;
-}
+// 连续打卡天数：从今天往前数连续活跃（训练/体重/饮食任一）的天数。
+// 回溯逻辑已收敛到 utils/dateRange.streakFromDates（「我的」页连续训练天数同源），
+// 这里只负责喂进「活跃日期集合」——口径差异留在调用方，算法不再各写一份。
 
 Page({
   data: {
@@ -126,7 +120,7 @@ Page({
     g.trainingLogs.forEach(l => activeSet.add(l.date));
     g.weightRecords.forEach(r => activeSet.add(r.date));
     g.meals.forEach(m => activeSet.add(fmtDate(new Date(m.time))));
-    const streak = computeStreak(activeSet);
+    const streak = dateRange.streakFromDates(activeSet);
     const fitnessDays = g.profile.fitnessDays || 0;
 
     // —— 今日饮食（真实数据） ——

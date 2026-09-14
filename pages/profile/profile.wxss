@@ -1,161 +1,174 @@
-/* pages/profile/profile.wxss —— 四组结构：①账户主卡 ②我的数据（带解读）③偏好 ④关于与数据
-   底色统一走 --n-50 暖白（旧「青绿→桃色」竖渐变已弃用）。
-   深色主题：底部 .page.theme-dark 块重定义变量，整棵子树自动跟随。 */
+/* pages/profile/profile.wxss —— 对齐「我的」页设计稿
+   结构：① Hero（背景图铺顶）② 我的数据 ③ 我的训练 ④ 偏好 ⑤ 关于与数据
+   底色统一走 --n-50 暖白；深色主题：底部 .page.theme-dark 块重定义变量，整棵子树自动跟随。
+
+   两处硬约束（踩过坑，勿改）：
+   · custom-tab-bar 是框架级固定层，页面内 z-index 压不住它 → 底部必须留白避让（见 .page padding-bottom）。
+   · 亮绿底（--primary #C8FF00）上的字形一律 #0A0A0A；该色深浅主题通用，故不进 dark 覆盖。
+     但 .ico--ink 在 dark 下会翻白，压在亮绿底上就糊了 → 见文末 .p-chip/.tk-go 的显式拉回。 */
 
 .page {
   width: 100vw;
   min-height: 100vh;
-  padding: 0 0 calc(138rpx + env(safe-area-inset-bottom));
+  padding: 0 0 calc(150rpx + env(safe-area-inset-bottom));
   background: var(--n-50);
+  /* Hero 底部渐隐的起始色：与 --n-50 同色但全透明，避免用 transparent 时被渲染成灰带 */
+  --hero-fade: rgba(247, 247, 245, 0);
 }
 
-/* ══════════════ ① 账户主卡（视觉重心） ══════════════ */
-.hero-card {
-  position: relative;
-  overflow: hidden;
-  margin: 24rpx 32rpx 0;
-  padding: 36rpx 32rpx 30rpx;
-  background: var(--card);
-  border: 1rpx solid var(--n-200);
-  border-radius: var(--r-l);
-  box-shadow: var(--shadow-card);
-  color: var(--text);
-}
-/* 右上角品牌光晕：让主卡在纯白卡面中有「身份感」，不抢内容 */
-.hero-card::after {
-  content: '';
-  position: absolute; right: -70rpx; top: -90rpx;
-  width: 280rpx; height: 280rpx; border-radius: 50%;
-  background: radial-gradient(circle, var(--primary-tint) 0%, rgba(255, 255, 255, 0) 70%);
+/* ══════════════ ① HERO：背景图铺顶 + 悬浮标题/头像 ══════════════ */
+/* min-height 取与背景图等高（852×560 按 750rpx 宽折算 ≈ 493rpx），
+   内容自然铺在图上；内容更高时 Hero 自行增高，图下方由渐隐收口。 */
+.p-hero { position: relative; min-height: 494rpx; }
+
+.p-hero-bg {
+  position: absolute; top: 0; left: 0;
+  width: 100%; display: block; z-index: 0;
   pointer-events: none;
 }
 
-.hc-top { position: relative; z-index: 1; display: flex; align-items: center; gap: 24rpx; }
-.avatar-btn {
-  width: 112rpx; height: 112rpx; border-radius: 50%; overflow: hidden; flex: 0 0 auto;
-  padding: 0; margin: 0; border: none; background: transparent; line-height: 1;
-  box-shadow: 0 0 0 3rpx var(--primary);
+/* 底部渐隐：背景图底色 #F5F6F3 与页面底色 --n-50 差几档，硬切有可见接缝 */
+.p-hero-fade {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 160rpx;
+  background: linear-gradient(180deg, var(--hero-fade), var(--n-50));
+  pointer-events: none;
 }
-.avatar-btn:active { opacity: .85; }
-.avatar-img { width: 112rpx; height: 112rpx; border-radius: 50%; display: block; }
-.hc-top .av {
-  width: 112rpx; height: 112rpx; border-radius: 50%;
+
+.p-hero-body { position: relative; z-index: 1; }
+.p-sb { width: 100%; }
+
+.p-title {
+  padding: 18rpx 36rpx 0;
+  font-size: 60rpx; font-weight: 800; line-height: 1.15;
+  color: var(--text); letter-spacing: -0.5rpx;
+}
+
+/* 头像行：头像 + 昵称/副标题 */
+.p-id { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 36rpx 0; }
+.p-avatar {
+  flex: 0 0 auto; width: 112rpx; height: 112rpx; border-radius: 50%;
+  overflow: hidden; background: var(--card);
+  /* 浅绿描边圈：用 box-shadow 而非 border，避免与 overflow:hidden 的圆形裁切打架 */
+  box-shadow: 0 0 0 6rpx rgba(200, 255, 0, .55);
+}
+.p-avatar:active { opacity: .85; }
+.p-avatar-img { width: 112rpx; height: 112rpx; display: block; border-radius: 50%; }
+.p-avatar-txt {
+  width: 112rpx; height: 112rpx;
+  display: flex; align-items: center; justify-content: center;
   background: var(--primary-tint); color: var(--primary-text);
   font-size: var(--fs-display); font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
 }
-.hc-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10rpx; }
-.nick-input {
-  width: 100%; height: 56rpx; padding: 0; border: none;
+.p-id-meta { flex: 1; min-width: 0; }
+.p-nick-row { display: flex; align-items: center; gap: 12rpx; }
+/* 受控 input：实时回显由 onNicknameInput 负责，宽度靠 flex 撑，不设固定 width 以免光标跳动 */
+.p-nick {
+  flex: 1; min-width: 0; height: 52rpx; padding: 0; border: none;
   background: transparent; color: var(--text);
-  font-size: var(--fs-title); font-weight: 700; line-height: 56rpx;
+  font-size: 38rpx; font-weight: 800; line-height: 52rpx;
 }
-.hc-sub { display: flex; align-items: center; font-size: var(--fs-caption); color: var(--text-sub); }
-.hc-badge {
-  display: inline-block; margin-right: 12rpx; padding: 5rpx 16rpx;
-  border-radius: var(--r-pill); background: var(--primary); color: #0A0A0A;
-  font-size: var(--fs-caption); font-weight: 800; line-height: 1.2;
-}
-.hc-gear {
-  flex: 0 0 auto; width: 64rpx; height: 64rpx; border-radius: 50%;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-}
-.hc-gear:active { opacity: .7; }
+.p-pen { flex: 0 0 auto; width: 28rpx; height: 28rpx; }
+.p-sub { margin-top: 8rpx; font-size: var(--fs-label); color: var(--text-sub); }
 
-/* 数据三连：训练天数 / 累计时长 / 累计容量 */
-.hc-stats {
-  position: relative; z-index: 1;
-  display: flex; margin-top: 28rpx; padding-top: 26rpx;
-  border-top: 1rpx solid var(--line);
+/* 累计三连：浮在背景图上，与下方卡片同宽（左右 36rpx） */
+.p-stats {
+  display: flex; margin: 30rpx 36rpx 0; padding: 26rpx 0;
+  background: var(--card); border: 1rpx solid var(--line);
+  border-radius: var(--r-l); box-shadow: var(--shadow-card);
 }
-.hs-item { position: relative; flex: 1; text-align: center; }
-.hs-item:not(:first-child)::before {
+.ps-item { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
+.ps-item:not(:first-child)::before {
   content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  width: 1rpx; height: 44rpx; background: var(--line);
+  width: 1rpx; height: 48rpx; background: var(--line);
 }
-.hs-v { font-family: var(--f-en); font-size: var(--fs-title); font-weight: 800; color: var(--text); line-height: 1.1; }
-.hs-u { margin-left: 4rpx; font-size: var(--fs-caption); font-weight: 600; color: var(--text-weak); }
-.hs-k { margin-top: 8rpx; font-size: var(--fs-caption); color: var(--text-weak); }
+.ps-num-row { display: flex; align-items: center; gap: 8rpx; }
+.ps-v { font-family: var(--f-en); font-size: 46rpx; font-weight: 800; line-height: 1; color: var(--text); }
+.ps-i { width: 26rpx; height: 26rpx; }
+.ps-k { font-size: var(--fs-label); color: var(--text-sub); }
 
-/* 访客态：登录引导 */
-.guest-head { position: relative; z-index: 1; display: flex; align-items: center; gap: 22rpx; }
-.guest-av {
-  flex: 0 0 auto; width: 96rpx; height: 96rpx; border-radius: 50%;
+/* ══════════════ 访客：登录引导卡 ══════════════ */
+.pl-head { display: flex; align-items: center; gap: 22rpx; }
+.pl-av {
+  flex: 0 0 auto; width: 88rpx; height: 88rpx; border-radius: 50%;
   background: var(--primary-tint);
   display: flex; align-items: center; justify-content: center;
 }
-.guest-text { flex: 1; min-width: 0; }
-.guest-title { font-size: var(--fs-head); font-weight: 800; color: var(--text); }
-.guest-sub { margin-top: 6rpx; font-size: var(--fs-caption); color: var(--text-sub); }
-.login-btn {
-  position: relative; z-index: 1;
+.pl-av-i { width: 44rpx; height: 44rpx; }
+.pl-txt { flex: 1; min-width: 0; }
+.pl-title { font-size: var(--fs-head); font-weight: 800; color: var(--text); }
+.pl-sub { margin-top: 6rpx; font-size: var(--fs-label); color: var(--text-sub); }
+.pl-btn {
   width: 100%; height: 88rpx; line-height: 88rpx; margin: 26rpx 0 0; padding: 0;
   border: none; border-radius: var(--r-pill);
   background: linear-gradient(135deg, var(--primary), var(--primary-deep));
   color: #0A0A0A; font-size: var(--fs-head); font-weight: 700;
   box-shadow: var(--shadow-mint);
 }
-.login-btn::after { border: none; }
-.guest-tags { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 22rpx; }
-.gt {
+.pl-btn::after { border: none; }
+.pl-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 22rpx; }
+.pl-tag {
   padding: 7rpx 18rpx; border-radius: var(--r-pill);
   background: var(--bg); color: var(--text-sub);
   font-size: var(--fs-caption); font-weight: 600;
 }
 
-/* ══════════════ 通用：分区卡 ══════════════ */
-.card.sec-card { margin-top: 24rpx; padding: 28rpx 28rpx 24rpx; }
-.sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22rpx; }
-.sec-title {
-  display: flex; align-items: center; gap: 12rpx;
+/* ══════════════ 通用：分区卡 + 卡头 ══════════════ */
+.card.p-card { margin: 24rpx 36rpx 0; padding: 28rpx 28rpx 24rpx; }
+.p-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22rpx; }
+.p-head-t {
+  display: flex; align-items: center; gap: 14rpx;
   font-size: var(--fs-head); font-weight: 800; color: var(--text);
 }
-.sec-act {
-  padding: 7rpx 20rpx; border-radius: var(--r-pill);
-  background: var(--primary-tint); color: var(--primary-text);
-  font-size: var(--fs-label); font-weight: 700;
-}
-.sec-act:active { opacity: .7; }
-
-/* ══════════════ ② 我的数据：四格概览 ══════════════ */
-.health-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; }
-.hg-item {
-  display: flex; align-items: center; gap: 18rpx;
-  padding: 22rpx 20rpx;
-  background: var(--bg); border: 1rpx solid var(--glass-border);
-  border-radius: 24rpx;
-}
-.hg-ic {
-  flex: 0 0 auto; width: 72rpx; height: 72rpx; border-radius: 20rpx;
+/* 卡头绿色方块图标：亮绿实底 + 墨色字形，双主题通用（字形颜色见文末 dark 覆盖） */
+.p-chip {
+  flex: 0 0 auto; width: 44rpx; height: 44rpx; border-radius: 14rpx;
+  background: var(--primary);
   display: flex; align-items: center; justify-content: center;
-  font-size: var(--fs-label); font-weight: 800; line-height: 1;
 }
-/* 三个彩底磁贴用品牌/语义洗色；BMI 无专属图标，用品牌荧光绿实底 + 墨字做最强对比 */
-.hg-ic-goal { background: linear-gradient(135deg, #F6FFDC, #E6FFA8); }
-.hg-ic-scale { background: linear-gradient(135deg, #EEF4FF, #D9E7FF); }
-.hg-ic-user { background: linear-gradient(135deg, #FFF2E7, #FFE1C9); }
-.hg-ic-bmi { background: var(--primary); color: #0A0A0A; }
-.hg-body { display: flex; flex-direction: column; min-width: 0; }
-.hg-v { font-size: var(--fs-title); font-weight: 800; color: var(--text); line-height: 1.15; }
-.hg-u { margin-left: 4rpx; font-size: var(--fs-caption); font-weight: 600; color: var(--text-sub); }
-.hg-k { margin-top: 4rpx; font-size: var(--fs-caption); color: var(--text-sub); }
+.p-chip-i { width: 26rpx; height: 26rpx; }
+.p-head-a {
+  display: flex; align-items: center; gap: 4rpx;
+  padding: 6rpx 4rpx; font-size: var(--fs-label); color: var(--text-sub);
+}
+.p-head-a:active { opacity: .6; }
+.p-ar { font-size: 30rpx; line-height: 1; color: var(--text-weak); }
 
-/* 解读块（BMI / 距目标共用外壳） */
-.insight {
-  margin-top: 20rpx; padding: 22rpx 24rpx;
-  background: var(--bg); border-radius: var(--r-m);
+/* ══════════════ ② 我的数据：四格磁贴 ══════════════ */
+.dtile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; }
+.dtile {
+  display: flex; align-items: center; gap: 16rpx;
+  padding: 22rpx 18rpx;
+  background: var(--bg); border-radius: 24rpx;
 }
-.ins-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
-.ins-title { font-size: var(--fs-label); font-weight: 700; color: var(--text-sub); }
-.ins-chip {
-  padding: 7rpx 16rpx; border-radius: var(--r-pill);
-  background: var(--card); color: var(--text);
-  font-size: var(--fs-caption); font-weight: 700; line-height: 1.2;
+.dtile-ic {
+  flex: 0 0 auto; width: 72rpx; height: 72rpx; border-radius: 50%;
+  background: var(--card);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22rpx; font-weight: 800; line-height: 1; color: #0A0A0A;
 }
-.ins-chip.brand { background: var(--primary); color: #0A0A0A; }
+.dtile-i { width: 36rpx; height: 36rpx; }
+/* 磁贴底色按语义洗色：体重蓝 / 身高橙 / 目标浅绿 / BMI 品牌绿实底 */
+.dtile-ic-w { background: linear-gradient(135deg, #EEF4FF, #D9E7FF); }
+.dtile-ic-h { background: linear-gradient(135deg, #FFF2E7, #FFE1C9); }
+.dtile-ic-g { background: linear-gradient(135deg, #F6FFDC, #E6FFA8); }
+.dtile-ic-b { background: var(--primary); }
+/* 亮绿实底上的字形：#0A0A0A 由 .dtile-ic 给定（--primary 深浅主题通用，故此色不参与 dark 覆盖） */
+.dtile-bmi { font-size: 20rpx; letter-spacing: -0.5rpx; }
+.dtile-b { flex: 1; min-width: 0; }
+.dtile-v { font-family: var(--f-en); font-size: var(--fs-section); font-weight: 800; line-height: 1.15; color: var(--text); }
+.dtile-u { margin-left: 4rpx; font-size: var(--fs-label); font-weight: 600; color: var(--text-sub); }
+.dtile-k { margin-top: 4rpx; font-size: var(--fs-caption); color: var(--text-sub); }
+/* 第三行状态（体重变化 / BMI 分档）：tone 由 JS 给，默认中性不上色 */
+.dtile-x { margin-top: 4rpx; font-size: var(--fs-caption); font-weight: 700; color: var(--text-sub); }
+.dtile-x.good { color: var(--success); }
+.dtile-x.low  { color: var(--accent-deep); }
+.dtile-x.bad  { color: var(--error); }
 
-/* BMI 刻度条：15–35 映射 0–100%，四档分界 17.5% / 45% / 65% */
+/* 解读块（BMI / 目标体重共用外壳） */
+.p-ins { margin-top: 20rpx; padding: 22rpx 24rpx; background: var(--bg); border-radius: var(--r-m); }
+.p-ins-title { margin-bottom: 16rpx; font-size: var(--fs-label); font-weight: 700; color: var(--text-sub); }
+
+/* BMI 刻度条：显示区间 15–35 映射 0–100%，四档分界 17.5% / 45% / 65% */
 .bmi-bar {
   position: relative; height: 16rpx; border-radius: var(--r-pill);
   background: linear-gradient(90deg,
@@ -177,12 +190,18 @@
 .bmi-axis text:nth-child(3) { left: 55%; }
 .bmi-axis text:nth-child(4) { left: 82%; }
 
-/* 距目标：起点 → 目标 + 进度条 */
-.goal-line { display: flex; align-items: baseline; gap: 14rpx; margin-bottom: 16rpx; }
+/* 目标体重：起点 → 目标 + 右侧差额胶囊 */
+.goal-row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-bottom: 16rpx; }
+.goal-line { display: flex; align-items: baseline; gap: 14rpx; min-width: 0; }
 .goal-now { font-family: var(--f-en); font-size: var(--fs-section); font-weight: 800; color: var(--text); }
 .goal-arrow { font-size: var(--fs-body); color: var(--text-weak); }
 .goal-target { font-family: var(--f-en); font-size: var(--fs-section); font-weight: 800; color: var(--primary-text); }
 .goal-unit { margin-left: 4rpx; font-size: var(--fs-caption); font-weight: 600; color: var(--text-weak); }
+.p-pill {
+  flex: 0 0 auto; padding: 8rpx 18rpx; border-radius: var(--r-pill);
+  background: var(--primary); color: #0A0A0A;
+  font-size: var(--fs-caption); font-weight: 800; line-height: 1.2;
+}
 .goal-track { height: 16rpx; border-radius: var(--r-pill); background: var(--n-200); overflow: hidden; }
 .goal-fill {
   height: 100%; border-radius: var(--r-pill);
@@ -208,26 +227,69 @@
 }
 .ge-btn:active { opacity: .85; }
 
-/* ══════════════ ③④ 菜单（偏好 / 关于与数据） ══════════════ */
+/* ══════════════ ③ 我的训练：最近一场 + 维度小计 ══════════════ */
+.tk {
+  display: flex; align-items: center; gap: 22rpx;
+  padding: 22rpx 20rpx;
+  background: var(--bg); border-radius: var(--r-m);
+}
+.tk:active { opacity: .8; }
+/* 训练日志不落 image 字段，动作图只在内置动作库里（500KB+，懒加载不入本页）→ 用品牌图标占位 */
+.tk-thumb {
+  flex: 0 0 auto; width: 132rpx; height: 132rpx; border-radius: 20rpx;
+  background: var(--primary-tint);
+  display: flex; align-items: center; justify-content: center;
+}
+.tk-thumb-i { width: 60rpx; height: 60rpx; }
+.tk-b { flex: 1; min-width: 0; }
+.tk-tag {
+  display: inline-block; margin-bottom: 8rpx; padding: 3rpx 14rpx;
+  border-radius: 10rpx; background: var(--primary); color: #0A0A0A;
+  font-size: var(--fs-mini); font-weight: 800; line-height: 1.6;
+}
+.tk-name {
+  font-size: var(--fs-head); font-weight: 800; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tk-meta { margin-top: 8rpx; font-size: var(--fs-caption); color: var(--text-sub); }
+.tk-go {
+  flex: 0 0 auto; width: 72rpx; height: 72rpx; border-radius: 50%;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+}
+.tk-go-i { width: 32rpx; height: 32rpx; }
+
+.tk-empty { padding: 30rpx 20rpx; background: var(--bg); border-radius: var(--r-m); text-align: center; }
+.tk-empty:active { opacity: .8; }
+.tk-empty-i { width: 52rpx; height: 52rpx; margin-bottom: 12rpx; }
+.tk-empty-t { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
+.tk-empty-s { margin-top: 6rpx; font-size: var(--fs-caption); color: var(--text-sub); }
+
+.tk-stats { display: flex; margin-top: 22rpx; padding-top: 22rpx; border-top: 1rpx solid var(--line); }
+.tks-item { position: relative; flex: 1; text-align: center; }
+.tks-item:not(:first-child)::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 1rpx; height: 44rpx; background: var(--line);
+}
+.tks-v { font-family: var(--f-en); font-size: var(--fs-title); font-weight: 800; line-height: 1.1; color: var(--text); }
+.tks-u { margin-left: 2rpx; font-size: var(--fs-caption); font-weight: 600; color: var(--text-weak); }
+.tks-k { margin-top: 8rpx; font-size: var(--fs-caption); color: var(--text-weak); }
+
+/* ══════════════ ④⑤ 菜单（偏好 / 关于与数据） ══════════════ */
 .menu { margin-top: 4rpx; }
 .menu .mi { display: flex; align-items: center; gap: 20rpx; padding: 26rpx 4rpx; }
 .menu .mi:not(:last-child) { border-bottom: 1rpx solid var(--line); }
-.menu .mi-ic {
-  flex: 0 0 auto; width: 64rpx; height: 64rpx; border-radius: 18rpx;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-}
+.menu .mi-i { flex: 0 0 auto; width: 38rpx; height: 38rpx; }
 .menu .mi-t { flex: 1; font-size: var(--fs-body); font-weight: 600; color: var(--text); }
 .menu .mi-note { font-size: var(--fs-label); color: var(--text-weak); }
-.menu .mi-ar { font-size: var(--fs-head); line-height: 1; color: var(--text-weak); }
+.menu .mi-ar { font-size: 32rpx; line-height: 1; color: var(--text-weak); }
 .menu .mi-sw { flex: 0 0 auto; transform: scale(.82); transform-origin: right center; }
 .menu .mi.danger .mi-t { color: var(--error); }
-.menu .mi.danger .mi-ic { background: rgba(242, 84, 91, .10); }
 .menu .mi.danger .ico--ink { background-color: var(--error); }
 
 /* 媒体署名 */
 .attribution {
-  padding: 28rpx 32rpx calc(40rpx + env(safe-area-inset-bottom));
+  padding: 28rpx 36rpx calc(40rpx + env(safe-area-inset-bottom));
   text-align: center; font-size: var(--fs-caption); color: var(--text-weak); line-height: 1.6;
 }
 .attribution text { display: block; }
@@ -267,7 +329,6 @@
 /* 导出转发面板 */
 .export-share-sheet { text-align: center; }
 .export-share-body { padding: 20rpx 40rpx 30rpx; }
-.export-share-icon { font-size: var(--fs-hero-lg); margin-bottom: 16rpx; }
 .export-share-name { display: block; margin-bottom: 8rpx; font-size: var(--fs-body); font-weight: 700; color: var(--text); }
 .export-share-hint { display: block; margin-bottom: 32rpx; font-size: var(--fs-label); color: var(--text-sub); line-height: 1.5; }
 .export-share-btn {
@@ -282,7 +343,7 @@
    深色主题覆盖（.page.theme-dark）
    —— 由本页「深色主题」开关切换，utils/theme.js 持久化到 Storage。
    手法同 pages/home/home.wxss：重定义 CSS 变量让整棵子树自动翻转，
-   仅对本页硬编码颜色（彩底磁贴、品牌光晕）做单独覆盖。
+   仅对本页硬编码颜色（背景图、彩底磁贴、亮绿底上的墨字）做单独覆盖。
    ══════════════════════════════════════════════════════════════ */
 .page.theme-dark {
   --n-50:  #0A0A0A;
@@ -306,30 +367,44 @@
   --primary-text: #C8FF00;
   /* 浅绿底（#F2FFD6）在暗色下必须一起翻，否则亮绿字压浅绿底会糊成一片 */
   --primary-tint: rgba(200, 255, 0, 0.12);
+  --hero-fade: rgba(10, 10, 10, 0);
 
   background: #0A0A0A;
   color: var(--text);
 }
 
+/* Hero 背景图是白底人像照，铺在黑底上就是一块惨白 → 深色下整体撤掉，改用品牌光晕撑住右上角 */
+.page.theme-dark .p-hero-bg { display: none; }
+.page.theme-dark .p-hero::before {
+  content: ''; position: absolute; right: -90rpx; top: -70rpx;
+  width: 460rpx; height: 460rpx; border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 255, 0, .16) 0%, rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
+}
+
 /* 图标：.ico--ink 默认深墨，黑底不可见 → 转白 */
 .page.theme-dark .ico--ink { background-color: #FFFFFF; }
 
+/* 亮绿实底上的字形必须拉回墨色：--primary 深浅主题通用，不会跟着翻，
+   而上面的 .ico--ink 覆盖把字形翻成了白 —— 白压亮绿≈1.6:1，等于隐形。 */
+.page.theme-dark .p-chip .ico--ink,
+.page.theme-dark .tk-go .ico--ink { background-color: #0A0A0A; }
+
 /* 卡片阴影去掉（暗色下无意义） */
 .page.theme-dark .card,
-.page.theme-dark .hero-card { box-shadow: none; }
+.page.theme-dark .p-stats { box-shadow: none; }
 
-/* 主卡光晕：浅色用极浅绿底，暗色换成低透亮绿，避免黑底上一块脏灰 */
-.page.theme-dark .hero-card::after {
-  background: radial-gradient(circle, rgba(200, 255, 0, .16) 0%, rgba(0, 0, 0, 0) 70%);
-}
+/* 彩底磁贴：浅色是亮彩渐变，暗色改用语义色淡底，避免在黑底上发灰。
+   .dtile-ic-b 用 var(--primary) 实底 + 墨字，双主题通用，无需覆盖。 */
+.page.theme-dark .dtile-ic-w { background: rgba(62, 139, 255, .20); }
+.page.theme-dark .dtile-ic-h { background: rgba(255, 149, 0, .18); }
+.page.theme-dark .dtile-ic-g { background: rgba(200, 255, 0, .16); }
 
-/* 彩底磁贴：浅色是亮彩渐变，暗色改用语义色淡底，避免在黑底上发灰 */
-.page.theme-dark .hg-ic-goal { background: rgba(200, 255, 0, .16); }
-.page.theme-dark .hg-ic-scale { background: rgba(62, 139, 255, .20); }
-.page.theme-dark .hg-ic-user { background: rgba(255, 149, 0, .18); }
-/* .hg-ic-bmi 用 var(--primary) 实底 + 墨字，双主题通用，无需覆盖 */
+/* 状态色：--success(#6F9F00) 压黑底仅 3.5:1、--accent-deep 更暗 → 深色下换成亮一档的同义色 */
+.page.theme-dark .dtile-x.good { color: var(--primary-text); }
+.page.theme-dark .dtile-x.low  { color: var(--warning); }
 
 /* 登录按钮：浅色是荧光绿渐变，暗色翻成纯品牌绿（渐变收尾色在黑底上发浑） */
-.page.theme-dark .login-btn { background: var(--primary); color: #0A0A0A; }
+.page.theme-dark .pl-btn { background: var(--primary); color: #0A0A0A; }
 /* 危险行图标：.ico--ink 的暗色覆盖优先度更高，此处显式拉回红色 */
 .page.theme-dark .menu .mi.danger .ico--ink { background-color: var(--error); }

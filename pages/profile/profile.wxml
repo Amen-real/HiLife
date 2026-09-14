@@ -1,106 +1,133 @@
-<!-- pages/profile/profile.wxml —— 四组结构：①账户主卡 ②我的数据（带解读）③偏好 ④关于与数据
-     根节点 theme-light / theme-dark 由本页「深色主题」开关控制（见 utils/theme.js） -->
+<!-- pages/profile/profile.wxml —— 对齐「我的」页设计稿
+     结构：① Hero（背景图铺顶 + 悬浮标题 + 头像行 + 累计三连）
+           ② 我的数据（四格 + BMI 解读 + 目标体重）
+           ③ 我的训练（最近一场 + 训练维度小计）
+           ④ 偏好  ⑤ 关于与数据
+     根节点 theme-light / theme-dark 由本页「深色主题」开关控制（见 utils/theme.js）
+     注意：wxml 行内 style 禁 Mustache 插值，故状态栏高度/进度条/刻度一律由 JS 拼好整串注入。 -->
 <view class="page {{theme}}">
-  <nav-bar title="我的" show-back="{{false}}" />
 
-  <!-- ===== ① 账户主卡（视觉重心） ===== -->
-  <view class="hero-card {{loggedIn ? '' : 'guest'}}">
-    <!-- 已登录：头像 + 昵称 + 称号 + 数据三连 -->
-    <block wx:if="{{loggedIn}}">
-      <view class="hc-top">
-        <view class="avatar-btn" bindtap="onChooseAvatar">
-          <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" class="avatar-img" mode="aspectFill" />
-          <view wx:else class="av">{{avatarText}}</view>
-        </view>
-        <view class="hc-meta">
-          <input class="nick-input" type="nickname" placeholder="点击填写昵称" value="{{nickname}}"
-                 bindinput="onNicknameInput" bindblur="onNicknameBlur" />
-          <view class="hc-sub"><text class="hc-badge">{{heroTitle}}</text>已坚持 {{profile.fitnessDays}} 天</view>
-        </view>
-        <view class="hc-gear" bindtap="goSettings" aria-label="设置">
-          <view class="ico ico-settings ico--ink" style="width:34rpx;height:34rpx"></view>
-        </view>
-      </view>
-      <view class="hc-stats">
-        <view class="hs-item">
-          <view class="hs-v">{{totals.days}}<text class="hs-u">天</text></view>
-          <view class="hs-k">训练天数</view>
-        </view>
-        <view class="hs-item">
-          <view class="hs-v">{{totals.dur}}</view>
-          <view class="hs-k">累计时长</view>
-        </view>
-        <view class="hs-item">
-          <view class="hs-v">{{totals.vol}}</view>
-          <view class="hs-k">累计容量</view>
-        </view>
-      </view>
-    </block>
+  <!-- ============== ① HERO：背景图铺顶，标题与头像浮在图上 ============== -->
+  <view class="p-hero">
+    <!-- 背景图：本地 static/ 随包发布（秒开）；加载失败记旗标后隐藏，露出页面底色，不留破图占位 -->
+    <image wx:if="{{!bgFailed}}" class="p-hero-bg" src="{{bgUrl}}" mode="widthFix" binderror="onBgError" />
+    <!-- 底部渐隐：背景图底色 #F5F6F3 与页面底色 --n-50 有几档色差，硬切会有可见接缝 -->
+    <view class="p-hero-fade"></view>
 
-    <!-- 未登录：登录引导卡（价值点 + 行动按钮） -->
-    <block wx:else>
-      <view class="guest-head">
-        <view class="guest-av">
-          <view class="ico ico-user ico--ink" style="width:44rpx;height:44rpx"></view>
+    <view class="p-hero-body">
+      <!-- 状态栏占位：navigationStyle=custom 后顶部交还 WebView，需手动补状态栏高度 -->
+      <view class="p-sb" style="{{statusBarStyle}}"></view>
+
+      <view class="p-title">我的</view>
+
+      <view class="p-id">
+        <view class="p-avatar" bindtap="onChooseAvatar" aria-label="更换头像">
+          <image wx:if="{{avatarUrl}}" class="p-avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
+          <view wx:else class="p-avatar-txt">{{avatarText}}</view>
         </view>
-        <view class="guest-text">
-          <view class="guest-title">登录，数据不丢</view>
-          <view class="guest-sub">微信一键登录 · 换机自动恢复</view>
+        <view class="p-id-meta">
+          <view class="p-nick-row">
+            <input class="p-nick" type="nickname" placeholder="点击填写昵称" value="{{nickname}}"
+                   bindinput="onNicknameInput" bindblur="onNicknameBlur" />
+            <view class="ico ico-edit ico--muted p-pen"></view>
+          </view>
+          <view class="p-sub">{{loggedIn ? heroTitle + ' · 已坚持 ' + profile.fitnessDays + ' 天' : '登录后数据不丢，换机自动恢复'}}</view>
         </view>
       </view>
-      <button class="login-btn" bindtap="wechatLogin">微信一键登录</button>
-      <view class="guest-tags">
-        <text class="gt">云备份</text>
-        <text class="gt">跨设备同步</text>
-        <text class="gt">随时可退出</text>
+
+      <!-- 累计三连：浮在背景图上（与下方卡片同宽，视觉上把 Hero 收住） -->
+      <view class="p-stats">
+        <view class="ps-item">
+          <view class="ps-num-row">
+            <text class="ps-v">{{totals.days}}</text>
+            <view class="ico ico-flame ico--success ps-i"></view>
+          </view>
+          <view class="ps-k">训练天数</view>
+        </view>
+        <view class="ps-item">
+          <view class="ps-num-row">
+            <text class="ps-v">{{totals.streak}}</text>
+            <view class="ico ico-pulse ico--success ps-i"></view>
+          </view>
+          <view class="ps-k">连续天数</view>
+        </view>
+        <view class="ps-item">
+          <view class="ps-num-row">
+            <text class="ps-v">{{totals.sessions}}</text>
+            <view class="ico ico-chart ico--success ps-i"></view>
+          </view>
+          <view class="ps-k">总训练次数</view>
+        </view>
       </view>
-    </block>
+    </view>
   </view>
 
-  <!-- ===== ② 我的数据（健康概览 + 解读 + 空态引导） ===== -->
-  <view class="card sec-card">
-    <view class="sec-head">
-      <view class="sec-title"><view class="ico ico-goal ico--ink" style="width:32rpx;height:32rpx"></view>我的数据</view>
-      <view class="sec-act" bindtap="goSettings">编辑</view>
-    </view>
-
-    <view class="health-grid">
-      <view class="hg-item">
-        <view class="hg-ic hg-ic-goal"><view class="ico ico-goal ico--ink" style="width:34rpx;height:34rpx"></view></view>
-        <view class="hg-body">
-          <view class="hg-v">{{health.goal}}</view>
-          <view class="hg-k">当前目标</view>
-        </view>
-      </view>
-      <view class="hg-item">
-        <view class="hg-ic hg-ic-scale"><view class="ico ico-scale ico--ink" style="width:34rpx;height:34rpx"></view></view>
-        <view class="hg-body">
-          <view class="hg-v">{{health.weight}}<text class="hg-u" wx:if="{{health.weight !== '未记录'}}">kg</text></view>
-          <view class="hg-k">体重</view>
-        </view>
-      </view>
-      <view class="hg-item">
-        <view class="hg-ic hg-ic-user"><view class="ico ico-user ico--ink" style="width:34rpx;height:34rpx"></view></view>
-        <view class="hg-body">
-          <view class="hg-v">{{health.height}}<text class="hg-u" wx:if="{{health.height !== '未设置'}}">cm</text></view>
-          <view class="hg-k">身高</view>
-        </view>
-      </view>
-      <view class="hg-item">
-        <view class="hg-ic hg-ic-bmi">BMI</view>
-        <view class="hg-body">
-          <view class="hg-v">{{health.bmi}}</view>
-          <view class="hg-k">BMI 指数</view>
-        </view>
+  <!-- 访客：登录引导（Hero 下独立一张卡，不打断 Hero 的信息结构） -->
+  <view class="card p-card" wx:if="{{!loggedIn}}">
+    <view class="pl-head">
+      <view class="pl-av"><view class="ico ico-user ico--ink pl-av-i"></view></view>
+      <view class="pl-txt">
+        <view class="pl-title">登录，数据不丢</view>
+        <view class="pl-sub">微信一键登录 · 换机自动恢复</view>
       </view>
     </view>
+    <button class="pl-btn" bindtap="wechatLogin">微信一键登录</button>
+    <view class="pl-tags">
+      <text class="pl-tag">云备份</text>
+      <text class="pl-tag">跨设备同步</text>
+      <text class="pl-tag">随时可退出</text>
+    </view>
+  </view>
 
-    <!-- BMI 区间解读（无数据不渲染） -->
-    <view class="insight" wx:if="{{bmi.show}}">
-      <view class="ins-head">
-        <text class="ins-title">BMI 解读</text>
-        <text class="ins-chip">{{bmi.label}}</text>
+  <!-- ============== ② 我的数据（健康概览 + 解读 + 目标） ============== -->
+  <view class="card p-card">
+    <view class="p-head">
+      <view class="p-head-t">
+        <view class="p-chip"><view class="ico ico-chart ico--ink p-chip-i"></view></view>
+        <text>我的数据</text>
       </view>
+      <view class="p-head-a" bindtap="goSettings">编辑<text class="p-ar">›</text></view>
+    </view>
+
+    <view class="dtile-grid">
+      <view class="dtile">
+        <view class="dtile-ic dtile-ic-w"><view class="ico ico-scale ico--ink dtile-i"></view></view>
+        <view class="dtile-b">
+          <view class="dtile-v">{{health.weight}}<text class="dtile-u" wx:if="{{health.weight !== '未记录'}}">kg</text></view>
+          <view class="dtile-k">当前体重</view>
+          <view class="dtile-x {{weightDelta.tone}}" wx:if="{{weightDelta.show}}">{{weightDelta.text}}</view>
+        </view>
+      </view>
+
+      <view class="dtile">
+        <view class="dtile-ic dtile-ic-h"><view class="ico ico-user ico--ink dtile-i"></view></view>
+        <view class="dtile-b">
+          <view class="dtile-v">{{health.height}}<text class="dtile-u" wx:if="{{health.height !== '未设置'}}">cm</text></view>
+          <view class="dtile-k">身高</view>
+        </view>
+      </view>
+
+      <view class="dtile">
+        <view class="dtile-ic dtile-ic-b"><text class="dtile-bmi">BMI</text></view>
+        <view class="dtile-b">
+          <view class="dtile-v">{{health.bmi}}</view>
+          <view class="dtile-k">BMI 指数</view>
+          <view class="dtile-x {{health.bmiTone}}" wx:if="{{health.bmiLabel}}">{{health.bmiLabel}}</view>
+        </view>
+      </view>
+
+      <view class="dtile">
+        <view class="dtile-ic dtile-ic-g"><view class="ico ico-target ico--ink dtile-i"></view></view>
+        <view class="dtile-b">
+          <view class="dtile-v">{{health.goal}}</view>
+          <view class="dtile-k">当前目标</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- BMI 区间解读（无体重/身高不渲染） -->
+    <view class="p-ins" wx:if="{{bmi.show}}">
+      <view class="p-ins-title">BMI 解读</view>
       <view class="bmi-bar">
         <view class="bmi-mark" style="{{bmi.markStyle}}"></view>
       </view>
@@ -109,20 +136,20 @@
       </view>
     </view>
 
-    <!-- 距目标进度（需体重 + 目标体重） -->
-    <view class="insight" wx:if="{{goal.show}}">
-      <view class="ins-head">
-        <text class="ins-title">距目标</text>
-        <text class="ins-chip brand" wx:if="{{!goal.done}}">未开始</text>
-        <text class="ins-chip brand" wx:else>已{{goal.verb}} {{goal.done}} / {{goal.total}}kg</text>
-      </view>
-      <view class="goal-line">
-        <text class="goal-now">{{goal.from}}<text class="goal-unit">kg</text></text>
-        <text class="goal-arrow">→</text>
-        <text class="goal-target">{{goal.to}}<text class="goal-unit">kg</text></text>
+    <!-- 目标体重：起点 → 目标 + 进度（需体重 + 目标体重） -->
+    <view class="p-ins" wx:if="{{goal.show}}">
+      <view class="p-ins-title">目标体重</view>
+      <view class="goal-row">
+        <view class="goal-line">
+          <text class="goal-now">{{goal.from}}<text class="goal-unit">kg</text></text>
+          <text class="goal-arrow">→</text>
+          <text class="goal-target">{{goal.to}}<text class="goal-unit">kg</text></text>
+        </view>
+        <view class="p-pill" wx:if="{{!goal.done}}">还差 {{goal.remain}} kg</view>
+        <view class="p-pill" wx:else>已{{goal.verb}} {{goal.done}} kg</view>
       </view>
       <view class="goal-track"><view class="goal-fill" style="{{goal.fillStyle}}"></view></view>
-      <view class="goal-hint">还差 {{goal.remain}}kg 达标<text wx:if="{{goal.weeks}}"> · 按当前节奏约 {{goal.weeks}} 周</text></view>
+      <view class="goal-hint">距离目标还需 {{goal.remain}}kg · 建议每周{{goal.verb}}重 0.5-1kg</view>
     </view>
 
     <!-- 空态引导：资料缺失时给出出口（而非一片「--」） -->
@@ -133,54 +160,109 @@
     </view>
   </view>
 
-  <!-- ===== ③ 偏好 ===== -->
-  <view class="card sec-card">
-    <view class="sec-head"><view class="sec-title">偏好</view></view>
-    <view class="menu">
-      <view class="mi">
-        <view class="mi-ic"><view class="ico ico-moon ico--ink" style="width:40rpx;height:40rpx"></view></view>
-        <view class="mi-t">深色主题</view>
-        <switch class="mi-sw" checked="{{darkMode}}" bindchange="onToggleTheme" color="#C8FF00" />
+  <!-- ============== ③ 我的训练（最近一场 + 训练维度小计） ============== -->
+  <view class="card p-card">
+    <view class="p-head">
+      <view class="p-head-t">
+        <view class="p-chip"><view class="ico ico-dumbbell ico--ink p-chip-i"></view></view>
+        <text>我的训练</text>
       </view>
-      <view class="mi" bindtap="tapReminder">
-        <view class="mi-ic"><view class="ico ico-clock ico--ink" style="width:40rpx;height:40rpx"></view></view>
-        <view class="mi-t">训练提醒</view>
-        <view class="mi-note">{{reminderOn ? '已开启' : '未开启'}}</view>
+      <view class="p-head-a" bindtap="goHistory">查看全部<text class="p-ar">›</text></view>
+    </view>
+
+    <!-- 最近一场：点进复盘看逐动作明细 -->
+    <view class="tk" wx:if="{{train.show}}" bindtap="goReview" aria-label="查看最近一次训练复盘">
+      <view class="tk-thumb">
+        <view class="ico ico-dumbbell ico--success tk-thumb-i"></view>
+      </view>
+      <view class="tk-b">
+        <view class="tk-tag" wx:if="{{train.isToday}}">今日</view>
+        <view class="tk-name">{{train.title}}</view>
+        <view class="tk-meta">{{train.meta}}</view>
+      </view>
+      <view class="tk-go"><view class="ico ico-arrowright ico--ink tk-go-i"></view></view>
+    </view>
+
+    <!-- 无记录：给出口而不是空区块 -->
+    <view class="tk-empty" wx:else bindtap="goHistory">
+      <view class="ico ico-dumbbell ico--muted tk-empty-i"></view>
+      <view class="tk-empty-t">还没有训练记录</view>
+      <view class="tk-empty-s">完成第一场训练后，这里显示最近一次</view>
+    </view>
+
+    <!-- 训练维度小计：与顶部「累计三连」不重复（那里是天数/连续/总次数，这里是本月/本周/时长/容量）。
+         本周用 X/Y 形式给出「完成度」，Y 取周目标口径（计划 daysPerWeek > 个人设置 > 3）。 -->
+    <view class="tk-stats">
+      <view class="tks-item">
+        <view class="tks-v">{{totals.month}}</view>
+        <view class="tks-k">本月训练</view>
+      </view>
+      <view class="tks-item">
+        <view class="tks-v">{{totals.week}}<text class="tks-u">/{{totals.weekTarget}}</text></view>
+        <view class="tks-k">本周训练</view>
+      </view>
+      <view class="tks-item">
+        <view class="tks-v">{{totals.dur}}</view>
+        <view class="tks-k">累计时长</view>
+      </view>
+      <view class="tks-item">
+        <view class="tks-v">{{totals.vol}}</view>
+        <view class="tks-k">累计容量</view>
       </view>
     </view>
   </view>
 
-  <!-- ===== ④ 关于与数据 ===== -->
-  <view class="card sec-card">
-    <view class="sec-head"><view class="sec-title">关于与数据</view></view>
+  <!-- ============== ④ 偏好（设计稿：无卡头，直接两行） ============== -->
+  <view class="card p-card">
+    <view class="menu">
+      <view class="mi">
+        <view class="ico ico-moon ico--ink mi-i"></view>
+        <view class="mi-t">深色主题</view>
+        <switch class="mi-sw" checked="{{darkMode}}" bindchange="onToggleTheme" color="#C8FF00" />
+      </view>
+      <view class="mi" bindtap="tapReminder">
+        <view class="ico ico-clock ico--ink mi-i"></view>
+        <view class="mi-t">训练提醒</view>
+        <view class="mi-note">{{reminderOn ? '已开启' : '未开启'}}</view>
+        <text class="mi-ar">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ============== ⑤ 关于与数据（设计稿：同为无卡头行列表） ============== -->
+  <view class="card p-card">
     <view class="menu">
       <view class="mi" bindtap="openDataMgr">
-        <view class="mi-ic"><view class="ico ico-settings ico--ink" style="width:40rpx;height:40rpx"></view></view>
-        <view class="mi-t">数据管理</view><view class="mi-ar">›</view>
+        <view class="ico ico-settings ico--ink mi-i"></view>
+        <view class="mi-t">数据管理</view>
+        <text class="mi-ar">›</text>
       </view>
       <view class="mi" bindtap="goPrivacy">
-        <view class="mi-ic"><view class="ico ico-info ico--ink" style="width:40rpx;height:40rpx"></view></view>
-        <view class="mi-t">隐私政策</view><view class="mi-ar">›</view>
+        <view class="ico ico-info ico--ink mi-i"></view>
+        <view class="mi-t">隐私政策</view>
+        <text class="mi-ar">›</text>
       </view>
-      <view class="mi">
-        <view class="mi-ic"><view class="ico ico-info ico--ink" style="width:40rpx;height:40rpx"></view></view>
-        <view class="mi-t">版本</view><view class="mi-note">v{{version}}</view>
+      <view class="mi" bindtap="tapAbout">
+        <view class="ico ico-heart ico--ink mi-i"></view>
+        <view class="mi-t">关于我们</view>
+        <view class="mi-note">v{{version}}</view>
+        <text class="mi-ar">›</text>
       </view>
       <view class="mi danger" wx:if="{{loggedIn}}" bindtap="logout">
-        <view class="mi-ic"><view class="ico ico-user ico--ink" style="width:40rpx;height:40rpx"></view></view>
+        <view class="ico ico-back ico--ink mi-i"></view>
         <view class="mi-t">退出登录</view>
       </view>
     </view>
   </view>
 
-  <!-- 媒体署名（页脚小字） -->
+  <!-- 媒体署名：Gym visual 授权要求署名必须可见，故留在页脚而不是折进「关于我们」弹窗 -->
   <view class="attribution">
     <text>动作演示媒体 © Gym visual · gymvisual.com</text>
   </view>
 
   <view class="bottom-gap" />
 
-  <!-- 数据管理面板（底部弹出：导出 / 导入 / 清除，无图标） -->
+  <!-- 数据管理面板（底部弹出：导出 / 导入 / 清除） -->
   <view class="dm-mask" wx:if="{{showDataMgr}}" bindtap="closeDataMgr">
     <view class="dm-sheet" catchtap="stopTap">
       <view class="dm-head">
@@ -204,9 +286,8 @@
         <view class="dm-close" bindtap="closeExportShare">✕</view>
       </view>
       <view class="export-share-body">
-        <view class="export-share-icon">📦</view>
-        <text class="export-share-name">hilife-backup.txt</text>
-        <text class="export-share-hint">点击下方按钮将备份文件发送给好友或文件传输助手</text>
+        <view class="export-share-name">hilife-backup.txt</view>
+        <view class="export-share-hint">点击下方按钮将备份文件发送给好友或文件传输助手</view>
         <button class="export-share-btn" bindtap="doShareFile">转发文件</button>
       </view>
     </view>

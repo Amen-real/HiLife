@@ -66,6 +66,23 @@ function inRange(iso, monStr, sunStr) {
   return !!iso && iso >= monStr && iso < sunStr;
 }
 
+// 连续天数：从 today 起向前逐日回溯，连续存在于 dateSet 的天数即为结果（中断即停）。
+// dateSet 传 'YYYY-MM-DD' 的 Set 或数组；today 缺省取今天。
+//
+// 口径单源：首页「连续打卡」（训练/体重/饮食任一活跃）与本页「连续训练天数」（仅训练日）
+// 共用本函数，差别只在传进来的日期集合。此前首页自带一份 computeStreak，两处各写一份
+// 必然漂移（改一处忘另一处），故收敛到这里。
+function streakFromDates(dateSet, today) {
+  const has = (dateSet instanceof Set)
+    ? function (d) { return dateSet.has(d); }
+    : function (d) { return !!dateSet && dateSet.indexOf(d) >= 0; };
+  let day = today || todayStr();
+  let n = 0;
+  // 上限 3660 天（约 10 年）防御脏数据里的死循环
+  while (n < 3660 && has(day)) { n++; day = shiftDaysISO(day, -1); }
+  return n;
+}
+
 // 日期串加减天数
 function shiftDaysISO(iso, delta) {
   const d = parseISO(iso);
@@ -85,5 +102,5 @@ function fmtMonthLabel(iso) {
 module.exports = {
   pad2, fmtDate, todayStr, parseISO, toDate,
   mondayOf, weekRange, weekRangeOffset, inRange,
-  shiftDaysISO, fmtDateSlash, fmtMonthLabel
+  shiftDaysISO, fmtDateSlash, fmtMonthLabel, streakFromDates
 };
