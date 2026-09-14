@@ -131,6 +131,18 @@ function weekTargetOf(profile, activePlan) {
   return { target: DEFAULT_WEEK_TARGET, fromPlan: false };
 }
 
+// 每周训练目标的合法区间（1–14）：输入框、未来的首页进度卡都走这一个口径，
+// 避免「设置页允许 20 次/周、别处按 14 截断」这类两套规则。
+// 语义：空 / 0 / 负数 / 非数字一律视为「无效输入」→ 回落默认 3（而不是夹到 1，
+// 因为「-2 次/周」表达的不是意图，是误输入）；>14 截到 14。
+const WEEK_TARGET_MIN = 1;
+const WEEK_TARGET_MAX = 14;
+function clampWeekTarget(v) {
+  const n = Math.round(Number(v));
+  if (!isFinite(n) || n <= 0) return DEFAULT_WEEK_TARGET;
+  return Math.min(WEEK_TARGET_MAX, n);
+}
+
 /* ---------- 场间对比 ---------- */
 
 // 「可比容量」：有负重时 = Σ 重量×次数；纯自重（训练量恒 0）退化为 Σ 次数。
@@ -424,6 +436,7 @@ function nextSessionSuggestion(actions, logsDesc, idx, activePlan) {
 
 module.exports = {
   EST_KCAL_PER_MIN, DELTA_SESSION, DELTA_TREND, DEFAULT_WEEK_TARGET,
+  WEEK_TARGET_MIN, WEEK_TARGET_MAX, clampWeekTarget,
   num, setsOf, actionKey,
   loadOfAction, loadOfLog, durationSecOfLog, trainSecOfLog,
   bestSetOf, peakWeightOf, setsMetaOf, rpeSumOfActions, avgRpeOfActions, estKcal,

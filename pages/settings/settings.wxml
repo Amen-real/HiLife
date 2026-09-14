@@ -26,6 +26,10 @@
       <text class="form-label">年龄 (岁)</text>
       <input class="form-input" type="digit" placeholder="如 28" value="{{age}}" bindinput="onAge" />
     </view>
+    <view class="form-row">
+      <text class="form-label">每周训练目标 (次)</text>
+      <input class="form-input" type="number" placeholder="如 3" value="{{weeklyTarget}}" bindinput="onWeeklyTarget" />
+    </view>
     <view class="form-row no-border">
       <text class="form-label">活动水平</text>
       <picker mode="selector" range="{{activityLevels}}" value="{{activityIndex}}" bindchange="pickActivity">
@@ -35,5 +39,5 @@
   </view>
 
   <button class="btn-primary save-btn" bindtap="save">保存</button>
-  <view class="tip">保存后，首页目标进度与建议页营养目标会自动更新。</view>
+  <view class="tip">保存后，首页目标进度与建议页营养目标会自动更新。有训练计划时，每周训练目标以计划的训练日数为准。</view>
 </view>

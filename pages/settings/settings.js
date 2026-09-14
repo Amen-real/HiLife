@@ -3,6 +3,8 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const theme = require('../../utils/theme.js');
 const nutrition = require('../../utils/nutrition.js');
+// 周训练目标的合法区间（1–14）单源在 trainingStats.clampWeekTarget，页面不再自己 Math.min/max
+const stats = require('../../utils/trainingStats.js');
 // 目标词表唯一真源在 utils/nutrition.js（GOALS），此处不再本地重复定义，避免两处漂移
 const GOALS = nutrition.GOALS;
 // 活动量档位：展示文案与 store.profile.activityLevel 取值一一对应（系数映射见 utils/nutrition.js）
@@ -17,6 +19,7 @@ Page({
     targetWeight: '',
     height: '',
     age: '',
+    weeklyTarget: '',                           // 每周训练目标次数（1–14；空 = 用默认 3）
     activityLevels: ACTIVITY_LEVELS,
     activityIndex: 2,
     goals: GOALS,
@@ -42,6 +45,7 @@ Page({
       targetWeight: p.targetWeight || '',
       height: p.height || '',
       age: p.age || '',
+      weeklyTarget: p.weeklyTarget || '',
       activityIndex: Math.max(0, ACTIVITY_KEYS.indexOf(p.activityLevel || 'moderate')),
       genderIndex: p.gender === '女' ? 1 : 0,
       goalIndex: Math.max(0, GOALS.indexOf(goal))
@@ -59,6 +63,7 @@ Page({
   onTarget(e) { this.setData({ targetWeight: e.detail.value }); },
   onHeight(e) { this.setData({ height: e.detail.value }); },
   onAge(e) { this.setData({ age: e.detail.value }); },
+  onWeeklyTarget(e) { this.setData({ weeklyTarget: e.detail.value }); },
   pickActivity(e) { this.setData({ activityIndex: Number(e.detail.value) }); },
 
   save() {
@@ -69,6 +74,8 @@ Page({
       targetWeight: this.data.targetWeight ? Number(this.data.targetWeight) : null,
       height: this.data.height ? Number(this.data.height) : null,
       age: this.data.age ? Number(this.data.age) : null,
+      // 空/非法输入回落到默认 3（1–14 由 clampWeekTarget 收口）
+      weeklyTarget: stats.clampWeekTarget(this.data.weeklyTarget),
       activityLevel: ACTIVITY_KEYS[this.data.activityIndex]
     });
     wx.showToast({ title: '已保存', icon: 'success' });

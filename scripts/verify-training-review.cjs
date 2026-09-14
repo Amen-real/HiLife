@@ -87,6 +87,18 @@ eq('\u8ba1\u5212 daysPerWeek=0 \u2192 \u56de\u9000\u4e2a\u4eba\u8bbe\u7f6e',
 eq('\u8ba1\u5212 daysPerWeek \u5b57\u7b26\u4e32\u4e5f\u8ba4',
   stats.weekTargetOf({ weeklyTarget: 5 }, { daysPerWeek: '3' }), { target: 3, fromPlan: true });
 
+// 合法区间单源：输入框 / store / 未来首页进度卡都走这一个口径
+eq('clampWeekTarget(5) = 5', stats.clampWeekTarget(5), 5);
+eq("clampWeekTarget('6') 认字符串", stats.clampWeekTarget('6'), 6);
+eq('clampWeekTarget(0) 回落默认 3', stats.clampWeekTarget(0), 3);
+eq('clampWeekTarget(null) 回落默认 3', stats.clampWeekTarget(null), 3);
+eq("clampWeekTarget('') 回落默认 3", stats.clampWeekTarget(''), 3);
+eq("clampWeekTarget('abc') 回落默认 3", stats.clampWeekTarget('abc'), 3);
+eq('clampWeekTarget(99) 截到 14', stats.clampWeekTarget(99), 14);
+eq('clampWeekTarget(-2) 视为无效输入 → 默认 3', stats.clampWeekTarget(-2), 3);
+eq('clampWeekTarget(3.6) 取整 4', stats.clampWeekTarget(3.6), 4);
+eq('周目标区间常量与实现一致', [stats.WEEK_TARGET_MIN, stats.WEEK_TARGET_MAX], [1, 14]);
+
 /* ============ C. buildVerdict —— 四分支 ============ */
 console.log('\n[C] buildVerdict \u2014\u2014 \u53ea\u6bd4\u5171\u540c\u52a8\u4f5c');
 const A = (id, equip, sets) => ({ id, name: id, equip: equip || '', sets: sets.length, setsDetail: sets });
@@ -249,6 +261,17 @@ isFalse('不再画周完成度环（conic-gradient）', has(TR_JS, 'conic-gradie
 isFalse('不再有周目标就地改方法', has(TR_JS, 'editWeeklyTarget'));
 isFalse('不再残留 weekly 数据槽位', has(TR_JS, 'weekly: { weeklyTarget'));
 isTrue('周趋势改由 buildWeeks 承担', has(TR_JS, 'buildWeeks(') && !has(TR_JS, 'buildWeekly('));
+// —— 周目标编辑入口已迁到「我的 → 健康数据」（原在已删除的「本周执行」卡里）——
+const SET_WXML = 'pages/settings/settings.wxml';
+const SET_JS = 'pages/settings/settings.js';
+isTrue('健康数据页有每周训练目标输入', has(SET_WXML, 'bindinput="onWeeklyTarget"'));
+isTrue('健康数据页有对应处理函数', has(SET_JS, 'onWeeklyTarget('));
+isTrue('健康数据页读回已存周目标', has(SET_JS, 'weeklyTarget: p.weeklyTarget'));
+isTrue('保存走 updateProfile 带上周目标', has(SET_JS, 'weeklyTarget: stats.clampWeekTarget('));
+isTrue('周目标区间收口在 clampWeekTarget', typeof stats.clampWeekTarget === 'function');
+isTrue('无计划时设置值才生效（已在页脚说明）', has(SET_WXML, '以计划的训练日数为准'));
+isFalse('store 不再保留专用写入方法（单入口 = updateProfile）',
+  typeof require(path.join(ROOT, 'utils', 'store.js')).setWeeklyTarget === 'function');
 isTrue('\u590d\u76d8\u7ec4\u4ef6\u7a7a\u6001 CTA', has(TR_WXML, 'ph-cta') && has(TR_JS, 'goTrain'));
 isTrue('\u7a7a\u6001 CTA \u6837\u5f0f\u5b58\u5728', has(TR_WXSS, '.ph-cta'));
 isTrue('\u52aa\u529b\u5ea6\u67f1\u6709 min-height\uff08\u4e0d\u4f1a\u77ee\u5230\u770b\u4e0d\u89c1\uff09', has(TR_JS, 'min-height: 8%'));

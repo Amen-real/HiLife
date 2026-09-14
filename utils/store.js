@@ -417,12 +417,9 @@ const store = {
     if (avatar !== undefined && avatar !== null) u.avatar = avatar;
     this.persist();
   },
-  // 每周训练目标次数（周度复盘「完成度」分母；范围 1–14）
-  setWeeklyTarget(n) {
-    const v = Math.max(1, Math.min(14, Math.round(Number(n) || 3)));
-    g().profile.weeklyTarget = v;
-    this.persist();
-  },
+  // 【已移除】setWeeklyTarget(n)：每周训练目标不再有专用写入方法。
+  // 全 App 只有一个写入口 —— 「我的 → 健康数据」的 save() 走 updateProfile；
+  // 合法区间 1–14 收口在 trainingStats.clampWeekTarget(n)，不再是散落的 Math.min/max。
 
   /* ---------- 复盘「关键动作」自定义 ---------- */
   // 空数组 = 不自定义，复盘页回落到「场次最多的前 3 个」。
