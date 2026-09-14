@@ -114,32 +114,6 @@
       <!-- =============== 进步趋势 =============== -->
       <block wx:elif="{{tab==='trend'}}">
 
-        <!-- 本周执行（这是「执行」不是「进步」，故单独标出；口径与计划页组头一致） -->
-        <view class="section-title">本周执行</view>
-        <view class="wk-head">
-          <view class="wk-ring" style="{{weekly.compStyle}}" aria-label="周完成度 {{weekly.completion}}%">
-            <view class="wk-ring-center">
-              <view class="wk-pct">{{weekly.completion}}<text class="wk-pct-u">%</text></view>
-              <view class="wk-pct-lab">周完成度</view>
-            </view>
-          </view>
-          <view class="wk-meta">
-            <view class="wk-meta-row">
-              <view class="wk-mv">{{weekly.trainDays}}<text class="wk-mu"> / {{weekly.weeklyTarget}} 次</text></view>
-              <view class="wk-ml">本周训练天数</view>
-            </view>
-            <view class="wk-meta-row">
-              <view class="wk-mv">{{weekly.avgRpe || '—'}}</view>
-              <view class="wk-ml">本周平均吃力</view>
-            </view>
-            <view class="wk-target {{weekly.fromPlan ? 'locked' : ''}}" bindtap="editWeeklyTarget">
-              <text class="wk-dot"></text>
-              <text class="wk-target-txt">目标 {{weekly.weeklyTarget}} 次 / 周</text>
-              <text class="wk-edit">{{weekly.fromPlan ? '由计划决定' : '改'}}</text>
-            </view>
-          </view>
-        </view>
-
         <block wx:if="{{trendReady}}">
 
         <!-- 个人纪录：先给结论——我最近破纪录了吗 -->

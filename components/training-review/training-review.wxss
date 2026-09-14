@@ -188,48 +188,6 @@
 }
 .ph-cta:active { opacity: 0.86; }
 
-/* ===== 进步趋势：周完成度 ===== */
-.wk-head {
-  display: flex; align-items: center; gap: 28rpx;
-  background: var(--card);
-  border: 1rpx solid var(--n-200);
-  border-radius: var(--r-l);
-  padding: 28rpx;
-  margin-bottom: 32rpx;
-}
-.wk-ring {
-  flex: none;
-  width: 140rpx; height: 140rpx; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-}
-.wk-ring-center {
-  width: 100rpx; height: 100rpx; border-radius: 50%;
-  background: var(--card);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
-.wk-pct { font-family: var(--f-en); font-size: 32rpx; font-weight: 800; color: var(--n-900); line-height: 1; }
-.wk-pct-u { font-size: 20rpx; font-weight: 700; }
-.wk-pct-lab { font-size: 18rpx; font-weight: 600; color: var(--n-500); margin-top: 4rpx; }
-.wk-meta { flex: 1; min-width: 0; }
-.wk-meta-row { margin-bottom: 14rpx; }
-.wk-mv { font-family: var(--f-en); font-size: 32rpx; font-weight: 800; color: var(--n-900); font-variant-numeric: tabular-nums; line-height: 1.2; }
-.wk-mu { font-size: 22rpx; font-weight: 600; color: var(--n-500); }
-.wk-ml { font-size: 22rpx; font-weight: 600; color: var(--n-500); margin-top: 2rpx; }
-.wk-target {
-  display: flex; align-items: center; gap: 10rpx;
-  margin-top: 4rpx;
-}
-.wk-dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--primary); }
-.wk-target-txt { font-size: 24rpx; font-weight: 600; color: var(--n-700); }
-.wk-edit {
-  font-size: 20rpx; font-weight: 700; color: var(--primary-text, #4C7300);
-  background: var(--primary-tint, rgba(200, 255, 0, 0.16));
-  border-radius: var(--r-pill);
-  padding: 4rpx 14rpx;
-}
-/* 目标由计划（daysPerWeek）决定时不可就地修改，退成中性标签 */
-.wk-target.locked .wk-edit { color: var(--n-600); background: var(--card-gray); }
-
 /* ===== 关键动作卡 ===== */
 .ka-card {
   background: var(--card);
@@ -302,7 +260,7 @@
   margin-bottom: 32rpx;
 }
 
-/* ===== 近 6 周努力度 ===== */
+/* ===== 近 6 周训练量 ===== */
 .wk-weeks {
   display: grid; grid-template-columns: repeat(6, 1fr);
   gap: 12rpx;

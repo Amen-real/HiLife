@@ -12,8 +12,6 @@ const store = require('../../utils/store.js');
 const dateRange = require('../../utils/dateRange.js');
 const stats = require('../../utils/trainingStats.js');
 
-const EMPTY_RING = 'background: conic-gradient(from -90deg, #C8FF00 0% 0%, rgba(128,128,128,0.25) 0% 100%);';
-
 // 低于这个场次不画趋势图：1 根柱不是趋势，只会让人觉得「这页没用」
 const TREND_MIN_LOGS = 2;
 
@@ -56,7 +54,6 @@ Component({
     canApply: false,
 
     // ===== 进步趋势 =====
-    weekly: { weeklyTarget: 3, fromPlan: false, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING },
     keyActions: [],                             // {key,name,chip{cls,text},firstTxt,lastTxt,firstCap,lastCap,firstDate,lastDate,bars[{key,style,hot}]}
     weeks: [],                                  // 近 6 周 {key,label,vol,volTxt,days,has,pct,barStyle}
     records: [],                                // 个人纪录 top3 {key,name,valTxt,dateTxt,isNew}
@@ -82,8 +79,6 @@ Component({
       const logsDesc = (g.trainingLogs || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
       this._logs = logsDesc;
 
-      const target = stats.weekTargetOf(g.profile, store.getActivePlan());
-
       if (!logsDesc.length) {
         this.setData({
           empty: true, logsCount: 0, selIdx: 0,
@@ -92,8 +87,7 @@ Component({
           perAction: [], feelings: [], keyActions: [], weeks: [],
           records: [], recordsSummary: '', trendReady: false, trendNeed: 0,
           pickOptions: [], kaSheet: false, kaTabSafe: false, kaCustom: false, kaPickedCount: 0,
-          suggest: [], hasSuggest: false, canApply: false,
-          weekly: { weeklyTarget: target.target, fromPlan: target.fromPlan, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING }
+          suggest: [], hasSuggest: false, canApply: false
         });
         return;
       }
@@ -106,7 +100,7 @@ Component({
 
       this.setData({ empty: false, logsCount: logsDesc.length });
       this.buildSession(idx);
-      this.buildWeekly(logsDesc);
+      this.buildWeeks(logsDesc);
       this.buildKeyActions(logsDesc);
       this.buildRecords(logsDesc);
     },
@@ -205,23 +199,12 @@ Component({
     },
 
     /* ===== 进步趋势 ===== */
-    // 周完成度 + 本周平均吃力 + 近 6 周努力度（全部按自然周，与计划页一致）
-    buildWeekly(logsDesc) {
-      const g = store.get();
-      const target = stats.weekTargetOf(g.profile, store.getActivePlan());
-      const weeklyTarget = target.target;
+    // 近 6 周训练量（自然周桶，与计划页同一套周口径）。
+    // 【已删除】原「本周执行」卡（周完成度环 + 本周训练天数 + 本周平均吃力 + 周目标就地改）：
+    //   ① 它回答的是「我按计划练了吗」，而这一页回答的是「我变强了吗」——答非所问；
+    //   ② 周目标优先级仍由 trainingStats.weekTargetOf 单源维护（口径不变），等首页进度卡再消费。
+    buildWeeks(logsDesc) {
       const now = new Date();
-
-      const wk = dateRange.weekRange(now);
-      const inThisWeek = l => dateRange.inRange(l.date, wk.monStr, wk.sunStr);
-
-      const trainDays = new Set(logsDesc.filter(inThisWeek).map(l => l.date)).size;
-      const completion = weeklyTarget ? Math.min(100, Math.round(trainDays / weeklyTarget * 100)) : 0;
-      const compStyle = 'background: conic-gradient(from -90deg, #C8FF00 0% ' + completion + '%, rgba(128,128,128,0.25) ' + completion + '% 100%);';
-
-      let rs = 0, rn = 0;
-      logsDesc.filter(inThisWeek).forEach(l => { const r = stats.rpeSumOfActions(l.actions); rs += r.sum; rn += r.count; });
-      const avgRpe = rn ? Math.round(rs / rn * 10) / 10 : 0;
 
       // 近 6 周「训练量」趋势（自然周桶，W-5 … 本周）。
       // 纵轴用周总容量 = Σ(重量×次数)，自重动作退化为 Σ 次数 —— 单调、有量级差，能读出进步。
@@ -252,7 +235,7 @@ Component({
         x.barStyle = x.has ? ('height: ' + x.pct + '%; min-height: 8%;') : '';
       });
 
-      this.setData({ weekly: { weeklyTarget, fromPlan: target.fromPlan, trainDays, completion, avgRpe, compStyle }, weeks });
+      this.setData({ weeks });
     },
 
     // 关键动作：自动取场次最多的前 3 个动作，展示跨场趋势（免用户挑选）
@@ -408,30 +391,6 @@ Component({
           + '5–6  有点累 —— 还剩 2–3 次\n'
           + '1–4  很轻松 —— 游刃有余\n\n'
           + '随手标一下，下次帮你决定加多少重量。'
-      });
-    },
-
-    // 周目标：默认来自个人设置，可点改；若由计划（daysPerWeek）决定则不允许就地改
-    editWeeklyTarget() {
-      if (this.data.weekly.fromPlan) {
-        wx.showToast({ title: '目标由当前计划的训练日数决定', icon: 'none' });
-        return;
-      }
-      const g = store.get();
-      const cur = stats.weekTargetOf(g.profile, null).target;
-      wx.showModal({
-        title: '每周训练目标',
-        editable: true,
-        placeholderText: '输入每周训练次数',
-        content: String(cur),
-        success: (r) => {
-          if (!r.confirm) return;
-          const n = parseInt(r.content, 10);
-          if (n > 0 && n < 15) {
-            store.setWeeklyTarget(n);
-            this.rebuild();
-          }
-        }
       });
     },
 

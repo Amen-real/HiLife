@@ -233,7 +233,7 @@ const LIST_WXML = 'pages/list/list.wxml';
 
 isTrue('\u590d\u76d8\u7ec4\u4ef6\u58f0\u660e focusDate \u5c5e\u6027', has(TR_JS, 'focusDate'));
 isTrue('\u8bb0\u5f55\u9875\u900f\u4f20 focus-date', has(LIST_WXML, 'focus-date="{{selectedDate}}"'));
-isTrue('\u590d\u76d8\u7ec4\u4ef6\u7528\u81ea\u7136\u5468 weekRange(', has(TR_JS, 'dateRange.weekRange('));
+isTrue('复盘用自然周桶 weekRangeOffset(', has(TR_JS, 'dateRange.weekRangeOffset('));
 isTrue('\u590d\u76d8\u201c\u672c\u5468\u201d\u7528 inRange \u5224\u5b9a', has(TR_JS, 'dateRange.inRange('));
 isTrue('\u8ba1\u5212\u9875 weekRange \u59d4\u6d3e\u7ed9 dateRange', has('pages/plan/plan.js', 'return dateRange.weekRange();'));
 isTrue('\u8bb0\u5f55\u9875 meta \u7528 setsMetaOf', has(LIST_JS, 'stats.setsMetaOf('));
@@ -244,7 +244,11 @@ isTrue('\u8bb0\u5f55\u9875\u52a8\u4f5c\u884c\u552f\u4e00\u952e k', has(LIST_WXML
 isTrue('\u8bb0\u5f55\u9875\u900f\u4f20 data-id', has(LIST_WXML, 'data-id="{{item.id}}"'));
 isTrue('\u8be6\u60c5\u9875\u52a8\u4f5c\u552f\u4e00\u952e k', has('pages/train-detail/train-detail.wxml', 'wx:key="k"'));
 isTrue('\u590d\u76d8\u6bcf\u52a8\u4f5c\u7528 setsMeta \u6587\u6848', has(TR_WXML, '{{item.setsMeta}}'));
-isTrue('\u5468\u76ee\u6807\u7531\u8ba1\u5212\u51b3\u5b9a\u65f6\u4e0d\u53ef\u6539\uff08UI \u6807\u6ce8\uff09', has(TR_WXML, '\u7531\u8ba1\u5212\u51b3\u5b9a'));
+isFalse('趋势页已移除「本周执行」卡', has(TR_WXML, '本周执行'));
+isFalse('不再画周完成度环（conic-gradient）', has(TR_JS, 'conic-gradient'));
+isFalse('不再有周目标就地改方法', has(TR_JS, 'editWeeklyTarget'));
+isFalse('不再残留 weekly 数据槽位', has(TR_JS, 'weekly: { weeklyTarget'));
+isTrue('周趋势改由 buildWeeks 承担', has(TR_JS, 'buildWeeks(') && !has(TR_JS, 'buildWeekly('));
 isTrue('\u590d\u76d8\u7ec4\u4ef6\u7a7a\u6001 CTA', has(TR_WXML, 'ph-cta') && has(TR_JS, 'goTrain'));
 isTrue('\u7a7a\u6001 CTA \u6837\u5f0f\u5b58\u5728', has(TR_WXSS, '.ph-cta'));
 isTrue('\u52aa\u529b\u5ea6\u67f1\u6709 min-height\uff08\u4e0d\u4f1a\u77ee\u5230\u770b\u4e0d\u89c1\uff09', has(TR_JS, 'min-height: 8%'));
@@ -325,7 +329,7 @@ const mkInst = () => Object.assign({}, TR_SPEC.methods, {
 });
 
 // 容器字段：本身就该是对象/数组，其子字段才是被渲染的文本
-const CONTAINERS = { perAction: 1, feelings: 1, keyActions: 1, weeks: 1, weekly: 1, stats: 1, chip: 1, bars: 1, records: 1, pickOptions: 1 };
+const CONTAINERS = { perAction: 1, feelings: 1, keyActions: 1, weeks: 1, stats: 1, chip: 1, bars: 1, records: 1, pickOptions: 1 };
 function sweepObjects(o, path, bads) {
   if (!o || typeof o !== 'object') return;
   Object.keys(o).forEach(k => {
@@ -365,7 +369,7 @@ isTrue('I1 perAction[].plan \u662f\u5b57\u7b26\u4e32', typeof I1.data.perAction[
 isTrue('I1 verdict \u662f\u5b57\u7b26\u4e32', typeof I1.data.verdict === 'string');
 isTrue('I1 stats \u4e09\u9879\u5747\u5b57\u7b26\u4e32',
   ['duration', 'volume', 'effort'].every(k => typeof I1.data.stats[k] === 'string'));
-isTrue('I1 weekly.compStyle \u662f\u5b57\u7b26\u4e32', typeof I1.data.weekly.compStyle === 'string');
+isTrue('I1 不再存在 weekly（本周执行卡已移除）', I1.data.weekly === undefined);
 eq('I1 weeks \u5171 6 \u6839\u67f1', I1.data.weeks.length, 6);
 isTrue('I1 weeks[].barStyle \u662f\u5b57\u7b26\u4e32', I1.data.weeks.every(w => typeof w.barStyle === 'string'));
 isTrue('I1 keyActions \u6709\u6570\u636e\u4e14 chip.text \u4e3a\u5b57\u7b26\u4e32',
@@ -380,7 +384,7 @@ const bad2 = [];
 sweepObjects(I2.data, 'data', bad2);
 eq('I2 \u7a7a\u6001\u65e0\u5bf9\u8c61\u5b57\u6bb5', bad2, []);
 eq('I2 empty=true', I2.data.empty, true);
-isTrue('I2 \u7a7a\u6001 weekly.compStyle \u4ecd\u4e3a\u5b57\u7b26\u4e32', typeof I2.data.weekly.compStyle === 'string');
+isTrue('I2 空态 weeks 仍为空数组', I2.data.weeks.length === 0);
 
 // 切场次 / 切 tab 不炸且状态自洽
 const I3 = mkInst();
