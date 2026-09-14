@@ -136,10 +136,10 @@
           <view class="pd"><view class="ico ico-flame pd-ico"></view><text>{{planDetail.kcal}} kcal</text></view>
         </view>
         <scroll-view class="pd-body" scroll-y>
-          <view class="pd-act" wx:for="{{planDetail.actions}}" wx:key="name">
+          <view class="pd-act" wx:for="{{planDetail.actions}}" wx:key="k">
             <view class="pd-act-idx">{{index + 1}}</view>
             <view class="pd-act-name">{{item.name}}</view>
-            <view class="pd-act-param">{{item.setsCount}} 组 · {{item.reps}}</view>
+            <view class="pd-act-param">{{item.paramTxt}}</view>
           </view>
         </scroll-view>
         <view class="pd-foot">
@@ -250,12 +250,13 @@
     </view>
 
     <view class="card" wx:if="{{pickedList.length}}">
-      <view class="field-label">已选动作 · 组数/次数（{{pickedCount}}）</view>
+      <view class="field-label">已选动作 · 组 / 次 / 重量（{{pickedCount}}）</view>
       <view class="pick-row" wx:for="{{pickedList}}" wx:key="actionId">
         <view class="pick-name">{{item.nameZh || item.name}}</view>
         <view class="pick-params">
           <view class="pf"><text class="pf-l">组</text><input class="pf-i" type="number" value="{{item.setsCount}}" data-aid="{{item.actionId}}" bindinput="onActionSets" /></view>
           <view class="pf"><text class="pf-l">次</text><input class="pf-i" value="{{item.reps}}" data-aid="{{item.actionId}}" bindinput="onActionReps" /></view>
+          <view class="pf"><text class="pf-l">kg</text><input class="pf-i sm" type="digit" value="{{item.weight}}" data-aid="{{item.actionId}}" bindinput="onActionWeight" placeholder="—" placeholder-class="pf-ph" /></view>
         </view>
       </view>
     </view>

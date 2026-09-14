@@ -484,6 +484,15 @@ Page({
     const idx = this.data.pickedList.findIndex(x => x.actionId === id);
     if (idx >= 0) this.setData({ ['pickedList[' + idx + '].reps']: v });
   },
+  // 计划重量：手动微调入口（此前只靠复盘卡「应用到计划」回填，用户没有别的出口）
+  // 存字符串，与 store 中 plan.actions[].weight 的类型保持一致（空串 = 未设定）
+  onActionWeight(e) {
+    const id = e.currentTarget.dataset.aid;
+    const v = e.detail.value;
+    if (this._pickedDetails[id]) this._pickedDetails[id].weight = v;
+    const idx = this.data.pickedList.findIndex(x => x.actionId === id);
+    if (idx >= 0) this.setData({ ['pickedList[' + idx + '].weight']: v });
+  },
 
   savePlan() {
     if (!auth.requireLogin()) return;
@@ -645,7 +654,12 @@ Page({
       planDetail: {
         id: p.id, name: p.name, goal: p.goal || '', level: p.level || '',
         count: m.count, minutes: m.minutes, kcal: m.kcal,
-        actions: (p.actions || []).map(a => ({ name: a.nameZh || a.name, setsCount: a.setsCount, reps: a.reps }))
+        actions: (p.actions || []).map((a, i) => ({
+          k: 'pa' + i,
+          name: a.nameZh || a.name,
+          // 组/次/重量拼成整串：wxml 侧不做表达式，且重量为 0/空时整段省略（不显示 "0kg"）
+          paramTxt: (a.setsCount || 0) + ' 组 · ' + (a.reps || '') + (Number(a.weight) > 0 ? ' · ' + Number(a.weight) + 'kg' : '')
+        }))
       }
     });
   },

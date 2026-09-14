@@ -228,11 +228,13 @@
 
 .pick-row { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid var(--n-200); }
 .pick-row:last-child { border-bottom: none; }
-.pick-name { flex: 1 1 auto; min-width: 0; font-size: 27rpx; font-weight: 600; color: var(--n-900); }
-.pick-params { flex: none; display: flex; gap: 16rpx; }
+.pick-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 27rpx; font-weight: 600; color: var(--n-900); }
+.pick-params { flex: none; display: flex; gap: 12rpx; }
 .pf { display: flex; align-items: center; gap: 8rpx; }
 .pf-l { font-size: 22rpx; color: var(--n-500); }
 .pf-i { width: 96rpx; height: 64rpx; line-height: 64rpx; text-align: center; background: var(--bg); border-radius: 12rpx; font-size: 26rpx; color: var(--text); padding: 0 12rpx; box-sizing: border-box; }
+.pf-i.sm { width: 76rpx; padding: 0 6rpx; }
+.pf-ph { color: var(--n-400); }
 
 /* ============== 模板详情弹层 ============== */
 .tpl-mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: flex-end; z-index: 1000; }

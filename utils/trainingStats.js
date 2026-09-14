@@ -222,11 +222,212 @@ function buildVerdict(opts) {
   return { text: volTxt + ' · ' + eff, kind, pct, commonCount: common.length };
 }
 
+/* ---------- 下次训练建议（回填计划） ---------- */
+
+// 2.5kg 阶梯取整（杠铃最小配重惯例）；浮点收敛到 2 位
+function roundPlate(w) {
+  const v = Math.round(num(w) / 2.5) * 2.5;
+  return Math.round(v * 100) / 100;
+}
+
+// 2.5kg 阶梯「向下」取整 —— 降重专用：必须向下，否则「降了其实没降」
+function floorPlate(w) {
+  const v = Math.floor(num(w) / 2.5) * 2.5;
+  return Math.round(v * 100) / 100;
+}
+
+// 计划 reps 可能是 '8-12' 区间文案 → 仅当是单一整数时才可回写为具体次数
+function singleIntOf(v) {
+  const s = String(v == null ? '' : v).trim();
+  return /^\d+$/.test(s) ? num(s) : 0;
+}
+
+// reps 区间文案取下界（'8-12' → 8），用于「本场是否达计划次数」判定；无数字 → 0
+function lowIntOf(v) {
+  const m = String(v == null ? '' : v).match(/\d+/);
+  return m ? num(m[0]) : 0;
+}
+
+// 计划动作 ↔ 日志动作 匹配：优先 actionId === 日志动作 id，回退中文名相同
+function planMatchOf(a, activePlan) {
+  const list = (activePlan && activePlan.actions) || [];
+  if (!list.length) return null;
+  const aid = a && a.id;
+  if (aid) {
+    const byId = list.find(pa => pa.actionId && pa.actionId === aid);
+    if (byId) return byId;
+  }
+  const nm = a && (a.nameZh || a.name);
+  if (nm) {
+    const byName = list.find(pa => (pa.nameZh || pa.name) === nm);
+    if (byName) return byName;
+  }
+  return null;
+}
+
+// 该动作键在更早场次里的「可比容量」序列（最近 → 更早），用于判断趋势是否向上
+function historyCapsOf(key, logsDesc, idx) {
+  const out = [];
+  const logs = logsDesc || [];
+  for (let i = (Number(idx) || 0) + 1; i < logs.length; i++) {
+    const hits = (logs[i].actions || []).filter(a => actionKey(a) === key);
+    if (hits.length) out.push(hits.reduce((s, a) => s + capacityOfAction(a), 0));
+  }
+  return out;
+}
+
+// 下次训练建议：逐动作给出「可直接回填计划」的 {重量/次数/组数} 提案 + 理由。
+// 纯函数（不依赖 wx / store），供复盘组件组装、守卫脚本单测。
+//
+// 口径：
+//   · 展示基线 fromTxt = 计划目标（有匹配时）> 本场数值；
+//   · **加重/降重的增量基数始终取「本场实际达成值」**（不是计划当前值）→ 与计划解耦，
+//     重复点按「应用到计划」结果幂等 —— 否则基数随计划漂移会发散（曾踩：越加越多）；
+//   · 达成闸门（双向）：计划指定了重量/次数而本场没做到 → 不加（先按计划再练 / 先补次数）；
+//     反之计划已不高于降重目标 → 不再降。同一道闸门让加重与降重都收敛；
+//   · rpe ≥ 9                      → **减载**：降至 ≈ -10%（roundPlate），计划已到位则转「维持」；
+//   · 计划高于本场实际 且 rpe ≥ 8  → **降重**：降至不超过本场实际（floorPlate 下取整）；
+//   · rpe ≤ 6 且有依据（命中计划 或 历史容量≥2场且向上）→ 加重，**单次最多 +2.5kg**（硬上限）；
+//   · 自重动作（负重恒 0）→ 只 +1 次（基数同样取本场实际），既不加重也无重量可降；
+//   · 其余           → 保持容量稳步推进（零增量）；
+//   · 无历史且无计划 → 首次提示。
+function nextSessionSuggestion(actions, logsDesc, idx, activePlan) {
+  const fmtW = (w) => (w % 1 === 0 ? String(w) : String(Math.round(w * 10) / 10));
+
+  return (actions || []).map((a, i) => {
+    const key = actionKey(a);
+    const rpe = avgRpeOfActions([a]);
+    const hasRpe = rpe.count > 0;
+    const cur = { w: peakWeightOf(a), reps: bestSetOf(a).reps, sets: setsOf(a).length };
+
+    const pa = planMatchOf(a, activePlan);
+    const planMatched = !!pa;
+    const planW = planMatched ? num(pa.weight) : 0;
+    const bodyweight = loadOfAction(a) <= 0 && planW <= 0;
+
+    const prevVol = findPrevVol(key, logsDesc, idx);
+    const caps = historyCapsOf(key, logsDesc, idx);
+    const upward = caps.length >= 2 && caps[0] > caps[1];
+
+    // 基线（计划优先）
+    let fromW = cur.w, fromReps = cur.reps, fromSets = cur.sets;
+    if (planMatched) {
+      if (planW > 0) fromW = planW;
+      const prInt = singleIntOf(pa.reps); if (prInt > 0) fromReps = prInt;
+      const ps = num(pa.setsCount); if (ps > 0) fromSets = ps;
+    }
+
+    const row = {
+      key: key + '#' + i,
+      name: (a.nameZh || a.name) || '动作',
+      fromTxt: '',
+      toTxt: '',
+      reason: '',
+      actionable: false,
+      editable: false,
+      deload: false,
+      arrow: '→',
+      hasW: !bodyweight,
+      bodyweight,
+      planMatched,
+      planActionId: (pa && pa.actionId) || '',
+      draftW: fromW,
+      draftReps: fromReps,
+      draftSets: fromSets
+    };
+
+    row.fromTxt = bodyweight
+      ? (fromReps ? '自重 × ' + fromReps + ' 次' : '自重')
+      : (fromW > 0 ? fmtW(fromW) + 'kg × ' + fromReps : '未记录重量');
+
+    if (!hasRpe) {
+      row.toTxt = '保持';
+      row.reason = '记录吃力程度后可给出加重建议';
+      return row;
+    }
+
+    // —— 降重（减载）——
+    // 触发从严（门槛高于加重）：疲劳 rpe≥9，或「计划高于本场实际 且 本场很吃力 rpe≥8」。
+    // 不接受单场状态波动：单纯没做到但 rpe<8 只提示「先按计划再练」，不降。
+    // 基数 = 本场实际峰值（不可变历史，不是计划当前值）→ 重复点按结果不变 = 幂等。
+    // 目标：疲劳 → roundPlate(×0.9) 约 -10%；计划过高 → floorPlate(本场) 即不超过本场实际。
+    // 闸门：planW <= target 说明已降到位 → 转「维持」，防止一路往下掉（与加重同一道闸门，双向自适应）。
+    const fatigue = rpe.avg >= 9;
+    const overPlan = planMatched && planW > 0 && cur.w < planW && rpe.avg >= 8;
+    if (fatigue || overPlan) {
+      const canDeload = !bodyweight && cur.w > 0;
+      const target = canDeload ? (fatigue ? roundPlate(cur.w * 0.9) : floorPlate(cur.w)) : 0;
+      if (planMatched && canDeload && target > 0 && planW > target) {
+        row.actionable = true;
+        row.editable = true;
+        row.deload = true;
+        row.arrow = '↓';
+        row.draftW = target;
+        row.draftReps = fromReps;
+        row.draftSets = fromSets;
+        row.toTxt = fmtW(target) + 'kg × ' + fromReps;
+        row.reason = fatigue
+          ? '累积疲劳 · 建议减载至 ' + fmtW(target) + 'kg（约 -10%）'
+          : '计划高于本场实际 · 建议调至 ' + fmtW(target) + 'kg';
+        return row;
+      }
+      row.toTxt = '维持';
+      row.reason = fatigue ? '接近力竭 · 维持容量，谨慎加重' : '本场未达计划重量 · 先按计划再练';
+      return row;
+    }
+
+    // 达成闸门（此处只剩 rpe<8 的情况，≥8 已在上面走降重/维持）：未做到 → 不加
+    const planRepsLow = planMatched ? lowIntOf(pa.reps) : 0;
+    if (planMatched && planW > 0 && cur.w < planW) {
+      row.toTxt = '保持';
+      row.reason = '本场未达计划重量 ' + fmtW(planW) + 'kg · 先按计划再练';
+      return row;
+    }
+    if (planMatched && planRepsLow > 0 && cur.reps < planRepsLow) {
+      row.toTxt = '保持';
+      row.reason = '先补足计划次数（' + planRepsLow + ' 次）再加重量';
+      return row;
+    }
+
+    const canGo = rpe.avg <= 6 && (planMatched || (prevVol != null && upward));
+    if (!canGo) {
+      row.toTxt = '保持';
+      row.reason = (prevVol == null && !planMatched)
+        ? '完成首次训练后给出具体加重建议'
+        : '强度适中 · 保持容量稳步推进';
+      return row;
+    }
+
+    row.actionable = true;
+    row.editable = true;
+    if (bodyweight) {
+      // 自重：基数 = 本场实际次数（非计划值）→ 重复点按结果不变（幂等）
+      row.draftReps = (cur.reps || 0) + 1;
+      row.draftSets = fromSets || cur.sets || 1;
+      row.toTxt = '自重 × ' + row.draftReps + ' 次';
+      row.reason = '状态轻松 · 下次 +1 次';
+    } else {
+      // 负重：基数 = 本场实际峰值（非计划当前值）→ 幂等；单次最多 +2.5kg（硬上限）
+      const oneStep = Math.round((cur.w + 2.5) * 100) / 100;
+      let toW = roundPlate(cur.w * 1.025);
+      if (toW <= cur.w) toW = oneStep;
+      toW = Math.min(toW, oneStep);
+      row.draftW = toW;
+      row.draftReps = fromReps;
+      row.draftSets = fromSets;
+      row.toTxt = fmtW(toW) + 'kg × ' + fromReps;
+      row.reason = '状态轻松 · 下次加重至 ' + fmtW(toW) + 'kg';
+    }
+    return row;
+  });
+}
+
 module.exports = {
   EST_KCAL_PER_MIN, DELTA_SESSION, DELTA_TREND, DEFAULT_WEEK_TARGET,
   num, setsOf, actionKey,
   loadOfAction, loadOfLog, durationSecOfLog, trainSecOfLog,
   bestSetOf, peakWeightOf, setsMetaOf, rpeSumOfActions, avgRpeOfActions, estKcal,
   actionAdvice, effortText, weekTargetOf,
-  capacityOfAction, loadIndexByKey, findPrevVol, buildVerdict
+  capacityOfAction, loadIndexByKey, findPrevVol, buildVerdict,
+  roundPlate, floorPlate, singleIntOf, lowIntOf, planMatchOf, historyCapsOf, nextSessionSuggestion
 };
