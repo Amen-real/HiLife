@@ -208,8 +208,9 @@
     </view>
   </scroll-view>
 
-  <!-- ===== 关键动作选择弹层：勾选即改，最多 3 个；一个都不勾 = 回到自动前 3 ===== -->
-  <view wx:if="{{kaSheet}}" class="ka-mask" bindtap="closeKaSheet">
+  <!-- ===== 关键动作选择弹层：勾选即改，最多 3 个；一个都不勾 = 回到自动前 3 =====
+       with-tab：宿主页有自定义 tabBar 时抽屉底部预留其高度，否则「恢复自动 / 完成」会被底栏盖住 -->
+  <view wx:if="{{kaSheet}}" class="ka-mask {{kaTabSafe ? 'with-tab' : ''}}" bindtap="closeKaSheet">
     <view class="ka-sheet" catchtap="noop">
       <view class="ka-sheet-head">
         <text class="ka-sheet-tit">选关键动作</text>

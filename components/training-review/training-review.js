@@ -64,8 +64,9 @@ Component({
     trendReady: false,                          // 场次不足时不画趋势图（1 根柱不是趋势）
     trendNeed: 0,
     // 关键动作「可切换」：默认自动前 3，用户可在弹层里改（存 store.keyActionPicks）
-    pickOptions: [],                            // {key,name,count,lastTxt,checked}
+    pickOptions: [],                            // {key,name,count,metaTxt,checked}
     kaSheet: false,
+    kaTabSafe: false,                           // true = 宿主页有自定义 tabBar → 抽屉底部预留 88rpx
     kaCustom: false,                            // true = 用户自定义过（空数组视为未自定义）
     kaPickedCount: 0,
     kaMax: KA_MAX
@@ -90,7 +91,7 @@ Component({
           stats: { duration: '--:--', volume: '0', effort: '—' },
           perAction: [], feelings: [], keyActions: [], weeks: [],
           records: [], recordsSummary: '', trendReady: false, trendNeed: 0,
-          pickOptions: [], kaSheet: false, kaCustom: false, kaPickedCount: 0,
+          pickOptions: [], kaSheet: false, kaTabSafe: false, kaCustom: false, kaPickedCount: 0,
           suggest: [], hasSuggest: false, canApply: false,
           weekly: { weeklyTarget: target.target, fromPlan: target.fromPlan, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING }
         });
@@ -435,10 +436,23 @@ Component({
     },
 
     /* ===== 关键动作：自动前 3 + 可切换 ===== */
+    // 自定义 tabBar 是框架级固定层（app.json tabBar.custom=true，组件内 z-index:1000），
+    // 页面里的弹层压不住它 —— 抽屉底部必须自己空出 88rpx 才不会挡住按钮。
+    // 本组件同时挂在 tab 页（数据）与普通页（复盘），所以打开弹层时运行时探测一次。
+    _hasTabBar() {
+      try {
+        if (typeof getCurrentPages !== 'function') return false;
+        const ps = getCurrentPages();
+        const cur = (ps && ps.length) ? ps[ps.length - 1] : null;
+        return !!(cur && typeof cur.getTabBar === 'function' && cur.getTabBar());
+      } catch (e) {
+        return false;                       // 探测失败按普通页处理（不预留，最坏只是少留白）
+      }
+    },
     // 打开弹层时从「已落库的选择」重建勾选态 —— 上次取消掉的勾选不会残留
     openKaSheet() {
       this._rebuildKeyActions();
-      this.setData({ kaSheet: true });
+      this.setData({ kaSheet: true, kaTabSafe: this._hasTabBar() });
     },
     closeKaSheet() {
       this.setData({ kaSheet: false });

@@ -422,6 +422,9 @@
 .ka-sheet-sub { display: block; font-size: 22rpx; font-weight: 500; color: var(--n-400); margin: 8rpx 0 20rpx; }
 /* scroll-view 必须给明确高度（禁 flex:1），否则真机不滚动 */
 .ka-sheet-list { height: 52vh; }
+/* 宿主页带自定义 tabBar（数据 tab）时，抽屉底部再让出底栏高度：
+   自定义 tabBar 是框架级固定层（z-index 1000），页面弹层压不住它，只能靠 let 出空间避让 */
+.ka-mask.with-tab .ka-sheet { padding-bottom: calc(88rpx + 44rpx + env(safe-area-inset-bottom)); }
 .ka-sheet-gap { height: 16rpx; }
 .ka-opt {
   display: flex; align-items: center; gap: 20rpx;

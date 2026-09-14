@@ -290,6 +290,11 @@ isTrue('wxml 有选择弹层', has(TR_WXML, 'class="ka-sheet"'));
 isTrue('wxml 勾选项唯一键', has(TR_WXML, 'data-key="{{item.key}}"'));
 isTrue('wxss 弹层遮罩高于 nav-bar', has(TR_WXSS, 'z-index: 2000;'));
 isTrue('wxss 弹层列表给明确高度', has(TR_WXSS, '.ka-sheet-list { height: 52vh; }'));
+// —— 底栏遮挡（2026-09-14 修：数据 tab 的自定义底栏盖住「恢复自动 / 完成」）——
+isTrue('wxml 抽屉按宿主页底栏让位', has(TR_WXML, "kaTabSafe ? 'with-tab' : ''"));
+isTrue('wxss 预留 88rpx 底栏高度', has(TR_WXSS, '.ka-mask.with-tab .ka-sheet'));
+isTrue('组件自动探测宿主页底栏', has(TR_JS, '_hasTabBar()'));
+isTrue('探测用 getTabBar 判定 tab 页', has(TR_JS, 'cur.getTabBar()'));
 
 /* ============ I. 组件数据形状（真实组件 + stub 宿主） ============ */
 // 为什么单独测：H 段全是「文件里有没有这段字符串」的结构断言，抓不到「把对象塞进文本字段」
@@ -846,6 +851,28 @@ fakeAppTR.globalData.keyActionPicks = ['bp'];
 M8.rebuild();
 eq('M8 空态清空候选', M8.data.pickOptions.length, 0);
 eq('M8 空态归零计数', M8.data.kaPickedCount, 0);
+
+// M9 宿主页有无自定义 tabBar 决定抽屉是否给底栏让位
+// （自定义 tabBar 是框架级固定层，页面里的 z-index 压不住它 → 不让位就会盖住「恢复自动/完成」）
+const M9 = mkInst();
+fakeAppTR.globalData.trainingLogs = [
+  mkLogOn('a', wkOffset(0), [A2('bp', '卧推', [S2(60, 10, 7)])])
+];
+fakeAppTR.globalData.keyActionPicks = [];
+M9.rebuild();
+global.getCurrentPages = () => [{ getTabBar: () => ({}) }];
+M9.openKaSheet();
+eq('M9 数据 tab（有自定义底栏）→ 抽屉预留底栏', M9.data.kaTabSafe, true);
+global.getCurrentPages = () => [{ getTabBar: () => null }];
+M9.openKaSheet();
+eq('M9 底栏组件未挂载 → 不预留', M9.data.kaTabSafe, false);
+global.getCurrentPages = () => [{}];
+M9.openKaSheet();
+eq('M9 普通页（无 getTabBar）→ 不预留', M9.data.kaTabSafe, false);
+delete global.getCurrentPages;
+M9.openKaSheet();
+eq('M9 无 getCurrentPages（Node 环境）不抛错', M9.data.kaTabSafe, false);
+eq('M9 探测失败不影响弹层打开', M9.data.kaSheet, true);
 
 fakeAppTR.globalData.keyActionPicks = [];
 
