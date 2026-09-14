@@ -14,6 +14,12 @@ const stats = require('../../utils/trainingStats.js');
 
 const EMPTY_RING = 'background: conic-gradient(from -90deg, #C8FF00 0% 0%, rgba(128,128,128,0.25) 0% 100%);';
 
+// 低于这个场次不画趋势图：1 根柱不是趋势，只会让人觉得「这页没用」
+const TREND_MIN_LOGS = 2;
+
+// 关键动作卡位上限：自动列表与自定义选择共用同一容量（改这里会同时影响两边）
+const KA_MAX = 3;
+
 function fmtW(w) { return (w % 1 === 0) ? String(w) : w.toFixed(1); }
 // 训练量格式化（≥10000 走 k 缩写），仅本组件展示用
 function fmtVol(v) {
@@ -44,11 +50,25 @@ Component({
     stats: { duration: '--:--', volume: '0', effort: '—' },
     perAction: [],                              // {key,name,chip{cls,text},best,setsMeta,rpeTxt,plan,note}
     feelings: [],
+    // 下次训练建议（可回填计划）：全部文本字段必须是字符串/数字，不得塞对象
+    suggest: [],
+    hasSuggest: false,
+    canApply: false,
 
     // ===== 进步趋势 =====
     weekly: { weeklyTarget: 3, fromPlan: false, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING },
-    keyActions: [],                             // top3 {key,name,count,chip{cls,text},firstTxt,lastTxt,bars[{key,style,hot}]}
-    weeks: []                                   // 近 6 周 {key,label,rpe,has,barStyle}
+    keyActions: [],                             // {key,name,chip{cls,text},firstTxt,lastTxt,firstCap,lastCap,firstDate,lastDate,bars[{key,style,hot}]}
+    weeks: [],                                  // 近 6 周 {key,label,vol,volTxt,days,has,pct,barStyle}
+    records: [],                                // 个人纪录 top3 {key,name,valTxt,dateTxt,isNew}
+    recordsSummary: '',
+    trendReady: false,                          // 场次不足时不画趋势图（1 根柱不是趋势）
+    trendNeed: 0,
+    // 关键动作「可切换」：默认自动前 3，用户可在弹层里改（存 store.keyActionPicks）
+    pickOptions: [],                            // {key,name,count,lastTxt,checked}
+    kaSheet: false,
+    kaCustom: false,                            // true = 用户自定义过（空数组视为未自定义）
+    kaPickedCount: 0,
+    kaMax: KA_MAX
   },
 
   lifetimes: { attached() { this.rebuild(); } },
@@ -69,6 +89,9 @@ Component({
           sessionDate: '', sessionSub: '', verdict: '',
           stats: { duration: '--:--', volume: '0', effort: '—' },
           perAction: [], feelings: [], keyActions: [], weeks: [],
+          records: [], recordsSummary: '', trendReady: false, trendNeed: 0,
+          pickOptions: [], kaSheet: false, kaCustom: false, kaPickedCount: 0,
+          suggest: [], hasSuggest: false, canApply: false,
           weekly: { weeklyTarget: target.target, fromPlan: target.fromPlan, trainDays: 0, completion: 0, avgRpe: 0, compStyle: EMPTY_RING }
         });
         return;
@@ -84,6 +107,7 @@ Component({
       this.buildSession(idx);
       this.buildWeekly(logsDesc);
       this.buildKeyActions(logsDesc);
+      this.buildRecords(logsDesc);
     },
 
     // 记录页选中日期联动：定位到该天最近一场；无匹配则保持当前选择
@@ -147,6 +171,9 @@ Component({
       });
       const feelings = rows.filter(r => r.note).map(r => ({ key: r.key, name: r.name, note: r.note }));
 
+      // 下次训练建议：基线 = 计划目标 > 历史；纯逻辑在 trainingStats（组件只组装）
+      const suggest = stats.nextSessionSuggestion(actions, logs, idx, store.getActivePlan());
+
       this.setData({
         selIdx: idx,
         sessionDate: dateRange.fmtDateSlash(log.date),
@@ -158,7 +185,10 @@ Component({
           effort: rpe.count ? rpe.avg + '/10' : '—'
         },
         perAction: rows,
-        feelings
+        feelings,
+        suggest,
+        hasSuggest: suggest.length > 0,
+        canApply: suggest.some(s => s.actionable)
       });
     },
 
@@ -192,57 +222,79 @@ Component({
       logsDesc.filter(inThisWeek).forEach(l => { const r = stats.rpeSumOfActions(l.actions); rs += r.sum; rn += r.count; });
       const avgRpe = rn ? Math.round(rs / rn * 10) / 10 : 0;
 
-      // 近 6 周努力度（自然周桶，W-5 … 本周）
+      // 近 6 周「训练量」趋势（自然周桶，W-5 … 本周）。
+      // 纵轴用周总容量 = Σ(重量×次数)，自重动作退化为 Σ 次数 —— 单调、有量级差，能读出进步。
+      // 【踩过】原纵轴是「周均 RPE」：RPE 无方向性（高不代表进步、低不代表退步），
+      // 数值又被压在 6–9，柱高只有 60%–90%，容器 160rpx 下 7.5 与 7.8 只差 4.8rpx
+      // —— 六根柱永远等高，等于零信息。故改为训练量。
       const weeks = [];
       for (let w = 5; w >= 0; w--) {
         const wr = dateRange.weekRangeOffset(now, -w);
-        let s = 0, n = 0;
+        let vol = 0; const days = new Set();
         logsDesc.filter(l => dateRange.inRange(l.date, wr.monStr, wr.sunStr)).forEach(l => {
-          const r = stats.rpeSumOfActions(l.actions); s += r.sum; n += r.count;
+          vol += stats.loadOfLog(l);
+          days.add(l.date);
         });
-        const wrpe = n ? Math.round(s / n * 10) / 10 : 0;
         weeks.push({
           key: 'w' + w,
           label: w === 0 ? '本周' : 'W-' + w,
-          rpe: wrpe,
-          has: n > 0,
-          // min-height 保证「有数据但很轻」的周也画得出柱子
-          barStyle: n ? ('height: ' + Math.max(6, Math.round(wrpe * 10)) + '%; min-height: 8%;') : ''
+          vol,
+          volTxt: vol > 0 ? fmtVol(vol) : '',
+          days: days.size,
+          has: vol > 0
         });
       }
+      // 以 6 周最大值为 100% 归一化；min-height 保证「有数据但很轻」的周也画得出柱子
+      const maxVol = Math.max(1, ...weeks.map(x => x.vol));
+      weeks.forEach(x => {
+        x.pct = x.has ? Math.max(4, Math.round(x.vol / maxVol * 100)) : 0;
+        x.barStyle = x.has ? ('height: ' + x.pct + '%; min-height: 8%;') : '';
+      });
 
       this.setData({ weekly: { weeklyTarget, fromPlan: target.fromPlan, trainDays, completion, avgRpe, compStyle }, weeks });
     },
 
-    // 关键动作：自动取场次最多的前 3 个动作，展示「最好一组」跨场趋势（免用户挑选）
+    // 关键动作：自动取场次最多的前 3 个动作，展示跨场趋势（免用户挑选）
+    // 柱高与 chip 用「可比容量」（重量×次数），foot 仍给可读的「最好一组」。
+    // 【踩过】旧实现只画峰值重量 topW：① 重量不变、次数涨了完全看不出来；② 自重动作
+    // topW 恒 0 → maxW 兜成 1 → 每根柱都 100%，整块图零信息，且 chip 连涨没涨都不说。故改容量。
     buildKeyActions(logsDesc) {
       const map = {};
       logsDesc.forEach(l => (l.actions || []).forEach(a => {
         const k = stats.actionKey(a);
         if (!map[k]) map[k] = { key: k, name: (a.nameZh || a.name) || '动作', sessions: [] };
         const best = stats.bestSetOf(a);
-        map[k].sessions.push({ date: l.date, topW: best.topW, reps: best.reps });
+        map[k].sessions.push({ date: l.date, cap: stats.capacityOfAction(a), topW: best.topW, reps: best.reps });
       }));
       const groups = Object.keys(map).map(k => map[k]);
       groups.forEach(g => g.sessions.sort((a, b) => String(a.date).localeCompare(String(b.date))));
-      // 场次多者优先；同场次取更近有记录的
+      // 场次多者优先；同场次取更近有记录的 —— 这是「自动前 3」的默认排序
       groups.sort((a, b) => b.sessions.length - a.sessions.length ||
         String(b.sessions[b.sessions.length - 1].date).localeCompare(String(a.sessions[a.sessions.length - 1].date)));
 
-      const keyActions = groups.slice(0, 3).map(g => {
+      // 用户自选优先（数组顺序即卡片顺序）；选了但一场都没练过的 key 直接跳过，不产生空卡
+      const byKey = {};
+      groups.forEach(g => { byKey[g.key] = g; });
+      const picks = store.getKeyActionPicks();
+      const picked = [];
+      picks.forEach(k => { if (byKey[k] && picked.indexOf(byKey[k]) < 0) picked.push(byKey[k]); });
+      const shown = picked.length ? picked : groups.slice(0, KA_MAX);
+
+      const keyActions = shown.map(g => {
         const s = g.sessions;
         const last = s[s.length - 1];
-        const maxW = Math.max(1, ...s.map(x => x.topW));
+        const maxC = Math.max(1, ...s.map(x => x.cap));
         const bars = s.slice(-8).map((x, i, arr) => ({
           key: x.date,
-          style: 'height: ' + Math.max(4, Math.round((x.topW || maxW) / maxW * 100)) + '%;',
+          style: 'height: ' + Math.max(4, Math.round(x.cap / maxC * 100)) + '%;',
           hot: i === arr.length - 1
         }));
         const fmtOne = (x) => x.topW > 0 ? fmtW(x.topW) + 'kg×' + x.reps : '自重×' + x.reps;
 
+        // chip 用容量：与「本次训练」tab 的「比上次 ↑x%」同口径 —— 全 App 对「进步」只有一个定义
         let chip;
-        if (s.length >= 2 && s[0].topW > 0) {
-          const pct = Math.round((last.topW - s[0].topW) / s[0].topW * 100);
+        if (s.length >= 2 && s[0].cap > 0) {
+          const pct = Math.round((last.cap - s[0].cap) / s[0].cap * 100);
           chip = pct >= stats.DELTA_TREND ? { cls: 'up', text: '+' + pct + '%' }
             : (pct <= -stats.DELTA_TREND ? { cls: 'down', text: '−' + Math.abs(pct) + '%' } : { cls: 'flat', text: '持平' });
         } else {
@@ -255,13 +307,84 @@ Component({
           chip,
           firstTxt: fmtOne(s[0]),
           lastTxt: fmtOne(last),
+          firstCap: s[0].cap > 0 ? fmtVol(s[0].cap) : '0',
+          lastCap: last.cap > 0 ? fmtVol(last.cap) : '0',
           firstDate: String(s[0].date).slice(5).replace('-', '/'),
           lastDate: String(last.date).slice(5).replace('-', '/'),
           bars
         };
       });
 
-      this.setData({ keyActions });
+      // 弹层候选：只列真练过的动作（按场次降序），checked 反映当前生效的那几张卡
+      const shownKeys = {};
+      shown.forEach(g => { shownKeys[g.key] = 1; });
+      const pickOptions = groups.map(g => {
+        const last = g.sessions[g.sessions.length - 1];
+        return {
+          key: g.key,
+          name: g.name,
+          count: g.sessions.length,
+          metaTxt: g.sessions.length + ' 场 · 最近 ' + String(last.date).slice(5).replace('-', '/'),
+          checked: !!shownKeys[g.key]
+        };
+      });
+
+      this.setData({
+        keyActions,
+        pickOptions,
+        kaCustom: picked.length > 0,            // 自选生效（选了但全无历史 → 回落自动，不标自定义）
+        kaPickedCount: shown.length,
+        kaMax: KA_MAX,
+        trendReady: logsDesc.length >= TREND_MIN_LOGS,
+        trendNeed: Math.max(0, TREND_MIN_LOGS - logsDesc.length)
+      });
+    },
+
+    // 个人纪录：每个动作历史最高「单组容量」（重量×次数；自重退化为次数）。
+    // 只回答一句话——我最近破纪录了吗？这是「进步趋势」最该先说的结论（原来完全缺失）。
+    // 只保留练过 ≥2 场的动作：只练过一次谈不上「破纪录」。
+    buildRecords(logsDesc) {
+      const best = {};
+      logsDesc.forEach(l => (l.actions || []).forEach(a => {
+        const k = stats.actionKey(a);
+        if (!best[k]) best[k] = { key: k, name: (a.nameZh || a.name) || '动作', score: -1, topW: 0, reps: 0, date: '', n: 0 };
+        const rec = best[k];
+        rec.n++;
+        stats.setsOf(a).forEach(x => {
+          const w = stats.num(x.weight), r = stats.num(x.reps);
+          if (r <= 0) return;
+          const score = w > 0 ? w * r : r;
+          // 严格大于：并列时保留「更近」的那次（logsDesc 已按日期倒序）
+          if (score > rec.score) { rec.score = score; rec.topW = w; rec.reps = r; rec.date = l.date; }
+        });
+      }));
+
+      // 以「最新一场」为时间基准（而非 Date.now()）——纯函数化，守卫测试可稳定复现
+      const ref = logsDesc.length ? String(logsDesc[0].date) : '';
+      const daysAgo = (d) => {
+        const a = Date.parse(String(d) + 'T00:00:00');
+        const b = Date.parse(ref + 'T00:00:00');
+        return (isFinite(a) && isFinite(b)) ? Math.round((b - a) / 86400000) : 0;
+      };
+
+      const list = Object.keys(best).map(k => best[k]).filter(r => r.n >= 2 && r.score > 0);
+      list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      const fresh = list.filter(r => daysAgo(r.date) <= 7).length;
+
+      const records = list.slice(0, 3).map(r => ({
+        key: r.key,
+        name: r.name,
+        valTxt: r.topW > 0 ? fmtW(r.topW) + 'kg × ' + r.reps : '自重 × ' + r.reps,
+        dateTxt: String(r.date).slice(5).replace('-', '/'),
+        isNew: daysAgo(r.date) <= 7
+      }));
+
+      let recordsSummary = '';
+      if (!list.length) recordsSummary = '每个动作练满 2 场后，这里开始记录个人最好成绩';
+      else if (fresh) recordsSummary = '近 7 天刷新 ' + fresh + ' 项个人纪录';
+      else recordsSummary = '最近一次破纪录在 ' + daysAgo(list[0].date) + ' 天前';
+
+      this.setData({ records, recordsSummary });
     },
 
     /* ===== 交互 ===== */
@@ -309,6 +432,101 @@ Component({
           }
         }
       });
+    },
+
+    /* ===== 关键动作：自动前 3 + 可切换 ===== */
+    // 打开弹层时从「已落库的选择」重建勾选态 —— 上次取消掉的勾选不会残留
+    openKaSheet() {
+      this._rebuildKeyActions();
+      this.setData({ kaSheet: true });
+    },
+    closeKaSheet() {
+      this.setData({ kaSheet: false });
+    },
+    // 弹层内空白区吞掉 tap，避免穿透到遮罩把自己关掉
+    noop() {},
+    // 勾选即改内存态，点「完成」才落库（避免误触就改掉配置）
+    toggleKaPick(e) {
+      const k = e.currentTarget.dataset.key;
+      const opts = (this.data.pickOptions || []).map(o => ({
+        key: o.key, name: o.name, count: o.count, metaTxt: o.metaTxt, checked: o.checked
+      }));
+      const hit = opts.filter(o => o.key === k)[0];
+      if (!hit) return;
+      if (!hit.checked && opts.filter(o => o.checked).length >= KA_MAX) {
+        wx.showToast({ title: '最多选 ' + KA_MAX + ' 个', icon: 'none' });
+        return;
+      }
+      hit.checked = !hit.checked;
+      this.setData({ pickOptions: opts, kaPickedCount: opts.filter(o => o.checked).length });
+    },
+    // 一个都没勾 = 存空数组 = 回到「自动前 3」，不需要单独的「重置」按钮
+    saveKaPicks() {
+      const keys = (this.data.pickOptions || []).filter(o => o.checked).map(o => o.key);
+      store.setKeyActionPicks(keys);
+      this._rebuildKeyActions();
+      this.setData({ kaSheet: false });
+      wx.showToast({ title: keys.length ? '已更新关键动作' : '已恢复自动推荐', icon: 'none' });
+    },
+    resetKaPicks() {
+      store.setKeyActionPicks([]);
+      this._rebuildKeyActions();
+      this.setData({ kaSheet: false });
+      wx.showToast({ title: '已恢复自动推荐', icon: 'none' });
+    },
+    _rebuildKeyActions() {
+      if (this._logs && this._logs.length) this.buildKeyActions(this._logs);
+    },
+
+    /* ===== 下次训练建议：编辑 + 一键回填计划 ===== */
+    // 只改 data.suggest[i].draft*，避免整表 setData
+    _setSug(key, field, val) {
+      const i = (this.data.suggest || []).findIndex(s => s.key === key);
+      if (i < 0) return;
+      const patch = {};
+      patch['suggest[' + i + '].' + field] = val;
+      this.setData(patch);
+    },
+    onSugW(e) { this._setSug(e.currentTarget.dataset.key, 'draftW', e.detail.value); },
+    onSugReps(e) { this._setSug(e.currentTarget.dataset.key, 'draftReps', e.detail.value); },
+    onSugSets(e) { this._setSug(e.currentTarget.dataset.key, 'draftSets', e.detail.value); },
+
+    // 一键把建议回填到当前计划：仅更新「匹配到的」动作，且绝不改动激活指针（不调用 setActivePlan）
+    applySuggestions() {
+      const rows = (this.data.suggest || []).filter(r => r.actionable);
+      if (!rows.length) { wx.showToast({ title: '暂无可应用的调整', icon: 'none' }); return; }
+      const plan = store.getActivePlan();
+      if (!plan) {
+        wx.showModal({
+          title: '暂无今日计划',
+          content: '请先在计划页创建或导入一个包含这些动作的计划，再回来应用建议。',
+          showCancel: false, confirmText: '知道了'
+        });
+        return;
+      }
+      const nextActions = (plan.actions || []).map(pa => {
+        const r = rows.find(x =>
+          (x.planActionId && pa.actionId && x.planActionId === pa.actionId) ||
+          ((pa.nameZh || pa.name) === x.name));
+        if (!r) return pa;
+        const patch = {};
+        if (r.hasW) {
+          const w = parseFloat(r.draftW);
+          if (isFinite(w) && w > 0) patch.weight = String(w);
+          // 计划 reps 是区间文案（如 '8-12'）时不回写次数，避免破坏区间语义
+          const reps = parseInt(r.draftReps, 10);
+          if (reps > 0 && stats.singleIntOf(pa.reps) > 0) patch.reps = String(reps);
+        } else {
+          const reps = parseInt(r.draftReps, 10);
+          if (reps > 0) patch.reps = String(reps);
+          const sets = parseInt(r.draftSets, 10);
+          if (sets > 0) patch.setsCount = sets;
+        }
+        return Object.assign({}, pa, patch);
+      });
+      store.updatePlan(plan.id, { actions: nextActions });
+      wx.showToast({ title: rows.every(r => r.deload) ? '已按减载更新计划' : '已更新计划', icon: 'success' });
+      this.rebuild();
     }
   }
 });

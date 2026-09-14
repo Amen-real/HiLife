@@ -38,6 +38,9 @@ App({
     trainingLogs: [],      // { date, actions:[{name, sets, reps, weight}] }
     meals: [],             // 已记录饮食 { type, name, calories, protein, carb, fat }
 
+    // 复盘「关键动作」自定义选择：存 actionKey 数组（空数组 = 用自动前 3）
+    keyActionPicks: [],
+
     // 收藏
     favorites: [],         // 收藏的动作 id 数组
 

@@ -67,6 +67,36 @@
             </view>
           </view>
 
+          <!-- 下次训练建议：可一键回填计划（基线 = 计划目标 > 历史） -->
+          <block wx:if="{{hasSuggest}}">
+            <view class="section-title">下次训练建议</view>
+            <view class="sg-card">
+              <view class="sg-row {{item.deload ? 'dl' : ''}}" wx:for="{{suggest}}" wx:key="key">
+                <view class="sg-top">
+                  <text class="sg-name">{{item.name}}</text>
+                  <text class="sg-from">{{item.fromTxt}}</text>
+                </view>
+                <view class="sg-mid">
+                  <text class="sg-arrow">{{item.arrow}}</text>
+                  <block wx:if="{{item.actionable}}">
+                    <block wx:if="{{item.hasW}}">
+                      <input class="sg-inp" type="digit" value="{{item.draftW}}" data-key="{{item.key}}" bindinput="onSugW" />
+                      <text class="sg-unit">kg ×</text>
+                    </block>
+                    <input class="sg-inp {{item.hasW ? '' : 'wide'}}" type="number" value="{{item.draftReps}}" data-key="{{item.key}}" bindinput="onSugReps" />
+                    <text class="sg-unit">次</text>
+                  </block>
+                  <text wx:else class="sg-flat">{{item.toTxt}}</text>
+                </view>
+                <view class="sg-reason">{{item.reason}}</view>
+              </view>
+              <view class="sg-actions">
+                <view class="sg-apply {{canApply ? '' : 'dis'}}" bindtap="applySuggestions">应用到计划</view>
+                <text class="sg-tip">仅更新当前计划中匹配的动作，不影响其他计划</text>
+              </view>
+            </view>
+          </block>
+
           <!-- 本次训练感受（聚合动作级备注，无则不渲染） -->
           <block wx:if="{{feelings.length}}">
             <view class="section-title">训练感受</view>
@@ -84,7 +114,8 @@
       <!-- =============== 进步趋势 =============== -->
       <block wx:elif="{{tab==='trend'}}">
 
-        <!-- 周完成度 + 本周概况 -->
+        <!-- 本周执行（这是「执行」不是「进步」，故单独标出；口径与计划页组头一致） -->
+        <view class="section-title">本周执行</view>
         <view class="wk-head">
           <view class="wk-ring" style="{{weekly.compStyle}}" aria-label="周完成度 {{weekly.completion}}%">
             <view class="wk-ring-center">
@@ -109,8 +140,38 @@
           </view>
         </view>
 
-        <!-- 关键动作：自动取场次最多的前 3 个，最好一组跨场趋势 -->
-        <view class="section-title">关键动作 · 最好成绩</view>
+        <block wx:if="{{trendReady}}">
+
+        <!-- 个人纪录：先给结论——我最近破纪录了吗 -->
+        <view class="section-title">个人纪录</view>
+        <view class="pr-card">
+          <view class="pr-sum">{{recordsSummary}}</view>
+          <view class="pr-row" wx:for="{{records}}" wx:key="key">
+            <text class="pr-name">{{item.name}}</text>
+            <text class="pr-val">{{item.valTxt}}</text>
+            <text wx:if="{{item.isNew}}" class="pr-new">新</text>
+            <text class="pr-date">{{item.dateTxt}}</text>
+          </view>
+        </view>
+
+        <!-- 近 6 周训练量：纵轴 = 周总容量（重量×次数），单调且有量级差，能读出进步 -->
+        <view class="section-title">训练量 · 近 6 周</view>
+        <view class="wk-weeks">
+          <view class="wk-w-col" wx:for="{{weeks}}" wx:key="key">
+            <view class="wk-w-track">
+              <view class="wk-w-bar {{item.has ? 'on' : 'off'}}" style="{{item.barStyle}}">
+                <text class="wk-w-val">{{item.volTxt}}</text>
+              </view>
+            </view>
+            <text class="wk-w-lab">{{item.label}}</text>
+          </view>
+        </view>
+
+        <!-- 关键动作：默认取场次最多的前 3；点右上角可改成自己关心的动作（最多 3 个） -->
+        <view class="ka-title">
+          <view class="section-title">关键动作 · 训练量趋势</view>
+          <view class="ka-pick" bindtap="openKaSheet">{{kaCustom ? '自选 · 改' : '自动 · 改'}}</view>
+        </view>
         <block wx:if="{{keyActions.length}}">
           <view class="ka-card" wx:for="{{keyActions}}" wx:key="key">
             <view class="ka-head">
@@ -125,27 +186,55 @@
               <text class="ka-arrow">→</text>
               <text class="ka-txt hot">{{item.lastDate}} {{item.lastTxt}}</text>
             </view>
+            <view class="ka-cap">训练量 {{item.firstCap}} → {{item.lastCap}} kg</view>
           </view>
           <view class="guide-link" bindtap="openEffortGuide">吃力程度怎么选？</view>
         </block>
         <view wx:else class="wk-empty">还没有动作记录，完成一次训练后这里展示进步趋势</view>
 
-        <!-- 近 6 周努力度 -->
-        <view class="section-title">努力度 · 近 6 周</view>
-        <view class="wk-weeks">
-          <view class="wk-w-col" wx:for="{{weeks}}" wx:key="key">
-            <view class="wk-w-track">
-              <view class="wk-w-bar {{item.has ? 'on' : 'off'}}" style="{{item.barStyle}}">
-                <text class="wk-w-val">{{item.has ? item.rpe : ''}}</text>
-              </view>
-            </view>
-            <text class="wk-w-lab">{{item.label}}</text>
+        </block>
+
+        <!-- 场次不足：给一个成长钩子，而不是两张空图 -->
+        <block wx:else>
+          <view class="placeholder">
+            <view class="ph-tit">趋势需要一点积累</view>
+            <view class="ph-hint">再练 {{trendNeed}} 次，就能看到训练量与个人纪录的变化</view>
           </view>
-        </view>
+        </block>
 
       </block>
 
       <view class="bottom-gap" />
     </view>
   </scroll-view>
+
+  <!-- ===== 关键动作选择弹层：勾选即改，最多 3 个；一个都不勾 = 回到自动前 3 ===== -->
+  <view wx:if="{{kaSheet}}" class="ka-mask" bindtap="closeKaSheet">
+    <view class="ka-sheet" catchtap="noop">
+      <view class="ka-sheet-head">
+        <text class="ka-sheet-tit">选关键动作</text>
+        <text class="ka-sheet-cnt">已选 {{kaPickedCount}} / {{kaMax}}</text>
+      </view>
+      <text class="ka-sheet-sub">最多 3 个。一个都不选就回到自动推荐。</text>
+
+      <scroll-view class="ka-sheet-list" scroll-y>
+        <view class="ka-opt {{item.checked ? 'on' : ''}}" wx:for="{{pickOptions}}" wx:key="key"
+              data-key="{{item.key}}" bindtap="toggleKaPick">
+          <view class="ka-opt-main">
+            <text class="ka-opt-name">{{item.name}}</text>
+            <text class="ka-opt-meta">{{item.metaTxt}}</text>
+          </view>
+          <view class="ka-opt-box {{item.checked ? 'on' : ''}}">
+            <text wx:if="{{item.checked}}" class="ka-opt-tick">✓</text>
+          </view>
+        </view>
+        <view class="ka-sheet-gap" />
+      </scroll-view>
+
+      <view class="ka-sheet-foot">
+        <view class="ka-sheet-btn ghost" bindtap="resetKaPicks">恢复自动</view>
+        <view class="ka-sheet-btn main" bindtap="saveKaPicks">完成</view>
+      </view>
+    </view>
+  </view>
 </view>

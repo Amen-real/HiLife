@@ -249,6 +249,47 @@ isTrue('\u590d\u76d8\u7ec4\u4ef6\u7a7a\u6001 CTA', has(TR_WXML, 'ph-cta') && has
 isTrue('\u7a7a\u6001 CTA \u6837\u5f0f\u5b58\u5728', has(TR_WXSS, '.ph-cta'));
 isTrue('\u52aa\u529b\u5ea6\u67f1\u6709 min-height\uff08\u4e0d\u4f1a\u77ee\u5230\u770b\u4e0d\u89c1\uff09', has(TR_JS, 'min-height: 8%'));
 isTrue('\u5403\u529b\u5f39\u7a97\u8865 1\u201310 \u6570\u503c\u6620\u5c04', has(TR_JS, '9\u201310') && has(TR_JS, '1\u20134'));
+// —— 下次训练建议 / 回填计划 ——
+isTrue('\u590d\u76d8\u7ec4\u4ef6\u8c03\u7528 nextSessionSuggestion', has(TR_JS, 'nextSessionSuggestion('));
+isTrue('\u590d\u76d8\u7ec4\u4ef6\u6709\u300c\u5e94\u7528\u5230\u8ba1\u5212\u300d\u5904\u7406', has(TR_JS, 'applySuggestions'));
+isTrue('\u56de\u586b\u8d70 store.updatePlan', has(TR_JS, 'store.updatePlan('));
+isFalse('\u56de\u586b\u4e0d\u6539\u6fc0\u6d3b\u6307\u9488\uff08\u4e0d\u8c03 setActivePlan\uff09', has(TR_JS, 'setActivePlan('));
+isTrue('wxml \u6709\u4e0b\u6b21\u5efa\u8bae\u5361', has(TR_WXML, 'sg-card'));
+isTrue('wxml \u5efa\u8bae\u5361\u6709\u5e94\u7528\u6309\u94ae', has(TR_WXML, '\u5e94\u7528\u5230\u8ba1\u5212'));
+isTrue('wxss \u6709\u5efa\u8bae\u5361\u6309\u94ae\u6837\u5f0f', has(TR_WXSS, '.sg-apply'));
+isTrue('wxss 有减载行箭头样式', has(TR_WXSS, '.sg-row.dl'));
+isTrue('wxml 箭头按建议方向渲染（加重 → / 减载 ↓）', has(TR_WXML, '{{item.arrow}}'));
+isTrue('trainingStats 导出 floorPlate（降重向下取整）', typeof stats.floorPlate === 'function');
+// —— 计划页：重量手动编辑入口（此前计划重量只能靠建议卡回填，用户没有别的出口）——
+isTrue('计划页有重量输入框', has('pages/plan/plan.wxml', 'onActionWeight'));
+isTrue('计划页有重量输入处理', has('pages/plan/plan.js', 'onActionWeight('));
+isTrue('计划页重量写回 _pickedDetails', has('pages/plan/plan.js', '.weight = v'));
+isTrue('计划页重量输入样式', has('pages/plan/plan.wxss', '.pf-i.sm'));
+// —— 进步趋势口径（2026-09-14 修：纵轴从周均 RPE 换成周训练量）——
+isTrue('wxml 有场次不足钩子', has(TR_WXML, '趋势需要一点积累'));
+isTrue('wxss 有个人纪录样式', has(TR_WXSS, '.pr-card'));
+isTrue('wxml 有个人纪录块', has(TR_WXML, '个人纪录'));
+isTrue('wxml 标题为「训练量 · 近 6 周」', has(TR_WXML, '训练量 · 近 6 周'));
+isFalse('wxml 不再有「努力度 · 近 6 周」纵轴图', has(TR_WXML, '努力度 · 近 6 周'));
+isTrue('wxml 关键动作带训练量说明行', has(TR_WXML, 'ka-cap'));
+isTrue('组件有 buildRecords', has(TR_JS, 'buildRecords('));
+isTrue('趋势柱高改用可比容量', has(TR_JS, 'capacityOfAction(a)'));
+isFalse('关键动作柱高不再按峰值重量归一', has(TR_JS, 'x.topW || maxW'));
+isTrue('趋势场次门槛已定义', has(TR_JS, 'TREND_MIN_LOGS'));
+// —— 关键动作「自动前 3 + 可切换」（2026-09-14：原来写死 slice(0,3)，用户没得选）——
+isTrue('组件不再写死 slice(0,3)', !has(TR_JS, 'groups.slice(0, 3)'));
+isTrue('关键动作读取用户自选', has(TR_JS, 'store.getKeyActionPicks()'));
+isTrue('关键动作落库自选', has(TR_JS, 'store.setKeyActionPicks('));
+isTrue('卡位上限单源常量 KA_MAX', has(TR_JS, 'const KA_MAX = 3;'));
+isTrue('store 提供 getKeyActionPicks', typeof require(path.join(ROOT, 'utils', 'store.js')).getKeyActionPicks === 'function');
+isTrue('store 提供 setKeyActionPicks', typeof require(path.join(ROOT, 'utils', 'store.js')).setKeyActionPicks === 'function');
+isTrue('globalData 有 keyActionPicks 槽位', has('app.js', 'keyActionPicks'));
+isTrue('退出登录会清空自选（不串号）', has('utils/store.js', 'data.keyActionPicks = [];'));
+isTrue('wxml 有切换入口', has(TR_WXML, 'bindtap="openKaSheet"'));
+isTrue('wxml 有选择弹层', has(TR_WXML, 'class="ka-sheet"'));
+isTrue('wxml 勾选项唯一键', has(TR_WXML, 'data-key="{{item.key}}"'));
+isTrue('wxss 弹层遮罩高于 nav-bar', has(TR_WXSS, 'z-index: 2000;'));
+isTrue('wxss 弹层列表给明确高度', has(TR_WXSS, '.ka-sheet-list { height: 52vh; }'));
 
 /* ============ I. 组件数据形状（真实组件 + stub 宿主） ============ */
 // 为什么单独测：H 段全是「文件里有没有这段字符串」的结构断言，抓不到「把对象塞进文本字段」
@@ -279,7 +320,7 @@ const mkInst = () => Object.assign({}, TR_SPEC.methods, {
 });
 
 // 容器字段：本身就该是对象/数组，其子字段才是被渲染的文本
-const CONTAINERS = { perAction: 1, feelings: 1, keyActions: 1, weeks: 1, weekly: 1, stats: 1, chip: 1, bars: 1 };
+const CONTAINERS = { perAction: 1, feelings: 1, keyActions: 1, weeks: 1, weekly: 1, stats: 1, chip: 1, bars: 1, records: 1, pickOptions: 1 };
 function sweepObjects(o, path, bads) {
   if (!o || typeof o !== 'object') return;
   Object.keys(o).forEach(k => {
@@ -351,6 +392,462 @@ I3.selSession({ currentTarget: { dataset: { dir: 'newer' } } });
 eq('I3 \u5411\u65b0\u5207\u56de\u6700\u65b0\u4e00\u573a', I3.data.sessionDate, dateNewest);
 I3.switchTab({ currentTarget: { dataset: { tab: 'trend' } } });
 eq('I3 \u5207\u5230\u8d8b\u52bf tab', I3.data.tab, 'trend');
+
+// 建议（suggest）形状：容器本身是数组，其子字段必须全为标量
+isTrue('I1 suggest \u6761\u6570 = \u52a8\u4f5c\u6570', I1.data.suggest.length === I1.data.perAction.length);
+isTrue('I1 suggest[].reason \u662f\u5b57\u7b26\u4e32', I1.data.suggest.every(s => typeof s.reason === 'string'));
+isTrue('I1 suggest[].fromTxt/toTxt \u662f\u5b57\u7b26\u4e32',
+  I1.data.suggest.every(s => typeof s.fromTxt === 'string' && typeof s.toTxt === 'string'));
+isTrue('I1 suggest[].draftW/draftReps/draftSets \u662f\u6570\u5b57',
+  I1.data.suggest.every(s => typeof s.draftW === 'number' && typeof s.draftReps === 'number' && typeof s.draftSets === 'number'));
+isTrue('I1 suggest[].actionable/editable \u662f\u5e03\u5c14',
+  I1.data.suggest.every(s => typeof s.actionable === 'boolean' && typeof s.editable === 'boolean'));
+isTrue('I1 hasSuggest = true', I1.data.hasSuggest === true);
+
+// I4 建议可应用 + 一键回填计划（真实组件 + 真实 store 端到端）
+const I4 = mkInst();
+fakeAppTR.globalData.trainingPlans = [
+  { id: 'p1', name: 'A\u65e5', daysPerWeek: 3, actions: [
+    { actionId: 'a1', nameZh: '\u5367\u63a8', setsCount: 3, reps: '8', weight: '55' },
+    { actionId: 'a9', nameZh: '\u6df1\u8e72', setsCount: 4, reps: '5', weight: '100' }
+  ] }
+];
+fakeAppTR.globalData.activePlanId = 'p1';
+fakeAppTR.globalData.trainingLogs = [
+  mkLog('l0', 1, 3, [A2('a1', '\u5367\u63a8', [S2(60, 10, 6)])], 'p1'),
+  mkLog('l1', 3, 2, [A2('a1', '\u5367\u63a8', [S2(55, 10, 7)])], 'p1'),
+  mkLog('l2', 9, 1, [A2('a1', '\u5367\u63a8', [S2(50, 10, 7)])], '')
+];
+I4.rebuild();
+const sg4 = I4.data.suggest.find(s => s.key.indexOf('a1') === 0);
+isTrue('I4 \u547d\u4e2d\u8ba1\u5212\u52a8\u4f5c\uff08planMatched\uff09', !!sg4 && sg4.planMatched === true);
+isTrue('I4 canApply = true', I4.data.canApply === true);
+isTrue('I4 \u5efa\u8bae\u52a0\u91cd\uff08>55\uff09', sg4.draftW > 55);
+const badI4 = [];
+sweepObjects(I4.data, 'data', badI4);
+eq('I4 \u5efa\u8bae\u6570\u636e\u65e0\u5bf9\u8c61\u5f53\u6587\u672c', badI4, []);
+I4.applySuggestions();
+const paA1 = fakeAppTR.globalData.trainingPlans[0].actions[0];
+const paA9 = fakeAppTR.globalData.trainingPlans[0].actions[1];
+isTrue('I4 \u8ba1\u5212\u91cd\u91cf\u5df2\u56de\u586b\uff08>55\uff09', Number(paA1.weight) > 55);
+eq('I4 \u672a\u5339\u914d\u52a8\u4f5c\u539f\u6837\u4fdd\u7559', paA9.weight, '100');
+eq('I4 \u6fc0\u6d3b\u6307\u9488\u672a\u88ab\u6539\u52a8', fakeAppTR.globalData.activePlanId, 'p1');
+eq('I4 \u8ba1\u5212 id \u672a\u88ab\u6539\u52a8', fakeAppTR.globalData.trainingPlans[0].id, 'p1');
+// 关键回归：回填后本场重新计算 → 计划已高于本场达成 → 不可再加（否则点一次涨一次）
+I4.rebuild();
+isTrue('I4 回填后本场不可再加（防一直加重量）', I4.data.canApply === false);
+
+// I5 降重端到端：计划高于本场实际且本场吃力 → 建议降重 → 回填 → 计划下调，且不可再降
+const I5 = mkInst();
+fakeAppTR.globalData.trainingPlans = [
+  { id: 'p1', name: 'A日', daysPerWeek: 3, actions: [
+    { actionId: 'a1', nameZh: '卧推', setsCount: 3, reps: '8', weight: '80' }
+  ] }
+];
+fakeAppTR.globalData.activePlanId = 'p1';
+fakeAppTR.globalData.trainingLogs = [
+  mkLog('l0', 1, 2, [A2('a1', '卧推', [S2(60, 8, 8)])], 'p1'),
+  mkLog('l1', 4, 1, [A2('a1', '卧推', [S2(60, 8, 7)])], 'p1')
+];
+I5.rebuild();
+const sg5 = I5.data.suggest.find(s => s.key.indexOf('a1') === 0);
+isTrue('I5 计划高于本场 → 判定降重', !!sg5 && sg5.deload === true);
+eq('I5 降到不超过本场实际 60', sg5.draftW, 60);
+eq('I5 箭头向下', sg5.arrow, '↓');
+isTrue('I5 canApply = true', I5.data.canApply === true);
+const badI5 = [];
+sweepObjects(I5.data, 'data', badI5);
+eq('I5 降重建议无对象当文本', badI5, []);
+I5.applySuggestions();
+eq('I5 计划重量已下调到 60', fakeAppTR.globalData.trainingPlans[0].actions[0].weight, '60');
+eq('I5 激活指针未被改动', fakeAppTR.globalData.activePlanId, 'p1');
+I5.rebuild();
+isTrue('I5 回填后不可再降（防一路往下掉）', I5.data.canApply === false);
+
+// 进步趋势改版后的数据形状：新增字段同样不许是对象
+isTrue('I1 weeks[].volTxt 是字符串', I1.data.weeks.every(w => typeof w.volTxt === 'string'));
+isTrue('I1 weeks[].pct 是数字', I1.data.weeks.every(w => typeof w.pct === 'number'));
+isTrue('I1 keyActions[].firstCap/lastCap 是字符串',
+  I1.data.keyActions.every(k => typeof k.firstCap === 'string' && typeof k.lastCap === 'string'));
+isTrue('I1 records[] 全为标量（无对象当文本）',
+  I1.data.records.every(r => typeof r.name === 'string' && typeof r.valTxt === 'string' &&
+    typeof r.dateTxt === 'string' && typeof r.isNew === 'boolean'));
+isTrue('I1 recordsSummary 是字符串', typeof I1.data.recordsSummary === 'string');
+isTrue('I1 trendReady 是布尔', typeof I1.data.trendReady === 'boolean');
+eq('I2 空态 records 为空', I2.data.records, []);
+eq('I2 空态 trendReady=false', I2.data.trendReady, false);
+eq('I2 空态 trendNeed=0', I2.data.trendNeed, 0);
+
+/* ============ J. nextSessionSuggestion —— 下次训练建议 ============ */
+console.log('\n[J] nextSessionSuggestion —— 建议回填计划（AC1–AC4）');
+
+// 辅助：阶梯取整 / reps 区间不解析
+eq('J roundPlate 61.5 → 62.5', stats.roundPlate(61.5), 62.5);
+eq('J roundPlate 102.5 → 102.5', stats.roundPlate(102.5), 102.5);
+eq("J singleIntOf('8') = 8", stats.singleIntOf('8'), 8);
+eq("J singleIntOf('8-12') = 0（区间不解析）", stats.singleIntOf('8-12'), 0);
+eq("J singleIntOf('') = 0", stats.singleIntOf(''), 0);
+
+// AC1a 状态轻松 + 历史容量≥2 场向上 → 加重 +2.5–5%
+const jL1 = [
+  { date: 'd3', actions: [A('bp', '杠铃', [S(60, 8, 6)])] },
+  { date: 'd2', actions: [A('bp', '杠铃', [S(55, 8, 8)])] },
+  { date: 'd1', actions: [A('bp', '杠铃', [S(50, 8, 8)])] }
+];
+const j1 = stats.nextSessionSuggestion(jL1[0].actions, jL1, 0, null);
+eq('AC1a 条数', j1.length, 1);
+eq('AC1a actionable', j1[0].actionable, true);
+eq('AC1a 加重到 62.5（60×1.025 取 2.5 阶梯）', j1[0].draftW, 62.5);
+contains('AC1a 理由含「加重」', j1[0].reason, '加重');
+isTrue('AC1a key 带唯一后缀（同名动作不串）', j1[0].key.indexOf('#') > 0);
+
+// AC1b rpe ≥ 9 → 维持容量，不增
+const jL2 = [
+  { date: 'd2', actions: [A('sq', '杠铃', [S(100, 5, 9)])] },
+  { date: 'd1', actions: [A('sq', '杠铃', [S(95, 5, 8)])] }
+];
+const j2 = stats.nextSessionSuggestion(jL2[0].actions, jL2, 0, null);
+eq('AC1b 不可应用', j2[0].actionable, false);
+contains('AC1b 理由「维持容量」', j2[0].reason, '维持容量');
+
+// AC1c 6 < rpe < 9 → 保持容量稳步推进（零增量）
+const jL3 = [
+  { date: 'd2', actions: [A('dl', '杠铃', [S(80, 5, 7.5)])] },
+  { date: 'd1', actions: [A('dl', '杠铃', [S(75, 5, 7)])] }
+];
+const j3 = stats.nextSessionSuggestion(jL3[0].actions, jL3, 0, null);
+eq('AC1c 不可应用', j3[0].actionable, false);
+contains('AC1c 理由「稳步推进」', j3[0].reason, '稳步推进');
+
+// AC1d 首训（无历史无计划）→ 提示
+const jL4 = [{ date: 'd1', actions: [A('np', '', [S(40, 10, 6)])] }];
+const j4 = stats.nextSessionSuggestion(jL4[0].actions, jL4, 0, null);
+eq('AC1d 不可应用', j4[0].actionable, false);
+contains('AC1d 提示「首次训练」', j4[0].reason, '首次训练');
+
+// AC4 自重动作 → +1 次，不加重
+const jL5 = [
+  { date: 'd3', actions: [A('pu', '', [S(0, 10, 6)])] },
+  { date: 'd2', actions: [A('pu', '', [S(0, 8, 7)])] },
+  { date: 'd1', actions: [A('pu', '', [S(0, 6, 7)])] }
+];
+const j5 = stats.nextSessionSuggestion(jL5[0].actions, jL5, 0, null);
+eq('AC4 自重 actionable', j5[0].actionable, true);
+eq('AC4 hasW=false（不加重）', j5[0].hasW, false);
+contains('AC4 建议 +1 次（10→11）', j5[0].toTxt, '11');
+contains('AC4 理由含「+1 次」', j5[0].reason, '+1 次');
+
+// AC2 计划匹配 → 展示基线取计划目标；但本场未达计划 → 不加（达成闸门）
+const planJ = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 4, reps: '8', weight: '60' }] };
+const jL6 = [
+  { date: 'd2', actions: [A('bp', '', [S(55, 8, 6)])] },
+  { date: 'd1', actions: [A('bp', '', [S(50, 8, 7)])] }
+];
+const j6 = stats.nextSessionSuggestion(jL6[0].actions, jL6, 0, planJ);
+eq('AC2 planMatched', j6[0].planMatched, true);
+contains('AC2 展示基线取计划 60kg', j6[0].fromTxt, '60kg');
+contains('AC2 本场未达计划 → 不加', j6[0].reason, '未达计划重量');
+eq('AC2 不可应用', j6[0].actionable, false);
+eq('AC2 planActionId 可回填定位', j6[0].planActionId, 'bp');
+
+// J8 达成计划才加重；计划被改高后再算 → 不可再加（**防「一直加重量」**）
+const planJ8a = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 3, reps: '8', weight: '60' }] };
+const jL8 = [
+  { date: 'd2', actions: [A('bp', '', [S(60, 8, 6)])] },
+  { date: 'd1', actions: [A('bp', '', [S(55, 8, 7)])] }
+];
+const j8a = stats.nextSessionSuggestion(jL8[0].actions, jL8, 0, planJ8a);
+eq('J8a 达成计划 → 可加重', j8a[0].actionable, true);
+eq('J8a 加到 62.5（基数=本场实际 60，单次上限 +2.5）', j8a[0].draftW, 62.5);
+// 幂等：计划已被改成 62.5，本场仍是 60 → 再算必须不再加（否则点一次涨一次）
+const planJ8b = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 3, reps: '8', weight: '62.5' }] };
+const j8b = stats.nextSessionSuggestion(jL8[0].actions, jL8, 0, planJ8b);
+eq('J8b 计划已更高 → 不可再加（防无限加重）', j8b[0].actionable, false);
+contains('J8b 说明未达新计划', j8b[0].reason, '未达计划重量');
+
+// J9 计划指定次数未达 → 先补次数，不加重量
+const planJ9 = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 3, reps: '10', weight: '60' }] };
+const jL9 = [
+  { date: 'd2', actions: [A('bp', '', [S(60, 6, 6)])] },
+  { date: 'd1', actions: [A('bp', '', [S(55, 6, 7)])] }
+];
+const j9 = stats.nextSessionSuggestion(jL9[0].actions, jL9, 0, planJ9);
+eq('J9 次数未达 → 不加', j9[0].actionable, false);
+contains('J9 提示先补次数', j9[0].reason, '补足计划次数');
+
+// J10 reps 区间取下界（用于「本场是否达计划次数」判定）
+eq("J lowIntOf('8-12') = 8", stats.lowIntOf('8-12'), 8);
+eq("J lowIntOf('10') = 10", stats.lowIntOf('10'), 10);
+eq("J lowIntOf('') = 0", stats.lowIntOf(''), 0);
+
+// AC1 补充：无吃力记录 → 不臆断，提示先记录
+const jL7 = [
+  { date: 'd2', actions: [A('bp', '', [{ weight: 60, reps: 8, trainSec: 60, restSec: 30, rpe: '' }])] },
+  { date: 'd1', actions: [A('bp', '', [S(55, 8, 7)])] }
+];
+const j7 = stats.nextSessionSuggestion(jL7[0].actions, jL7, 0, null);
+eq('AC1 无 rpe 不可应用', j7[0].actionable, false);
+contains('AC1 提示「记录吃力程度」', j7[0].reason, '记录吃力程度');
+
+/* ============ K. 降重（减载） ============ */
+console.log('\n[K] nextSessionSuggestion —— 降重（减载）');
+
+// K1 疲劳降载：rpe≥9 且有匹配计划 → 降约 10%（2.5 阶梯取整）
+const planK1 = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 3, reps: '8', weight: '60' }] };
+const kL1 = [
+  { date: 'd2', actions: [A('bp', '', [S(60, 8, 9)])] },
+  { date: 'd1', actions: [A('bp', '', [S(60, 8, 6)])] }
+];
+const k1 = stats.nextSessionSuggestion(kL1[0].actions, kL1, 0, planK1);
+eq('K1 rpe≥9 → 可降重', k1[0].actionable, true);
+eq('K1 标记 deload', k1[0].deload, true);
+eq('K1 降到 55（0.9×60=54 → 2.5 阶梯）', k1[0].draftW, 55);
+eq('K1 箭头向下', k1[0].arrow, '↓');
+contains('K1 理由点明疲劳', k1[0].reason, '疲劳');
+
+// K2 幂等：按 K1 降重回填后再算 → 已到位，不可再降（**防一路往下掉**）
+const planK2 = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 3, reps: '8', weight: '55' }] };
+const k2 = stats.nextSessionSuggestion(kL1[0].actions, kL1, 0, planK2);
+eq('K2 已降到位 → 不可再降（幂等）', k2[0].actionable, false);
+contains('K2 转「接近力竭」维持', k2[0].reason, '接近力竭');
+
+// K3 计划高于本场实际 且 rpe≥8 → 降到不超过本场实际（floorPlate）
+const planK3 = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 3, reps: '8', weight: '70' }] };
+const kL3 = [
+  { date: 'd2', actions: [A('bp', '', [S(60, 8, 8)])] },
+  { date: 'd1', actions: [A('bp', '', [S(60, 8, 6)])] }
+];
+const k3 = stats.nextSessionSuggestion(kL3[0].actions, kL3, 0, planK3);
+eq('K3 计划过高且吃力 → 可降重', k3[0].actionable, true);
+eq('K3 降到不超过本场实际 60', k3[0].draftW, 60);
+contains('K3 理由说明计划高于本场', k3[0].reason, '高于本场');
+
+// K3b 幂等：降到本场后再算 → 不可再降
+const planK3b = { id: 'p1', actions: [{ actionId: 'bp', nameZh: '卧推', setsCount: 3, reps: '8', weight: '60' }] };
+const k3b = stats.nextSessionSuggestion(kL3[0].actions, kL3, 0, planK3b);
+eq('K3b 降到本场后 → 不可再降（幂等）', k3b[0].actionable, false);
+
+// K4 未达计划但 rpe<8（只是没顶上去，不是疲劳）→ 不降，只提示先按计划
+const kL4 = [
+  { date: 'd2', actions: [A('bp', '', [S(50, 8, 6)])] },
+  { date: 'd1', actions: [A('bp', '', [S(55, 8, 7)])] }
+];
+const k4 = stats.nextSessionSuggestion(kL4[0].actions, kL4, 0, planK1);
+eq('K4 rpe<8 未达计划 → 不降（拒绝单场波动）', k4[0].actionable, false);
+contains('K4 仍提示先按计划', k4[0].reason, '未达计划重量');
+
+// K5 自重动作 rpe≥9 → 无重量可降，转「维持」
+const kL5 = [
+  { date: 'd2', actions: [A('pu', '', [S(0, 15, 9)])] },
+  { date: 'd1', actions: [A('pu', '', [S(0, 12, 6)])] }
+];
+const k5 = stats.nextSessionSuggestion(kL5[0].actions, kL5, 0, null);
+eq('K5 自重 rpe≥9 → 不降重', k5[0].actionable, false);
+contains('K5 理由为接近力竭', k5[0].reason, '接近力竭');
+
+// K6 无匹配计划 → 降重没有可写目标，不臆断
+const k6 = stats.nextSessionSuggestion(kL1[0].actions, kL1, 0, null);
+eq('K6 无计划 → 不可降重', k6[0].actionable, false);
+eq('K6 箭头仍为默认向右', k6[0].arrow, '→');
+
+// K7 floorPlate 取整方向必须向下（「降了不能反而没降」）
+eq('K7 floorPlate(54) = 52.5', stats.floorPlate(54), 52.5);
+eq('K7 floorPlate(60) = 60', stats.floorPlate(60), 60);
+eq('K7 floorPlate(62.5) = 62.5', stats.floorPlate(62.5), 62.5);
+eq('K7 floorPlate(1) = 0', stats.floorPlate(1), 0);
+
+/* ============ L. 进步趋势：纵轴口径回归守卫 ============ */
+// 为什么单独测：[I] 只扫「数据形状合法」，抓不到「图有没有信息」。
+// 2026-09-14 修的两件事——① 纵轴从周均 RPE 换成周训练量（RPE 无方向性，
+// 柱高被压在 60%–90%，六根柱永远等高）；② 关键动作柱高/涨跌从峰值重量 topW
+// 换成可比容量（旧实现自重动作 topW 恒 0 → 每根柱都 100%，整块图零信息）。
+// 这里把那两个「零信息」症状直接写成断言，防止后人改回去。
+console.log('\n[L] 进步趋势 —— 训练量纵轴 / 容量柱 / 个人纪录');
+
+const wkMon = dateRange.weekRange(new Date()).monStr;
+const mkLogOn = (sid, iso, actions) => ({ sid, date: iso, createdAt: 1, planId: '', programId: '', actions });
+const wkOffset = (k) => dateRange.shiftDaysISO(wkMon, k);
+
+// L1 纵轴 = 周总容量（Σ 重量×次数），不是周均 RPE
+const L1 = mkInst();
+fakeAppTR.globalData.trainingLogs = [
+  mkLogOn('a', wkOffset(0), [A2('bp', '卧推', [S2(60, 10, 7), S2(60, 10, 7), S2(60, 10, 7)])]),   // 1800
+  mkLogOn('b', wkOffset(-7), [A2('bp', '卧推', [S2(30, 10, 7), S2(30, 10, 7), S2(30, 10, 7)])])    // 900
+];
+L1.rebuild();
+const wThis = L1.data.weeks.find(w => w.label === '本周');
+const wLast = L1.data.weeks.find(w => w.label === 'W-1');
+eq('L1 本周训练量 = 1800（Σ重量×次数）', wThis.vol, 1800);
+eq('L1 上周训练量 = 900', wLast.vol, 900);
+eq('L1 柱高按容量归一：本周 100%', wThis.pct, 100);
+eq('L1 柱高按容量归一：上周 50%', wLast.pct, 50);
+isTrue('L1 柱高量级差 ≥40（旧的 RPE 纵轴最多只有 30%）', wThis.pct - wLast.pct >= 40);
+eq('L1 柱上带具体训练量文案', wThis.volTxt, '1800');
+eq('L1 空周无柱', L1.data.weeks.find(w => w.label === 'W-5').pct, 0);
+isTrue('L1 trendReady（3 场 ≥ 门槛 2）', L1.data.trendReady === true);
+
+// L2 自重动作：柱高不再全等，且给出涨跌 chip（旧实现 topW 恒 0 → 全 100% + 只说「N 场」）
+const L2 = mkInst();
+fakeAppTR.globalData.trainingLogs = [
+  mkLogOn('a', wkOffset(0), [A2('pu', '引体向上', [S2(0, 15, 7)])]),
+  mkLogOn('b', wkOffset(-7), [A2('pu', '引体向上', [S2(0, 12, 7)])]),
+  mkLogOn('c', wkOffset(-14), [A2('pu', '引体向上', [S2(0, 10, 7)])])
+];
+L2.rebuild();
+const ka2 = L2.data.keyActions[0] || { bars: [], chip: {} };
+eq('L2 取到自重动作', ka2.name, '引体向上');
+isTrue('L2 自重柱高有差异（旧实现全等 100%）', new Set((ka2.bars || []).map(b => b.style)).size >= 2);
+eq('L2 自重次数涨了 → chip 判为向上', ka2.chip.cls, 'up');
+eq('L2 chip 文案带百分比', ka2.chip.text, '+50%');
+eq('L2 首值用容量（次数）', ka2.firstCap, '10');
+eq('L2 末值用容量（次数）', ka2.lastCap, '15');
+eq('L2 首值文案仍是可读的最好一组', ka2.firstTxt, '自重×10');
+
+// L3 场次不足不画趋势（1 根柱不是趋势）
+const L3 = mkInst();
+fakeAppTR.globalData.trainingLogs = [mkLogOn('a', wkOffset(0), [A2('bp', '卧推', [S2(60, 10, 7)])])];
+L3.rebuild();
+eq('L3 仅 1 场 → trendReady=false', L3.data.trendReady, false);
+eq('L3 提示还差 1 次', L3.data.trendNeed, 1);
+
+// L4 个人纪录：按最近刷新排序、近 7 天标「新」、汇总说清刷新几项
+const L4 = mkInst();
+fakeAppTR.globalData.trainingLogs = [
+  mkLogOn('a', wkOffset(0), [A2('bp', '卧推', [S2(60, 10, 7)])]),      // 600 ← 本周刷新
+  mkLogOn('b', wkOffset(-7), [A2('bp', '卧推', [S2(50, 10, 7)])]),     // 500
+  mkLogOn('c', wkOffset(-21), [A2('sq', '深蹲', [S2(100, 5, 8)])]),    // 500 ← 21 天前
+  mkLogOn('d', wkOffset(-14), [A2('sq', '深蹲', [S2(90, 5, 8)])])      // 450
+];
+L4.rebuild();
+const rec4 = L4.data.records;
+eq('L4 有 2 项纪录', rec4.length, 2);
+eq('L4 按最近刷新排序（卧推在前）', rec4[0].name, '卧推');
+eq('L4 纪录值 = 60kg × 10', rec4[0].valTxt, '60kg × 10');
+eq('L4 本周刷新的标记为新纪录', rec4[0].isNew, true);
+eq('L4 21 天前的不标记为新', rec4[1].isNew, false);
+contains('L4 汇总说明刷新了几项', L4.data.recordsSummary, '刷新 1 项');
+
+// L5 只练过 1 场的动作不算「破纪录」
+const L5 = mkInst();
+fakeAppTR.globalData.trainingLogs = [
+  mkLogOn('a', wkOffset(0), [A2('bp', '卧推', [S2(60, 10, 7)])]),
+  mkLogOn('b', wkOffset(-7), [A2('sq', '深蹲', [S2(100, 5, 8)])])
+];
+L5.rebuild();
+eq('L5 只练过 1 场 → 不计入纪录', L5.data.records.length, 0);
+contains('L5 给首次提示', L5.data.recordsSummary, '练满 2 场');
+
+/* ============ M. 关键动作：自动前 3 + 可切换 ============ */
+// 为什么测：列表原本写死 groups.slice(0,3)，用户没法看自己真正在意的动作。
+// 改成「自动前 3 + 可切换」后，风险点有三个：① 自选顺序没被尊重；② 选了没练过的
+// 动作渲染出空卡；③ 勾选超 3 个把卡片撑爆。三条都在这里锁死。
+console.log('\n[M] 关键动作 —— 自动前 3 + 可切换');
+
+const storeTR = require(path.join(ROOT, 'utils', 'store.js'));
+
+// M1 无自选 → 自动前 3（场次降序），候选列表默认勾选这 3 个
+const M1 = mkInst();
+fakeAppTR.globalData.keyActionPicks = [];
+fakeAppTR.globalData.trainingLogs = [
+  mkLogOn('a', wkOffset(0), [A2('bp', '卧推', [S2(60, 10, 7)]), A2('sq', '深蹲', [S2(100, 5, 8)]), A2('row', '划船', [S2(50, 10, 7)]), A2('ohp', '推举', [S2(40, 8, 7)])]),
+  mkLogOn('b', wkOffset(-7), [A2('bp', '卧推', [S2(60, 10, 7)]), A2('sq', '深蹲', [S2(100, 5, 8)]), A2('row', '划船', [S2(50, 10, 7)])]),
+  mkLogOn('c', wkOffset(-14), [A2('bp', '卧推', [S2(60, 10, 7)]), A2('sq', '深蹲', [S2(100, 5, 8)])])
+];
+M1.rebuild();
+eq('M1 自动取前 3', M1.data.keyActions.length, 3);
+eq('M1 场次最多者在前', M1.data.keyActions.map(k => k.name), ['卧推', '深蹲', '划船']);
+eq('M1 未自选 → kaCustom=false', M1.data.kaCustom, false);
+eq('M1 候选列全部练过的动作', M1.data.pickOptions.map(o => o.name), ['卧推', '深蹲', '划船', '推举']);
+eq('M1 候选默认勾选生效中的 3 个', M1.data.pickOptions.filter(o => o.checked).map(o => o.name), ['卧推', '深蹲', '划船']);
+contains('M1 候选带场次与最近日期', M1.data.pickOptions[3].metaTxt, '1 场');
+eq('M1 已选计数 = 3', M1.data.kaPickedCount, 3);
+eq('M1 卡位上限 = 3', M1.data.kaMax, 3);
+
+// 真实 actionKey = 「动作 id + 空格 + 器械」（equip 为空 → 尾部带一个空格），
+// 所以这里不硬编码 'bp'，而是从候选里按名字取，避免测试自身写错键
+const kaKeyOf = (inst, name) => ((inst.data.pickOptions.filter(o => o.name === name)[0]) || {}).key;
+const K_BP = kaKeyOf(M1, '卧推'), K_SQ = kaKeyOf(M1, '深蹲'), K_ROW = kaKeyOf(M1, '划船'), K_OHP = kaKeyOf(M1, '推举');
+
+// M2 自选 → 卡片顺序 = 选择顺序，不受场次排序影响
+const M2 = mkInst();
+fakeAppTR.globalData.keyActionPicks = [K_OHP, K_BP];
+M2.rebuild();
+eq('M2 按用户顺序出卡（推举在前）', M2.data.keyActions.map(k => k.name), ['推举', '卧推']);
+eq('M2 自选生效 → kaCustom=true', M2.data.kaCustom, true);
+eq('M2 自选数量 = 2', M2.data.kaPickedCount, 2);
+// 注意：候选列表顺序恒为「场次降序」（方便找动作），只有卡片顺序才跟用户自选
+eq('M2 候选勾选态跟随自选', M2.data.pickOptions.filter(o => o.checked).map(o => o.name), ['卧推', '推举']);
+
+// M3 选了没练过的 key → 跳过，不渲染空卡；全无效则回落自动
+const M3 = mkInst();
+fakeAppTR.globalData.keyActionPicks = ['ghost 铁', K_OHP];
+M3.rebuild();
+eq('M3 无历史的 key 被跳过', M3.data.keyActions.map(k => k.name), ['推举']);
+fakeAppTR.globalData.keyActionPicks = ['ghost 铁'];
+M3.rebuild();
+eq('M3 全部无效 → 回落自动前 3', M3.data.keyActions.length, 3);
+eq('M3 回落时不算自选', M3.data.kaCustom, false);
+
+// M4 落库去重 + 限长 3（脏数据不该把卡片撑爆）
+fakeAppTR.globalData.keyActionPicks = [];
+storeTR.setKeyActionPicks([K_BP, K_BP, '', K_SQ, K_ROW, K_OHP]);
+eq('M4 落库去重去空并截断到 3', storeTR.getKeyActionPicks(), [K_BP, K_SQ, K_ROW]);
+storeTR.setKeyActionPicks('not-an-array');
+eq('M4 非法入参退化为空数组', storeTR.getKeyActionPicks(), []);
+
+// M5 勾选互斥：满 3 后再勾要被拦住（不落库、不发散）
+let TOAST = '';
+global.wx.showToast = (o) => { TOAST = (o && o.title) || ''; };
+const M5 = mkInst();
+fakeAppTR.globalData.keyActionPicks = [];
+fakeAppTR.globalData.trainingLogs = [
+  mkLogOn('a', wkOffset(0), [A2('bp', '卧推', [S2(60, 10, 7)]), A2('sq', '深蹲', [S2(100, 5, 8)]), A2('row', '划船', [S2(50, 10, 7)]), A2('ohp', '推举', [S2(40, 8, 7)])])
+];
+M5.rebuild();
+M5.toggleKaPick({ currentTarget: { dataset: { key: K_OHP } } });
+eq('M5 满 3 后勾第 4 个被拦', M5.data.pickOptions.filter(o => o.checked).length, 3);
+contains('M5 给出上限提示', TOAST, '最多选 3 个');
+M5.toggleKaPick({ currentTarget: { dataset: { key: K_ROW } } });
+eq('M5 取消勾选立刻生效', M5.data.pickOptions.filter(o => o.checked).map(o => o.key), [K_BP, K_SQ]);
+M5.toggleKaPick({ currentTarget: { dataset: { key: K_OHP } } });
+eq('M5 空出名额后可再勾', M5.data.pickOptions.filter(o => o.checked).map(o => o.key), [K_BP, K_SQ, K_OHP]);
+
+// M6 完成 → 落库 + 卡片立即重排；恢复自动 → 清空自选
+const M6 = mkInst();
+fakeAppTR.globalData.keyActionPicks = [];
+M6.rebuild();
+M6.toggleKaPick({ currentTarget: { dataset: { key: K_ROW } } });   // 取消「划船」
+M6.saveKaPicks();
+eq('M6 保存后落库', storeTR.getKeyActionPicks(), [K_BP, K_SQ]);
+eq('M6 保存后卡片同步', M6.data.keyActions.map(k => k.key), [K_BP, K_SQ]);
+contains('M6 提示已更新', TOAST, '已更新关键动作');
+eq('M6 保存后关弹层', M6.data.kaSheet, false);
+M6.resetKaPicks();
+contains('M6 提示已恢复自动', TOAST, '已恢复自动推荐');
+eq('M6 恢复自动 → 自选清空', storeTR.getKeyActionPicks(), []);
+eq('M6 恢复自动 → 卡片回到前 3', M6.data.keyActions.length, 3);
+eq('M6 恢复自动 → kaCustom 复位', M6.data.kaCustom, false);
+
+// M7 打开弹层丢弃上次未保存的勾选（勾了没点完成就退出）
+const M7 = mkInst();
+fakeAppTR.globalData.keyActionPicks = [K_BP, K_SQ];
+M7.rebuild();
+M7.toggleKaPick({ currentTarget: { dataset: { key: K_ROW } } });
+M7.toggleKaPick({ currentTarget: { dataset: { key: K_OHP } } });
+M7.openKaSheet();
+eq('M7 重新打开时勾选态 = 已落库选择', M7.data.pickOptions.filter(o => o.checked).map(o => o.key), [K_BP, K_SQ]);
+eq('M7 打开弹层置位', M7.data.kaSheet, true);
+eq('M7 打开不改动落库值', storeTR.getKeyActionPicks(), [K_BP, K_SQ]);
+
+// M8 空数据（0 场）时弹层候选与计数一并清空
+const M8 = mkInst();
+fakeAppTR.globalData.trainingLogs = [];
+fakeAppTR.globalData.keyActionPicks = ['bp'];
+M8.rebuild();
+eq('M8 空态清空候选', M8.data.pickOptions.length, 0);
+eq('M8 空态归零计数', M8.data.kaPickedCount, 0);
+
+fakeAppTR.globalData.keyActionPicks = [];
 
 /* ============ 汇总 ============ */
 console.log('\n' + '-'.repeat(56));

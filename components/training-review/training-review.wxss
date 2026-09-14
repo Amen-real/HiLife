@@ -258,6 +258,33 @@
 }
 .ka-txt.hot { color: var(--n-900); font-weight: 700; }
 .ka-arrow { font-size: 22rpx; color: var(--n-400); }
+/* 卡片底部的「训练量 1440 → 1680 kg」：解释上面 chip 的 +x% 是怎么来的 */
+.ka-cap {
+  margin-top: 6rpx;
+  font-family: var(--f-en); font-size: 22rpx; font-weight: 600;
+  color: var(--n-500); font-variant-numeric: tabular-nums;
+}
+
+/* ===== 个人纪录 ===== */
+.pr-card {
+  background: var(--card);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 24rpx 28rpx;
+  margin-bottom: 16rpx;
+}
+.pr-sum { font-size: 24rpx; font-weight: 600; color: var(--n-700); margin-bottom: 6rpx; }
+.pr-row {
+  display: flex; align-items: center; gap: 12rpx;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--n-100);
+}
+.pr-row:last-child { border-bottom: none; }
+.pr-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 27rpx; font-weight: 600; color: var(--n-900); }
+.pr-val { flex: none; font-family: var(--f-en); font-size: 26rpx; font-weight: 700; color: var(--n-900); font-variant-numeric: tabular-nums; }
+/* 亮绿底 → 文字一律 #0A0A0A（对比度铁律） */
+.pr-new { flex: none; font-size: 20rpx; font-weight: 700; color: #0A0A0A; background: var(--primary); border-radius: 999rpx; padding: 4rpx 12rpx; }
+.pr-date { flex: none; width: 76rpx; text-align: right; font-family: var(--f-en); font-size: 22rpx; color: var(--n-400); font-variant-numeric: tabular-nums; }
 
 .guide-link {
   display: flex; align-items: center; justify-content: center; gap: 10rpx;
@@ -301,4 +328,133 @@
 }
 .wk-w-lab { font-size: 20rpx; font-weight: 600; color: var(--n-500); margin-top: 10rpx; }
 
+/* ===== 下次训练建议（可回填计划） ===== */
+.sg-card {
+  background: var(--card);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 8rpx 28rpx 24rpx;
+  margin-bottom: 32rpx;
+}
+.sg-row {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--n-100);
+}
+.sg-row:last-child { border-bottom: none; }
+.sg-top { display: flex; align-items: baseline; justify-content: space-between; gap: 16rpx; }
+.sg-name { font-size: 28rpx; font-weight: 700; color: var(--n-900); letter-spacing: -0.01em; }
+.sg-from {
+  font-family: var(--f-en); font-size: 22rpx; font-weight: 600;
+  color: var(--n-500); font-variant-numeric: tabular-nums;
+}
+.sg-mid { display: flex; align-items: center; gap: 12rpx; margin-top: 14rpx; }
+.sg-arrow { font-family: var(--f-en); font-size: 24rpx; font-weight: 700; color: var(--n-400); }
+/* 减载（降重）行：↓ 用 --accent-deep 标出（浅底 3.3:1 / 深底 5.7:1，字形非正文，达 3:1 图形阈值） */
+.sg-row.dl .sg-arrow { color: var(--accent-deep); }
+.sg-inp {
+  width: 132rpx; height: 60rpx; box-sizing: border-box;
+  background: var(--n-100);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-m);
+  padding: 0 16rpx;
+  font-family: var(--f-en); font-size: 28rpx; font-weight: 700;
+  color: var(--n-900); font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.sg-inp.wide { width: 168rpx; }
+.sg-unit { font-size: 24rpx; font-weight: 600; color: var(--n-600); }
+.sg-flat { font-size: 26rpx; font-weight: 700; color: var(--n-500); }
+.sg-reason { margin-top: 10rpx; font-size: 22rpx; font-weight: 600; color: var(--primary-text, #4C7300); }
+.sg-actions {
+  display: flex; flex-direction: column; align-items: center; gap: 12rpx;
+  margin-top: 24rpx; padding-top: 24rpx;
+  border-top: 1rpx solid var(--n-100);
+}
+/* 亮绿底必配深字（对比度铁律） */
+.sg-apply {
+  width: 100%; box-sizing: border-box; height: 88rpx;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: #0A0A0A;
+  font-size: 28rpx; font-weight: 800; letter-spacing: 0.02em;
+}
+.sg-apply:active { opacity: 0.86; }
+.sg-apply.dis { background: var(--n-200); color: var(--n-400); }
+.sg-tip { font-size: 20rpx; font-weight: 500; color: var(--n-400); }
+
 .bottom-gap { height: 40rpx; }
+
+/* ===== 关键动作：标题行入口 + 选择弹层（自动前 3 ↔ 自选） ===== */
+.ka-title { display: flex; align-items: center; gap: 16rpx; margin-bottom: 20rpx; }
+.ka-title .section-title { margin: 0; flex: 1 1 auto; min-width: 0; }
+.ka-pick {
+  flex: none; font-size: 20rpx; font-weight: 700;
+  color: var(--primary-text);
+  background: var(--primary-tint);
+  border-radius: var(--r-pill);
+  padding: 6rpx 16rpx;
+}
+.ka-pick:active { opacity: 0.7; }
+
+/* 遮罩 z-index 必须高于 nav-bar（fixed z-999），否则底部抽屉被导航栏压住 */
+.ka-mask {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex; align-items: flex-end;
+  z-index: 2000;
+  animation: ka-fade 0.18s ease;
+}
+.ka-sheet {
+  width: 100%; box-sizing: border-box;
+  background: var(--card);
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 28rpx 32rpx calc(36rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -10rpx 40rpx rgba(15, 23, 42, 0.2);
+  animation: ka-up 0.26s ease;
+}
+.ka-sheet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16rpx; }
+.ka-sheet-tit { font-size: 32rpx; font-weight: 800; color: var(--n-900); letter-spacing: -0.01em; }
+.ka-sheet-cnt {
+  font-family: var(--f-en); font-size: 22rpx; font-weight: 700;
+  color: var(--n-400); font-variant-numeric: tabular-nums;
+}
+.ka-sheet-sub { display: block; font-size: 22rpx; font-weight: 500; color: var(--n-400); margin: 8rpx 0 20rpx; }
+/* scroll-view 必须给明确高度（禁 flex:1），否则真机不滚动 */
+.ka-sheet-list { height: 52vh; }
+.ka-sheet-gap { height: 16rpx; }
+.ka-opt {
+  display: flex; align-items: center; gap: 20rpx;
+  padding: 22rpx 24rpx; margin-bottom: 12rpx;
+  background: var(--n-50);
+  border: 1rpx solid transparent;
+  border-radius: var(--r-m);
+}
+.ka-opt.on { border-color: var(--primary); background: var(--primary-tint); }
+.ka-opt-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.ka-opt-name {
+  font-size: 27rpx; font-weight: 700; color: var(--n-900);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ka-opt-meta { font-family: var(--f-en); font-size: 21rpx; color: var(--n-400); font-variant-numeric: tabular-nums; }
+.ka-opt-box {
+  flex: none; width: 44rpx; height: 44rpx; box-sizing: border-box;
+  border: 2rpx solid var(--n-300); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.ka-opt-box.on { background: var(--primary); border-color: var(--primary); }
+/* 亮绿底 → 勾号一律 #0A0A0A（对比度铁律） */
+.ka-opt-tick { font-size: 26rpx; font-weight: 800; color: #0A0A0A; line-height: 1; }
+.ka-sheet-foot { display: flex; gap: 20rpx; margin-top: 20rpx; }
+.ka-sheet-btn {
+  flex: 1; height: 88rpx; border-radius: var(--r-m);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 29rpx; font-weight: 700;
+}
+.ka-sheet-btn.ghost { background: var(--n-100); color: var(--n-700); }
+/* 主按钮亮绿底 → 文字 #0A0A0A */
+.ka-sheet-btn.main { background: var(--primary); color: #0A0A0A; }
+.ka-sheet-btn:active { opacity: 0.86; }
+
+@keyframes ka-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ka-up { from { transform: translateY(40rpx); } to { transform: translateY(0); } }

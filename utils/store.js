@@ -360,6 +360,7 @@ const store = {
       data.favorites = backup.favorites || [];
       data.activePlanId = backup.activePlanId || '';
       data.selectedActions = backup.selectedActions || [];
+      data.keyActionPicks = backup.keyActionPicks || [];
       data.userInfo = {
         loggedIn: true,
         openid: openid || '',
@@ -391,6 +392,7 @@ const store = {
       favorites: data.favorites,
       activePlanId: data.activePlanId,
       selectedActions: data.selectedActions,
+      keyActionPicks: data.keyActionPicks,
       userInfo: { nickname: data.userInfo.nickname, avatar: data.userInfo.avatar }
     };
     wx.setStorageSync('uu_fitness_backup', backup);
@@ -404,6 +406,7 @@ const store = {
     data.favorites = [];
     data.activePlanId = '';
     data.selectedActions = [];
+    data.keyActionPicks = [];
     data.userInfo = { loggedIn: false, openid: '', nickname: '', avatar: '' };
     this.persist();
   },
@@ -418,6 +421,29 @@ const store = {
   setWeeklyTarget(n) {
     const v = Math.max(1, Math.min(14, Math.round(Number(n) || 3)));
     g().profile.weeklyTarget = v;
+    this.persist();
+  },
+
+  /* ---------- 复盘「关键动作」自定义 ---------- */
+  // 空数组 = 不自定义，复盘页回落到「场次最多的前 3 个」。
+  // 存的是 actionKey（id+器械），不是名字 —— 同名不同器械/两个自建动作重名时不会串台。
+  getKeyActionPicks() {
+    const v = g().keyActionPicks;
+    return Array.isArray(v) ? v.slice() : [];
+  },
+  setKeyActionPicks(keys) {
+    const list = Array.isArray(keys) ? keys : [];
+    // 去重 + 去空 + 限长 3（与自动列表容量一致），避免脏数据把卡片撑爆
+    const seen = {};
+    const out = [];
+    for (let i = 0; i < list.length; i++) {
+      const k = String(list[i] || '');
+      if (!k || seen[k]) continue;
+      seen[k] = 1;
+      out.push(k);
+      if (out.length >= 3) break;
+    }
+    g().keyActionPicks = out;
     this.persist();
   }
 };
