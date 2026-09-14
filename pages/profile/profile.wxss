@@ -46,19 +46,30 @@
 /* 头像行：头像 + 昵称/副标题 */
 .p-id { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 36rpx 0; }
 .p-avatar {
+  position: relative;
   flex: 0 0 auto; width: 112rpx; height: 112rpx; border-radius: 50%;
-  overflow: hidden; background: var(--card);
-  /* 浅绿描边圈：用 box-shadow 而非 border，避免与 overflow:hidden 的圆形裁切打架 */
+  /* 不裁切：未登录时右上角要挂一枚加号角标，overflow:hidden 会把它切掉。
+     圆形外观改由 .p-avatar-img / .p-avatar-txt 各自 border-radius 保证，视觉与裁切前完全一致。 */
+  overflow: visible; background: var(--card);
+  /* 浅绿描边圈：用 box-shadow 而非 border，避免与圆角裁切打架 */
   box-shadow: 0 0 0 6rpx rgba(200, 255, 0, .55);
 }
 .p-avatar:active { opacity: .85; }
 .p-avatar-img { width: 112rpx; height: 112rpx; display: block; border-radius: 50%; }
 .p-avatar-txt {
-  width: 112rpx; height: 112rpx;
+  width: 112rpx; height: 112rpx; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--primary-tint); color: var(--primary-text);
   font-size: var(--fs-display); font-weight: 800;
 }
+/* 未登录角标：亮绿实底 + 墨色加号（字形颜色在文末 dark 块显式拉回） */
+.p-avatar-add {
+  position: absolute; right: -4rpx; bottom: -4rpx;
+  width: 44rpx; height: 44rpx; border-radius: 50%;
+  background: var(--primary); border: 4rpx solid var(--card);
+  display: flex; align-items: center; justify-content: center;
+}
+.p-avatar-add-i { width: 22rpx; height: 22rpx; }
 .p-id-meta { flex: 1; min-width: 0; }
 .p-nick-row { display: flex; align-items: center; gap: 12rpx; }
 /* 受控 input：实时回显由 onNicknameInput 负责，宽度靠 flex 撑，不设固定 width 以免光标跳动 */
@@ -68,6 +79,9 @@
   font-size: 38rpx; font-weight: 800; line-height: 52rpx;
 }
 .p-pen { flex: 0 0 auto; width: 28rpx; height: 28rpx; }
+/* 未登录时昵称位换成「点击登录」文本（不是 input）：沿用 .p-nick 的字号/字重，只换颜色以示可点 */
+.p-nick-guest { color: var(--primary-text); }
+.p-id-ar { flex: 0 0 auto; width: 28rpx; height: 28rpx; }
 .p-sub { margin-top: 8rpx; font-size: var(--fs-label); color: var(--text-sub); }
 
 /* 累计三连：浮在背景图上，与下方卡片同宽（左右 36rpx） */
@@ -85,32 +99,6 @@
 .ps-v { font-family: var(--f-en); font-size: 46rpx; font-weight: 800; line-height: 1; color: var(--text); }
 .ps-i { width: 26rpx; height: 26rpx; }
 .ps-k { font-size: var(--fs-label); color: var(--text-sub); }
-
-/* ══════════════ 访客：登录引导卡 ══════════════ */
-.pl-head { display: flex; align-items: center; gap: 22rpx; }
-.pl-av {
-  flex: 0 0 auto; width: 88rpx; height: 88rpx; border-radius: 50%;
-  background: var(--primary-tint);
-  display: flex; align-items: center; justify-content: center;
-}
-.pl-av-i { width: 44rpx; height: 44rpx; }
-.pl-txt { flex: 1; min-width: 0; }
-.pl-title { font-size: var(--fs-head); font-weight: 800; color: var(--text); }
-.pl-sub { margin-top: 6rpx; font-size: var(--fs-label); color: var(--text-sub); }
-.pl-btn {
-  width: 100%; height: 88rpx; line-height: 88rpx; margin: 26rpx 0 0; padding: 0;
-  border: none; border-radius: var(--r-pill);
-  background: linear-gradient(135deg, var(--primary), var(--primary-deep));
-  color: #0A0A0A; font-size: var(--fs-head); font-weight: 700;
-  box-shadow: var(--shadow-mint);
-}
-.pl-btn::after { border: none; }
-.pl-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 22rpx; }
-.pl-tag {
-  padding: 7rpx 18rpx; border-radius: var(--r-pill);
-  background: var(--bg); color: var(--text-sub);
-  font-size: var(--fs-caption); font-weight: 600;
-}
 
 /* ══════════════ 通用：分区卡 + 卡头 ══════════════ */
 .card.p-card { margin: 24rpx 36rpx 0; padding: 28rpx 28rpx 24rpx; }
@@ -388,6 +376,7 @@
 /* 亮绿实底上的字形必须拉回墨色：--primary 深浅主题通用，不会跟着翻，
    而上面的 .ico--ink 覆盖把字形翻成了白 —— 白压亮绿≈1.6:1，等于隐形。 */
 .page.theme-dark .p-chip .ico--ink,
+.page.theme-dark .p-avatar-add .ico--ink,
 .page.theme-dark .tk-go .ico--ink { background-color: #0A0A0A; }
 
 /* 卡片阴影去掉（暗色下无意义） */
@@ -404,7 +393,5 @@
 .page.theme-dark .dtile-x.good { color: var(--primary-text); }
 .page.theme-dark .dtile-x.low  { color: var(--warning); }
 
-/* 登录按钮：浅色是荧光绿渐变，暗色翻成纯品牌绿（渐变收尾色在黑底上发浑） */
-.page.theme-dark .pl-btn { background: var(--primary); color: #0A0A0A; }
 /* 危险行图标：.ico--ink 的暗色覆盖优先度更高，此处显式拉回红色 */
 .page.theme-dark .menu .mi.danger .ico--ink { background-color: var(--error); }

@@ -21,17 +21,33 @@
       <view class="p-title">我的</view>
 
       <view class="p-id">
-        <view class="p-avatar" bindtap="onChooseAvatar" aria-label="更换头像">
+        <!-- 未登录时头像圈本身就是登录入口（右上角加号角标提示可点），已登录则为「换头像」。
+             注意：WXML 的 bindtap 不支持 Mustache 动态取事件名，故统一走 onIdTap 在 JS 内分支。 -->
+        <view class="p-avatar" bindtap="onIdTap" aria-label="{{loggedIn ? '更换头像' : '登录'}}">
           <image wx:if="{{avatarUrl}}" class="p-avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
           <view wx:else class="p-avatar-txt">{{avatarText}}</view>
+          <view wx:if="{{!loggedIn}}" class="p-avatar-add">
+            <view class="ico ico-plus ico--ink p-avatar-add-i"></view>
+          </view>
         </view>
         <view class="p-id-meta">
-          <view class="p-nick-row">
-            <input class="p-nick" type="nickname" placeholder="点击填写昵称" value="{{nickname}}"
-                   bindinput="onNicknameInput" bindblur="onNicknameBlur" />
-            <view class="ico ico-edit ico--muted p-pen"></view>
-          </view>
-          <view class="p-sub">{{loggedIn ? heroTitle + ' · 已坚持 ' + profile.fitnessDays + ' 天' : '登录后数据不丢，换机自动恢复'}}</view>
+          <!-- 已登录：昵称可就地编辑（受控 input 的实时回显由 onNicknameInput 负责） -->
+          <block wx:if="{{loggedIn}}">
+            <view class="p-nick-row">
+              <input class="p-nick" type="nickname" placeholder="点击填写昵称" value="{{nickname}}"
+                     bindinput="onNicknameInput" bindblur="onNicknameBlur" />
+              <view class="ico ico-edit ico--muted p-pen"></view>
+            </view>
+            <view class="p-sub">{{heroTitle}} · 已坚持 {{profile.fitnessDays}} 天</view>
+          </block>
+          <!-- 未登录：昵称位让给登录入口，副标题只讲真实能力（本机存储 + 导出换机），不承诺云同步 -->
+          <block wx:else>
+            <view class="p-nick-row" bindtap="wechatLogin" aria-label="登录">
+              <view class="p-nick p-nick-guest">点击登录</view>
+              <view class="ico ico-arrowright ico--muted p-id-ar"></view>
+            </view>
+            <view class="p-sub">数据只存本机 · 导出备份可换机恢复</view>
+          </block>
         </view>
       </view>
 
@@ -62,22 +78,8 @@
     </view>
   </view>
 
-  <!-- 访客：登录引导（Hero 下独立一张卡，不打断 Hero 的信息结构） -->
-  <view class="card p-card" wx:if="{{!loggedIn}}">
-    <view class="pl-head">
-      <view class="pl-av"><view class="ico ico-user ico--ink pl-av-i"></view></view>
-      <view class="pl-txt">
-        <view class="pl-title">登录，数据不丢</view>
-        <view class="pl-sub">微信一键登录 · 换机自动恢复</view>
-      </view>
-    </view>
-    <button class="pl-btn" bindtap="wechatLogin">微信一键登录</button>
-    <view class="pl-tags">
-      <text class="pl-tag">云备份</text>
-      <text class="pl-tag">跨设备同步</text>
-      <text class="pl-tag">随时可退出</text>
-    </view>
-  </view>
+  <!-- 访客登录入口已上移到 Hero 身份行（见 .p-avatar / .p-nick-guest），
+       此处不再单开引导卡：Hero 已有头像+昵称位，再给一张卡属重复占位。 -->
 
   <!-- ============== ② 我的数据（健康概览 + 解读 + 目标） ============== -->
   <view class="card p-card">
@@ -232,6 +234,13 @@
   <!-- ============== ⑤ 关于与数据（设计稿：同为无卡头行列表） ============== -->
   <view class="card p-card">
     <view class="menu">
+      <!-- 账号兜底入口：Hero 在首屏，滚到底部的人（或没注意到头像可点的人）也能找到登录 -->
+      <view class="mi" bindtap="tapAccount">
+        <view class="ico ico-user ico--ink mi-i"></view>
+        <view class="mi-t">登录 / 账号</view>
+        <view class="mi-note">{{loggedIn ? (nickname || '已登录') : '未登录'}}</view>
+        <text class="mi-ar">›</text>
+      </view>
       <view class="mi" bindtap="openDataMgr">
         <view class="ico ico-settings ico--ink mi-i"></view>
         <view class="mi-t">数据管理</view>

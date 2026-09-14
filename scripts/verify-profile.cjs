@@ -192,9 +192,14 @@ const miss = [...idents].filter(id =>
   ['true', 'false', 'null', 'undefined'].indexOf(id) < 0 && !new RegExp('\\b' + id + '\\s*:').test(js));
 eq(miss.length, 0, 'C5 wxml 字段全部有定义' + (miss.length ? ' → 缺 ' + miss.join(', ') : ''));
 
-// C6 亮绿实底上的字形：--primary 不随主题变化，.ico--ink 在 dark 下会翻白 → 必须显式拉回
-const chipUse = /\.page\.theme-dark\s+\.p-chip\s+\.ico--ink/.test(wxss) && /\.page\.theme-dark\s+\.tk-go\s+\.ico--ink/.test(wxss);
-truthy(chipUse, 'C6 亮绿底上的图标在深色下有墨色拉回');
+// C6 亮绿实底上的字形：--primary 不随主题变化，.ico--ink 在 dark 下会翻白 → 必须显式拉回。
+// 用 .p-chip 当锚点校验整条选择器组，新增亮绿实底图标位（如 .p-avatar-add 的加号角标）必须一并进来。
+const pullBack = wxss.match(/\.page\.theme-dark[^{]*\{\s*background-color:\s*#0A0A0A/);
+const pullBackSel = pullBack ? pullBack[0] : '';
+const chipUse = /\.p-chip\s+\.ico--ink/.test(pullBackSel)
+  && /\.tk-go\s+\.ico--ink/.test(pullBackSel)
+  && /\.p-avatar-add\s+\.ico--ink/.test(pullBackSel);
+truthy(chipUse, 'C6 亮绿底上的图标在深色下有墨色拉回（p-chip / tk-go / p-avatar-add）');
 
 // C7 背景图随包发布且体积可控（主包 2MB 上限，原 863KB PNG 已裁切转 JPG）
 const bg = path.join(ROOT, 'static/my-bg.jpg');
@@ -203,6 +208,32 @@ if (fs.existsSync(bg)) {
   const kb = Math.round(fs.statSync(bg).size / 1024);
   truthy(kb < 120, 'C7 背景图 ' + kb + 'KB < 120KB');
 }
+
+/* C8 访客登录入口：不再单开引导卡（Hero 头像位 + 关于区兜底行两处入口）
+   删卡片时必须 wxml 与 wxss 一起删干净，否则要么留下没用的样式、要么留下没样式的空壳 */
+const plCls = (wxml.match(/\bpl-[a-z]+\b/g) || []).concat(wxss.match(/\.pl-[a-z]+\s*\{/g) || []);
+eq(plCls.length, 0, 'C8 旧的独立登录卡已彻底移除' + (plCls.length ? ' → 残留 ' + plCls.join(', ') : ''));
+
+/* C9 两个入口都在位：Hero 头像（onIdTap）+ 关于与数据首行（tapAccount）。
+   WXML 的 bindtap 不支持 Mustache 动态事件名，所以头像必须挂静态的 onIdTap 并在 JS 内分支 */
+truthy(/bindtap="onIdTap"/.test(wxml), 'C9a Hero 头像挂 onIdTap（静态事件名，动态绑定会失效）');
+truthy(/bindtap="tapAccount"/.test(wxml), 'C9b 关于与数据有账号兜底行');
+truthy(/class="ico ico-plus ico--ink p-avatar-add-i"/.test(wxml), 'C9c 未登录头像上有加号角标');
+
+/* C10 文案必须是「真做得到」的事：本机存储 + 导出导入换机。
+   禁词对应三个未实现的能力（无云端库、无账号体系、无自动迁移） */
+const NOCLAIM = ['云备份', '跨设备同步', '换机自动恢复', '微信一键登录'];
+const claimed = [];
+NOCLAIM.forEach(w => { if (wxml.indexOf(w) >= 0 || js.indexOf(w) >= 0) claimed.push(w); });
+eq(claimed.length, 0, 'C10 未实现的云端承诺已从文案移除' + (claimed.length ? ' → 残留 ' + claimed.join(', ') : ''));
+truthy(wxml.indexOf('数据只存本机') >= 0, 'C10b 副标题写明「数据只存本机」');
+
+/* C11 处理函数齐备：点击头像/账号行必须有落点，否则点了没反应 */
+['onIdTap', 'tapAccount', 'wechatLogin', 'onChooseAvatar'].forEach(fn => {
+  truthy(new RegExp('\\b' + fn + '\\s*\\(').test(js), 'C11 ' + fn + '() 已定义');
+});
+truthy(/if\s*\(this\.data\.loggedIn\)\s*this\.onChooseAvatar\(\);\s*else\s*this\.wechatLogin\(\)/.test(js),
+  'C11b onIdTap 按登录态分支（已登录=换头像 / 未登录=登录）');
 
 console.log('\npass=' + pass + '  fail=' + fail);
 process.exit(fail ? 1 : 0);

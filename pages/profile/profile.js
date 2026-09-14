@@ -344,6 +344,13 @@ Page({
     });
   },
 
+  // Hero 头像圈点击：未登录=登录，已登录=换头像。
+  // WXML 的 bindtap 不支持 Mustache 动态事件名（写了会被当成字面量字符串而失效），故由这里分支。
+  onIdTap() {
+    if (this.data.loggedIn) this.onChooseAvatar();
+    else this.wechatLogin();
+  },
+
   // 本地登录：不调用 wx.login / 云函数，生成本地匿名标识作为登录态
   // 同一设备复用稳定 local_uid（不关联真实微信身份，数据仅存本机）
   wechatLogin() {
@@ -356,6 +363,21 @@ Page({
     store.login(localUid);
     wx.showToast({ title: '登录成功', icon: 'success' });
     this.refresh();
+  },
+
+  // 「关于与数据」里的账号兜底行：未登录直接登录；已登录展示账号信息。
+  // 说明只写实现得了的事：本机账号 + 退出暂存/登录恢复 + 导出导入换机，不承诺云端同步。
+  tapAccount() {
+    if (!this.data.loggedIn) { this.wechatLogin(); return; }
+    wx.showModal({
+      title: '账号信息',
+      content: '昵称：' + (this.data.nickname || '未填写')
+        + '\n登录方式：本机账号（不关联微信身份）'
+        + '\n\n数据仅保存在本机；退出登录会暂存，重新登录自动恢复。'
+        + '更换设备请用「数据管理 → 导出」生成备份，在新机导入即可恢复全部数据。',
+      confirmText: '知道了',
+      showCancel: false
+    });
   },
 
   // 头像：从相册/拍照选择，保存到本地持久目录（不依赖微信临时路径，刷新不失效）
