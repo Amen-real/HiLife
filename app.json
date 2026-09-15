@@ -41,8 +41,5 @@
     ]
   },
   "style": "v2",
-  "sitemapLocation": "sitemap.json",
-  "usingComponents": {
-    "icon": "/components/icon/icon"
-  }
+  "sitemapLocation": "sitemap.json"
 }

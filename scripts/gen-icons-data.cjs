@@ -1,6 +1,16 @@
-// scripts/gen-icons-data.cjs
-// 将 assets/icons/*.png 读取为 base64，写入 components/icon/icons-data.js，
-// 供 icon 组件内联使用，彻底绕开 <image> 本地路径在自定义组件里偶发解析失败的问题。
+// scripts/gen-icons-data.cjs  【已退役 —— 请勿运行】
+//
+// 退役原因：本脚本生成的 components/icon/icons-data.js（338KB base64 PNG）曾是主包最大单文件，
+//   但全仓 0 处 <icon 标签，组件从未被实例化 —— 它被 app.json 全局注册 + 3 个页面 json 注册，
+//   因而仍被别进主包，白占 339KB。已于 T2 彻底删除，主包回落至 ~1.6MB。
+//
+// 现行图标方案：styles/icons.wxss 的 mask-image + SVG data-URI + `.ico .ico-x` 类，
+//   颜色跟随 currentColor，天然支持主题切换与选中态换色（base64 PNG 做不到）。
+//   新增图标请改 styles/icons.wxss 与 scripts/gen-icons-svg.cjs。
+//
+// 保留本文件仅为追溯历史；运行它会重新造出死代码，并把主包顶到 94%。
+// 原用途：将 assets/icons/*.png 读取为 base64，写入 components/icon/icons-data.js，
+//   供 icon 组件内联使用，绕开 <image> 本地路径在自定义组件里偶发解析失败的问题。
 const fs = require('fs');
 const path = require('path');
 

@@ -1,5 +1,7 @@
-// scripts/gen-iconsheet-base64.cjs
-// 基于 components/icon/icons-data.js 的 base64 数据，生成可离线核对的图标总览 HTML。
+// scripts/gen-iconsheet-base64.cjs  【已退役 —— 请勿运行】
+// 退役原因：依赖 components/icon/icons-data.js，该文件已于 T2 删除（死代码，白占主包 339KB）。
+//   运行本脚本会因 require 失败而报错。图标总览请直接看 icon-sheet.html 或 styles/icons.wxss。
+// 原用途：基于 components/icon/icons-data.js 的 base64 数据，生成可离线核对的图标总览 HTML。
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
