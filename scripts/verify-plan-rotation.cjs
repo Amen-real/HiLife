@@ -190,8 +190,14 @@ isTrue('saveTrainingLog 带 programId 归属', /programId:\s*plan\s*\?\s*\(plan\
 isTrue('归属取值在 advanceActivePlan 之前', wo.indexOf('planId: plan ? plan.id') > 0 && wo.indexOf('planId: plan ? plan.id') < iAdv);
 
 const homeJs = read('pages/home/home.js');
-isTrue('home.js 引入 planRotation', /require\(['"]\.\.\/\.\.\/utils\/planRotation\.js['"]\)/.test(homeJs));
-isTrue('home.js 今日推荐标题用 dayFullName', /planRotation\.dayFullName\(/.test(homeJs));
+// 「今日推荐」的计划命名口径自 2026-09-15 起收进 utils/todayPlan.js（与「我的」页首行共用一份），
+// 所以断言要看真源 + 首页的接线，而不是首页里的 planRotation 调用。
+const todayPlanJs = read('utils/todayPlan.js');
+isTrue('todayPlan.js 引入 planRotation（计划命名口径的真源）', /require\(['"]\.\/planRotation\.js['"]\)/.test(todayPlanJs));
+isTrue('todayPlan.js 今日计划标题用 dayFullName', /planRotation\.dayFullName\(/.test(todayPlanJs));
+isTrue('todayPlan.js 方案名用 programLabel', /planRotation\.programLabel\(/.test(todayPlanJs));
+isTrue('home.js 今日推荐改为调用 todayPlan.resolveTodayPlan', /todayPlan\.resolveTodayPlan\(\)/.test(homeJs));
+isTrue('home.js 不再自行解析计划命名（口径只此一份）', !/planRotation/.test(homeJs));
 
 const wxml = read('pages/plan/plan.wxml');
 isTrue('plan.wxml 有「导入整套」绑定 importProgram', /bindtap="importProgram"/.test(wxml));

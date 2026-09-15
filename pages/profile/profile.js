@@ -4,6 +4,10 @@ const theme = require('../../utils/theme.js');
 const nutrition = require('../../utils/nutrition.js');
 const dateRange = require('../../utils/dateRange.js');
 const stats = require('../../utils/trainingStats.js');
+// 「今日训练计划」口径的唯一真源（与首页「今日推荐」共用同一份，勿在此另写一套）
+const todayPlan = require('../../utils/todayPlan.js');
+// 开始训练前过登录门禁（与首页 startPlan / 训练页各写操作同一套）
+const auth = require('../../utils/auth.js');
 
 // Hero 背景图：明暗两张都随包发布在 static/（packOptions.ignore 为空，static 不参与忽略）。
 // 两张严格同几何尺寸（852×560 → 750rpx 宽时折算 493rpx），切主题只换图不换高度，Hero 不跳版。
@@ -28,6 +32,30 @@ function bmi(w, h) {
 /* ===== 「我的」页派生数据用的纯函数（口径与数据页/复盘组件保持一致） ===== */
 const APP_VERSION = '1.0.0';
 function round1(v) { const n = Number(v); return isFinite(n) ? Math.round(n * 10) / 10 : 0; }
+// 一场训练的名字：归属计划仍在库里就用计划名；否则按动作分类
+// （单一分类取分类名，多分类记「综合训练」）。与 workout 保存时的命名规则一致，
+// 避免同一场训练在两页叫出不同名字。
+function logTitleOf(g, log) {
+  const acts = (log && log.actions) || [];
+  if (log && log.planId) {
+    const hit = ((g && g.trainingPlans) || []).filter(x => x && x.id === log.planId)[0];
+    if (hit && hit.name) return hit.name;
+  }
+  const cats = [];
+  acts.forEach(a => { if (a && a.category && cats.indexOf(a.category) < 0) cats.push(a.category); });
+  return cats.length ? (cats.length === 1 ? cats[0] : '综合训练') : '训练记录';
+}
+// 一场训练的实际度量：N 个动作 · M 分钟 · K kcal（时长/千卡口径见 utils/trainingStats.js）
+function logMetaOf(log) {
+  const acts = (log && log.actions) || [];
+  const sec = stats.durationSecOfLog(log);
+  const kcal = stats.estKcal(stats.trainSecOfLog(log));
+  const parts = [];
+  if (acts.length) parts.push(acts.length + ' 个动作');
+  if (sec > 0) parts.push(Math.max(1, Math.round(sec / 60)) + ' 分钟');
+  if (kcal > 0) parts.push(kcal + ' kcal');
+  return parts.join(' · ');
+}
 // 大数字时长：3 小时以上给「3.2h」，不足 1 小时给「45m」
 function fmtDur(totalSec) {
   const s = Number(totalSec) || 0;
@@ -112,8 +140,8 @@ Page({
       show: false, verb: '减', done: 0, total: 0,
       from: '--', to: '--', pct: 0, fillStyle: 'width:0%;', remain: '0'
     },
-    // 我的训练：最近一场（无日志时 show=false，落空态）
-    train: { show: false, isToday: false, title: '', meta: '' },
+    // 我的训练：首行 = 今日训练计划（mode: 'todo' 未完成 / 'done' 今日已完成 / 'empty' 空态）
+    train: { show: false, mode: 'empty', tag: '', title: '', meta: '' },
     reminderOn: false,
     version: APP_VERSION,
     showDataMgr: false,
@@ -159,6 +187,28 @@ Page({
 
   // 「查看全部」→ 数据 tab（训练历史 + 体重历史）
   goHistory() { wx.switchTab({ url: '/pages/list/list' }); },
+
+  // 「我的训练」首行点按：今日已完成 → 看这一场的复盘；否则去开始训练。
+  // 一行两用，WXML 的 bindtap 又不支持 Mustache 动态事件名（写了会被当字面量而失效），
+  // 所以统一挂静态的 onTkTap，在 JS 内按 mode 分支。
+  onTkTap() {
+    if (this.data.train.mode === 'done') { this.goReview(); return; }
+    this.startToday();
+  },
+
+  // 开始今日训练：与首页「开始训练」同口径 —— 有计划/手动已选直进训练中页，
+  // 都没有则去计划页导入（是否「有安排」问 todayPlan，不在这里重写分支）。
+  startToday() {
+    if (!auth.requireLogin()) return;
+    if (todayPlan.resolveTodayPlan().hasPlan) {
+      wx.navigateTo({ url: '/pages/workout/workout' });
+      return;
+    }
+    this.goPlan();
+  },
+
+  // 计划页是 tabBar 页 → 只能 switchTab（navigateTo 打不开 tabBar 页，会静默失败）
+  goPlan() { wx.switchTab({ url: '/pages/plan/plan' }); },
 
   // 「关于我们」：版本 + 署名说明（媒体署名同时在页脚常驻，满足授权可见性要求）
   tapAbout() {
@@ -313,33 +363,39 @@ Page({
       };
     }
 
-    /* ===== ③ 我的训练：最近一场 ===== */
-    // 训练日志不落 image 字段，动作图只在内置动作库里（565KB，store 刻意懒加载不入本页）→ 缩略位用品牌图标
-    let train = { show: false, isToday: false, title: '', meta: '' };
-    let last = null;                                             // 日期最新的一场（同日多条取最后写入的）
-    logs.forEach(l => { if (l && l.date && (!last || l.date >= last.date)) last = l; });
-    if (last) {
-      const acts = last.actions || [];
-      // 训练名：归属计划仍在库里就用计划名；否则按动作分类（单一分类取分类名，多分类记「综合训练」），
-      // 与 workout 保存时的命名规则一致，避免同一场训练在两页叫不同名字。
-      let title = '';
-      if (last.planId) {
-        const hit = (g.trainingPlans || []).filter(x => x && x.id === last.planId)[0];
-        if (hit && hit.name) title = hit.name;
-      }
-      if (!title) {
-        const cats = [];
-        acts.forEach(a => { if (a && a.category && cats.indexOf(a.category) < 0) cats.push(a.category); });
-        title = cats.length ? (cats.length === 1 ? cats[0] : '综合训练') : '训练记录';
-      }
-      const sec = stats.durationSecOfLog(last);
-      const kcal = stats.estKcal(stats.trainSecOfLog(last));
-      const parts = [];
-      if (acts.length) parts.push(acts.length + ' 个动作');
-      if (sec > 0) parts.push(Math.max(1, Math.round(sec / 60)) + ' 分钟');
-      if (kcal > 0) parts.push(kcal + ' kcal');
-      train = { show: true, isToday: last.date === today, title, meta: parts.join(' · ') };
+    /* ===== ③ 我的训练：首行 = 今日训练计划 =====
+       原先这里显示「最近一场」（可能是几天前的），回答不了「今天练什么 / 练完了吗」。
+       现在按今天分三态，口径与首页「今日推荐」共用 utils/todayPlan.js：
+         今日已完成 → 显示今天这一场的实际内容（点按看复盘）
+         今日未完成但有计划 → 显示今日计划（点按开始训练）
+         今天既没安排也没练过 → 落空态（点按去计划页）
+       训练日志不落 image 字段，动作图只在内置动作库里（565KB，store 刻意懒加载不入本页）→ 缩略位用品牌图标。 */
+    const tp = todayPlan.resolveTodayPlan();
+    const todays = logs.filter(l => l && l.date === today);
+    // 同日练了多场：取 createdAt 最大的一条（store 写入时带 createdAt）；缺失则取数组首条
+    const todayLog = todays.length
+      ? todays.slice().sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))[0]
+      : null;
+
+    let train = { show: false, mode: 'empty', tag: '', title: '', meta: '' };
+    if (todayLog) {
+      train = {
+        show: true,
+        mode: 'done',
+        tag: '已完成',
+        title: logTitleOf(g, todayLog),
+        meta: logMetaOf(todayLog)
+      };
+    } else if (tp.hasPlan) {
+      train = {
+        show: true,
+        mode: 'todo',
+        tag: '今日',
+        title: tp.title,
+        meta: tp.sub                       // 模板计划时是「方案名 · N 个动作 · 约 M 分钟」
+      };
     }
+    // 两者都不满足 → show:false，走空态（今天没安排、也没练过）
 
     // 空态：热量推荐所需的「身高 + 体重 + 目标」三件套缺一即引导完善
     const hasProfile = !!(h > 80 && latestWn && p.goal);

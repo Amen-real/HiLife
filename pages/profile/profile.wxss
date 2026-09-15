@@ -235,6 +235,10 @@
   border-radius: 10rpx; background: var(--primary); color: #0A0A0A;
   font-size: var(--fs-mini); font-weight: 800; line-height: 1.6;
 }
+/* 标签样式由 class 后缀（= train.mode）切换：「今日」用基准样式（亮绿实底），
+   「已完成」退成浅绿底 + 绿字 —— 亮绿实底留给需要催促的未完成态。
+   --primary-tint / --primary-text 都会跟主题翻转，所以这里不用进深色拉回名单。 */
+.tk-tag.done { background: var(--primary-tint); color: var(--primary-text); }
 .tk-name {
   font-size: var(--fs-head); font-weight: 800; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

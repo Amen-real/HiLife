@@ -62,11 +62,14 @@ require(path.join(ROOT, 'pages/profile/profile.js'));
 truthy(PAGE, 'B0 页面对象已捕获');
 
 // 每条日志 1 个动作、3 组 × 40kg × 10 次、每组 60s 训练 + 60s 休息
+// createdAt 自增：store 里日志按「日期倒序 + createdAt 倒序」排，同日多场要靠它分新旧，
+// 测试数据必须带这个字段，否则测不到「同日取最新一场」这条规则。
+let logSeq = 0;
 function mkLog(date, cat, planId) {
   const sets = [];
   for (let i = 0; i < 3; i++) sets.push({ reps: 10, weight: 40, trainSec: 60, restSec: 60, rpe: 7 });
   return {
-    date, planId: planId || '', programId: '',
+    date, planId: planId || '', programId: '', createdAt: ++logSeq,
     actions: [{ id: 'x' + cat, category: cat, equip: '', name: cat + '动作', sets: 3, reps: 10, weight: 40, setsDetail: sets }]
   };
 }
@@ -96,9 +99,10 @@ eq(d.totals.dur, '24m', 'B6 累计时长口径 Σ(train+rest)');
 // 容量：4 条 × 3 组 × 40 × 10 = 4800
 eq(d.totals.vol, '4800', 'B7 累计容量口径 Σ(重量×次数)');
 
-// 我的训练：最近一场 = 今天那条；单一分类 → 用分类名
-eq(d.train.show, true, 'B23 有日志 → 显示最近一场');
-eq(d.train.isToday, true, 'B24 最近一场是今天 → 打「今日」标');
+// 我的训练首行 = 今日训练计划（不再是「最近一场」）。此刻无计划、今天已练过 → 完成态
+eq(d.train.show, true, 'B23 今天练过 → 首行有内容');
+eq(d.train.mode, 'done', 'B24 今天练过 → 完成态（不是「本周已完成」那种按计划归属的旧口径）');
+eq(d.train.tag, '已完成', 'B24b 完成态标签');
 eq(d.train.title, '胸', 'B25 单一分类用分类名作训练名');
 eq(d.train.meta, '1 个动作 · 6 分钟 · 24 kcal', 'B26 副标题 = 动作数 · 时长 · 估算 kcal');
 
@@ -111,8 +115,10 @@ eq(ctx.data.totals.week, baseWeek, 'B8 上周日（区间外）不计入本周')
 GD.trainingLogs = GD.trainingLogs.concat([mkLog(wr.monStr, '背')]);
 ctx.refresh();
 eq(ctx.data.totals.week, baseWeek + 1, 'B9 本周一（区间起点）计入本周');
-// 同日多条：取最后写入的那条（周一追加的「背」应顶掉今天的「胸」）
-if (wr.monStr === TODAY) eq(ctx.data.train.title, '背', 'B9b 同日多条取最后写入的一条');
+// 同日多条：取 createdAt 最新的那条（周一追加的「背」应顶掉今天的「胸」）
+// 注：旧实现用「数组里最后一条 date >= 当前」判定，在 store 的「最新在前」排序下会取到当天更旧的一场，
+//     是潜在 bug；现在按 createdAt 显式取最新。
+if (wr.monStr === TODAY) eq(ctx.data.train.title, '背', 'B9b 同日多条取 createdAt 最新的一条');
 
 // 体重变化：目标「减脂」→ 下降为好，tone=good
 eq(d.weightDelta.show, true, 'B10 有两次体重记录 → 显示变化');
@@ -142,9 +148,63 @@ eq(d.goal.remain, 4.8, 'B22 还差 4.8kg');
 GD.trainingLogs = [];
 ctx.refresh();
 eq(ctx.data.train.show, false, 'B27 无日志 → 空态');
+eq(ctx.data.train.tag, '', 'B27b 空态不残留上一轮的标签（train 每次整体赋值，不增量改字段）');
 eq(ctx.data.totals.streak, 0, 'B28 无日志 → 连续天数 0');
 eq(ctx.data.totals.vol, '0', 'B29 无日志 → 容量 0');
 eq(ctx.data.health.weight, '69.8', 'B30 无日志但有体重 → 体重仍可取到');
+
+/* ══════════════ [B2] 首行的今日计划态（口径来自 utils/todayPlan.js） ══════════════ */
+console.log('[B2] 我的训练首行 = 今日训练计划');
+eq(ctx.data.train.mode, 'empty', 'B31 无计划无日志 → empty');
+
+// 模板计划：标题只留训练日，方案名下沉副标题（与计划页卡片同一命名口径）
+GD.trainingPlans = [{
+  id: 'P1', programId: 'prog1', dayIndex: 1, daysPerWeek: 3,
+  name: '力量·基础五大项 · B 日 · 髋铰链 + 上肢拉',
+  actions: [{ actionId: 'a1', name: '硬拉', setsCount: 4 }, { actionId: 'a2', name: '划船', setsCount: 3 }]
+}];
+GD.activePlanId = 'P1';
+ctx.refresh();
+eq(ctx.data.train.show, true, 'B32 有计划未练 → 首行有内容');
+eq(ctx.data.train.mode, 'todo', 'B33 有计划未练 → 待练态');
+eq(ctx.data.train.tag, '今日', 'B34 待练态标签「今日」');
+eq(ctx.data.train.title, 'B 日 · 髋铰链 + 上肢拉', 'B35 模板计划标题只留训练日');
+eq(ctx.data.train.meta, '力量·基础五大项 · 2 个动作 · 约 11 分钟',
+  'B36 副标题 = 方案名 · 动作数 · 估算时长（7 组×1.5=10.5→11 分钟）');
+
+// 非模板计划（无 programId）→ 标题直接用计划名
+GD.trainingPlans = [{ id: 'P2', name: '我的推日', actions: [{ actionId: 'a1', name: '卧推', setsCount: 4 }] }];
+GD.activePlanId = 'P2';
+ctx.refresh();
+eq(ctx.data.train.title, '我的推日', 'B37 非模板计划标题取计划名');
+eq(ctx.data.train.meta, '1 个动作 · 约 10 分钟', 'B38 组数不足下限 → 时长兜底 10 分钟');
+
+// 无计划但有手动已选 → 兜底待练态（selectedActions 跨天会被清空，只能当兜底）
+GD.trainingPlans = [];
+GD.activePlanId = '';
+GD.selectedActions = [
+  { id: 'm1', name: '卷腹', sets: [{}, {}] },
+  { id: 'm2', name: '平板支撑' }
+];
+ctx.refresh();
+eq(ctx.data.train.mode, 'todo', 'B39 无计划有手动已选 → 待练态');
+eq(ctx.data.train.title, '今日训练', 'B40 手动已选的标题是通用「今日训练」');
+eq(ctx.data.train.meta, '2 个动作 · 约 10 分钟', 'B41 组数按 sets 长度、无 sets 退回 setsCount(0)');
+
+// 完成态优先于待练态：有计划但今天已练 → 显示今天实际那一场，不虚报成计划名
+GD.trainingPlans = [{ id: 'P3', name: '我的推日', actions: [{ actionId: 'a1', name: '卧推', setsCount: 4 }] }];
+GD.activePlanId = 'P3';
+GD.trainingLogs = [mkLog(TODAY, '胸')];
+ctx.refresh();
+eq(ctx.data.train.mode, 'done', 'B42 有计划但今天已练 → 完成态优先');
+eq(ctx.data.train.title, '胸', 'B43 完成态名称取今天实际那一场，不冒充计划名');
+
+// 恢复干净状态，避免影响后续
+GD.trainingPlans = [];
+GD.activePlanId = '';
+GD.selectedActions = [];
+GD.trainingLogs = [];
+ctx.refresh();
 
 /* ══════════════ [C] 静态闭环 ══════════════ */
 console.log('[C] 静态闭环');
@@ -280,6 +340,28 @@ truthy(bgPathsOk, 'C12 明暗两版底图路径已定义');
 truthy(/const\s+nextBg\s*=\s*bgOf\(themeCls\)/.test(js) && /patch\.bgUrl\s*=\s*nextBg/.test(js),
   'C12 onShow 内换底图（且仅在 src 真变化时才重置失败旗标）');
 truthy(/bgUrl:\s*bgOf\(themeCls\)/.test(js), 'C12 onToggleTheme 内换底图（原地切主题不走 onShow）');
+
+/* C13 「我的训练」首行 = 今日训练计划：三态 + 点按分支 + 空态出口。
+   首行一行两用（未完成=开练 / 已完成=复盘），WXML 又不支持 Mustache 动态事件名，
+   所以必须挂静态 onTkTap 并在 JS 里按 mode 分支 —— 漏了就是「点了没反应」。 */
+truthy(/bindtap="onTkTap"/.test(wxml), 'C13a 首行挂 onTkTap（静态事件名）');
+truthy(/train\.mode\s*===\s*'done'/.test(js), 'C13b onTkTap 按 mode 分支（done → 复盘）');
+truthy(/bindtap="goPlan"/.test(wxml), 'C13c 空态挂 goPlan');
+truthy(/今天还没安排训练/.test(wxml) && /去计划页导入一套开始吧/.test(wxml),
+  'C13d 空态文案与首页「今日推荐」一致');
+['onTkTap', 'startToday', 'goPlan'].forEach(fn => {
+  truthy(new RegExp('\\b' + fn + '\\s*\\(').test(js), 'C13 ' + fn + '() 已定义');
+});
+// 开始训练前必须过登录门禁（与首页 startPlan / 训练页写操作同一套）
+truthy(/startToday\(\)\s*\{[^}]*auth\.requireLogin\(\)/.test(js), 'C13e startToday 过登录门禁');
+// 「有没有安排」问 todayPlan，不在本页重写「计划 / 手动」两分支（否则又是第三套口径）
+truthy(/todayPlan\.resolveTodayPlan\(\)\.hasPlan/.test(js), 'C13f 是否已安排问 todayPlan，不另写分支');
+// 计划页是 tabBar 页 → 只能 switchTab；navigateTo 会静默失败
+truthy(/goPlan\(\)\s*\{\s*wx\.switchTab\(\{\s*url:\s*'\/pages\/plan\/plan'/.test(js),
+  'C13g goPlan 用 switchTab（tabBar 页 navigateTo 打不开）');
+// 完成态的名称/度量复用同一对纯函数，避免两处各写一套命名规则
+truthy(/function logTitleOf\(/.test(js) && /function logMetaOf\(/.test(js),
+  'C13h 训练命名/度量抽成 logTitleOf / logMetaOf');
 
 console.log('\npass=' + pass + '  fail=' + fail);
 process.exit(fail ? 1 : 0);

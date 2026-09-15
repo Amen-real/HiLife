@@ -4,7 +4,7 @@ const auth = require('../../utils/auth.js');
 const theme = require('../../utils/theme.js');
 const media = require('../../utils/media.js');
 const nutrition = require('../../utils/nutrition.js');
-const planRotation = require('../../utils/planRotation.js');
+const todayPlan = require('../../utils/todayPlan.js');
 const dateRange = require('../../utils/dateRange.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -160,42 +160,10 @@ Page({
     }
     this._sparkData = wlist.slice(-8).map(r => r.weight);
 
-    // —— 今日推荐：以 active 计划为准（「导入今日训练」写入 activePlanId，换计划必变；
-    //    selectedActions 会被跨天重置清空，仅作无计划时的兜底数据源） ——
-    const activePlan = store.getActivePlan();
-    const sel = g.selectedActions || [];
-    let suggest;
-    if (activePlan) {
-      const actions = activePlan.actions || [];
-      let totalSets = 0;
-      actions.forEach(a => { totalSets += Number(a.setsCount) || 0; });
-      const minutes = Math.max(10, Math.round(totalSets * 1.5));
-      // 模板计划的 name 是「力量·基础五大项 · B 日 · 髋铰链 + 上肢拉」，
-      // 卡片位窄：标题只显示训练日（B 日 · 髋铰链 + 上肢拉），模板名放副标题。
-      const isTpl = !!activePlan.programId;
-      const title = isTpl ? planRotation.dayFullName(activePlan.name) : (activePlan.name || '今日训练');
-      const metric = actions.length + ' 个动作 · 约 ' + minutes + ' 分钟';
-      suggest = {
-        title,
-        sub: isTpl ? (planRotation.programLabel(activePlan.name) + ' · ' + metric) : metric,
-        hasPlan: true
-      };
-    } else if (sel.length > 0) {
-      let totalSets = 0;
-      sel.forEach(a => { totalSets += (a.sets && a.sets.length) ? a.sets.length : (a.setsCount || 0); });
-      const minutes = Math.max(10, Math.round(totalSets * 1.5));
-      suggest = {
-        title: '今日训练',
-        sub: sel.length + ' 个动作 · 约 ' + minutes + ' 分钟',
-        hasPlan: true
-      };
-    } else {
-      suggest = {
-        title: '今天还没安排训练',
-        sub: '去计划页导入一套开始吧',
-        hasPlan: false
-      };
-    }
+    // —— 今日推荐 = 今日训练计划：口径的唯一真源在 utils/todayPlan.js（与「我的」页首行共用）。
+    //    以 active 计划为准（「导入今日训练」写入 activePlanId，换计划必变）；
+    //    selectedActions 会被跨天重置清空，仅作无计划时的兜底数据源 —— 这些规则都收在 util 里。
+    const suggest = todayPlan.resolveTodayPlan();
 
     this.setData({
       greeting, nickname, sub,
@@ -289,17 +257,18 @@ Page({
 
   // 开始训练：有活跃计划 → 直接进入训练中页（动作由 workout 页从 activePlan 解析，
   // 不再注入 selectedActions，避免污染训练页「已选动作」）；
-  // 无计划但有手动已选动作 → 同样直进训练中页；都没有 → 去计划页导入
+  // 无计划但有手动已选动作 → 同样直进训练中页；都没有 → 去计划页导入。
+  // 「有没有安排」直接问 todayPlan，避免这里再写一遍计划/手动两分支（口径会漂）。
   startPlan() {
     if (!auth.requireLogin()) return;
-    if (store.getActivePlan()) { wx.navigateTo({ url: '/pages/workout/workout' }); return; }
-    if ((store.get().selectedActions || []).length) { wx.navigateTo({ url: '/pages/workout/workout' }); return; }
-    wx.navigateTo({ url: '/pages/plan/plan' });
+    if (todayPlan.resolveTodayPlan().hasPlan) { wx.navigateTo({ url: '/pages/workout/workout' }); return; }
+    this.goPlan();
   },
 
   goWeight() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/weight-record/weight-record?from=home' }); },
   goDiet() { wx.navigateTo({ url: '/pages/advice/advice' }); },
-  goPlan() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/plan/plan' }); },
+  // 计划页是 tabBar 页：navigateTo 打不开它（会静默失败，用户观感是「点了没反应」）→ 必须 switchTab
+  goPlan() { if (!auth.requireLogin()) return; wx.switchTab({ url: '/pages/plan/plan' }); },
   // 添加饮食：进入拍照识别/搜索页（food-scan 三入口：条码/名称/拍照）
   addMeal() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/food-scan/food-scan' }); }
 });
