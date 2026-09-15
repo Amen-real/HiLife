@@ -89,7 +89,8 @@
     </view>
     <view class="card suggest">
       <view class="photo">
-        <view class="ico ico-train ico--primary" style="width:42rpx;height:42rpx"></view>
+        <!-- 图标色：设计稿为墨色（#0A0A0A），底为浅灰 --n-100。禁用 ico--primary（亮绿压浅灰≈1.05:1 不可见） -->
+        <view class="ico ico-train ico--ink" style="width:42rpx;height:42rpx"></view>
       </view>
       <view class="body">
         <view class="t1">{{suggest.title}}</view>

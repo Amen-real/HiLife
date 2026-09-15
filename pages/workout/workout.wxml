@@ -375,7 +375,8 @@
 
 <!-- 完成态 -->
 <view class="page finished {{theme}}" wx:if="{{finished}}">
-  <view class="done-emoji"><view class="ico ico-trophy ico--primary" style="width:120rpx;height:120rpx"></view></view>
+  <!-- 图标色：底为页面底色（浅 --n-50 / 深 --n-50）。禁用 ico--primary（亮绿压暖白≈1.05:1 不可见） -->
+  <view class="done-emoji"><view class="ico ico-trophy ico--ink" style="width:120rpx;height:120rpx"></view></view>
   <view class="done-title">训练完成</view>
   <view class="done-sub">正在保存…</view>
 </view>

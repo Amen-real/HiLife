@@ -37,7 +37,7 @@
     </view>
     <!-- 添加动作：分类行最末，匹配样式 -->
     <view class="cat cat-add" bindtap="openCreate" hover-class="op-press" aria-label="创建动作">
-      <view class="ic"><view class="ico ico-plus ico--primary" style="width:48rpx;height:48rpx"></view></view>
+      <view class="ic"><view class="ico ico-plus ico--ink" style="width:48rpx;height:48rpx"></view></view>
       <text class="name">添加</text>
     </view>
   </scroll-view>
