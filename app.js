@@ -51,9 +51,6 @@ App({
     reminderOn: false,          // 「今日未训练提醒」总开关（语义与判据见 utils/reminder.js）
     reminderDismissedOn: '',    // 用户关掉提醒的日期 'YYYY-MM-DD'，跨天自动失效
 
-    // 自托管 CalorieScan 后端地址（拍照识别用）；为空则 utils/caloriescan.js 用默认地址
-    backendUrl: '',
-
     // 视觉识别（多模态大模型）后端地址；为空则 utils/foodvision.js 用默认地址
     // 开发期联调（useCallContainer=false 时）填后端局域网/公网地址
     visionBackendUrl: 'http://192.168.110.238:8000',

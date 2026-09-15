@@ -220,8 +220,12 @@ isTrue('plan.wxss 有 .tpl-import-all 主 CTA 样式', /\.tpl-import-all\s*\{/.t
 isTrue('plan.wxss 有方案组头样式 .groups/.group-head', /\.groups\s*\{/.test(wxss) && /\.group-head\s*\{/.test(wxss));
 isTrue('plan.wxss 组头徽章/按钮走主题令牌',
   /\.gh-badge\s*\{[^}]*var\(--lime\)/.test(wxss) && /\.gh-btn\s*\{[^}]*var\(--bg\)/.test(wxss));
+// --danger-text 已升为 app.wxss 根 token（口径单源）。浅色值不再存在本页，
+// 所以这里校验「本页引用 + 本页深色值 + 根 token 提供浅色值」三者齐备。
 isTrue('plan.wxss 移除红字走 --danger-text（双主题可达 AA）',
-  /\.gh-del\s*\{[^}]*var\(--danger-text\)/.test(wxss) && /--danger-text:\s*#C4363B/.test(wxss) && /theme-dark[\s\S]{0,900}--danger-text:\s*#FF6B70/.test(wxss));
+  /\.gh-del\s*\{[^}]*var\(--danger-text\)/.test(wxss) &&
+  /theme-dark[\s\S]{0,900}--danger-text:\s*#FF6B70/.test(wxss) &&
+  /--danger-text:\s*#C4363B/.test(read('app.wxss')));
 isTrue('plan.wxss 旧 .plan-group 样式已移除', !/\.plan \.plan-group\s*\{/.test(wxss));
 isTrue('plan.wxss Dashboard 样式已移除',
   !/\.dash\s*\{/.test(wxss) && !/\.dc-num\s*\{/.test(wxss) && !/\.ds-num\s*\{/.test(wxss) && !/dash-stat-sep/.test(wxss));

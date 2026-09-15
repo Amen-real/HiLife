@@ -611,7 +611,8 @@ Page({
       pickedMap, pickedCount: list.length, pickedList: list, activeCat: '我的动作', actionPool: []
     }, () => this.loadActions());
   },
-  editPlan(e) { const id = e.currentTarget.dataset.id; if (id) this._editPlan(id); },
+  // editPlan(e) 已删除：无任何 wxml 绑定（计划卡的编辑入口走 .more -> openMenu 的 actionSheet，
+  // 在 openMenu 里直接调 _editPlan(id)），是从旧版「卡片上直接放编辑按钮」遗留下来的包装方法。
 
   // —— 删除计划（二次确认）——
   _deletePlan(id) {

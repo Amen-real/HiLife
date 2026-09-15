@@ -705,17 +705,6 @@ Page({
     this.setData({ restLeft: sec });
     this.paintRest();
   },
-  changeRest(e) {
-    const sec = Number(e.currentTarget.dataset.sec);
-    const idx = this.data.restOptions.indexOf(sec);
-    if (idx < 0) return;
-    store.get().restTimer = sec;
-    store.persist();
-    this.clearRest();
-    this.setData({ restTotal: sec, restLeft: sec, restSelected: idx });
-    this.paintRest();
-    this.startRest();
-  },
   toggleVibrate() {
     const next = !this.data.vibrateOn;
     wx.setStorageSync('hh_vibrate', next);
@@ -1158,9 +1147,12 @@ Page({
     this.setData({ actions });
   },
 
-  // 占位交互（后续可扩展为真实编辑/备注/设置面板）
-  editPlan() { wx.showToast({ title: '编辑训练计划', icon: 'none' }); },
-  openGear(e) { wx.showToast({ title: '动作设置', icon: 'none' }); },
+  // 空壳入口（已登记：scripts/verify-event-binding.cjs 的 [C] 会报出来）。
+  // ✎ 图标绑在这里，但还没有真正的编辑器。文案必须说清「还没做」——
+  // 原来写「编辑训练计划」读起来像会打开面板，属于假入口（同 P0-1 的静默失败家族）。
+  // 待决定：① 做真实编辑器  ② 撤掉 ✎ 图标（动作级设置已由 ⋯ 菜单的 openActionMenu 承担）
+  editPlan() { wx.showToast({ title: '训练计划编辑还没做', icon: 'none' }); },
+  // openGear() 已删除：全仓无绑定（入口是 .wo-ex-gear -> openActionMenu），且只弹 toast。
   // 动作级备注（逐动作感受 / 注意点），落库到 action.note，复盘「训练感受」聚合展示
   editNote(e) {
     const ai = Number(e.currentTarget.dataset.ai);

@@ -55,13 +55,29 @@ const EVENT_ATTR = /\b((?:capture-)?(?:bind|catch|mut-bind)):?([a-zA-Z]+)\s*=\s*
  */
 const DEF_RE = /^[ \t]*(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{|^[ \t]*([A-Za-z_$][\w$]*)\s*:\s*(?:async\s+)?(?:function\s*\(|\([^)]*\)\s*=>)/gm;
 
+/**
+ * 定义位置语法形状的**天然副作用**：控制流语句 `if (…) {` / `for (…) {` / `catch (e) {`
+ * 以及作为对象字面量键的回调 `success(res) {` / `fail(err) {` 长得一模一样，会被一起收进来。
+ * [B] 只查「绑定名是否在集合里」，多出来的条目不影响判定，所以一直没暴露；
+ * 但 [C]/[D] 要逐个方法做判断，不排掉就会报出 197 条 `if()` 之类的噪音。
+ */
+const NOT_METHOD = new Set([
+  // 控制流 / 关键字
+  'if', 'for', 'while', 'switch', 'catch', 'do', 'else', 'try', 'finally', 'return',
+  'function', 'new', 'delete', 'typeof', 'await', 'async', 'in', 'of', 'case', 'default',
+  // wx API 的回调键（对象字面量简写，不可能被 wxml 绑定）
+  'success', 'fail', 'complete', 'resolve', 'reject', 'then', 'done',
+  // 框架入口（不是页面方法）
+  'Page', 'Component', 'App', 'Behavior'
+]);
+
 function methodDefs(src) {
   const out = [];
   DEF_RE.lastIndex = 0;
   let m;
   while ((m = DEF_RE.exec(src))) {
     const name = m[1] || m[2];
-    if (name) out.push({ name, index: m.index });
+    if (name && !NOT_METHOD.has(name)) out.push({ name, index: m.index });
   }
   return out;
 }
@@ -140,8 +156,13 @@ if (missing.length) {
   ok(`${bindings.length} 个静态绑定全部命中（覆盖 ${checked} 个页面/组件 js，${skippedNoJs} 个无配对 js 已跳过）`);
 }
 
-// ---------- [C] 反向：js 里的空壳方法（只 toast「开发中」）备案 ----------
-console.log('\n[C] 空壳方法备案（点了只弹「开发中/敬请期待」，非红线，登记以防遗忘）');
+// ---------- [C] 反向：js 里的空壳方法备案 ----------
+// 两类都算「空壳」，因为用户点下去都得不到结果：
+//   ① 只 toast「开发中 / 敬请期待」这类文案；
+//   ② 方法体只有一条 wx.showToast —— 这类连「开发中」都没说，点击后界面毫无变化，
+//      和 P0-1 的静默失败是同一个体验事故（workout 的 editPlan 就是这种：
+//      绑在 ✎ 图标上，点了只弹「编辑训练计划」，看起来像真能编辑）。
+console.log('\n[C] 空壳方法备案（点了没有任何结果，非红线，登记以防遗忘）');
 const stubs = [];
 for (const f of wxmls) {
   const jsPath = f.replace(/\.wxml$/, '.js');
@@ -151,9 +172,13 @@ for (const f of wxmls) {
   defs.forEach((d, i) => {
     const stop = i + 1 < defs.length ? defs[i + 1].index : Math.min(src.length, d.index + 600);
     const body = src.slice(d.index, stop);
-    if (/开发中|敬请期待|即将上线|暂未开放|coming soon/i.test(body)) {
-      const line = src.slice(0, d.index).split(/\r?\n/).length;
-      stubs.push(`${rel(jsPath)}:${line}  ${d.name}()`);
+    const line = src.slice(0, d.index).split(/\r?\n/).length;
+    const keyword = /开发中|敬请期待|即将上线|暂未开放|coming soon/i.test(body);
+    // 剥掉最外层花括号，看方法体是不是「只有一条 showToast」
+    const inner = body.replace(/^[^{]*\{/, '').replace(/\}[^}]*$/, '').trim();
+    const toastOnly = /^wx\.showToast\([\s\S]*\)\s*;?$/.test(inner);
+    if (keyword || toastOnly) {
+      stubs.push(`${rel(jsPath)}:${line}  ${d.name}()  ${keyword ? '[说"开发中"]' : '[只弹提示，无结果]'}`);
     }
   });
 }
@@ -162,6 +187,41 @@ if (stubs.length) {
   console.log(`      共 ${stubs.length} 个空壳 —— 上线前需逐个决定「做掉 / 藏起来 / 明说」`);
 } else {
   ok('无空壳方法');
+}
+
+// ---------- [D] 孤儿方法：页面 js 里定义，但既没被 wxml 绑定、也没被内部调用 ----------
+// 与 [C] 互补：[C] 是「有入口但没结果」，[D] 是「连入口都没有」。
+// 非红线（可能是有意留给后续的占位），但堆多了会让 js 越来越难读，故登记。
+// 实测价值：正因这条才发现 profile._saveFallback 从未被调用 —— 导出降级链断了，
+// PC 端/开发者工具点「导出」只弹一句「当前环境不支持转发文件」就结束。
+const LIFECYCLE = new Set([
+  'onLoad', 'onShow', 'onHide', 'onUnload', 'onReady', 'onPullDownRefresh', 'onReachBottom',
+  'onShareAppMessage', 'onShareTimeline', 'onPageScroll', 'onResize', 'onTabItemTap',
+  'onAddToFavorites', 'onSaveExitState', 'onLaunch', 'onError', 'onPageNotFound',
+  'created', 'attached', 'ready', 'detached', 'moved', 'lifetimes', 'pageLifetimes',
+  'observers', 'properties', 'data', 'methods', 'options', 'behaviors',
+  'noop', 'noopCapture'
+]);
+console.log('\n[D] 孤儿方法备案（js 里定义，但 wxml 未绑定且内部未调用）');
+const orphans = [];
+for (const f of wxmls) {
+  const jsPath = f.replace(/\.wxml$/, '.js');
+  if (!fs.existsSync(jsPath)) continue;
+  const src = fs.readFileSync(jsPath, 'utf8');
+  const bound = new Set(bindings.filter(b => b.file === rel(f)).map(b => b.name));
+  for (const d of methodDefs(src)) {
+    if (LIFECYCLE.has(d.name)) continue;
+    if (bound.has(d.name)) continue;
+    if (new RegExp('\\.' + d.name + '\\b').test(src)) continue; // this.xxx / that.xxx
+    const line = src.slice(0, d.index).split(/\r?\n/).length;
+    orphans.push(`${rel(jsPath)}:${line}  ${d.name}()`);
+  }
+}
+if (orphans.length) {
+  for (const s of orphans) console.log('  · ' + s);
+  console.log(`      共 ${orphans.length} 个 —— 无入口即死代码，建议删掉（要留就留个注释说明用途）`);
+} else {
+  ok('无孤儿方法');
 }
 
 console.log(`\n${fail ? '✗' : '✓'} verify-event-binding: ${pass} passed, ${fail} failed`);

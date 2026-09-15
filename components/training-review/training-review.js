@@ -462,7 +462,9 @@ Component({
     },
     onSugW(e) { this._setSug(e.currentTarget.dataset.key, 'draftW', e.detail.value); },
     onSugReps(e) { this._setSug(e.currentTarget.dataset.key, 'draftReps', e.detail.value); },
-    onSugSets(e) { this._setSug(e.currentTarget.dataset.key, 'draftSets', e.detail.value); },
+    // onSugSets 已删除：建议行只渲染「重量 × 次数」两个输入框，没有「组数」输入框，
+    // 所以 draftSets 从未被初始化 → 下面的 setsCount 分支永远不可达（NaN > 0 恒假）。
+    // 与「自重只 +1 次数、不动组数」的口径一致，故连分支一起删掉，不留悬空写入口。
 
     // 一键把建议回填到当前计划：仅更新「匹配到的」动作，且绝不改动激活指针（不调用 setActivePlan）
     applySuggestions() {
@@ -492,8 +494,6 @@ Component({
         } else {
           const reps = parseInt(r.draftReps, 10);
           if (reps > 0) patch.reps = String(reps);
-          const sets = parseInt(r.draftSets, 10);
-          if (sets > 0) patch.setsCount = sets;
         }
         return Object.assign({}, pa, patch);
       });

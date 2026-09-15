@@ -563,8 +563,12 @@ Page({
         }
       });
     } else {
-      this.setData({ showExportShare: false, exportFilePath: '' });
-      wx.showToast({ title: '当前环境不支持转发文件', icon: 'none' });
+      // PC 端小程序 / 开发者工具没有 wx.shareFileMessage —— 必须走降级链，
+      // 否则「导出」在这类环境里等于不可用（原来只弹一句「不支持转发文件」就结束了，
+      // 而下面那个注释写着「导出降级：PC 端另存为；再不行复制文件路径」的 _saveFallback
+      // 从未被任何地方调用，属于断掉的降级链）。
+      // _saveFallback 内部：先试 wx.saveFileToDisk（另存为），失败或缺失则复制文件路径。
+      this._saveFallback(path);
     }
   },
 
