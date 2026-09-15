@@ -193,9 +193,18 @@
   display: flex; align-items: center; gap: 27rpx;
   background: var(--card-gray);
 }
+/* 图标芯片：底不能再是 --n-100 —— 它压在 --card-gray 卡上只差 2/255，等于没有底
+   （用户反馈「.photo 背景是透明的」）；深色下 --n-100(#1E1E1E) 与 --card-gray(#1E1E1E) 更是完全同色。
+   改用同页 .diet-side .add-circle 那套「品牌芯片」语言：极浅绿实底 + 亮绿描边。
+   两侧一并成立：
+     浅色 = #F2FFD6 底 + #C8FF00 描边 + 墨色图标（图标对比度 18.9:1）
+     深色 = rgba(200,255,0,.12) 压 #1E1E1E ≈ #32391A + #C8FF00 描边 + 白图标（12.1:1）
+   芯片与卡底的可辨度：浅色 Δ21/255、深色 Δ27/255（旧值 3/255 与 0/255 —— 深色下完全同色）
+   描边是关键：它让「芯片」在两种主题下都有确定边界，不依赖底色与卡底的微小差值。 */
 .suggest .photo {
   width: 92rpx; height: 92rpx; border-radius: 23rpx;
-  background: var(--n-100);
+  background: var(--primary-tint);
+  border: 3rpx solid var(--primary);
   display: grid; place-items: center;
   flex: none;
 }
@@ -445,6 +454,11 @@
   --white:     #161616;                /* 浅色里当卡面的 --white 也转暗 */
   --card-gray: #1E1E1E;                /* 打卡 / 建议卡的浅灰底 */
   --bg:        rgba(255, 255, 255, 0.06);
+
+  /* 浅色值 token 必须跟着翻：根选择器上的 --primary-tint = #F2FFD6（极浅绿），
+     它**不随主题自动翻转**，不在这里重定义的话深色下会糊出一块浅绿底。
+     注意：本注释不要写花括号 —— 静态守卫用朴素正则切规则，注释里的花括号会打乱解析。 */
+  --primary-tint: rgba(200, 255, 0, 0.12);
 
   /* 成功色在暗底上太暗（#6F9F00），提亮到品牌绿：碳水量 / 体重降幅更醒目 */
   --success: #C8FF00;

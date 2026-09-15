@@ -31,6 +31,11 @@ function eq(actual, expect, label) {
 function truthy(v, label) { if (v) ok(); else bad(label); }
 function read(p) { return fs.readFileSync(p, 'utf8'); }
 function exists(p) { try { fs.accessSync(p); return true; } catch (e) { return false; } }
+// 读 wxss 一律先剥注释：本守卫用「朴素正则」切规则（/[^{}]+\{[^{}]*\}/），
+// 注释里只要出现一个花括号（例如说明文字写了「page{}」），后续规则的边界就会整体错位。
+function readCss(p) {
+  return read(p).replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
+}
 
 /* ---------- 1. 收集所有 wxml（页面 + 组件） ---------- */
 function walk(dir, out) {
@@ -43,7 +48,7 @@ function walk(dir, out) {
   return out;
 }
 const WXMLS = walk(path.join(ROOT, 'pages'), []).concat(walk(path.join(ROOT, 'components'), []));
-const APP_WXSS = read(path.join(ROOT, 'app.wxss'));
+const APP_WXSS = readCss(path.join(ROOT, 'app.wxss'));
 
 /* ---------- 2. 浅色 token 名 → 判定 ---------- */
 // 浅中性 token 白名单：这些在**浅色主题**下都是亮底（深色块里会被重定义，但那里配的是 ink 而非 primary）
@@ -124,7 +129,7 @@ for (const wxml of WXMLS) {
   // 关键：先剥掉 wxml 注释，否则「禁用 ico--primary」这类说明文字会被当成真实用法
   const src = read(wxml).replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' '));
   const pageWxss = wxml.replace(/\.wxml$/, '.wxss');
-  const texts = [read(pageWxss), APP_WXSS].filter(t => !!t);
+  const texts = [readCss(pageWxss), APP_WXSS].filter(t => !!t);
   const rel = path.relative(ROOT, wxml).replace(/\\/g, '/');
 
   const re = /ico--primary/g;
@@ -178,7 +183,7 @@ const SPOTS = [
   ['pages/workout/workout.wxml', 'ico-trophy', '训练完成态奖杯（页面底色上）']
 ];
 for (const [rel, ico, desc] of SPOTS) {
-  const src = read(path.join(ROOT, rel));
+  const src = read(path.join(ROOT, rel));   // wxml：原样读，注释由 [A] 自行处理
   const re = new RegExp('class="ico[^"]*' + ico + '[^"]*"');
   const m = re.exec(src);
   truthy(m, rel + ' 找不到 .' + ico + '（' + desc + '）');
@@ -192,12 +197,13 @@ for (const [rel, ico, desc] of SPOTS) {
 console.log('[C] 容器底色备案（若哪天改成绿底，[B] 的 ink 结论需同步复核）');
 
 const CONTAINERS = [
-  ['pages/home/home.wxss', '.suggest .photo', 'var(--n-100)'],
+  // 首页芯片已从 --n-100 改为品牌淡绿底 + 亮绿描边（见 [E]：--n-100 压 --card-gray 只差 2/255 = 没有底）
+  ['pages/home/home.wxss', '.suggest .photo', 'var(--primary-tint)'],
   ['pages/training/training.wxss', '.cat-add .ic', 'var(--white)'],
   ['pages/workout/workout.wxss', '.done-emoji', null] // 无背景 → 继承页面底色
 ];
 for (const [rel, sel, expect] of CONTAINERS) {
-  const text = read(path.join(ROOT, rel));
+  const text = readCss(path.join(ROOT, rel));
   if (expect === null) {
     // 无背景声明：断言它确实没有 background（透明 → 落到页面底色）
     const re = new RegExp(sel.replace(/[.\s]/g, s => s === '.' ? '\\.' : '\\s') + '\\s*\\{([^}]*)\\}');
@@ -212,12 +218,112 @@ for (const [rel, sel, expect] of CONTAINERS) {
   }
 }
 
+/* ══════════════ [E] 芯片可辨性：卡内 chip 的底必须与「卡底」有可感知差异 ══════════════
+   事故：.suggest .photo 用 --n-100(#F1F1EE) 压在 --card-gray(#EFEFEB) 上，差 2/255
+   → 用户观感是「背景是透明的」；深色下 #1E1E1E vs #1E1E1E 更是完全相同。
+   判据：把两层的实际颜色（含 rgba 叠底）解出来，逐通道最大差 Δ 必须 ≥ 10/255。 */
+console.log('[E] 芯片 vs 卡底：必须可辨（Δ ≥ 10/255）');
+
+function parseColor(v) {
+  v = String(v == null ? '' : v).trim();
+  let m = /^#([0-9a-fA-F]{6})$/.exec(v);
+  if (m) { const n = parseInt(m[1], 16); return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, a: 1 }; }
+  m = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(v);
+  if (m) return { r: +m[1], g: +m[2], b: +m[3], a: m[4] === undefined ? 1 : +m[4] };
+  return null;
+}
+function collectVars(body, into) {
+  const re = /(--[\w-]+)\s*:\s*([^;]+)/g; let m;
+  while ((m = re.exec(body)) !== null) into[m[1]] = m[2].trim();
+}
+function buildThemeMaps(wxssPath) {
+  const light = {}, dark = {};
+  const base = /(?:^|\n)\s*page\s*\{([^}]*)\}/.exec(APP_WXSS);
+  if (base) collectVars(base[1], light);
+  const text = readCss(wxssPath);
+  const re = /([^{}]+)\{([^{}]*)\}/g; let m;
+  while ((m = re.exec(text)) !== null) {
+    if (/\.theme-dark/.test(m[1])) collectVars(m[2], dark);
+    else collectVars(m[2], light);   // 页面浅色也补进 light（如 --lime / 局部覆盖）
+  }
+  return { light, dark };
+}
+function resolveVar(value, map) {
+  let v = String(value == null ? '' : value).trim();
+  for (let i = 0; i < 6; i++) {
+    const m = /^var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)$/.exec(v);
+    if (!m) break;
+    v = (map[m[1]] !== undefined ? map[m[1]] : (m[2] || '')).trim();
+  }
+  return parseColor(v);
+}
+function over(fg, bg) {  // rgba 叠在实底上
+  if (!fg) return null;
+  if (!bg || fg.a >= 1) return { r: fg.r, g: fg.g, b: fg.b, a: 1 };
+  return {
+    r: Math.round(fg.r * fg.a + bg.r * (1 - fg.a)),
+    g: Math.round(fg.g * fg.a + bg.g * (1 - fg.a)),
+    b: Math.round(fg.b * fg.a + bg.b * (1 - fg.a)),
+    a: 1
+  };
+}
+function rangeOf(text, sel) {
+  const esc = sel.replace(/\./g, '\\.').replace(/\s+/g, '\\s*');
+  const m = new RegExp(esc + '\\s*\\{([^}]*)\\}').exec(text);
+  if (!m) return null;
+  const b = /(?:^|[;\s])background(?:-color)?\s*:\s*([^;]+)/.exec(m[1]);
+  return b ? b[1].trim() : null;
+}
+
+const CHIPS = [
+  ['pages/home/home.wxss', '.suggest', '.suggest .photo', '首页「今日推荐」图标芯片']
+];
+for (const [rel, cardSel, chipSel, desc] of CHIPS) {
+  const full = path.join(ROOT, rel);
+  const text = readCss(full);
+  const maps = buildThemeMaps(full);
+  for (const theme of ['light', 'dark']) {
+    const map = maps[theme];
+    const cardBase = over(resolveVar(rangeOf(text, cardSel), map), { r: 255, g: 255, b: 255, a: 1 });
+    const chipRaw = resolveVar(rangeOf(text, chipSel), map);
+    const chip = over(chipRaw, cardBase);
+    if (!cardBase || !chip) { bad(desc + '（' + theme + '）颜色解析失败：card=' + rangeOf(text, cardSel) + ' chip=' + rangeOf(text, chipSel)); continue; }
+    const d = Math.max(Math.abs(chip.r - cardBase.r), Math.abs(chip.g - cardBase.g), Math.abs(chip.b - cardBase.b));
+    const hex = c => '#' + [c.r, c.g, c.b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+    if (d >= 10) ok();
+    else bad(desc + '（' + theme + '）芯片底与卡底几乎同色：chip ' + hex(chip) + ' vs card ' + hex(cardBase) + '（Δ=' + d + '/255，需要 ≥10）');
+  }
+  // 描边：让芯片边界在两种主题下都确定，不依赖底色差值
+  const chipBody = (new RegExp(chipSel.replace(/\./g, '\\.').replace(/\s+/g, '\\s*') + '\\s*\\{([^}]*)\\}').exec(text) || [, ''])[1];
+  truthy(/border\s*:\s*[^;]*var\(--primary\)/.test(chipBody), desc + ' 应有 var(--primary) 描边（保证两主题都有确定边界），实际：' + chipBody.trim());
+}
+
+/* ══════════════ [F] 浅色值 token 必须在深色块里重定义 ══════════════
+   page{} 里的 --primary-tint(#F2FFD6) / --primary-text(#4C7300) 都**不随主题自动翻转**，
+   页面一旦用了它们，就必须在本页 .page.theme-dark 内重定义，否则深色下拿到浅色值。
+   （全仓审计见 scripts/scan-dark-token-gaps.cjs） */
+console.log('[F] home.wxss 用到的浅色值 token 必须在深色块内重定义');
+
+const HOME_WXSS = path.join(ROOT, 'pages/home/home.wxss');
+const homeText = readCss(HOME_WXSS);
+const homeDark = (function () {
+  const out = []; const re = /([^{}]+)\{([^{}]*)\}/g; let m;
+  while ((m = re.exec(homeText)) !== null) if (/\.theme-dark/.test(m[1])) out.push(m[2]);
+  return out.join('\n');
+})();
+for (const tok of ['--primary-tint', '--primary-text']) {
+  const used = new RegExp('var\\(\\s*' + tok.replace(/-/g, '\\-') + '\\s*\\)').test(homeText);
+  if (!used) continue;
+  truthy(new RegExp(tok.replace(/-/g, '\\-') + '\\s*:').test(homeDark),
+    'home.wxss 用到 ' + tok + '，但 .page.theme-dark 块里没重定义它 → 深色下会拿到浅色值');
+}
+
 /* ══════════════ [D] 深色主题下 ink 必须翻白（否则白底/浅底上白图标消失） ══════════════ */
 console.log('[D] 深色主题：ico--ink 必须翻白');
 
 function hasDarkInkFlip(wxmlRel) {
   const wxssRel = wxmlRel.replace(/\.wxml$/, '.wxss');
-  const text = read(path.join(ROOT, wxssRel));
+  const text = readCss(path.join(ROOT, wxssRel));
   const rules = /([^{}]+)\{([^{}]*)\}/g;
   let m;
   while ((m = rules.exec(text)) !== null) {

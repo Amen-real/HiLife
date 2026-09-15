@@ -89,8 +89,9 @@
     </view>
     <view class="card suggest">
       <view class="photo">
-        <!-- 图标色：设计稿为墨色（#0A0A0A），底为浅灰 --n-100。禁用 ico--primary（亮绿压浅灰≈1.05:1 不可见） -->
-        <view class="ico ico-train ico--ink" style="width:42rpx;height:42rpx"></view>
+        <!-- 芯片 = 极浅绿底 + 亮绿描边（见 wxss）；图标取墨色 --ink（浅色下 #0A0A0A、深色下自动翻白），
+             尺寸 46rpx = 芯片 92rpx 的 50%（对齐设计稿 24/48）。禁用 ico--primary（亮绿压浅底不可见） -->
+        <view class="ico ico-train ico--ink" style="width:46rpx;height:46rpx"></view>
       </view>
       <view class="body">
         <view class="t1">{{suggest.title}}</view>
