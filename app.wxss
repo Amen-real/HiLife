@@ -313,7 +313,7 @@ view, text, button, input, scroll-view, navigator { box-sizing: border-box; }
 
 /* —— 平板适配 —— */
 @media (min-width: 768px) {
-  .container, .section, .card, .float-card { max-width: 720rpx; margin-left: auto; margin-right: auto; }
+  .container, .section, .card, .float-card, .remind { max-width: 720rpx; margin-left: auto; margin-right: auto; }
   .card { margin-left: auto; margin-right: auto; }
 }
 

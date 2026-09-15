@@ -6,6 +6,8 @@ const media = require('../../utils/media.js');
 const nutrition = require('../../utils/nutrition.js');
 const todayPlan = require('../../utils/todayPlan.js');
 const dateRange = require('../../utils/dateRange.js');
+// 「今日未训练提醒」的口径真源：本页只负责展示与关闭，判据/文案一律读它（勿在此另写一套）
+const reminder = require('../../utils/reminder.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 // 首页背景图：本地 static/ 随包发布（即时显示，无网络往返）；加载异常时 onBgError 回退云端 cloud://
@@ -46,6 +48,8 @@ Page({
     fitnessDays: 0,
     streak: 0,
     suggest: { title: '全身训练 · 中级', sub: '预计 45 分钟 · 320 kcal' },
+    // 今日未训练提醒条（默认不显示，判据见 utils/reminder.js）
+    reminder: { show: false, title: '', sub: '', action: '' },
     diet: {
       intake: 0, target: 2100, pct: 0,
       protein: { now: 0, goal: 140 },
@@ -165,6 +169,19 @@ Page({
     //    selectedActions 会被跨天重置清空，仅作无计划时的兜底数据源 —— 这些规则都收在 util 里。
     const suggest = todayPlan.resolveTodayPlan();
 
+    // —— 今日未训练提醒：开关（我的页）× 有安排 × 今天没练 × 已过晚间阈值 × 今天没关掉。
+    //    四个判据全在 utils/reminder.js，这里只把已有的事实喂进去：
+    //      trainingDone 就是上面算好的「今天有没有训练记录」，hasPlan 直接复用 suggest。
+    //    故意在「今日推荐」之后展示：提醒说的就是这张卡上的事，放一起才可执行。
+    const reminderState = reminder.buildReminder({
+      now,
+      enabled: !!g.reminderOn,
+      hasPlan: !!suggest.hasPlan,
+      trainedToday: trainingDone,
+      dismissedOn: g.reminderDismissedOn,
+      plan: suggest
+    });
+
     this.setData({
       greeting, nickname, sub,
       checkin: { done, total, pct },
@@ -179,6 +196,7 @@ Page({
       },
       weight: { current: wCurrent, delta: wDelta, down: wDown },
       suggest,
+      reminder: reminderState,
       fillStyle: 'width: ' + dietPct + '%',
       proteinBarStyle: 'width: ' + pPct + '%',
       carbBarStyle: 'width: ' + cPct + '%',
@@ -263,6 +281,14 @@ Page({
     if (!auth.requireLogin()) return;
     if (todayPlan.resolveTodayPlan().hasPlan) { wx.navigateTo({ url: '/pages/workout/workout' }); return; }
     this.goPlan();
+  },
+
+  // 关掉提醒条：只静音「今天」，明天照常。存的是日期串而非布尔标记，
+  // 所以跨天自动失效、不需要任何定时清理逻辑（见 store.setReminderDismissed）。
+  // 用路径 setData 只为收起这一块，避免整页 refresh 造成闪动。
+  closeReminder() {
+    store.setReminderDismissed(dateRange.todayStr());
+    this.setData({ 'reminder.show': false });
   },
 
   goWeight() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/weight-record/weight-record?from=home' }); },

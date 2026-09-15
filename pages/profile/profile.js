@@ -8,6 +8,9 @@ const stats = require('../../utils/trainingStats.js');
 const todayPlan = require('../../utils/todayPlan.js');
 // 开始训练前过登录门禁（与首页 startPlan / 训练页各写操作同一套）
 const auth = require('../../utils/auth.js');
+// 「今日未训练提醒」的口径真源：本页只负责开关与文案，判据一律读 utils/reminder.js，
+// 文案里的时间阈值也取自它，避免「改了逻辑忘了改文案」两处漂移。
+const reminder = require('../../utils/reminder.js');
 
 // Hero 背景图：明暗两张都随包发布在 static/（packOptions.ignore 为空，static 不参与忽略）。
 // 两张严格同几何尺寸（852×560 → 750rpx 宽时折算 493rpx），切主题只换图不换高度，Hero 不跳版。
@@ -242,21 +245,23 @@ Page({
     });
   },
 
-  // 训练提醒：本页做本地开关（落 store.reminderOn），首次开启时说明提醒形式
-  // 注：真正的推送需服务端下发订阅消息，此处不做假承诺
+  // 今日未训练提醒：本地开关（落 store.reminderOn），由首页消费（见 utils/reminder.js）。
+  // 注意这里**不做推送**：真正的推送要服务端下发订阅消息，不在此承诺。
+  // 提醒的真实语义是「你今天还没练」而不是「今天是训练日」——
+  // 本仓「训练日」已被占用为模板里的 A/B/C 日，且没有「周几训练」的模型，详见 reminder.js 头部注释。
   tapReminder() {
     const on = !this.data.reminderOn;
     store.setReminder(on);
     this.setData({ reminderOn: on });
     if (on) {
       wx.showModal({
-        title: '已开启训练提醒',
-        content: '将在你设定的训练日于小程序内提示。关闭可随时点回本项。',
+        title: '已开启今日未训练提醒',
+        content: '晚上 ' + reminder.REMIND_HOUR + ':00 后，若今天有安排但还没练，首页会提示你。仅在小程序内提示，不发系统推送。',
         confirmText: '知道了',
         showCancel: false
       });
     } else {
-      wx.showToast({ title: '已关闭训练提醒', icon: 'none', duration: 1200 });
+      wx.showToast({ title: '已关闭今日未训练提醒', icon: 'none', duration: 1200 });
     }
   },
 
@@ -653,6 +658,7 @@ Page({
         g.favorites = [];
         g.customActions = [];
         g.reminderOn = false;
+        g.reminderDismissedOn = '';
         getApp().persist();
         wx.removeStorageSync('local_uid');
         wx.removeStorageSync('uu_fitness_backup');

@@ -103,6 +103,22 @@
     </view>
   </view>
 
+  <!-- ============== 3.5 今日未训练提醒（默认关，开关在「我的」） ==============
+       条件：开关开 + 今天有安排 + 今天还没练 + 已过 18:00 + 今天没关掉（判据单源在 utils/reminder.js）。
+       紧跟「今日推荐」之后：它说的就是这张卡上的事，放一起才可执行。
+       注意文案是「今天还没训练」而非「今天是训练日」—— 本仓「训练日」已指模板里的 A/B/C 日。 -->
+  <view wx:if="{{reminder.show}}" class="remind">
+    <view class="ico ico-clock ico--ink remind-i"></view>
+    <view class="remind-txt">
+      <view class="remind-t1">{{reminder.title}}</view>
+      <view class="remind-t2">{{reminder.sub}}</view>
+    </view>
+    <view class="remind-cta" bindtap="startPlan" hover-class="btn-hover" role="button" aria-label="开始训练">{{reminder.action}}</view>
+    <view class="remind-x" catchtap="closeReminder" hover-class="btn-hover" role="button" aria-label="今天不再提示">
+      <view class="ico ico-close"></view>
+    </view>
+  </view>
+
   <!-- ============== 4 今日饮食 ============== -->
   <view class="section">
     <view class="section-label diet-label with-arrow">

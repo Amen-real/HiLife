@@ -344,6 +344,16 @@ const store = {
     g().reminderOn = on;
     this.persist();
   },
+  // 「今日未训练提醒」被用户关掉的日期（'YYYY-MM-DD'）。
+  // 存日期串而不是 true/false：这样开关无需任何清理逻辑就跨天自动失效，
+  // 也不会因为「忘了重置」而永久静音提醒。
+  getReminderDismissed() {
+    return String(g().reminderDismissedOn || '');
+  },
+  setReminderDismissed(dateStr) {
+    g().reminderDismissedOn = String(dateStr || '');
+    this.persist();
+  },
   // 本地登录：openid 字段在此存放本地匿名标识 local_uid（不关联真实微信身份）
   // 单用户本地模式：若退出时存有数据快照，登录时自动恢复
   login(openid, nickname, avatar) {

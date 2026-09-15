@@ -227,8 +227,8 @@
       </view>
       <view class="mi" bindtap="tapReminder">
         <view class="ico ico-clock ico--ink mi-i"></view>
-        <view class="mi-t">训练提醒</view>
-        <view class="mi-note">{{reminderOn ? '已开启' : '未开启'}}</view>
+        <view class="mi-t">今日未训练提醒</view>
+        <view class="mi-note">{{reminderOn ? '已开启 · 未练时提示' : '未开启'}}</view>
         <text class="mi-ar">›</text>
       </view>
     </view>

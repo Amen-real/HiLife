@@ -48,7 +48,8 @@ App({
     customActions: [],
 
     // 设置
-    reminderOn: false,
+    reminderOn: false,          // 「今日未训练提醒」总开关（语义与判据见 utils/reminder.js）
+    reminderDismissedOn: '',    // 用户关掉提醒的日期 'YYYY-MM-DD'，跨天自动失效
 
     // 自托管 CalorieScan 后端地址（拍照识别用）；为空则 utils/caloriescan.js 用默认地址
     backendUrl: '',

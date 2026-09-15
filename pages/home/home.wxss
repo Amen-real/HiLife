@@ -239,6 +239,53 @@
   transform: rotate(45deg);
 }
 
+/* ============== 3.5 今日未训练提醒条 ============== */
+/* 为什么是「条」不是「卡」：它紧跟在「今日推荐」卡下面，若再做一张同款卡，
+   两张卡会糊成一块、也没有主次。这里改用品牌浅绿底 + 左侧亮绿竖条的提示条，
+   横向内缩与卡片一致（32rpx），视觉上属于上一张卡的下挂说明。
+   不用整块亮绿底：面积一大就晃眼，且亮绿上必须配 #0A0A0A 字（对比度铁律）。
+   CTA 用文字链而非第二个绿色胶囊 —— 上方卡片已有一个「开始训练」胶囊，
+   再来一个就是纯重复；文字链既能点又不会抢主 CTA。
+   两主题都靠「左竖条 + 底色差」立住，不依赖任何单一差值。 */
+.remind {
+  margin: 0 32rpx 24rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 20rpx;
+  background: var(--primary-tint);
+  border-left: 7rpx solid var(--primary);
+  display: flex; align-items: center; gap: 18rpx;
+}
+.remind-i { flex: none; width: 34rpx; height: 34rpx; }
+.remind-txt { flex: 1 1 auto; min-width: 0; }
+.remind-t1 {
+  font-size: 27rpx; font-weight: 700; color: var(--n-900);
+  letter-spacing: -0.01em;
+}
+.remind-t2 {
+  margin-top: 6rpx;
+  font-size: 22rpx; color: var(--n-600); font-weight: 500;
+}
+.remind-cta {
+  flex: none;
+  display: flex; align-items: center; gap: 4rpx;
+  font-size: 24rpx; font-weight: 700;
+  color: var(--primary-text);
+}
+.remind-cta::after {
+  content: '';
+  width: 10rpx; height: 10rpx;
+  border-top: 3rpx solid var(--primary-text);
+  border-right: 3rpx solid var(--primary-text);
+  transform: rotate(45deg);
+}
+/* 关闭：只静音今天。命中区做够 48rpx（图标仍 26rpx），避免误触也避免点不到 */
+.remind-x {
+  flex: none;
+  width: 48rpx; height: 48rpx;
+  display: grid; place-items: center;
+}
+.remind-x .ico { width: 26rpx; height: 26rpx; background-color: var(--n-500); }
+
 /* ============== 4 今日饮食 ============== */
 /* 标题前缀：绿竖条 + 右侧「查看详情」文字 + 标准 chev 箭头（复用 .section-label.with-arrow 的 flex 布局，箭头与「体重趋势」同款） */
 .section-label .label-left {
@@ -459,6 +506,10 @@
      它**不随主题自动翻转**，不在这里重定义的话深色下会糊出一块浅绿底。
      注意：本注释不要写花括号 —— 静态守卫用朴素正则切规则，注释里的花括号会打乱解析。 */
   --primary-tint: rgba(200, 255, 0, 0.12);
+  /* 绿色「文字」token 同理不会自动翻：app.wxss 的根值是 #4C7300（为浅底/浅绿底选的深绿），
+     直接压在深色块上几乎看不见。深色下翻成亮绿（与 profile.wxss 的做法一致）。
+     提醒条的「开始训练」文字链用的就是它 —— 新引入一个浅色 token 就必须同时补这里。 */
+  --primary-text: #C8FF00;
 
   /* 成功色在暗底上太暗（#6F9F00），提亮到品牌绿：碳水量 / 体重降幅更醒目 */
   --success: #C8FF00;
