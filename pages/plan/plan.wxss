@@ -74,7 +74,7 @@
 
 .plan-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 10rpx; }
 .plan-tag {
-  font-size: 22rpx; font-weight: 700; color: var(--n-600);
+  font-size: 22rpx; font-weight: 700; color: var(--n-700);
   background: var(--bg); border-radius: 999rpx; padding: 6rpx 16rpx;
 }
 .plan-tag.tag-today { color: #111111; background: var(--lime); }
@@ -180,14 +180,14 @@
 .sheet-detail { border-radius: 32rpx 32rpx 0 0; padding: 28rpx 28rpx calc(104rpx + env(safe-area-inset-bottom)); max-height: 82vh; display: flex; flex-direction: column; }
 .pd-head { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
 .pd-title { flex: 1 1 auto; min-width: 0; font-size: 36rpx; font-weight: 800; color: var(--n-900); }
-.pd-close { width: 56rpx; height: 56rpx; flex: none; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 30rpx; color: var(--n-600); }
+.pd-close { width: 56rpx; height: 56rpx; flex: none; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 30rpx; color: var(--n-700); }
 .pd-close:active { opacity: .6; }
 .pd-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 14rpx; }
 .pd-data { display: flex; flex-wrap: wrap; gap: 24rpx; margin-top: 18rpx; padding: 20rpx; background: var(--bg); border-radius: 16rpx; }
 .pd-body { flex: 1 1 auto; min-height: 120rpx; max-height: 38vh; margin-top: 18rpx; }
 .pd-act { display: flex; align-items: center; gap: 16rpx; padding: 18rpx 0; border-bottom: 1rpx solid var(--n-200); }
 .pd-act:last-child { border-bottom: none; }
-.pd-act-idx { width: 40rpx; height: 40rpx; flex: none; border-radius: 50%; background: var(--primary-tint); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 22rpx; font-weight: 800; }
+.pd-act-idx { width: 40rpx; height: 40rpx; flex: none; border-radius: 50%; background: var(--primary-tint); color: var(--success-text); display: flex; align-items: center; justify-content: center; font-size: 22rpx; font-weight: 800; }
 .pd-act-name { flex: 1 1 auto; min-width: 0; font-size: 28rpx; font-weight: 600; color: var(--n-900); }
 .pd-act-param { flex: none; font-size: 24rpx; color: var(--n-500); font-weight: 600; }
 .pd-foot { flex: none; display: flex; gap: 16rpx; margin-top: 20rpx; }
@@ -251,8 +251,8 @@
 .tpl-htext { flex: 1 1 auto; min-width: 0; }
 .tpl-name { font-size: 32rpx; font-weight: 800; color: var(--n-900); line-height: 1.3; }
 .tpl-tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 10rpx; }
-.tpl-tag { font-size: 20rpx; font-weight: 700; color: var(--n-600); background: var(--bg); border-radius: 999rpx; padding: 4rpx 14rpx; }
-.tpl-close { width: 56rpx; height: 56rpx; flex: none; border-radius: 50%; background: var(--bg); color: var(--n-600); display: flex; align-items: center; justify-content: center; font-size: 30rpx; }
+.tpl-tag { font-size: 20rpx; font-weight: 700; color: var(--n-700); background: var(--bg); border-radius: 999rpx; padding: 4rpx 14rpx; }
+.tpl-close { width: 56rpx; height: 56rpx; flex: none; border-radius: 50%; background: var(--bg); color: var(--n-700); display: flex; align-items: center; justify-content: center; font-size: 30rpx; }
 .tpl-close:active { opacity: .6; }
 .tpl-body { flex: none; height: calc(82vh - 150rpx); min-height: 0; padding: 24rpx 28rpx calc(120rpx + env(safe-area-inset-bottom)); }
 /* 模板「导入整套」主 CTA（亮绿底 + 深色字，双主题通用） */
@@ -263,7 +263,7 @@
 .tpl-import-all:active, .tpl-import-hover { opacity: .88; }
 .tia-main { font-size: 30rpx; font-weight: 800; color: #0A0A0A; letter-spacing: .01em; }
 .tia-sub { font-size: 21rpx; font-weight: 600; color: rgba(10,10,10,.62); margin-top: 4rpx; }
-.tpl-desc { font-size: 26rpx; color: var(--n-600); line-height: 1.6; background: var(--bg); border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 24rpx; }
+.tpl-desc { font-size: 26rpx; color: var(--n-700); line-height: 1.6; background: var(--bg); border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 24rpx; }
 .tpl-days-label { font-size: 24rpx; font-weight: 800; color: var(--n-700); margin-bottom: 16rpx; }
 .tpl-day { margin-bottom: 28rpx; }
 .tpl-day-head { display: flex; align-items: baseline; gap: 14rpx; margin-bottom: 14rpx; }
@@ -271,7 +271,7 @@
 .tpl-day-focus { font-size: 22rpx; color: var(--n-500); }
 .tpl-act { display: flex; align-items: center; gap: 18rpx; padding: 18rpx 0; border-bottom: 1rpx solid var(--n-200); }
 .tpl-act:last-child { border-bottom: none; }
-.tpl-act-idx { width: 40rpx; height: 40rpx; flex: none; border-radius: 50%; background: var(--primary-tint); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 22rpx; font-weight: 800; }
+.tpl-act-idx { width: 40rpx; height: 40rpx; flex: none; border-radius: 50%; background: var(--primary-tint); color: var(--success-text); display: flex; align-items: center; justify-content: center; font-size: 22rpx; font-weight: 800; }
 .tpl-act-main { flex: 1 1 auto; min-width: 0; }
 .tpl-act-name { font-size: 27rpx; font-weight: 600; color: var(--n-900); line-height: 1.35; }
 .tpl-act-note { font-size: 21rpx; color: var(--n-500); margin-top: 4rpx; }
@@ -302,6 +302,9 @@
   --text-weak: rgba(255,255,255,.45);
 
   --success: #C8FF00;
+  /* 语义绿「文字」档：.pd-act-idx / .tpl-act-idx 是序号圆点（绿字压 --primary-tint）。
+     浅色侧走 --success-text(#4C7300)，深色下必须同步提亮，否则退回根值压暗绿底只有 2.85:1。 */
+  --success-text: #C8FF00;
   --primary-tint: rgba(200,255,0,.12);
 
   --card: #161616;

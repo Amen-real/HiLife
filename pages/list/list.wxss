@@ -350,7 +350,7 @@
 }
 .eh-chip {
   font-family: var(--f-en);
-  font-size: 22rpx; font-weight: 600; color: var(--n-600);
+  font-size: 22rpx; font-weight: 600; color: var(--n-700);
   background: var(--n-100);
   padding: 6rpx 14rpx; border-radius: 999rpx;
   font-variant-numeric: tabular-nums;
@@ -386,6 +386,10 @@
   --line-strong: rgba(255,255,255,.20);
 
   --success: #C8FF00;
+  /* 语义绿「文字」档（同 --primary-text / --danger-text 的规矩）：
+     本页内嵌 training-review 组件，其 .pa-chip.up 用 var(--success-text)；
+     组件有作用域、写不了深色块 → 必须由宿主页翻亮，否则深底上拿到根值 #4C7300（2.85:1）。 */
+  --success-text: #C8FF00;
 
   --card: #161616;
   --bg: rgba(255,255,255,.06);

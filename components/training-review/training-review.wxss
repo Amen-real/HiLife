@@ -131,9 +131,9 @@
   border-radius: var(--r-pill);
   padding: 6rpx 18rpx;
 }
-.pa-chip.up { color: var(--success); background: rgba(111, 159, 0, 0.10); }
+.pa-chip.up { color: var(--success-text); background: rgba(111, 159, 0, 0.10); }
 .pa-chip.down { color: var(--danger-text); background: rgba(216, 72, 59, 0.10); }
-.pa-chip.flat { color: var(--n-500); background: var(--n-100); }
+.pa-chip.flat { color: var(--n-700); background: var(--n-100); }
 .pa-line {
   display: flex; align-items: baseline; justify-content: space-between; gap: 16rpx;
   margin-top: 12rpx;

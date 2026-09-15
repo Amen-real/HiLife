@@ -25,7 +25,7 @@ const dc = require('./lib/dark-contrast.cjs');
 //   选不中宿主页根节点），所以组件的深色值必须从**宿主页**解析；一个组件被多页用就要各列一条。
 const SPOTS = [
   // —— 成对翻转的正例：补过缺口的点 ——
-  { file: 'pages/action-detail/action-detail.wxss', sel: '.title-block .tag', paper: 'var(--card)', note: '浅绿底标签：--primary-tint 与 --success 必须成对翻（只翻字侧会更糟）' },
+  { file: 'pages/action-detail/action-detail.wxss', sel: '.title-block .tag', paper: 'var(--card)', note: '浅绿底标签：--primary-tint 与 --success-text 必须成对翻（只翻字侧会更糟，实测 1.13:1）' },
   { file: 'pages/food-vision/food-vision.wxss', sel: '.mock-tip', paper: 'var(--card)', note: '橙色提示条：--accent-soft 与 --accent-ink 成对翻' },
   { file: 'pages/food-vision/food-vision.wxss', sel: '.seg-item.on', paper: 'var(--card)', note: '选中段：原为亮绿字压白底（浅色下就 1.18:1），改用 --n-900 随卡面自动翻' },
   { file: 'pages/cycle/cycle.wxss', sel: '.prog-week', paper: 'var(--glass-strong)', note: '循环页进度字：压在 --glass-strong 卡面上，卡面不翻会变白卡' },

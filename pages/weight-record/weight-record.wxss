@@ -14,7 +14,7 @@
 }
 .date-chip {
   font-family: var(--f-en); font-size: 22rpx; font-weight: 600;
-  color: var(--n-500); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  color: var(--n-700); font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
   background: var(--n-100); border-radius: var(--r-pill);
   padding: 8rpx 20rpx;
 }
@@ -41,14 +41,14 @@
   font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
   border-radius: var(--r-pill);
   padding: 10rpx 22rpx;
-  background: var(--n-100); color: var(--n-600);
+  background: var(--n-100); color: var(--n-700);
 }
 .change-chip .chip-vs {
   font-size: 20rpx; font-weight: 600; opacity: 0.75;
   margin-left: 8rpx;
 }
 .change-chip.down { background: var(--primary-tint, rgba(200, 255, 0, 0.16)); color: var(--primary-text); }
-.change-chip.up { background: rgba(242, 84, 91, 0.12); color: #F2545B; }
+.change-chip.up { background: rgba(242, 84, 91, 0.12); color: var(--danger-text); }
 /* mini 统计行：距目标 / BMI / 记录次数（wx:if 条件渲染，flex 等分自适应列数） */
 .hero-meta {
   display: flex;
@@ -302,6 +302,11 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+
+  /* 红「文字」档：.change-chip.up 用 var(--danger-text)。
+     根值 #C4363B 压在深色下的暗红淡底上只有 2.99:1，本页必须提亮 ——
+     别页（list/review/training/workout）都已补，本页此前漏了。 */
+  --danger-text: #FF6B70;
 
   --primary-text: #C8FF00;                  /* 绿底黑字铁律：深色下绿色文字翻亮绿 */
   --primary-tint: rgba(200, 255, 0, 0.12);  /* 同步翻 tint，避免亮绿字压浅绿底 */

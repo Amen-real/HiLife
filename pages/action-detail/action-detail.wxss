@@ -26,7 +26,7 @@
   display: inline-flex; align-items: center;
   height: 46rpx; padding: 0 19rpx;
   background: var(--primary-tint);
-  color: var(--success);
+  color: var(--success-text);
   border-radius: var(--r-s);
   font-size: 21rpx; font-weight: 700; letter-spacing: 0;
 }
@@ -270,9 +270,12 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+  /* 语义绿「文字」档：浅色侧是 --success-text(#4C7300)，这里必须同步提亮，
+     否则深色下会退回根值 #4C7300 压深绿底 = 2.85:1。同 --danger-text 的规矩。 */
+  --success-text: #C8FF00;
   /* 浅色值 token 必须跟着翻，否则深色下会「半边翻、半边不翻」而糊掉：
-     本页 .title-block .tag 是 --primary-tint 底 + --success 字。
-     --success 上面已翻成 #C8FF00（亮绿），若 --primary-tint 不翻仍是 #F2FFD6（极浅绿），
+     本页 .title-block .tag 是 --primary-tint 底 + --success-text 字。
+     --success-text 上面已翻成 #C8FF00（亮绿），若 --primary-tint 不翻仍是 #F2FFD6（极浅绿），
      就成了亮绿字压浅绿底 —— 实测仅 1.13:1，几乎看不见。
      补上这行后底变 #2B3213（≈深墨绿），对比度回到 11.32:1。
      教训：**成对的 token 必须成对翻**，只翻字侧比不翻更糟。 */

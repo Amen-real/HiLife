@@ -269,8 +269,17 @@ function analyzeRule(ruleBody, lightToks, darkToks, paperValue, overrideBody) {
 
   const fontSize = decl(ruleBody, 'font-size');
   const bold = /font-weight\s*:\s*(700|800|900|bold)/i.test(ruleBody);
-  const big = /(\d+)rpx/.test(fontSize) && parseInt(fontSize, 10) >= 42;
-  const min = (big || bold) ? MIN_LARGE : MIN_TEXT;
+  // WCAG 2.1 SC 1.4.3 大号字：≥24px（48rpx）常规，或 ≥18.66px（≈37rpx）粗体。
+  // 旧口径「非粗体 ≥42rpx 或 只要 bold 就算大号」会把 20rpx 的粗体小标签也放行 ——
+  // 那是浅色侧漏报的源头（.tpl-tag 4.38:1 就是这么漏掉的）。
+  // 字号常写成 var(--fs-*)：不查 token 就一律当正文从严，会误伤真大号字。
+  const fsDecl = decl(ruleBody, 'font-size') || '';
+  const fsVar = fsDecl.match(/var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)/);
+  const fsText = fsVar ? (lightToks[fsVar[1]] !== undefined ? lightToks[fsVar[1]] : (fsVar[2] || '')) : fsDecl;
+  const fsPx = /([\d.]+)rpx/.test(fsText) ? parseFloat(fsText) / 2 : 0;
+  const big = fsPx >= 24;
+  const boldLarge = bold && fsPx >= 18.66;
+  const min = (big || boldLarge) ? MIN_LARGE : MIN_TEXT;
 
   const hasText = !!(fgRaw || (overrideBody && declLast(overrideBody, 'color')));
   const cL = hasText && L.fg ? contrast(L.fg, L.bg) : null;

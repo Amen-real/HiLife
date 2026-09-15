@@ -29,6 +29,11 @@ page {
      各页请引用，不要再就地写一份。 */
   --danger-text:  #C4363B;     /* 红「文字」：压浅红淡底达 AA（--error #F2545B 仅 3.39:1） */
   --danger-solid: #C4363B;     /* 红「实底」配白字 5.33:1（恒定，不随主题翻转） */
+  /* 绿「文字」专用：--success(#6F9F00) 当字色压 --primary-tint 只有 3.02:1。
+     值与 --primary-text 相同但语义轴不同（品牌绿 vs 语义「成功/上升」绿）——
+     本仓的 success 与 primary 绿本就同源，改一个时别忘另一个。
+     与 --danger-text 同规矩：深色侧由各页 .page.theme-dark 提亮成 #C8FF00。 */
+  --success-text: #4C7300;
   --info: #3E8BFF;
   --info-tint: #E6F0FF;
   --purple: #8B5CF6;

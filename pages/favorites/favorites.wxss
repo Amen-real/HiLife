@@ -31,7 +31,9 @@
 .play {
   position: absolute; right: 10rpx; bottom: 10rpx;
   width: 44rpx; height: 44rpx; border-radius: 50%;
-  background: rgba(0,0,0,0.5); color: #fff; font-size: var(--fs-mini);
+  /* scrim 由 .5 提到 .58：播放键白字压在缩略图上，底图可能是接近纯白的画面，
+     .5 在纯白底上只有 3.95:1，.58 提到 5.33:1。 */
+  background: rgba(0,0,0,0.58); color: #fff; font-size: var(--fs-mini);
   display: flex; align-items: center; justify-content: center;
 }
 .fav {

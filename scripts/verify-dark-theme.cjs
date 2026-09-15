@@ -19,24 +19,31 @@
  *   [C] 反向红线：本守卫**不**要求把 --primary-ink 翻白。亮绿底上的 #0A0A0A
  *       （16.74:1）是刻意主题无关的，翻了会变成白字压亮绿 ≈1.3:1。守卫把这类判为豁免。
  *
- * 为什么浅色侧的既有债**不**拦（默认）：
- *   浅色主题存在一批历史遗留的低对比配色（同色系淡底 + 淡字、红字压红淡底等，
- *   最低到 1.68:1）。它们不是深色主题的回归，若一并拦死，本关会永远红着而被无视 ——
- *   门禁一旦长期是红的就等于没有。所以默认只**报告**，深色通道才是硬失败。
- *   等这批浅色债清完，用 `--strict` 把它一起升为硬失败。
+ * 为什么浅色侧默认只报告、现已升为硬失败：
+ *   浅色主题曾有一批历史遗留的低对比配色（同色系淡底 + 淡字、红字压红淡底等，
+ *   最低到 2.31:1）。它们不是深色主题的回归，若一开始就一并拦死，本关会永远红着而被
+ *   无视 —— 门禁一旦长期是红的就等于没有。所以先只**报告**，深色通道硬失败。
+ *   2026-09-15 那批债已清完（22 处），门禁随之把浅色通道一并升为硬失败（默认）。
+ *
+ * 大字判定口径（2026-09-15 修正）：
+ *   旧口径是「非粗体 ≥42rpx 或 只要 font-weight:700 就算大号」，把 20~26rpx 的粗体
+ *   小标签也放行，漏报了 7 处真缺陷（.tpl-tag 4.38:1、.wo-set-del 浅 2.97/深 4.42 …）。
+ *   现按 WCAG 2.1 SC 1.4.3：大号 = ≥24px（48rpx）常规，或 ≥18.66px（≈37rpx）粗体。
+ *   字号写成 var(--fs-*) 时会查根 token 再折算，避免把真大号字当正文误伤。
  *
  * 豁免的写法：在 CSS 里给规则加 `/* @contrast-ok: 原因 *\/`。
  *   只允许用于「静态分析算不出来的纸底」（相机画面 / 视频遮罩 / 固定深色弹窗）与
  *   「WCAG 明示豁免」（disabled 控件 / 无字形）。原因必须写在源码里，可 review、可 grep。
  *
- * 用法： node scripts/verify-dark-theme.cjs [--strict]
+ * 用法： node scripts/verify-dark-theme.cjs [--report-light]
+ *   默认两侧都硬失败（深色 + 浅色）；--report-light 只报告浅色侧，用于排查历史欠债。
  * 退出码：0 = 通过；1 = 存在缺口
  */
 const path = require('path');
 const dc = require('./lib/dark-contrast.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
-const STRICT = process.argv.includes('--strict');
+const STRICT = !process.argv.includes('--report-light');
 const r = dc.scanDarkGaps(ROOT);
 
 const darkGaps = r.textGaps.filter(x => (x.failModes || []).includes('dark'));
@@ -82,7 +89,7 @@ if (r.exChip > 0) {
   console.log('  · 本次未覆盖到该用例（正常，取决于当前页面结构）');
 }
 
-console.log('\n[E] 浅色通道（既有债，默认只报告）');
+console.log('\n[E] 浅色通道（默认硬拦）');
 if (!lightGaps.length) {
   ok('浅色下无对比度缺口');
 } else if (STRICT) {
@@ -92,11 +99,10 @@ if (!lightGaps.length) {
 } else {
   const byFile = new Map();
   for (const x of lightGaps) byFile.set(x.file, (byFile.get(x.file) || 0) + 1);
-  console.log('  ⚠ ' + lightGaps.length + ' 处浅色侧既有低对比债（未计入本次判定）：' +
+  console.log('  ⚠ ' + lightGaps.length + ' 处浅色侧低对比（--report-light，未计入判定）：' +
     [...byFile].map(([f, n]) => f.split('/').pop() + '×' + n).join(', '));
-  console.log('      升为硬失败请加 --strict；清债清单见 deliverables/深色主题体检报告.md');
 }
 
 console.log(`\n${fail ? '✗' : '✓'} verify-dark-theme: ${pass} passed, ${fail} failed` +
-  (STRICT ? '（--strict）' : ''));
+  (STRICT ? '' : '（--report-light）'));
 process.exit(fail ? 1 : 0);
