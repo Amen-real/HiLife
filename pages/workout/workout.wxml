@@ -206,7 +206,12 @@
     </view>
     <view class="pop-btns">
       <view wx:if="{{trainPhase === 'ready'}}" class="pop-btn ghost" hover-class="press" bindtap="cancelTrain">取消</view>
-      <view class="pop-btn primary" hover-class="press" bindtap="{{trainPhase === 'ready' ? 'skipTrain' : 'cancelTrain'}}">{{trainPhase === 'ready' ? '跳过' : '结束训练'}}</view>
+      <!-- 红线：事件名必须是静态字面量。曾把 bindtap 写成 Mustache 三元（按 trainPhase 二选一），
+           微信不把事件名当数据绑定编译，整个字符串沦为字面量事件名，永远匹配不到方法 ——
+           无报错、点了没反应，work 阶段弹窗只有这一个按钮，用户无法结束本组。
+           正确：拆成两个节点，wx:if 控事件名，三元只控文案。守卫 verify-event-binding.cjs [A] 拦截。 -->
+      <view wx:if="{{trainPhase === 'ready'}}" class="pop-btn primary" hover-class="press" bindtap="skipTrain">跳过</view>
+      <view wx:if="{{trainPhase !== 'ready'}}" class="pop-btn primary" hover-class="press" bindtap="cancelTrain">结束训练</view>
     </view>
   </view>
 </view>
