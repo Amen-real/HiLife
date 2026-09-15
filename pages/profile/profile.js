@@ -140,7 +140,8 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 4, theme: themeCls });
     }
-    // 自定义导航栏：手动补状态栏高度占位 + 状态栏文字随主题（Hero 是浅色人像图，浅色主题配黑字）
+    // 自定义导航栏：手动补状态栏高度占位 + 状态栏文字随主题
+    // （状态栏压在 Hero 底图上：浅色主题是浅底图 → 黑字；深色主题是黑底图 → 白字）
     const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
     this.setData({ statusBarStyle: 'height: ' + (info.statusBarHeight || 20) + 'px' });
     wx.setNavigationBarColor({
