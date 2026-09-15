@@ -17,7 +17,6 @@
   <!-- 训练信息头 -->
   <view class="wo-info">
     <view class="wo-title-row">
-      <view class="wo-edit-ico" bindtap="editPlan">✎</view>
       <text class="wo-name">{{planName}}</text>
     </view>
     <view class="wo-stats">
