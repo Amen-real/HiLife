@@ -18,6 +18,17 @@ page {
   --accent-deep: #E8652A;
   --accent-soft: #FFE7DA;
   --accent-tint: #FFF1E6;
+  /* 橙色「文字」专用：压在 --accent-soft 上。原来的 #C2410C 只有 4.36:1（连 AA 都没到），
+     本值 5.47:1。深色主题需配对翻转 —— 见各页 .page.theme-dark 里的 --accent-ink。 */
+  --accent-ink: #A8380A;
+  /* ============ 语义「深字」色：淡底 + 同色系字必须成对用 ============
+     直接把 --error / --warning / --success 当字色压各自的淡底，会低到 1.7~3.4:1
+     （--warning #FFB020 压 --warning-tint = 1.68:1，等于看不见）。
+     浅色侧在这里给深一档的值；深色侧由各页 .page.theme-dark 提亮。
+     原来只在 plan.wxss 里定义过 --danger-text，属于单页私有 —— 现已升为根 token 单源，
+     各页请引用，不要再就地写一份。 */
+  --danger-text:  #C4363B;     /* 红「文字」：压浅红淡底达 AA（--error #F2545B 仅 3.39:1） */
+  --danger-solid: #C4363B;     /* 红「实底」配白字 5.33:1（恒定，不随主题翻转） */
   --info: #3E8BFF;
   --info-tint: #E6F0FF;
   --purple: #8B5CF6;

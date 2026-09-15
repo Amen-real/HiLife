@@ -474,7 +474,7 @@
 
 /* AI 识别结果 */
 .mock-tip {
-  font-size: 22rpx; color: var(--warning); background: var(--warning-tint);
+  font-size: 22rpx; color: var(--accent-ink); background: var(--warning-tint);
   border-radius: var(--r-s); padding: 12rpx 16rpx; margin-bottom: 12rpx; line-height: 1.5;
 }
 .rec-total {
@@ -562,6 +562,11 @@
   /* 绿色文字/浅绿底：深色下必须翻亮绿字 + 深底 tint（对比度铁律） */
   --primary-text: #C8FF00;
   --primary-tint: rgba(200, 255, 0, 0.12);
+
+  /* 橙色系：--warning #FFB020 压 --warning-tint 只有 1.68:1，浅色侧已改用 --accent-ink 深橙；
+     深色侧按「深底提亮」翻成浅橙，并把 --warning-tint 翻成深色淡底（成对，缺一不可）。 */
+  --accent-ink: #FFC08A;
+  --warning-tint: rgba(255, 176, 32, 0.14);
 
   background: var(--n-50);
   color: var(--text);

@@ -16,11 +16,14 @@
   padding: 90rpx 36rpx 0;
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
 }
+/* @contrast-ok: 纸底是 <camera> 实时取景画面（非页面/卡片底色），静态推算会把白字压白纸判成 1:1。
+   实际是「半透明白胶囊 + 白字形压在取景画面上」，业界相机 UI 的标准做法。 */
 .cam-top-btn {
   width: 72rpx; height: 72rpx; border-radius: 50%;
   background-color: rgba(255,255,255,0.14);
   color: #FFFFFF; font-size: 52rpx; line-height: 66rpx; text-align: center;
 }
+/* @contrast-ok: 同上，压在取景画面上；未点亮态本就该是弱化字形。 */
 .cam-flash {
   width: 72rpx; height: 72rpx; border-radius: 50%;
   background-color: rgba(255,255,255,0.14);

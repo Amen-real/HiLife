@@ -147,7 +147,7 @@
 .exercise .add.added { background: var(--primary-deep); color: #0A0A0A; }
 .exercise .del {
   width: 62rpx; height: 62rpx; border-radius: 50%;
-  background: #FFE9E9; color: #E54848;
+  background: #FFE9E9; color: var(--danger-text);
   display: flex; align-items: center; justify-content: center;
   font-size: 34rpx; line-height: 1;
 }
@@ -181,6 +181,7 @@
 }
 .ab-start::after { border: none; }
 .ab-start:active { opacity: 0.85; }
+/* @contrast-ok: disabled 控件 —— WCAG 1.4.3 明确豁免失效控件，弱化字形是刻意的可用性信号。 */
 .ab-start.disabled { background: var(--n-200); color: var(--n-500); box-shadow: none; }
 
 /* ============== 弹窗 ============== */
@@ -230,7 +231,7 @@
 .sel-op { font-size: 24rpx; padding: 10rpx 22rpx; border-radius: 999rpx; font-weight: 600; }
 .op-press { transform: scale(0.92); }
 .sel-op.edit { color: #2a3d00; background: var(--primary); }
-.sel-op.del { color: #fff; background: var(--error); }
+.sel-op.del { color: #fff; background: var(--danger-solid); }
 
 /* ============== 已选动作总览弹窗 ============== */
 .sel-edit-mask { z-index: 2100; }
@@ -290,6 +291,9 @@
   --line-strong: rgba(255,255,255,.20);
 
   --success: #C8FF00;
+
+  /* 红字深底提亮：--danger-text 根值 #C4363B 压 rgba(242,84,91,.14) 的暗红底只有 3.91:1 */
+  --danger-text: #FF6B70;
 
   --card: #161616;
   --bg: rgba(255,255,255,.06);

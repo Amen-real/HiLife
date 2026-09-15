@@ -5,7 +5,7 @@
   background: #F7F8F5;
   --lime: #B7E600;
   --unfilled: #E8ECE2;
-  --danger-text: #C4363B;   /* 「移除」文字色：浅底上达 AA（--error #F2545B 仅 3.6:1） */
+  /* --danger-text 已升为根 token（app.wxss 单源），此处不再就地定义；深色值见本页深色块 */
 }
 
 /* ============== TABS ============== */
@@ -223,6 +223,8 @@
 .pool-main { display: flex; flex-direction: column; }
 .pool-name { font-size: 28rpx; font-weight: 600; color: var(--text); }
 .pool-cat { font-size: 20rpx; color: var(--text-weak); margin-top: 4rpx; }
+/* @contrast-ok: 未选中时文本为空（wxml 是 {{pickedMap[id] ? '✓' : ''}}），没有字形就没有对比度要求；
+   选中态是「--primary 实底 + #0A0A0A 字」= 16.74:1（见下一行），两种主题通用。 */
 .pool-check { width: 40rpx; height: 40rpx; border-radius: 50%; background: #fff; color: var(--primary); border: 1rpx solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 28rpx; }
 .pool-item.picked .pool-check { background: var(--primary); color: #0A0A0A; }
 

@@ -228,7 +228,7 @@
   font-weight: 800;
   line-height: 1;
 }
-.wo-set-no.warmup { background: rgba(255, 177, 153, 0.20); color: #E8743B; }
+.wo-set-no.warmup { background: rgba(255, 177, 153, 0.20); color: var(--accent-ink); }
 .wo-set-no.normal { background: var(--bg); color: var(--text-sub); border: 1rpx solid var(--line); }
 
 .wo-input-wrap { position: relative; flex-shrink: 0; }
@@ -433,6 +433,8 @@
   letter-spacing: 4rpx;
   color: rgba(255, 255, 255, 0.45);
 }
+/* @contrast-ok: 纸底是 .rest-pop.dark —— 计时弹窗按参考图方案是**固定深色卡**（#161616，不随主题翻转），
+   所以「半透明白胶囊 + 白色系字形」在两种主题下都成立；静态推算因类名无前缀关系而误用页面底色。 */
 .pop-pill {
   height: 52rpx;
   line-height: 52rpx;
@@ -441,7 +443,8 @@
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.65);
   font-size: 24rpx;
-}
+  }
+/* @contrast-ok: 同上（点亮态：荧光绿压固定深色卡）。 */
 .pop-pill.on { background: rgba(200, 255, 0, 0.16); color: #C8FF00; font-weight: 600; }
 /* done 态头部左侧占位，保持「最小化」靠右 */
 .pop-pill-ghost { width: 100rpx; height: 52rpx; }
@@ -499,6 +502,7 @@
   font-size: 28rpx;
   transition: opacity 0.15s ease;
 }
+/* @contrast-ok: 同上，压在 .rest-pop.dark 固定深色卡上（ghost 次操作按钮）。 */
 .pop-btn.ghost { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.85); }
 .pop-btn.ghost.sq { flex: 0 0 auto; padding: 0 32rpx; }
 .pop-btn.primary { background: #C8FF00; color: #0A0A0A; font-weight: 600; }
@@ -821,6 +825,8 @@
   border-radius: 16rpx;
   background-color: #000;
 }
+/* @contrast-ok: 压在 .video-mask（恒定 rgba(0,0,0,.9) 全屏遮罩）上，与主题无关；
+   白字压其上 ≈ 17:1，静态推算因找不到遮罩祖先而误用页面底色。 */
 .video-mask-close {
   position: absolute;
   right: 48rpx;
@@ -982,6 +988,11 @@
 
   /* 绿色文字：浅色的深橄榄绿在黑底上只有 3.8:1，翻成品牌亮绿 */
   --primary-text: #C8FF00;
+
+  /* 红 / 橙字深底提亮：根值 --danger-text(#C4363B) 压暗红底 3.91:1、
+     --accent-ink(#A8380A) 压暗橙底 3.87:1，都不到 AA */
+  --danger-text: #FF6B70;
+  --accent-ink: #FFC08A;
 
   --shadow-card: 0 4rpx 16rpx rgba(0,0,0,.35);
   --shadow-sm: 0 4rpx 16rpx rgba(0,0,0,.30);

@@ -61,7 +61,9 @@
   display: inline-flex; align-items: center; gap: 12rpx;
   padding: 12rpx 19rpx;
   background: rgba(10,10,10,0.6);
-  color: var(--white);
+  /* 深色下 --white 会翻成 #161616（它是「卡面」token），压在这块恒定深色遮罩上只有 1.05:1。
+     这枚徽章永远叠在动作演示图 + 深色 scrim 上，与主题无关，故用字面白。 */
+  color: #FFFFFF;
   font-family: var(--f-en);
   font-size: 21rpx; font-weight: 700; letter-spacing: 0.04em;
   border-radius: var(--r-pill);
@@ -229,6 +231,8 @@
   width: 92vw; height: 92vw;
   border-radius: var(--r-m); background-color: #000;
 }
+/* @contrast-ok: 压在 .video-mask（恒定 rgba(0,0,0,.9) 全屏遮罩）上，与主题无关；
+   白字压其上 ≈ 17:1，静态推算因找不到遮罩祖先而误用页面底色。 */
 .video-mask-close {
   position: absolute; right: 48rpx; top: 48rpx;
   width: 76rpx; height: 76rpx; line-height: 76rpx; text-align: center;
@@ -266,6 +270,13 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+  /* 浅色值 token 必须跟着翻，否则深色下会「半边翻、半边不翻」而糊掉：
+     本页 .title-block .tag 是 --primary-tint 底 + --success 字。
+     --success 上面已翻成 #C8FF00（亮绿），若 --primary-tint 不翻仍是 #F2FFD6（极浅绿），
+     就成了亮绿字压浅绿底 —— 实测仅 1.13:1，几乎看不见。
+     补上这行后底变 #2B3213（≈深墨绿），对比度回到 11.32:1。
+     教训：**成对的 token 必须成对翻**，只翻字侧比不翻更糟。 */
+  --primary-tint: rgba(200, 255, 0, 0.12);
 
   background: var(--n-50);
   color: var(--text);

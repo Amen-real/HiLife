@@ -31,7 +31,7 @@
 .error { color: var(--error); }
 
 .mock-tip {
-  background: var(--accent-soft); color: #C2410C; font-size: var(--fs-label);
+  background: var(--accent-soft); color: var(--accent-ink); font-size: var(--fs-label);
   padding: 16rpx 20rpx; border-radius: 16rpx; margin: 0 0 20rpx; line-height: 1.5;
 }
 
@@ -66,8 +66,14 @@
 .record-bar { display: flex; align-items: center; gap: 16rpx; margin-bottom: 20rpx; }
 .seg { flex: 1; display: flex; background: var(--bg); border-radius: 999rpx; padding: 6rpx; }
 .seg-item { flex: 1; text-align: center; font-size: var(--fs-label); color: var(--text-sub); padding: 12rpx 0; border-radius: 999rpx; }
-.seg-item.on { background: var(--glass-strong); color: var(--primary); font-weight: 700; box-shadow: var(--shadow-sm); }
-.btn-all { background: var(--text); color: #fff; font-size: var(--fs-body); padding: 16rpx 28rpx; border-radius: 999rpx; font-weight: 600; }
+/* 选中段：字色由 var(--primary)（亮绿）改为 var(--n-900)。
+   亮绿压白胶囊只有 1.18:1，**浅色主题下**选中项文字就等于看不见（不只是深色问题）。
+   --n-900 是会随卡面自动翻转的「卡面主字」token：浅色 #111111 压白 = 18.9:1、
+   深色 #FFFFFF 压 #161616 = 17.4:1，两种主题一次治完。
+   注意这里**不能**改用 --primary-text：本页 --primary-text 已被 .scan 的亮绿底占用，
+   翻它会砸坏 .scan（亮绿压亮绿）。同一个 token 被两种底占用时，必须换 token 而不是硬翻。 */
+.seg-item.on { background: var(--glass-strong); color: var(--n-900); font-weight: 700; box-shadow: var(--shadow-sm); }
+.btn-all { background: var(--text); color: var(--card); font-size: var(--fs-body); padding: 16rpx 28rpx; border-radius: 999rpx; font-weight: 600; }
 
 .note { font-size: var(--fs-caption); color: var(--text-sub); padding: 8rpx 12rpx; line-height: 1.5; }
 .empty { text-align: center; color: var(--text-sub); font-size: var(--fs-body); padding: 30rpx; }
@@ -109,6 +115,17 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+  /* 橙色提示条（.mock-tip）成对翻转。--accent-soft 是浅橙底、--accent-ink 是压在它上面的字，
+     两者必须同时翻，只翻一侧等于把字糊进底里。
+     ⚠ 注意本页**不要**补 --primary-text：.scan 用的是 --primary-light 亮绿底 + --primary-text 橄榄字，
+       那个组合在两种主题下都是 5.01:1（自洽、主题无关）。若在本块把 --primary-text 翻成 #C8FF00，
+       就变成亮绿压亮绿，反而砸坏 —— 这也是不能「整块照抄家模板」的原因。 */
+  --accent-soft: rgba(255, 149, 0, 0.14);
+  --accent-ink: #FFC08A;
+  /* 「卡面」类旧 token 根值是纯白，不翻则深色下 .seg-item.on 的选中胶囊仍是白底。 */
+  --glass: #161616;
+  --glass-strong: #161616;
+  --glass-border: rgba(255, 255, 255, 0.10);
 
   background: var(--n-50);
   color: var(--text);

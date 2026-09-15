@@ -132,15 +132,18 @@
   flex: 0 0 auto; width: 72rpx; height: 72rpx; border-radius: 50%;
   background: var(--card);
   display: flex; align-items: center; justify-content: center;
-  font-size: 22rpx; font-weight: 800; line-height: 1; color: #0A0A0A;
+  /* 字形色必须随主题走：底色是 --card（浅色白 / 深色 #161616）。
+     曾经这里写死 #0A0A0A，深色下变成墨字压近黑底 1.09:1 ≈ 隐形。 */
+  font-size: 22rpx; font-weight: 800; line-height: 1; color: var(--text);
 }
 .dtile-i { width: 36rpx; height: 36rpx; }
 /* 磁贴底色按语义洗色：体重蓝 / 身高橙 / 目标浅绿 / BMI 品牌绿实底 */
 .dtile-ic-w { background: linear-gradient(135deg, #EEF4FF, #D9E7FF); }
 .dtile-ic-h { background: linear-gradient(135deg, #FFF2E7, #FFE1C9); }
 .dtile-ic-g { background: linear-gradient(135deg, #F6FFDC, #E6FFA8); }
-.dtile-ic-b { background: var(--primary); }
-/* 亮绿实底上的字形：#0A0A0A 由 .dtile-ic 给定（--primary 深浅主题通用，故此色不参与 dark 覆盖） */
+.dtile-ic-b { background: var(--primary); color: var(--primary-ink); }
+/* 亮绿实底上的字形必须拉回墨色：--primary 深浅主题通用，而 .dtile-ic 的基线字色会随主题翻转
+   （深色下是白），白压亮绿≈1.6:1 等于隐形 —— 所以墨色在这里就地给定。 */
 .dtile-bmi { font-size: 20rpx; letter-spacing: -0.5rpx; }
 .dtile-b { flex: 1; min-width: 0; }
 .dtile-v { font-family: var(--f-en); font-size: var(--fs-section); font-weight: 800; line-height: 1.15; color: var(--text); }

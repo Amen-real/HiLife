@@ -31,6 +31,9 @@
 
   --primary-text: #C8FF00;                  /* 绿底黑字铁律：深色下绿色文字翻亮绿 */
   --primary-tint: rgba(200, 255, 0, 0.12);  /* 与 primary-text 成对翻转 */
+  --danger-text:  #FF6B70;                  /* 红字深底提亮：本页内嵌 training-review 组件，
+                                               组件的 .pa-chip.down 用 var(--danger-text)，
+                                               组件样式有作用域、选不中本页根节点，缺口只能在这里补 */
   --ink: #FFFFFF;                           /* 组件内 var(--ink) 深色兜底（同 advice 页） */
 
   background: var(--n-50);

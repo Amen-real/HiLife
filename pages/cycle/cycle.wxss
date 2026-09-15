@@ -191,6 +191,17 @@
   --primary-text: #C8FF00;
   /* 浅绿底（#F2FFD6）必须一起翻，否则亮绿字压浅绿底会糊成一片 */
   --primary-tint: rgba(200, 255, 0, 0.12);
+
+  /* ⚠ 「卡面」类 token 必须跟着翻：--glass / --glass-strong / --glass-border 的**根值是纯白**
+     （见 app.wxss「为兼容尚未迁移的页面，旧 token 名保留」那段），它们不像 --n-* 那样天然有位。
+     不翻的后果不是「对比度差一点」，而是深色页面上直接渲染出**白卡 + 浅灰描边**：
+       本页 .prog / .cyc-card 用的就是 var(--glass-strong) + var(--glass-border)，
+       叠在上面的 var(--primary-text) 还会被翻成亮绿（#C8FF00）→ 亮绿压白卡 ≈1.2:1，文字彻底消失。
+     值是按语义对齐的：--glass* 在浅色下与 --card / --line 同值（都是 #FFFFFF / #E8E8E4），
+     所以深色下也就等于 --card / --line。 */
+  --glass: #161616;
+  --glass-strong: #161616;
+  --glass-border: rgba(255, 255, 255, 0.10);
   /* 标签描边同步翻成亮绿 */
   --tag-line: rgba(200, 255, 0, 0.30);
 

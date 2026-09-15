@@ -85,10 +85,13 @@
 .date:not(.active):not(.muted):active { background: var(--n-100); }
 .date.active {
   width: 64rpx; height: 64rpx;
+  /* 浅色：反白深底 + 橄榄绿数字（9.38:1）。深色下 --n-900 会翻成 #FFFFFF，
+     橄榄绿压白只剩 2.01:1 —— 所以深色改用品牌亮绿底 + 墨字（见文件尾部深色段）。 */
   background: var(--n-900);
   color: #A6C24A;
   font-weight: 600;
 }
+
 .date.has-record::after {
   content: "";
   position: absolute; left: 50%; bottom: 8rpx;
@@ -391,7 +394,14 @@
   --glass-strong: #1E1E1E;
   --glass-border: rgba(255,255,255,.10);
 
-  --primary-tint: rgba(200,255,0,.12);
+  --primary-tint: rgba(200,255,0,.12);  /* 成对补上：本页内嵌 training-review 组件，组件里用 var(--primary-text, #4C7300)。
+     组件**不能**自己写 .page.theme-dark（组件样式有作用域，选不中宿主页的根节点），
+     所以这类缺口的正确修法在宿主页 —— 本页与 review 页都要有；review 页早就有了，本页漏了。
+     不补的话深色下拿到的是根值 #4C7300（深橄榄），压在 rgba(200,255,0,.12) 的暗绿底上几乎看不见。 */
+  --primary-text: #C8FF00;
+  /* 同一条宿主页规则：本页内嵌的 training-review 组件里 .pa-chip.down 用 var(--danger-text)，
+     组件自己写不了深色块 → 必须由宿主页把它翻亮，否则深底上拿到根值 #C4363B（3.88:1）。 */
+  --danger-text: #FF6B70;
   --accent-soft: rgba(255,149,0,.14);
   --accent-tint: rgba(255,149,0,.14);
   --info-tint: rgba(62,139,255,.14);
@@ -410,3 +420,9 @@
 
 /* 深色下的硬编码色单独覆盖 */
 .page.theme-dark .ex-row-hover { background: #1E1E1E; }
+
+/* 选中日：浅色是「反白深底 + 橄榄绿字」，深色下 --n-900 翻成了白色，
+   橄榄绿压白仅 2.01:1 → 改成品牌亮绿底 + 墨字（16.74:1，走「亮底深字」恒等豁免）。
+   同时把小圆点翻成墨色，否则绿点压绿底看不见。 */
+.page.theme-dark .date.active { background: var(--primary); color: var(--primary-ink); }
+.page.theme-dark .date.active.has-record::after { background: var(--primary-ink); }
