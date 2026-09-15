@@ -331,7 +331,8 @@
    深色主题覆盖（.page.theme-dark）
    —— 由本页「深色主题」开关切换，utils/theme.js 持久化到 Storage。
    手法同 pages/home/home.wxss：重定义 CSS 变量让整棵子树自动翻转，
-   仅对本页硬编码颜色（背景图、彩底磁贴、亮绿底上的墨字）做单独覆盖。
+   仅对本页硬编码颜色（彩底磁贴、亮绿底上的墨字）做单独覆盖；
+   Hero 底图不在这里处理 —— 明暗两张图由 JS 换 src（见 profile.js 的 bgOf）。
    ══════════════════════════════════════════════════════════════ */
 .page.theme-dark {
   --n-50:  #0A0A0A;
@@ -361,14 +362,9 @@
   color: var(--text);
 }
 
-/* Hero 背景图是白底人像照，铺在黑底上就是一块惨白 → 深色下整体撤掉，改用品牌光晕撑住右上角 */
-.page.theme-dark .p-hero-bg { display: none; }
-.page.theme-dark .p-hero::before {
-  content: ''; position: absolute; right: -90rpx; top: -70rpx;
-  width: 460rpx; height: 460rpx; border-radius: 50%;
-  background: radial-gradient(circle, rgba(200, 255, 0, .16) 0%, rgba(0, 0, 0, 0) 70%);
-  pointer-events: none;
-}
+/* Hero 底图：深色主题**不撤图**，改用另一张黑底版（static/my-bg-dark.jpg，由 JS 跟 theme 换 src）。
+   两张同几何尺寸（852×560），所以这里无需任何尺寸覆盖 —— 一旦谁给 .p-hero-bg 加了尺寸/隐藏规则，
+   切主题就会跳版，故该不变式已固化为 verify-profile.cjs 的 C7/C12 断言。 */
 
 /* 图标：.ico--ink 默认深墨，黑底不可见 → 转白 */
 .page.theme-dark .ico--ink { background-color: #FFFFFF; }

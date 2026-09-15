@@ -5,8 +5,13 @@ const nutrition = require('../../utils/nutrition.js');
 const dateRange = require('../../utils/dateRange.js');
 const stats = require('../../utils/trainingStats.js');
 
-// 背景图：随包发布在 static/（packOptions.ignore 为空，static 不参与忽略）
-const BG_URL = '/static/my-bg.jpg';
+// Hero 背景图：明暗两张都随包发布在 static/（packOptions.ignore 为空，static 不参与忽略）。
+// 两张严格同几何尺寸（852×560 → 750rpx 宽时折算 493rpx），切主题只换图不换高度，Hero 不跳版。
+// <image src> 无法被 CSS 按主题改写，所以由 JS 跟着 theme 换 src（见 onShow / onToggleTheme）。
+const BG_LIGHT = '/static/my-bg.jpg';
+const BG_DARK = '/static/my-bg-dark.jpg';
+// 主题 → 底图（唯一映射点，别在别处再写一遍三元）
+function bgOf(themeCls) { return themeCls === 'theme-dark' ? BG_DARK : BG_LIGHT; }
 
 // 用户数据字段（导出/导入/清除只作用于这些，设备运行配置如 visionBackendUrl 等不纳入）
 const DATA_KEYS = [
@@ -90,8 +95,8 @@ Page({
     nickname: '',
     avatarText: '衡',
     avatarUrl: '',
-    // Hero 背景图：本地 static/ 随包发布（秒开）；加载失败置 bgFailed 隐藏，露出页面底色
-    bgUrl: BG_URL,
+    // Hero 背景图：明/暗两版各自随包发布；加载失败置 bgFailed 隐藏，露出页面底色
+    bgUrl: BG_LIGHT,
     bgFailed: false,
     // 状态栏占位高度（navigationStyle=custom 后手动注入）
     statusBarStyle: 'height: 0px',
@@ -122,10 +127,16 @@ Page({
 
   onShow() {
     const themeCls = theme.sync() === theme.DARK ? 'theme-dark' : 'theme-light';
-    this.setData({
-      theme: themeCls,
-      darkMode: theme.get() === theme.DARK
-    });
+    const patch = { theme: themeCls, darkMode: theme.get() === theme.DARK };
+    // 底图跟着主题换。只在 src 真的变了时才重置失败旗标 ——
+    // 否则每次 onShow 都会把一张已确认加载失败的图重新拉一遍（bgFailed 只决定删不删 <image> 节点，
+    // 两种状态都露出页面底色，观感一致，所以这里只需避免无谓重载）。
+    const nextBg = bgOf(themeCls);
+    if (nextBg !== this.data.bgUrl) {
+      patch.bgUrl = nextBg;
+      patch.bgFailed = false;
+    }
+    this.setData(patch);
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 4, theme: themeCls });
     }
@@ -158,12 +169,18 @@ Page({
     });
   },
 
-  // 深色主题开关：切换后即时同步底栏；各 tab 页（首页等）在自身 onShow 里读取新值
+  // 深色主题开关：切换后即时同步底栏 + 换 Hero 底图；各 tab 页（首页等）在自身 onShow 里读取新值
   onToggleTheme(e) {
     const on = !!(e && e.detail && e.detail.value);
     const t = theme.set(on ? theme.DARK : theme.LIGHT);
     const themeCls = t === theme.DARK ? 'theme-dark' : 'theme-light';
-    this.setData({ darkMode: t === theme.DARK, theme: themeCls });
+    this.setData({
+      darkMode: t === theme.DARK,
+      theme: themeCls,
+      // 本页原地切主题不会重走 onShow，底图必须在这里一并换（否则 Hero 还是旧主题的那张）
+      bgUrl: bgOf(themeCls),
+      bgFailed: false
+    });
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ theme: themeCls });
     }

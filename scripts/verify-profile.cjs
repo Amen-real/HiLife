@@ -201,12 +201,45 @@ const chipUse = /\.p-chip\s+\.ico--ink/.test(pullBackSel)
   && /\.p-avatar-add\s+\.ico--ink/.test(pullBackSel);
 truthy(chipUse, 'C6 亮绿底上的图标在深色下有墨色拉回（p-chip / tk-go / p-avatar-add）');
 
-// C7 背景图随包发布且体积可控（主包 2MB 上限，原 863KB PNG 已裁切转 JPG）
-const bg = path.join(ROOT, 'static/my-bg.jpg');
-truthy(fs.existsSync(bg), 'C7 static/my-bg.jpg 存在');
-if (fs.existsSync(bg)) {
-  const kb = Math.round(fs.statSync(bg).size / 1024);
-  truthy(kb < 120, 'C7 背景图 ' + kb + 'KB < 120KB');
+// C7 Hero 底图：明暗两张都随包发布，体积可控 **且几何尺寸一致**。
+// 同尺寸是关键不变式：Hero 的 min-height 是按底图高度折算成 rpx 的常量，
+// 两张不同高就会「切主题跳版」。纯 node 读 JPEG 的 SOF 段取尺寸，不引 PIL/canvas。
+function jpegSize(file) {
+  const b = fs.readFileSync(file);
+  if (b[0] !== 0xFF || b[1] !== 0xD8) return null;      // 不是 JPEG
+  let i = 2;
+  while (i + 9 < b.length) {
+    if (b[i] !== 0xFF) { i++; continue; }
+    const m = b[i + 1];
+    if (m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7) || m === 0xFF) { i += 2; continue; }
+    if (m === 0xDA) break;                               // 进入扫描数据，后面没有头了
+    const isSOF = (m >= 0xC0 && m <= 0xC3) || (m >= 0xC5 && m <= 0xC7)
+      || (m >= 0xC9 && m <= 0xCB) || (m >= 0xCD && m <= 0xCF);
+    if (isSOF) return { h: b.readUInt16BE(i + 5), w: b.readUInt16BE(i + 7) };
+    i += 2 + b.readUInt16BE(i + 2);
+  }
+  return null;
+}
+const bgDims = ['static/my-bg.jpg', 'static/my-bg-dark.jpg'].map(rel => {
+  const abs = path.join(ROOT, rel);
+  truthy(fs.existsSync(abs), 'C7 ' + rel + ' 存在');
+  if (!fs.existsSync(abs)) return null;
+  const kb = Math.round(fs.statSync(abs).size / 1024);
+  truthy(kb < 120, 'C7 ' + rel + ' ' + kb + 'KB < 120KB');
+  const d = jpegSize(abs);
+  truthy(!!d, 'C7 ' + rel + ' 尺寸可解析');
+  return d;
+});
+if (bgDims[0] && bgDims[1]) {
+  eq(bgDims[1].h, bgDims[0].h, 'C7 明暗底图同高（' + bgDims[0].h + 'px，不同高会切主题跳版）');
+  eq(bgDims[1].w, bgDims[0].w, 'C7 明暗底图同宽（' + bgDims[0].w + 'px）');
+}
+// Hero min-height 必须≈底图按 750rpx 宽折算的高度
+const heroMin = (wxss.match(/\.p-hero\s*\{[^}]*min-height:\s*(\d+)rpx/) || [])[1];
+if (bgDims[0] && heroMin) {
+  const expect = Math.round(bgDims[0].h * 750 / bgDims[0].w);
+  truthy(Math.abs(Number(heroMin) - expect) <= 2,
+    'C7 .p-hero min-height ' + heroMin + 'rpx ≈ 底图折算 ' + expect + 'rpx');
 }
 
 /* C8 访客登录入口：不再单开引导卡（Hero 头像位 + 关于区兜底行两处入口）
@@ -234,6 +267,19 @@ truthy(wxml.indexOf('数据只存本机') >= 0, 'C10b 副标题写明「数据�
 });
 truthy(/if\s*\(this\.data\.loggedIn\)\s*this\.onChooseAvatar\(\);\s*else\s*this\.wechatLogin\(\)/.test(js),
   'C11b onIdTap 按登录态分支（已登录=换头像 / 未登录=登录）');
+
+/* C12 Hero 底图跟主题走：深色不撤图，改用黑底版。
+   曾用「深色 display:none + 品牌光晕」兜底，现在有真底图，撤图/加尺寸覆盖都会让主题切换跳版 */
+truthy(!/\.page\.theme-dark[^{]*\.p-hero-bg[^{]*\{[^}]*display:\s*none/.test(wxss),
+  'C12 深色主题不再隐藏 Hero 底图');
+const bgPathsOk = /const\s+BG_LIGHT\s*=\s*'\/static\/my-bg\.jpg'/.test(js)
+  && /const\s+BG_DARK\s*=\s*'\/static\/my-bg-dark\.jpg'/.test(js);
+truthy(bgPathsOk, 'C12 明暗两版底图路径已定义');
+// 切换点必须是两处：onShow（进页/后台回来）+ onToggleTheme（页内原地切主题，不走 onShow）。
+// 逐点断言而非计数 —— 计数会把函数定义 `function bgOf(themeCls)` 也算进去。
+truthy(/const\s+nextBg\s*=\s*bgOf\(themeCls\)/.test(js) && /patch\.bgUrl\s*=\s*nextBg/.test(js),
+  'C12 onShow 内换底图（且仅在 src 真变化时才重置失败旗标）');
+truthy(/bgUrl:\s*bgOf\(themeCls\)/.test(js), 'C12 onToggleTheme 内换底图（原地切主题不走 onShow）');
 
 console.log('\npass=' + pass + '  fail=' + fail);
 process.exit(fail ? 1 : 0);
