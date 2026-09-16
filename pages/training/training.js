@@ -1,11 +1,22 @@
 // pages/training/training.js
-const mock = require('../../utils/mock.js');
 const exercises = require('../../utils/exercises.js');
 const { media, thumb } = require('../../utils/media.js');
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
-const categoryEmoji = mock.categoryEmoji;
 const theme = require('../../utils/theme.js');
+
+// 分类 -> emoji 占位图。原先来自 utils/mock.js，但那个文件另外三个导出
+// （actionLibrary / dietRecommend / myActions）已全部无人引用，为这 7 行养一个 12KB
+// 的模块不划算，故随 mock.js 一起删掉、就地保留。只有本页用，不必再抽公共常量。
+const CATEGORY_EMOJI = {
+  '胸部': '💪',
+  '背部': '🔙',
+  '肩膀': '🤷',
+  '腿部': '🦵',
+  '手臂': '💪',
+  '核心': '🔥',
+  '我的动作': '⭐'
+};
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -92,7 +103,7 @@ Page({
       // 动作图标用演示 GIF 动图（优先 video，无则回退静态 image）；<image> 渲染 GIF 自动循环播放，不额外加角标
       gif: media(a.video || a.image || ''),
       video: media(a.video || ''),
-      emoji: a.emoji || categoryEmoji[a.category] || '🏋️'
+      emoji: a.emoji || CATEGORY_EMOJI[a.category] || '🏋️'
     }));
     const kw = this.data.keyword.trim().toLowerCase();
     if (kw) {
@@ -370,7 +381,14 @@ Page({
         const arr = exercises.library[cat] || [];
         if (arr[0]) picks.push(arr[0]);
       });
-      if (!picks.length) picks.push(...mock.myActions.slice(0, 3));
+      // 兜底不再塞 mock 假动作（旧写法 mock.myActions.slice(0,3)）：那些动作在
+      // exercises.library 里根本不存在，一旦灌进 selectedActions，训练页取不到动作图/步骤，
+      // 整场训练都是坏的；更糟的是用户分不清「库没加载」还是「自己选错了」。
+      // 四分类同时为空 = 动作库异常，唯一正确的做法是明说并中止，别带着坏数据进训练页。
+      if (!picks.length) {
+        wx.showToast({ title: '动作库未加载，请退出重进本页', icon: 'none' });
+        return;
+      }
       picks.forEach(a => store.toggleSelect(a));
       wx.showToast({ title: '已自动选好 ' + picks.length + ' 个动作', icon: 'none' });
     }

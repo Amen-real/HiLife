@@ -46,9 +46,10 @@ const MEAL_DEFS = [
   { type: '蔬果', icon: 'food-salad' }
 ];
 
-// 推荐食物：按 早/中/晚/加餐/蔬果 5 分类，每类多条 cloud:// 真实图（来自 mock.js dietRecommend）
-// 数据源：mock.js dietRecommend（图片路径已与云存储目录一致：images/food/<name>.jpg）
-// 这里内嵌以便 advice 页自包含（数据规模小、无副作用）
+// 推荐食物：按 早/中/晚/加餐/蔬果 5 分类，每类多条 cloud:// 真实图。
+// 数据原本住在 utils/mock.js 的 dietRecommend，但那边其余导出（actionLibrary / myActions）
+// 已无人引用、整个模块 2026-09-16 被删；这批饮食数据**只此一处使用**，故就此内嵌。
+// 图片路径与云存储目录一致（images/food/<name>.jpg），media() 出口只拼前缀、不改目录。
 const FOOD_GROUPS = [
   {
     key: '早餐',

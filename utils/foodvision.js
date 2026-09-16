@@ -14,7 +14,10 @@ function getCfg() {
     useCC: !!g.useCallContainer,
     env: g.cloudEnv || '',
     service: g.visionService || 'hilife-vision',
-    url: (g.visionBackendUrl && g.visionBackendUrl.trim()) || 'http://192.168.1.100:8000'
+    // 空串 = 未配置。**不再兜底任何写死的地址**：原先这里和 app.js 各写死一个局域网 IP，
+    // 而且互不同网段 —— 两个「默认值」互相矛盾，谁也不知道真正的后端到底在哪。
+    // 地址随机器/网段变化，留在仓库里只会泄漏内网拓扑并误导后来者；改为空，由 analyzeByUpload 明确报错。
+    url: (g.visionBackendUrl && g.visionBackendUrl.trim()) || ''
   };
 }
 
@@ -101,7 +104,13 @@ function pollTask(cfg, taskId) {
 
 function analyzeByUpload(tempFilePath, cfg) {
   return new Promise((resolve, reject) => {
-    const base = cfg.url.replace(/\/+$/, '');
+    const base = (cfg.url || '').replace(/\/+$/, '');
+    // 空地址必须在这里拦住：wx.uploadFile({ url: '/analyze' }) 会当成相对地址发出去，
+    // 失败回调只丢回一句「请求失败」，排查成本极高。这里直接把「该配哪一项」说出来。
+    if (!base) {
+      reject(new Error('未配置视觉识别后端地址：开发联调请在 app.js 的 globalData.visionBackendUrl 填入 vision-server 地址；生产请使用 useCallContainer 模式'));
+      return;
+    }
     wx.uploadFile({
       url: base + '/analyze',
       filePath: tempFilePath,

@@ -625,7 +625,9 @@ Page({
       success: (res) => { if (res.confirm) { store.deletePlan(id); this.loadPlans(); wx.showToast({ title: '已删除', icon: 'none' }); } }
     });
   },
-  deletePlan(e) { const id = e.currentTarget.dataset.id; if (id) this._deletePlan(id); },
+  // deletePlan(e) 已删除：与 editPlan 同源的旧版包装（卡片上直接放按钮的时代遗留），
+  // 无任何 wxml 绑定，真入口是 .more -> openMenu -> menuAction(act='delete') -> _deletePlan。
+  // 它曾在守卫里藏了一整轮 —— 上方 `store.deletePlan(id)` 与它同名，骗过了「内部调用」检测。
 
   // —— 更多菜单 ——
   openMenu(e) {

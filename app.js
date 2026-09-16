@@ -51,9 +51,13 @@ App({
     reminderOn: false,          // 「今日未训练提醒」总开关（语义与判据见 utils/reminder.js）
     reminderDismissedOn: '',    // 用户关掉提醒的日期 'YYYY-MM-DD'，跨天自动失效
 
-    // 视觉识别（多模态大模型）后端地址；为空则 utils/foodvision.js 用默认地址
-    // 开发期联调（useCallContainer=false 时）填后端局域网/公网地址
-    visionBackendUrl: 'http://192.168.110.238:8000',
+    // 视觉识别（多模态大模型）后端地址，**故意留空**。
+    // 上线链路走云托管（下方 useCallContainer: true），根本不需要这个地址；
+    // 只有开发期联调（useCallContainer 置 false）才需要填本地 vision-server。
+    // 之所以不再给默认值：局域网地址随机器/网段变化，写进仓库既泄漏内网拓扑，
+    // 又会让后来者误以为「192.168.x.x 就是我们的后端」——那是某台开发机的瞬时状态。
+    // 联调时就地填 'http://<你的局域网IP>:8000'，**提交前改回空串**。
+    visionBackendUrl: '',
 
     // ===== 微信云托管（生产链路，免备案免域名）=====
     // true: callContainer 调云托管。⚠️ callContainer 有 15s 硬超时（errCode 102002），同步识别必超时，

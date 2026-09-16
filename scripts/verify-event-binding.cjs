@@ -232,6 +232,40 @@ const LIFECYCLE = new Set([
   'noop', 'noopCapture'
 ]);
 console.log('\n[D] 孤儿方法备案（js 里定义，但 wxml 未绑定且内部未调用）');
+
+/**
+ * 「内部调用」的判定口径：只认 `this.<name>`。
+ *
+ * 原实现用 `\.<name>\b`，本意是覆盖 `this.xxx`，但它同时命中了**别的对象上的同名方法**。
+ * 真实漏报案例：pages/plan/plan.js 的 deletePlan() 从未被 plan.wxml 绑定（真入口是
+ * menuAction → _deletePlan），但它上面 5 行有 `store.deletePlan(id)` —— 名字撞车，
+ * [D] 便把它当成「已被内部调用」放过，一个死方法就这样藏了整整一轮。
+ * 收紧到 this. 前缀不会漏报：全仓已核，无 that / self / _this / vm 之类的 this 别名。
+ * 判定抽成函数是为了让 [D0] 能对**同一个实现**做校准，而不是各写一份。
+ */
+const calledInternally = (src, name) => new RegExp('\\bthis\\.' + name + '\\b').test(src);
+
+// [D0] 校准样本：把「同名不同对象」误判成内部调用时，这里必须先红。
+console.log('\n[D0] 孤儿判定自检（校准样本：this. 前缀被放宽回 \\.name 时这里会先红）');
+{
+  const SAMPLES = [
+    { src: 'this._deletePlan(id);', name: '_deletePlan', want: true, why: '真内部调用 this.foo → 必须判为「被调用」' },
+    { src: 'deletePlan(e) { store.deletePlan(id); this._refresh(); }', name: 'deletePlan', want: false, why: '只有 store.deletePlan（同名不同对象）→ 必须判为孤儿' },
+    { src: 'if (id) this.deletePlan(id);', name: 'deletePlan', want: true, why: '带 this. 前缀的同名调用 → 必须判为「被调用」' }
+  ];
+  const wrong = [];
+  for (const s of SAMPLES) {
+    const got = calledInternally(s.src, s.name);
+    if (got !== s.want) wrong.push(`${s.why}（期望 ${s.want}，实得 ${got}）`);
+  }
+  if (wrong.length) {
+    for (const w of wrong) bad('校准样本失准：' + w);
+    console.log('      [D] 的结论不可信 —— 先修 calledInternally，再看 [D] 的输出');
+  } else {
+    ok(`${SAMPLES.length} 个校准样本全部符合预期（2 调用 / 1 孤儿）`);
+  }
+}
+
 const orphans = [];
 for (const f of wxmls) {
   const jsPath = f.replace(/\.wxml$/, '.js');
@@ -241,7 +275,7 @@ for (const f of wxmls) {
   for (const d of methodDefs(src)) {
     if (LIFECYCLE.has(d.name)) continue;
     if (bound.has(d.name)) continue;
-    if (new RegExp('\\.' + d.name + '\\b').test(src)) continue; // this.xxx / that.xxx
+    if (calledInternally(src, d.name)) continue; // 仅 this.xxx，见 [D0] 校准
     const line = src.slice(0, d.index).split(/\r?\n/).length;
     orphans.push(`${rel(jsPath)}:${line}  ${d.name}()`);
   }

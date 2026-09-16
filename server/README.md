@@ -18,7 +18,9 @@ python app.py
 健康检查：`curl http://localhost:8000/health` → `{"status":"ok","model_loaded":false,"mock":true}`
 识别测试：`curl -F image=@demo.jpg http://localhost:8000/analyze`
 
-小程序端 `utils/caloriescan.js` 的 `backendUrl` 默认指向 `http://192.168.1.100:8000`，
+小程序端不走第三方库：把 `app.js` 的 `globalData.useCallContainer` 置为 `false`，并在
+`globalData.visionBackendUrl` 填本机/局域网地址（如 `http://<你的局域网IP>:8000`）。
+该字段**默认留空、不入库** —— 局域网地址随机器和网段变化，写死只会误导后来者。
 开发期在微信开发者工具勾选「不校验合法域名」即可直连本机/局域网服务。
 
 ## 2. 接入 CalorieScan 真实模型

@@ -11,7 +11,7 @@
 //
 // ── 云存储模式（MEDIA_MODE='cloud'，当前选用）─────────────
 // 前置：开通云开发后，云存储默认可用（免费版含 5GB，无需付费/备案）。
-// 业务数据（exercises.js / mock.js）已存完整相对路径（images/<id>-<hash>.jpg、videos/<id>-<hash>.gif、images/food/<name>.jpg），
+// 业务数据（exercises.js、advice.js 内嵌的分类数据）已存完整相对路径（images/<id>-<hash>.jpg、videos/<id>-<hash>.gif、images/food/<name>.jpg），
 // 与云存储实际目录结构一致：动作图→images/、演示 GIF→videos/、饮食图→images/food/。media() 只在出口拼前缀，不做目录改写。
 // 云存储权限【必须】设为「所有用户可读，仅创建者可写」，否则终端用户看不到媒体（默认仅创建者可读）。
 // cloud:// 文件 ID 在 <image> 组件下可直接渲染，且免 downloadFile 域名白名单、免 ICP 备案。

@@ -26,7 +26,7 @@
 | 缓存    | `wx.setStorageSync`                 | 本地序列化全量状态（本地单用户模式，非云数据库）                           |
 | 媒体    | 微信云存储 `cloud://`                    | `utils/media.js` 原样拼前缀 + `resolveUrl()` 临时 URL     |
 | AI 后端 | 微信云托管（CloudBase Container）          | `wx.cloud.callContainer` 调 `hilife-vision` 服务跑视觉模型 |
-| 开发期后端 | FastAPI/uvicorn（本地 Windows）         | 局域网 `192.168.110.238:8000`，仅联调用                    |
+| 开发期后端 | FastAPI/uvicorn（本地 Windows）         | 地址由联调者在本机填 `app.js` 的 `globalData.visionBackendUrl`，**不入库**（随机器/网段变化） |
 | 视觉模型  | 第三方多模态大模型（Qwen-VL / MiMo 等）         | 由云托管容器内的服务端调用                                      |
 | 构建/工具 | Node `.cjs` / Python 脚本             | 图标生成、字号 token 化、云存储上传                              |
 
