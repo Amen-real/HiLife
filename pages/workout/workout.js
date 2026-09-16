@@ -14,6 +14,9 @@ function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function fmtClock(sec) { sec = sec || 0; return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60); }
 // 替换/添加动作浮层：单次渲染的最大候选数（超出部分上拉加载更多），避免上千项一次性渲染超节点上限被截断
 const REPL_PAGE = 120;
+// 「完成并生成分享图」的落点：复盘页 + share=1（复盘页据此让 training-review 自动打开分享卡）。
+// 路径在本仓只此一处出现，避免页面名写死在两个地方后改名漏改。
+const REVIEW_SHARE_URL = '/pages/review/review?share=1';
 function todayStr() {
   const d = new Date();
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -106,6 +109,10 @@ Page({
     addFullLen: 0,
     replBodyH: 0,            // 浮层 scroll-view 确定高度(px)，真机用 JS 实测，避免 flex 高度对 scroll-view 失效导致只显示几项
     finished: false,
+    // 顶栏「完成训练」二次确认卡（完成并生成分享图 / 完成训练 / 取消）
+    showFinishCard: false,
+    finishSub: '',           // 副标题：还有 N 组未完成 / 全部动作已完成
+    finishSummary: [],       // 摘要三项 [{k,v}]：已练 / 完成组数 / 完成动作
     // 添加动作
     showAdd: false,
     // 弹窗/悬浮球进度环（conic-gradient 完整 CSS 字符串，由 JS 拼接，单 mustache 合规）
@@ -1084,18 +1091,45 @@ Page({
     });
   },
 
-  // 顶栏「完成」→ 保存整次训练（有未完成组时确认）
+  // 顶栏「完成训练」→ 打开三选一确认卡（完成并生成分享图 / 完成训练 / 取消）。
+  //
+  // 【为什么从 wx.showModal 改成卡片】旧实现只在「有未完成组」时弹一次系统确认框，
+  //   全部完成时直接保存 —— 而「练完顺手生成分享图」恰恰是全完成这个分支里最高频的动作：
+  //   用户得先回训练 tab，再进「我的 → 训练日志」，才能点到分享入口。一次直达比两次绕行好。
+  //   未完成组的信息没丢：它写进卡片副标题（finishSub）并配一张本场摘要，用户照样看得见再决定，
+  //   所以「点完成 = 明确确认」这条语义反而更强了（弹的是三个有名字的出口，不是一个「确定」）。
+  //
+  // 文案与能力一致（红线）：卡里只有三个真做得到的出口，不出现本 App 没有的东西
+  //   （没有 Apple 运动健康写入、没有云备份/跨设备同步）。
   finishWorkout() {
-    const s = this.data.stats;
-    if (s.totalSets > 0 && s.doneSets >= s.totalSets) {
-      this.saveWorkout(this.data.actions);
-      return;
-    }
-    wx.showModal({
-      title: '结束训练',
-      content: '还有未完成组，确定保存当前进度？',
-      success: (r) => { if (r.confirm) this.saveWorkout(this.data.actions); }
+    const s = this.data.stats || {};
+    const left = Math.max(0, (s.totalSets || 0) - (s.doneSets || 0));
+    this.setData({
+      showFinishCard: true,
+      finishSub: left > 0 ? '还有 ' + left + ' 组未完成' : '全部动作已完成',
+      // 三项都是「已经发生的事实」，不是承诺，全部取自现有单源派生值（decorate / 全局计时器）
+      finishSummary: [
+        { k: '已练', v: this.data.workoutClock || '00:00' },
+        { k: '完成组数', v: (s.doneSets || 0) + '/' + (s.totalSets || 0) },
+        { k: '完成动作', v: (s.doneActions || 0) + '/' + (s.totalActions || 0) }
+      ]
     });
+  },
+
+  // 取消：只关卡片。不保存、不冻结会话 —— 全局计时继续走，可以接着练（与「最小化」同一语义）
+  closeFinishCard() {
+    this.setData({ showFinishCard: false });
+  },
+
+  // 完成训练：保存后按原路径返回上一页（与改版前完全一致）
+  finishOnly() {
+    this.saveWorkout(this.data.actions);
+  },
+
+  // 完成并生成分享图：保存后直接落到「训练复盘」页，并让它自动打开刚生成的分享卡。
+  // 走 saveWorkout 的同一条保存路径（不另写一份落库逻辑），差别只在保存后的去向。
+  finishAndShare() {
+    this.saveWorkout(this.data.actions, 'share');
   },
 
   // 底部「删除训练」→ 放弃并清除本次训练（不保存）、清空全局计时、回到训练选择
@@ -1178,8 +1212,11 @@ Page({
     });
   },
 
-  saveWorkout(actions) {
+  // 保存整次训练。after='share' 表示保存完直接去「训练复盘」并自动开分享卡（顶栏卡片的第一个出口）。
+  saveWorkout(actions, after) {
+    // 未登录 → 不保存、也不关确认卡：什么结果都没发生，卡片就不该凭空消失
     if (!auth.requireLogin()) return;
+    this.setData({ showFinishCard: false });
     this._finished = true;
     workoutSession.clear();   // 训练完成，清除全局会话（隐藏悬浮计时窗）
     const logActions = actions.map(a => ({
@@ -1218,7 +1255,21 @@ Page({
       if (next) console.log('[workout] 下次训练：' + next.name);
     }
     wx.showToast({ title: '训练已保存', icon: 'success' });
-    setTimeout(() => wx.navigateBack(), 1000);
+    // 保存后的去向：
+    //   · 默认（完成训练 / 休息卡「保存训练」）→ 返回上一页，与改版前一致；
+    //   · 'share'（完成并生成分享图）→ 用 redirectTo **替换**掉本页去复盘页，而不是 navigateTo。
+    //     本页此刻已 _finished + 会话已清，留在栈里只会让用户从复盘页返回时看到一张空训练页；
+    //     redirectTo 之后返回键直达「训练 tab」，是用户预期的落点。
+    //     分享路径的 toast 停留更短（700ms）：用户点「生成分享图」的目标就是那张图，
+    //     没必要为了读「训练已保存」多等 300ms。
+    const delay = after === 'share' ? 700 : 1000;
+    setTimeout(() => {
+      if (after === 'share') {
+        wx.redirectTo({ url: REVIEW_SHARE_URL, fail: () => wx.navigateBack() });
+      } else {
+        wx.navigateBack();
+      }
+    }, delay);
   },
 
   onHide() {

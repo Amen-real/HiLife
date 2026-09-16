@@ -32,6 +32,15 @@ Component({
       type: String,
       value: '',
       observer(v) { if (this._logs && this._logs.length) this._applyFocus(v); }
+    },
+    // 训练页「完成并生成分享图」带 share=1 跳进来 → 落地后自动打开分享卡。
+    // 是**一次性信号**：本组件同时挂在 tab 页（数据），而 pageLifetimes.show 每次回到
+    // 本页都会 rebuild，若在这里无条件重开，用户手动关掉分享卡后一切回前台它又弹回来。
+    // 故只消费一次（_wantShare 置位 → 开出即清）。
+    autoShare: {
+      type: Boolean,
+      value: false,
+      observer(v) { if (v) { this._wantShare = true; this._tryAutoShare(); } }
     }
   },
 
@@ -79,7 +88,14 @@ Component({
     shareStyleName: '浅色'
   },
 
-  lifetimes: { attached() { this.rebuild(); } },
+  lifetimes: {
+    attached() {
+      // 属性观察器与 attached 的**先后顺序**由基础库实现决定（初始值可能先于 attached 送达），
+      // 两条路径都必须能把「自动开分享卡」这个信号捡起来，故这里再读一次 data.autoShare。
+      if (this.data.autoShare) this._wantShare = true;
+      this.rebuild();
+    }
+  },
   pageLifetimes: { show() { this.rebuild(); } },
 
   methods: {
@@ -99,6 +115,7 @@ Component({
           pickOptions: [], kaSheet: false, kaTabSafe: false, kaCustom: false, kaPickedCount: 0,
           suggest: [], hasSuggest: false, canApply: false
         });
+        this._tryAutoShare();
         return;
       }
 
@@ -113,6 +130,20 @@ Component({
       this.buildWeeks(logsDesc);
       this.buildKeyActions(logsDesc);
       this.buildRecords(logsDesc);
+      this._tryAutoShare();
+    },
+
+    // 「完成并生成分享图」的一次性落地：等本场数据就绪后再开，避免 openShareCard 拿到空 _logs。
+    // 必须放在 rebuild 之后调用 —— openShareCard 依赖 this._logs[this._selIdx]。
+    _tryAutoShare() {
+      if (!this._wantShare) return;
+      if (!this._logs || !this._logs.length) return;   // 还没 rebuild 完，等下一次调用
+      this._wantShare = false;                          // 消费掉，之后切前台不再自动弹
+      // 组件很可能刚 attached、首帧尚未渲染完成：推迟一拍，
+      // 保证分享弹层与画布节点都已挂载（否则 selectorQuery 查不到 #shareCanvas）。
+      const open = () => this.openShareCard();
+      if (typeof wx.nextTick === 'function') wx.nextTick(open);
+      else setTimeout(open, 0);
     },
 
     // 记录页选中日期联动：定位到该天最近一场；无匹配则保持当前选择

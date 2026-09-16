@@ -340,6 +340,37 @@ for (const [rel] of SPOTS) {
   truthy(hasDarkInkFlip(rel), rel.replace(/\.wxml$/, '.wxss') + ' 的 .ico--ink 在深色下没有翻白路径（--text 未重定义，也没有显式覆盖）');
 }
 
+/* ══════════════ [H] 亮绿实底容器：字形必须显式钉死墨色 ══════════════
+   事故（2026-09-16 发现，深色主题下真实发生）：
+     .rest-pop-emoji.solid 的底是**写死的品牌亮绿** #C8FF00（固定深色卡上的完成态徽章），
+     里头的 .ico--ink 取的是 var(--text) —— 而深色块把 --text 翻成 #FFFFFF
+     → 白字形压亮绿 ≈1.6:1，真机上那个奖杯**直接看不见**。
+   为什么 [D] 拦不住：[D] 断言「深色下 ico--ink 必须翻白」，这正是翻白造成的伤害。
+   判据：亮绿底与主题无关 ⇒ 压在上面的字形也必须与主题无关，必须有一条**后代规则**
+     把它钉回 #0A0A0A（特异性 (0,3,0) > .ico--ink 的 (0,1,0)，不需要 !important）。
+   新增强制「容器写死亮绿 + 内含 mask 图标」的位置时，往这里加一行。 */
+console.log('[H] 亮绿实底容器内的字形必须显式钉死墨色（不能随着 --text 翻转）');
+
+const GREEN_SURFACES = [
+  ['pages/workout/workout.wxss', '.rest-pop-emoji.solid', '.rest-pop-emoji.solid .ico',
+    '训练完成态奖杯徽章（亮绿实底圆 + ico--ink 奖杯）']
+];
+const escSel = s => s.replace(/\./g, '\\.').replace(/\s+/g, '\\s*');
+const bodyOf = (text, sel) => {
+  const m = new RegExp(escSel(sel) + '\\s*\\{([^}]*)\\}').exec(text);
+  return m ? m[1] : null;
+};
+for (const [rel, badgeSel, glyphSel, desc] of GREEN_SURFACES) {
+  const text = readCss(path.join(ROOT, rel));
+  const badge = bodyOf(text, badgeSel);
+  truthy(badge !== null, rel + ' 找不到 ' + badgeSel);
+  if (badge !== null) truthy(/#C8FF00|var\(\s*--primary\s*\)/i.test(badge),
+    desc + ' 的底应是品牌亮绿，实际：' + badge.trim());
+  const glyph = bodyOf(text, glyphSel);
+  truthy(glyph !== null, rel + ' 缺少 ' + glyphSel + ' —— 绿底字形没被钉死，深色下会翻白隐形');
+  if (glyph !== null) truthy(/#0A0A0A/i.test(glyph), desc + ' 的字形底色应为 #0A0A0A，实际：' + glyph.trim());
+}
+
 /* ---------- 汇总 ---------- */
 console.log('\n' + (fail === 0 ? '✓' : '✗') + ' verify-icon-contrast: ' + pass + ' passed, ' + fail + ' failed' + (warn ? ', ' + warn + ' warning(s)' : ''));
 process.exit(fail === 0 ? 0 : 1);

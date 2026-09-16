@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>训练中页 · 「完成训练」二次确认卡 · 视觉稿</title>
+<style>
+  /* ============================================================
+     HiLife 小程序页面 → HTML 预览稿（等比换算，1rpx = 0.52px）
+     令牌照搬 app.wxss 的 page{...} 块；深色帧只重定义变量，
+     与页面自己的 .page.theme-dark / .rest-mask.theme-dark 块同构。
+     卡片本身是**固定深色卡**（.rest-pop.dark），所以它在两帧里长得一样 ——
+     这正是要验证的点：绿底徽章里的字形不跟着 --text 翻转。
+     ============================================================ */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 32px 72px;
+    background: #EFEFEA;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    color: #0A0A0A;
+  }
+  .head { max-width: 1180px; margin: 0 auto 28px; }
+  .head .eyebrow {
+    display: inline-block; font-size: 12px; letter-spacing: 2px; font-weight: 700;
+    color: #4C7300; background: #F2FFD6; border: 1px solid #C8FF00;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .head h1 { font-size: 26px; margin: 14px 0 8px; letter-spacing: -0.4px; }
+  .head p { margin: 0; font-size: 14px; line-height: 1.7; color: #444; max-width: 900px; }
+
+  .stage { display: flex; flex-wrap: wrap; gap: 30px; justify-content: flex-start; max-width: 1180px; margin: 0 auto; }
+  .shot { width: 390px; }
+  .cap { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .cap .tag {
+    display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600; vertical-align: 1px;
+    padding: 2px 8px; border-radius: 999px; background: #FFFFFF; border: 1px solid #D9D9D5; color: #707070;
+  }
+  .cap .tag.hot { background: #C8FF00; border-color: #C8FF00; color: #0A0A0A; }
+  .cap .sub { display: block; font-weight: 400; color: #707070; font-size: 12px; margin-top: 4px; }
+
+  /* ---------- 机身 ---------- */
+  .phone {
+    position: relative; width: 390px; height: 844px; border-radius: 46px; overflow: hidden;
+    background: var(--n-50); color: var(--text);
+    box-shadow: 0 18px 50px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.10);
+
+    --primary: #C8FF00;
+    --primary-deep: #7CB800;
+    --primary-tint: #F2FFD6;
+    --primary-text: #4C7300;
+    --n-50: #F7F7F5;
+    --n-100: #F1F1EE;
+    --white: #FFFFFF;
+    --card: #FFFFFF;
+    --card-gray: #EFEFEB;
+    --bg: #F1F1EE;
+    --glass-strong: #FFFFFF;
+    --glass-border: #E8E8E4;
+    --text: #0A0A0A;
+    --text-sub: #444444;
+    --text-weak: #A0A0A0;
+    --line: #E8E8E4;
+    --line-strong: #D9D9D5;
+    --accent: #FF9500;
+    --shadow-card: 0 2px 8px rgba(0,0,0,.06);
+    --shadow-mint: 0 6px 16px rgba(124,184,0,.30);
+    --fs-hero: 37.44px;
+    --fs-title: 18.72px;
+    --fs-head: 16.64px;
+    --fs-body: 14.56px;
+    --fs-label: 12.48px;
+    --fs-caption: 10.4px;
+  }
+  /* 深色帧：与 pages/workout/workout.wxss 的 .page.theme-dark 块逐条对应 */
+  .phone.dark {
+    --n-50: #0A0A0A;
+    --n-100: #1E1E1E;
+    --white: #161616;
+    --card: #161616;
+    --card-gray: #1E1E1E;
+    --bg: rgba(255,255,255,.06);
+    --glass-strong: #1E1E1E;
+    --glass-border: rgba(255,255,255,.10);
+    --text: #FFFFFF;
+    --text-sub: rgba(255,255,255,.70);
+    --text-weak: rgba(255,255,255,.45);
+    --line: rgba(255,255,255,.10);
+    --line-strong: rgba(255,255,255,.20);
+    --primary-tint: rgba(200,255,0,.12);
+    --shadow-card: 0 2px 8px rgba(0,0,0,.35);
+    --shadow-mint: 0 6px 16px rgba(0,0,0,.4);
+  }
+
+  /* ---------- 状态栏 / 导航栏 ---------- */
+  .statusbar {
+    height: 47px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px; font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .statusbar .right { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; opacity: .85; position: relative; }
+  .batt::after { content: ''; position: absolute; inset: 1.5px; right: 6px; background: var(--text); border-radius: 1px; }
+  .navbar {
+    height: 44px; display: flex; align-items: center; justify-content: center;
+    position: relative; font-size: 17px; font-weight: 600; color: var(--text);
+    background: var(--n-50);
+  }
+  .navbar .back { position: absolute; left: 16px; font-size: 20px; line-height: 1; opacity: .9; }
+
+  /* ---------- 页面内容（顶栏 + 信息头 + 动作卡） ---------- */
+  .screen { position: absolute; left: 0; right: 0; top: 91px; bottom: 0; background: var(--n-50); overflow: hidden; }
+  .wo-top {
+    display: flex; align-items: center; gap: 10.4px;
+    padding: 10.4px 16.64px 8.32px; border-bottom: .52px solid var(--line);
+  }
+  .wo-timer-wrap { flex: 1; display: flex; align-items: center; }
+  .wo-timer { font-size: var(--fs-hero); font-weight: 800; color: var(--text); letter-spacing: -.52px; line-height: 1; }
+  .wo-clock-toggle {
+    width: 33.28px; height: 33.28px; border-radius: 50%; margin-left: 12.48px; flex-shrink: 0;
+    background: var(--bg); display: flex; align-items: center; justify-content: center;
+    font-size: var(--fs-head); font-weight: 700; color: var(--text);
+  }
+  .wo-done-btn {
+    height: 37.44px; padding: 0 20.8px; border-radius: 999px; flex-shrink: 0;
+    background: var(--primary); color: #0A0A0A;
+    font-size: var(--fs-head); font-weight: 700; line-height: 37.44px;
+    box-shadow: var(--shadow-mint);
+  }
+  .wo-min-btn {
+    width: 33.28px; height: 33.28px; border-radius: 50%; flex-shrink: 0; margin-left: 8.32px;
+    background: var(--card); border: 1.04px solid var(--line-strong);
+    display: flex; align-items: center; justify-content: center; color: var(--text-sub);
+  }
+  .wo-min-btn::before { content: ''; width: 13px; height: 2px; background: var(--text-sub); border-radius: 1px; }
+
+  .wo-info { display: flex; align-items: center; justify-content: space-between; padding: 8.32px 16.64px 0; }
+  .wo-name { font-size: var(--fs-title); font-weight: 700; color: var(--text); }
+  .wo-stats { text-align: right; }
+  .wo-stat { font-size: var(--fs-caption); color: var(--text-sub); line-height: 1.6; }
+
+  .wo-ex-list { padding: 8.32px 16.64px 0; }
+  .wo-ex-card {
+    background: var(--glass-strong); border: .52px solid var(--glass-border);
+    border-radius: 14.56px; padding: 10.4px 12.48px; margin-bottom: 10.4px;
+    box-shadow: var(--shadow-card);
+  }
+  .wo-ex-head { display: flex; align-items: center; gap: 10.4px; }
+  .wo-ex-thumb {
+    width: 47.84px; height: 47.84px; border-radius: 10.4px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary-tint), rgba(124,184,0,.12));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; opacity: .75;
+  }
+  .wo-ex-body { flex: 1; min-width: 0; }
+  .wo-ex-name { font-size: var(--fs-head); font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wo-ex-meta { display: flex; align-items: center; gap: 8.32px; margin-top: 3.12px; }
+  .wo-ex-vol { font-size: var(--fs-label); color: var(--text-weak); }
+  .wo-ex-sets-label { font-size: var(--fs-body); color: var(--text-sub); margin-top: 6.24px; }
+  .wo-dots { display: flex; gap: 5.2px; margin-top: 6.24px; }
+  .wo-dot { width: 7.28px; height: 7.28px; border-radius: 50%; background: var(--line-strong); }
+  .wo-dot.done { background: var(--primary); }
+  .wo-dot.active { background: var(--primary-deep); box-shadow: 0 0 0 3.12px rgba(124,184,0,.25); }
+  .wo-ex-gear {
+    width: 33.28px; height: 33.28px; border-radius: 50%; flex-shrink: 0; margin-left: 4.16px;
+    background-color: rgba(124,184,0,.14); border: 1.04px solid rgba(124,184,0,.42);
+    display: flex; align-items: center; justify-content: center; color: var(--text); font-size: 13px;
+  }
+
+  /* ---------- 遮罩 + 确认卡（以下尺寸全部由 workout.wxss 换算） ---------- */
+  .rest-mask {
+    position: absolute; inset: 0; background: rgba(15,23,42,.55);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+  }
+  .rest-pop {
+    width: 291.2px; border-radius: 16.64px; box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  /* .rest-pop.dark —— 固定深色卡，不随主题翻转 */
+  .rest-pop.dark {
+    background: #161616; padding: 16.64px 20.8px 20.8px;
+    box-shadow: 0 10.4px 31.2px rgba(0,0,0,.45);
+  }
+  .rest-pop-emoji {
+    width: 45.76px; height: 45.76px; border-radius: 50%; margin: 14.56px 0 4.16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rest-pop-emoji.solid { background: #C8FF00; }
+  .ico-trophy {
+    width: 31.2px; height: 31.2px; display: inline-block;
+    /* 深色帧下这条必须仍然命中 #0A0A0A —— 修的就是它 */
+    background-color: #0A0A0A;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-position: center; mask-position: center;
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M7%204h10v4a5%205%200%200%201-10%200z%22/%3E%3Cpath%20d=%22M7%206H4v2a3%203%200%200%200%203%203%22/%3E%3Cpath%20d=%22M17%206h3v2a3%203%200%200%201-3%203%22/%3E%3Cpath%20d=%22M12%2013v3%22/%3E%3Cpath%20d=%22M9.2%2020h5.6%22/%3E%3Cpath%20d=%22M10.2%2016.5h3.6v3.5h-3.6z%22/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%23000%27%20stroke-width=%271.8%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%22M7%204h10v4a5%205%200%200%201-10%200z%22/%3E%3Cpath%20d=%22M7%206H4v2a3%203%200%200%200%203%203%22/%3E%3Cpath%20d=%22M17%206h3v2a3%203%200%200%201-3%203%22/%3E%3Cpath%20d=%22M12%2013v3%22/%3E%3Cpath%20d=%22M9.2%2020h5.6%22/%3E%3Cpath%20d=%22M10.2%2016.5h3.6v3.5h-3.6z%22/%3E%3C/svg%3E");
+  }
+  .pop-title { font-size: 18.72px; font-weight: 600; color: #FFFFFF; margin-top: 12.48px; }
+  .pop-sub { font-size: 12.48px; color: rgba(255,255,255,.5); margin-top: 4.16px; }
+
+  .fin-sum {
+    width: 100%; display: flex; margin-top: 16.64px;
+    border-radius: 12.48px; background: rgba(255,255,255,.06);
+  }
+  .fin-sum-item { flex: 1; min-width: 0; padding: 10.4px 2.08px; text-align: center; }
+  .fin-sum-v { display: block; font-size: 15.6px; font-weight: 600; color: #FFFFFF; line-height: 1.2; }
+  .fin-sum-k { display: block; margin-top: 3.12px; font-size: 11.44px; color: rgba(255,255,255,.5); }
+
+  .pop-btns { display: flex; gap: 10.4px; margin-top: 16.64px; width: 100%; }
+  .pop-btn {
+    flex: 1; height: 43.68px; line-height: 43.68px; text-align: center;
+    border-radius: 999px; font-size: 14.56px;
+  }
+  .pop-btn.primary { background: #C8FF00; color: #0A0A0A; font-weight: 600; }
+
+  .fin-link {
+    width: 100%; height: 43.68px; line-height: 43.68px; margin-top: 4.16px;
+    text-align: center; border-radius: 999px; font-size: 15.6px;
+    color: rgba(255,255,255,.75);
+  }
+  .fin-link.dim { color: rgba(255,255,255,.5); }
+
+  /* ---------- 说明区 ---------- */
+  .notes { max-width: 1180px; margin: 44px auto 0; background: #FFFFFF; border: 1px solid #E8E8E4; border-radius: 16px; padding: 24px 26px; }
+  .notes h2 { font-size: 16px; margin: 0 0 14px; }
+  .notes h3 { font-size: 13px; margin: 20px 0 8px; color: #444; letter-spacing: .3px; }
+  .notes ul { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.95; color: #222; }
+  .notes li { margin-bottom: 4px; }
+  .was { background: #FBEDED; color: #C4363B; border-radius: 5px; padding: 1px 6px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; text-decoration: line-through; }
+  .now { background: #F2FFD6; color: #4C7300; border-radius: 5px; padding: 1px 6px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; font-weight: 700; border: 1px solid #C8FF00; }
+  .kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: #F1F1EE; border-radius: 5px; padding: 1px 6px; }
+  .warn { background: #FFF4E0; border-left: 3px solid #FFB020; padding: 10px 14px; border-radius: 8px; font-size: 13px; line-height: 1.8; color: #6b4a00; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="eyebrow">训练中页 · 顶栏出口</span>
+  <h1>「完成训练」改成三选一确认卡</h1>
+  <p>点顶栏「完成训练」不再直接保存、也不再弹系统确认框，而是弹出一张卡片，给三个有名字的出口：
+     <b>完成并生成分享图 / 完成训练 / 取消</b>。布局对齐参考图（徽章 → 标题 → 副标题 → 信息块 → 主按钮 → 两行文字按钮），
+     配色落回本仓既有的「固定深色卡」体系（与组间休息/计时弹窗同一张卡）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- 帧 1 -->
+  <div class="shot">
+    <div class="cap">① 浅色主题 · 全部完成<span class="tag">主路径</span>
+      <span class="sub">副标题「全部动作已完成」；摘要三项 = 已练时长 / 完成组数 / 完成动作</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>15:39</span><span class="right">5G<span class="batt"></span></span></div>
+      <div class="navbar"><span class="back">‹</span>训练中</div>
+      <div class="screen">
+        <div class="wo-top">
+          <div class="wo-timer-wrap"><div class="wo-timer">42:15</div><div class="wo-clock-toggle">❚❚</div></div>
+          <div class="wo-done-btn">完成训练</div>
+          <div class="wo-min-btn"></div>
+        </div>
+        <div class="wo-info">
+          <div class="wo-name">胸 + 三头</div>
+          <div class="wo-stats"><div class="wo-stat">18/18组  6/6动作</div><div class="wo-stat">3200/3200容量</div></div>
+        </div>
+        <div class="wo-ex-list">
+          <div class="wo-ex-card">
+            <div class="wo-ex-head">
+              <div class="wo-ex-thumb">🏋</div>
+              <div class="wo-ex-body">
+                <div class="wo-ex-name">杠铃卧推</div>
+                <div class="wo-ex-meta"><span class="wo-ex-vol">1440.0/1440.0</span></div>
+                <div class="wo-ex-sets-label">3组</div>
+                <div class="wo-dots"><span class="wo-dot done"></span><span class="wo-dot done"></span><span class="wo-dot done"></span></div>
+              </div>
+              <div class="wo-ex-gear">⋯</div>
+            </div>
+          </div>
+          <div class="wo-ex-card">
+            <div class="wo-ex-head">
+              <div class="wo-ex-thumb">💪</div>
+              <div class="wo-ex-body">
+                <div class="wo-ex-name">绳索下压</div>
+                <div class="wo-ex-meta"><span class="wo-ex-vol">720.0/720.0</span></div>
+                <div class="wo-ex-sets-label">3组</div>
+                <div class="wo-dots"><span class="wo-dot done"></span><span class="wo-dot done"></span><span class="wo-dot done"></span></div>
+              </div>
+              <div class="wo-ex-gear">⋯</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 确认卡 -->
+      <div class="rest-mask">
+        <div class="rest-pop dark">
+          <div class="rest-pop-emoji solid"><span class="ico-trophy"></span></div>
+          <div class="pop-title">完成训练</div>
+          <div class="pop-sub">全部动作已完成</div>
+          <div class="fin-sum">
+            <div class="fin-sum-item"><span class="fin-sum-v">42:15</span><span class="fin-sum-k">已练</span></div>
+            <div class="fin-sum-item"><span class="fin-sum-v">18/18</span><span class="fin-sum-k">完成组数</span></div>
+            <div class="fin-sum-item"><span class="fin-sum-v">6/6</span><span class="fin-sum-k">完成动作</span></div>
+          </div>
+          <div class="pop-btns"><div class="pop-btn primary">完成并生成分享图</div></div>
+          <div class="fin-link">完成训练</div>
+          <div class="fin-link dim">取消</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 帧 2 -->
+  <div class="shot">
+    <div class="cap">② 浅色主题 · 还有未完成组<span class="tag">信息不丢</span>
+      <span class="sub">剩余组数写进副标题，不必再弹一次系统确认框</span></div>
+    <div class="phone">
+      <div class="statusbar"><span>15:39</span><span class="right">5G<span class="batt"></span></span></div>
+      <div class="navbar"><span class="back">‹</span>训练中</div>
+      <div class="screen">
+        <div class="wo-top">
+          <div class="wo-timer-wrap"><div class="wo-timer">31:02</div><div class="wo-clock-toggle">❚❚</div></div>
+          <div class="wo-done-btn">完成训练</div>
+          <div class="wo-min-btn"></div>
+        </div>
+        <div class="wo-info">
+          <div class="wo-name">胸 + 三头</div>
+          <div class="wo-stats"><div class="wo-stat">14/18组  4/6动作</div><div class="wo-stat">2480/3200容量</div></div>
+        </div>
+        <div class="wo-ex-list">
+          <div class="wo-ex-card">
+            <div class="wo-ex-head">
+              <div class="wo-ex-thumb">🏋</div>
+              <div class="wo-ex-body">
+                <div class="wo-ex-name">杠铃卧推</div>
+                <div class="wo-ex-meta"><span class="wo-ex-vol">1440.0/1440.0</span></div>
+                <div class="wo-ex-sets-label">3组</div>
+                <div class="wo-dots"><span class="wo-dot done"></span><span class="wo-dot done"></span><span class="wo-dot done"></span></div>
+              </div>
+              <div class="wo-ex-gear">⋯</div>
+            </div>
+          </div>
+          <div class="wo-ex-card">
+            <div class="wo-ex-head">
+              <div class="wo-ex-thumb">💪</div>
+              <div class="wo-ex-body">
+                <div class="wo-ex-name">绳索下压</div>
+                <div class="wo-ex-meta"><span class="wo-ex-vol">360.0/720.0</span></div>
+                <div class="wo-ex-sets-label">3组</div>
+                <div class="wo-dots"><span class="wo-dot done"></span><span class="wo-dot done"></span><span class="wo-dot active"></span></div>
+              </div>
+              <div class="wo-ex-gear">⋯</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rest-mask">
+        <div class="rest-pop dark">
+          <div class="rest-pop-emoji solid"><span class="ico-trophy"></span></div>
+          <div class="pop-title">完成训练</div>
+          <div class="pop-sub">还有 4 组未完成</div>
+          <div class="fin-sum">
+            <div class="fin-sum-item"><span class="fin-sum-v">31:02</span><span class="fin-sum-k">已练</span></div>
+            <div class="fin-sum-item"><span class="fin-sum-v">14/18</span><span class="fin-sum-k">完成组数</span></div>
+            <div class="fin-sum-item"><span class="fin-sum-v">4/6</span><span class="fin-sum-k">完成动作</span></div>
+          </div>
+          <div class="pop-btns"><div class="pop-btn primary">完成并生成分享图</div></div>
+          <div class="fin-link">完成训练</div>
+          <div class="fin-link dim">取消</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 帧 3 -->
+  <div class="shot">
+    <div class="cap">③ 深色主题 · 全部完成<span class="tag hot">重点核对</span>
+      <span class="sub">卡片本身不翻色；要看的是绿底徽章里的奖杯字形有没有跟着 --text 变白</span></div>
+    <div class="phone dark">
+      <div class="statusbar"><span>15:39</span><span class="right">5G<span class="batt"></span></span></div>
+      <div class="navbar"><span class="back">‹</span>训练中</div>
+      <div class="screen">
+        <div class="wo-top">
+          <div class="wo-timer-wrap"><div class="wo-timer">42:15</div><div class="wo-clock-toggle">❚❚</div></div>
+          <div class="wo-done-btn">完成训练</div>
+          <div class="wo-min-btn"></div>
+        </div>
+        <div class="wo-info">
+          <div class="wo-name">胸 + 三头</div>
+          <div class="wo-stats"><div class="wo-stat">18/18组  6/6动作</div><div class="wo-stat">3200/3200容量</div></div>
+        </div>
+        <div class="wo-ex-list">
+          <div class="wo-ex-card">
+            <div class="wo-ex-head">
+              <div class="wo-ex-thumb">🏋</div>
+              <div class="wo-ex-body">
+                <div class="wo-ex-name">杠铃卧推</div>
+                <div class="wo-ex-meta"><span class="wo-ex-vol">1440.0/1440.0</span></div>
+                <div class="wo-ex-sets-label">3组</div>
+                <div class="wo-dots"><span class="wo-dot done"></span><span class="wo-dot done"></span><span class="wo-dot done"></span></div>
+              </div>
+              <div class="wo-ex-gear">⋯</div>
+            </div>
+          </div>
+          <div class="wo-ex-card">
+            <div class="wo-ex-head">
+              <div class="wo-ex-thumb">💪</div>
+              <div class="wo-ex-body">
+                <div class="wo-ex-name">绳索下压</div>
+                <div class="wo-ex-meta"><span class="wo-ex-vol">720.0/720.0</span></div>
+                <div class="wo-ex-sets-label">3组</div>
+                <div class="wo-dots"><span class="wo-dot done"></span><span class="wo-dot done"></span><span class="wo-dot done"></span></div>
+              </div>
+              <div class="wo-ex-gear">⋯</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rest-mask">
+        <div class="rest-pop dark">
+          <div class="rest-pop-emoji solid"><span class="ico-trophy"></span></div>
+          <div class="pop-title">完成训练</div>
+          <div class="pop-sub">全部动作已完成</div>
+          <div class="fin-sum">
+            <div class="fin-sum-item"><span class="fin-sum-v">42:15</span><span class="fin-sum-k">已练</span></div>
+            <div class="fin-sum-item"><span class="fin-sum-v">18/18</span><span class="fin-sum-k">完成组数</span></div>
+            <div class="fin-sum-item"><span class="fin-sum-v">6/6</span><span class="fin-sum-k">完成动作</span></div>
+          </div>
+          <div class="pop-btns"><div class="pop-btn primary">完成并生成分享图</div></div>
+          <div class="fin-link">完成训练</div>
+          <div class="fin-link dim">取消</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="notes">
+  <h2>这次改了什么</h2>
+  <ul>
+    <li>入口不变：顶栏还是那颗亮绿「完成训练」<span class="kbd">bindtap="finishWorkout"</span>，只是它现在开卡片。</li>
+    <li>出口从「保存 / 干脆直接保存」变成三个有名字的出口：<span class="was">全完成 → 直接 saveWorkout</span> →
+        <span class="now">完成并生成分享图 / 完成训练 / 取消</span>。</li>
+    <li>未完成组的确认不再用系统框：<span class="was">wx.showModal「还有未完成组，确定保存当前进度？」</span> →
+        <span class="now">卡片副标题「还有 N 组未完成」+ 本场摘要</span>（一次确认，不弹两次）。</li>
+    <li>「完成并生成分享图」= 保存后 <span class="kbd">redirectTo</span> 到复盘页并自动打开分享卡：
+        用 <span class="kbd">redirectTo</span> 而不是 <span class="kbd">navigateTo</span>，训练页已结束就替换掉，
+        从复盘页返回直达训练 tab，不会退回一张空训练页。</li>
+    <li>分享路径的 toast 停留 <span class="was">1000ms</span> → <span class="now">700ms</span>（用户的目标就是那张图）。</li>
+    <li>参考图里的「写入 Apple 运动健康」开关 <b>没有照搬</b>：本 App 没有这条能力，按项目红线不摆假开关，
+        那个位置换成本场摘要（已练 / 完成组数 / 完成动作，三个都已发生的事实）。</li>
+  </ul>
+
+  <h3>顺带修掉的一个真机 bug（深色主题下）</h3>
+  <ul>
+    <li>组间休息的「训练完成」绿底徽章里，奖杯图标用的是 <span class="kbd">.ico--ink</span>（取 <span class="kbd">var(--text)</span>）：
+        深色主题把 <span class="kbd">--text</span> 翻成 <span class="kbd">#FFFFFF</span>，而徽章底色是固定的品牌亮绿
+        → <b>白字形压亮绿 ≈1.6:1，真机上那个奖杯直接看不见</b>。</li>
+    <li>修法：<span class="now">.rest-pop-emoji.solid .ico { background-color: #0A0A0A }</span> —— 绿底与主题无关，字形也必须与主题无关。
+        新守卫 <span class="kbd">verify-icon-contrast.cjs [H]</span> 拦这类回归。</li>
+  </ul>
+
+  <h3>未登录时</h3>
+  <ul>
+    <li>点「完成并生成分享图」但未登录 → 不保存、也不关卡片（什么结果都没发生，卡片就不该凭空消失），
+        走原来的登录引导弹窗。</li>
+  </ul>
+
+  <div class="warn">
+    <b>这份预览的保真边界（不撒谎）：</b><br>
+    · 换算比例 <b>1rpx = 0.52px</b>（390px 屏宽），画布 390×844，卡片与顶栏的尺寸/圆角/间距全部由
+      <span class="kbd">workout.wxss</span> 逐条换算，颜色令牌照搬 <span class="kbd">app.wxss</span>，深色帧只重定义变量。<br>
+    · <b>背景页是简化示意</b>：真实动作卡带 GIF 缩略图、展开态与更多字段，这里只画了轮廓用于给卡片定位；卡片本体是完整的。<br>
+    · 奖杯图标在真机走 <span class="kbd">mask-image</span> + SVG data-URI（本预览用的是同一个 data-URI），字形色由
+      <span class="kbd">background-color</span> 决定 —— 与真机机制一致，所以深色帧里奖杯是否可见可以直接信这一帧。<br>
+    · 真机还叠加自定义 tabBar 与吸顶导航栏；卡片是 <span class="kbd">z-index:100</span> 的居中遮罩，不受它们影响。
+  </div>
+</div>
+
+</body>
+</html>

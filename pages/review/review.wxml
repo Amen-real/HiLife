@@ -1,5 +1,6 @@
-<!-- pages/review/review.wxml —— 复用训练复盘组件（外层 .page 用于承载自定义导航栏） -->
+<!-- pages/review/review.wxml —— 复用训练复盘组件（外层 .page 用于承载自定义导航栏）
+     autoShare：训练页「完成并生成分享图」带 share=1 进来时置位 → 组件自动打开刚生成的那张分享卡 -->
 <view class="page {{theme}}">
   <nav-bar title="训练复盘" show-back="{{true}}" />
-  <training-review />
+  <training-review autoShare="{{autoShare}}" />
 </view>

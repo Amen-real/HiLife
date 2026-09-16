@@ -508,6 +508,48 @@
 .pop-btn.ghost.sq { flex: 0 0 auto; padding: 0 32rpx; }
 .pop-btn.primary { background: #C8FF00; color: #0A0A0A; font-weight: 600; }
 
+/* ── 完成训练确认卡（参考图布局）──
+   结构：绿底徽章 → 标题 → 副标题 → 本场摘要 → 主按钮 → 两行文字按钮。
+   整张卡沿用 .rest-pop.dark（固定深色卡，不随主题翻转），所以本节的字色全部写死亮色：
+   这里**不能**用 var(--text) —— 深色主题下 --text 翻成 #FFFFFF，会与「绿底徽章里的墨色字形」互相打架。 */
+/* 本场摘要：参考图的中段信息块。三列事实，不是开关（本 App 无 Apple 运动健康写入能力，不摆假开关） */
+.fin-sum {
+  width: 100%;
+  display: flex;
+  margin-top: 32rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.06);
+}
+.fin-sum-item {
+  flex: 1;
+  min-width: 0;
+  padding: 20rpx 4rpx;
+  text-align: center;
+}
+.fin-sum-v { display: block; font-size: 30rpx; font-weight: 600; color: #FFFFFF; line-height: 1.2; }
+.fin-sum-k { display: block; margin-top: 6rpx; font-size: 22rpx; color: rgba(255, 255, 255, 0.5); }
+/* 文字型次操作：与参考图一致 —— 两行纯文字，不用描边按钮。
+   顺序即优先级：主按钮（绿实底）> 完成训练 > 取消，越往下越弱 */
+.fin-link {
+  width: 100%;
+  height: 84rpx;
+  line-height: 84rpx;
+  margin-top: 8rpx;
+  text-align: center;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  color: rgba(255, 255, 255, 0.75);
+  transition: opacity 0.15s ease;
+}
+.fin-link.dim { color: rgba(255, 255, 255, 0.5); }
+
+/* 亮绿实底徽章里的字形**恒为 #0A0A0A**（「亮绿底配墨字」铁律）。
+   为什么必须显式写死：.ico--ink 取 var(--text)，而深色块把 --text 翻成 #FFFFFF
+   → 白字形压 #C8FF00 = 1.6:1，真机上奖杯直接看不见（深色主题下已实际发生）。
+   徽章底色是固定的品牌绿、与主题无关，所以字形也必须固定墨色，不能跟着 --text 走。
+   特异性 (0,3,0) > .ico--ink 的 (0,1,0)，无需 !important。 */
+.rest-pop-emoji.solid .ico { background-color: #0A0A0A; }
+
 /* 弹窗头「最小化到悬浮窗」图标按钮（—） */
 .rest-pop-mini {
   width: 56rpx;

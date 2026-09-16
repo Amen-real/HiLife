@@ -265,6 +265,34 @@
   </view>
 </view>
 
+<!-- 顶栏「完成训练」二次确认卡（参考图布局）：完成并生成分享图 / 完成训练 / 取消。
+     三个出口都是真的：主按钮 → 保存后去复盘页并自动开分享卡；次按钮 → 保存后原路返回；取消 → 只关卡片。
+     卡片是**固定深色卡**（.rest-pop.dark，不随主题翻转），故 .fin-* 的字色全按深底写死 ——
+     这里不能用 var(--text)：深色主题下 --text 翻成 #FFFFFF，而绿底徽章里的字形必须恒为 #0A0A0A。 -->
+<view class="rest-mask {{theme}}" wx:if="{{showFinishCard}}" catchtouchmove="noop">
+  <view class="rest-pop dark fin-pop">
+    <view class="rest-pop-emoji solid"><view class="ico ico-trophy ico--ink" style="width:60rpx;height:60rpx" /></view>
+    <view class="pop-title">完成训练</view>
+    <view class="pop-sub">{{finishSub}}</view>
+
+    <!-- 本场摘要：把「即将保存成一条训练记录的内容」先讲清楚，用户不必凭记忆决定按哪个按钮。
+         对应参考图中段的信息块 —— 参考图那里是 iOS 的「写入 Apple 运动健康」开关，
+         本 App 没有对应能力，按红线不摆假开关，换成三件已经发生的事实。 -->
+    <view class="fin-sum">
+      <view class="fin-sum-item" wx:for="{{finishSummary}}" wx:key="k">
+        <text class="fin-sum-v">{{item.v}}</text>
+        <text class="fin-sum-k">{{item.k}}</text>
+      </view>
+    </view>
+
+    <view class="pop-btns">
+      <view class="pop-btn primary" hover-class="press" bindtap="finishAndShare">完成并生成分享图</view>
+    </view>
+    <view class="fin-link" hover-class="press" bindtap="finishOnly">完成训练</view>
+    <view class="fin-link dim" hover-class="press" bindtap="closeFinishCard">取消</view>
+  </view>
+</view>
+
 <!-- 动作历史 overlay：本次明细 + 上次同动作每组对比（↑↓）+ 历史最佳重量/容量 -->
 <view class="hist-mask {{theme}}" wx:if="{{showHistory}}" catchtouchmove="noop">
   <view class="hist-pop">
