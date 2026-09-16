@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HiLife 训练分享卡 · 美化方向对照稿</title>
+<style>
+  :root { --ink:#0A0A0A; --sub:#5A5A5A; --line:#E4E4E0; --brand:#C8FF00; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:40px 32px 72px; background:#F1F1EF; color:var(--ink);
+         font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif; }
+  h1 { font-size:22px; font-weight:800; margin:0 0 8px; letter-spacing:.5px; }
+  .lede { font-size:14px; line-height:1.75; color:#3A3A3A; max-width:900px; margin:0 0 10px; }
+  .lede code { background:#fff; border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .note { font-size:13px; line-height:1.7; color:var(--sub); max-width:900px; margin:0 0 32px;
+          border-left:3px solid var(--brand); padding:2px 0 2px 12px; }
+  .row { display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap; }
+  .col { }
+  .cap { font-size:14px; font-weight:800; margin:0 0 4px; }
+  .cap span { font-weight:400; color:var(--sub); font-size:13px; }
+  .shell { overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#FFF; }
+  .scale { transform-origin:top left; }
+  .card { position:relative; overflow:hidden; }
+  .a { position:absolute; }
+
+  /* ===== 现状 ===== */
+  .c1 { width:750px; height:1040px; background:#F7F7F5; color:var(--ink); }
+  .c1 .hdr { left:56px; top:56px; width:638px; height:36px; display:flex; align-items:center; justify-content:space-between; }
+  .c1 .brand { display:flex; align-items:center; gap:14px; }
+  .c1 .dot { width:28px; height:28px; border-radius:50%; background:var(--brand); }
+  .c1 .brand b { font-size:32px; font-weight:800; line-height:36px; }
+  .c1 .date { font-size:24px; font-weight:600; color:#444; line-height:36px; }
+  .c1 .verdict { left:56px; top:116px; width:638px; height:136px; border-radius:24px; background:var(--brand);
+                 padding:22px 28px; font-size:30px; font-weight:700; line-height:46px; color:#0A0A0A; }
+  .c1 .metrics { left:56px; top:280px; width:638px; height:120px; display:flex; gap:16px; }
+  .c1 .m { width:202px; height:120px; border-radius:20px; background:#fff; border:1px solid #E8E8E4;
+           display:flex; flex-direction:column; align-items:center; padding-top:21px; }
+  .c1 .m i { font-style:normal; font-size:22px; font-weight:600; color:#444; line-height:22px; }
+  .c1 .m .v { display:flex; align-items:baseline; gap:6px; margin-top:10px; }
+  .c1 .m .v b { font-size:46px; font-weight:800; line-height:46px; }
+  .c1 .m .v s { text-decoration:none; font-size:22px; font-weight:700; color:#444; }
+  .c1 .sec { left:56px; top:436px; width:638px; height:28px; display:flex; align-items:center; justify-content:space-between; }
+  .c1 .sec b { font-size:28px; font-weight:800; line-height:28px; }
+  .c1 .sec em { font-style:normal; font-size:22px; font-weight:600; color:#444; }
+  .c1 .rows { left:56px; top:482px; width:638px; height:352px; border-radius:24px; background:#fff; border:1px solid #E8E8E4; }
+  .c1 .r { position:relative; height:88px; }
+  .c1 .r b { position:absolute; left:28px; top:18px; font-size:28px; font-weight:700; line-height:28px; }
+  .c1 .r .chip { position:absolute; right:28px; top:12px; height:40px; line-height:40px; padding:0 16px;
+                 border-radius:20px; font-size:22px; font-weight:700; }
+  .c1 .r .chip.flat { background:#F1F1EE; color:#444; }
+  .c1 .r .chip.up { background:#F1F5E6; color:#4C7300; }
+  .c1 .r .best { position:absolute; left:28px; top:51px; font-size:26px; font-weight:700; line-height:26px; }
+  .c1 .r .meta { position:absolute; right:28px; top:53px; font-size:22px; font-weight:600; color:#444; line-height:22px; }
+  .c1 .r .div { position:absolute; left:28px; right:28px; top:88px; height:1px; background:#E8E8E4; }
+  .c1 .pb { left:56px; top:858px; width:638px; height:68px; border-radius:20px; background:#fff; border:1px solid #E8E8E4; }
+  .c1 .pb .accent { left:0; top:0; width:8px; height:68px; border-radius:4px; background:var(--brand); }
+  .c1 .pb .badge { left:28px; top:16px; width:60px; height:36px; border-radius:18px; background:var(--brand);
+                   font-size:22px; font-weight:800; color:#0A0A0A; text-align:center; line-height:36px; }
+  .c1 .pb .txt { left:104px; top:16px; height:36px; line-height:36px; font-size:26px; font-weight:700; }
+  .c1 .foot { left:56px; top:952px; width:638px; height:24px; display:flex; align-items:center; justify-content:space-between; }
+  .c1 .foot b { font-size:24px; font-weight:800; line-height:24px; }
+  .c1 .foot em { font-style:normal; font-size:22px; font-weight:600; color:#444; }
+
+  /* ===== 方案 A ===== */
+  .c2 { width:750px; height:1158px; background:#F7F7F5; color:var(--ink); }
+  .c2 .sheet { left:24px; top:24px; width:702px; height:1110px; background:#fff; border:1px solid #EDEDE9;
+               border-radius:36px; box-shadow:0 10px 30px rgba(10,10,10,.06); }
+  .c2 .topbar { left:24px; top:24px; width:702px; height:6px; background:var(--brand); border-radius:36px 36px 0 0; }
+  .c2 .hdr { left:64px; top:60px; width:622px; height:40px; display:flex; align-items:center; justify-content:space-between; }
+  .c2 .hdr .l { display:flex; align-items:center; gap:12px; }
+  .c2 .hdr .l i { width:6px; height:28px; border-radius:3px; background:var(--brand); }
+  .c2 .hdr .l b { font-size:32px; font-weight:800; line-height:40px; }
+  .c2 .hdr .p { height:40px; line-height:40px; padding:0 18px; border-radius:20px; background:#F1F1EE;
+                color:#444; font-size:22px; font-weight:600; }
+  .c2 .hero { left:64px; top:128px; width:622px; }
+  .c2 .hero i { font-style:normal; font-size:24px; color:#444; letter-spacing:2px; line-height:30px; display:block; }
+  .c2 .hero .v { display:flex; align-items:flex-end; gap:12px; margin-top:8px; }
+  .c2 .hero .v b { font-size:96px; font-weight:800; line-height:96px; letter-spacing:-2px; }
+  .c2 .hero .v s { text-decoration:none; font-size:30px; font-weight:700; color:#444; line-height:46px; }
+  .c2 .quote { left:64px; top:292px; width:622px; height:108px; background:#F7F7F5; border-radius:16px; overflow:hidden; }
+  .c2 .quote .bar { left:0; top:0; width:8px; height:108px; background:var(--brand); }
+  .c2 .quote p { margin:0; padding:14px 20px 14px 30px; font-size:32px; font-weight:700; line-height:40px; }
+  .c2 .second { left:64px; top:432px; width:622px; display:flex; align-items:center; gap:14px;
+                font-size:26px; font-weight:600; color:#444; line-height:32px; }
+  .c2 .second em { font-style:normal; color:#C9C9C5; }
+  .c2 .sec { left:64px; top:490px; width:622px; height:28px; display:flex; align-items:center; justify-content:space-between; }
+  .c2 .sec b { font-size:28px; font-weight:800; line-height:28px; }
+  .c2 .sec em { font-style:normal; font-size:22px; font-weight:600; color:#444; }
+  .c2 .rows { left:64px; top:526px; width:622px; height:384px; }
+  .c2 .r { position:relative; height:96px; }
+  .c2 .r b { position:absolute; left:0; top:12px; font-size:28px; font-weight:700; line-height:34px; }
+  .c2 .r .chip { position:absolute; right:0; top:8px; height:38px; line-height:38px; padding:0 16px;
+                 border-radius:19px; font-size:22px; font-weight:700; }
+  .c2 .r .chip.flat { background:#F1F1EE; color:#444; }
+  .c2 .r .chip.up { background:#F1F5E6; color:#4C7300; }
+  .c2 .r .track { position:absolute; left:0; top:52px; width:220px; height:6px; border-radius:3px; background:#EDEDE9; }
+  .c2 .r .track i { display:block; height:6px; border-radius:3px; background:var(--brand); }
+  .c2 .r .best { position:absolute; left:0; top:62px; font-size:24px; font-weight:700; line-height:30px; }
+  .c2 .r .meta { position:absolute; right:0; top:64px; font-size:22px; font-weight:600; color:#444; line-height:28px; }
+  .c2 .r .div { position:absolute; left:0; right:0; bottom:0; height:1px; background:#EDEDE9; }
+  .c2 .pb { left:64px; top:934px; width:622px; height:92px; border-radius:20px; background:var(--brand); padding:12px 24px; }
+  .c2 .pb b { display:block; font-size:26px; font-weight:800; line-height:34px; color:#0A0A0A; }
+  .c2 .pb span { display:block; font-size:22px; font-weight:600; line-height:28px; color:#0A0A0A; margin-top:4px; }
+  .c2 .fdiv { left:64px; top:1054px; width:622px; height:1px; background:#EDEDE9; }
+  .c2 .foot { left:64px; top:1070px; width:622px; text-align:center; font-size:22px; font-weight:600;
+              color:#444; line-height:28px; }
+
+  /* ===== 方案 B ===== */
+  .c3 { width:750px; height:1228px; background:#101010; color:#EDEDED; }
+  .c3 .hdr { left:56px; top:56px; width:638px; height:36px; display:flex; align-items:center; justify-content:space-between; }
+  .c3 .hdr b { font-size:24px; font-weight:800; color:var(--brand); letter-spacing:1px; line-height:36px; }
+  .c3 .hdr em { font-style:normal; font-size:22px; color:#8A8A8A; line-height:36px; }
+  .c3 .hr { left:56px; width:638px; height:1px; background:#232323; }
+  .c3 .hero { left:56px; top:148px; width:638px; }
+  .c3 .hero i { font-style:normal; display:block; font-size:24px; color:#8A8A8A; letter-spacing:3px; line-height:30px; }
+  .c3 .hero .v { display:flex; align-items:flex-end; gap:14px; margin-top:14px; }
+  .c3 .hero .v b { font-size:112px; font-weight:900; line-height:112px; letter-spacing:-3px; color:#fff; }
+  .c3 .hero .v s { text-decoration:none; font-size:32px; font-weight:700; color:var(--brand); line-height:52px; }
+  .c3 .second { left:56px; top:330px; width:638px; display:flex; align-items:center; gap:14px;
+                font-size:26px; font-weight:600; color:#9A9A9A; line-height:32px; }
+  .c3 .second em { font-style:normal; color:#3A3A3A; }
+  .c3 .verdict { left:56px; top:392px; width:638px; display:flex; gap:18px; }
+  .c3 .verdict i { width:6px; height:88px; border-radius:3px; background:var(--brand); }
+  .c3 .verdict p { margin:0; width:614px; font-size:32px; font-weight:700; line-height:44px; color:#fff; }
+  .c3 .sec { left:56px; top:520px; width:638px; height:28px; display:flex; align-items:center; justify-content:space-between; }
+  .c3 .sec b { font-size:28px; font-weight:800; line-height:28px; }
+  .c3 .sec em { font-style:normal; font-size:22px; font-weight:600; color:#8A8A8A; }
+  .c3 .rows { left:56px; top:556px; width:638px; height:416px; }
+  .c3 .r { position:relative; height:104px; }
+  .c3 .r b { position:absolute; left:0; top:16px; display:flex; align-items:center; gap:10px;
+             font-size:28px; font-weight:700; line-height:34px; color:#EDEDED; }
+  .c3 .r b i { width:8px; height:8px; border-radius:50%; background:#3A3A3A; }
+  .c3 .r b.is-pb i { background:var(--brand); }
+  .c3 .r .chip { position:absolute; right:0; top:10px; height:38px; line-height:38px; padding:0 16px;
+                 border-radius:19px; font-size:22px; font-weight:700; }
+  .c3 .r .chip.flat { background:#2A2A2A; color:#9A9A9A; }
+  .c3 .r .chip.up { border:1px solid var(--brand); color:var(--brand); }
+  .c3 .r .best { position:absolute; left:0; top:66px; font-size:24px; font-weight:600; color:#9A9A9A; line-height:30px; }
+  .c3 .r .meta { position:absolute; right:0; top:68px; font-size:22px; font-weight:600; color:#8A8A8A; line-height:28px; }
+  .c3 .r .div { position:absolute; left:0; right:0; bottom:0; height:1px; background:#232323; }
+  .c3 .pb { left:56px; top:1000px; width:638px; height:92px; border-radius:16px; background:var(--brand); padding:12px 24px; }
+  .c3 .pb b { display:block; font-size:26px; font-weight:800; line-height:34px; color:#0A0A0A; }
+  .c3 .pb span { display:block; font-size:22px; font-weight:600; line-height:28px; color:#0A0A0A; margin-top:4px; }
+  .c3 .foot { left:56px; top:1144px; width:638px; display:flex; align-items:center; justify-content:space-between; line-height:28px; }
+  .c3 .foot b { font-size:22px; font-weight:800; color:var(--brand); }
+  .c3 .foot em { font-style:normal; font-size:22px; font-weight:600; color:#8A8A8A; }
+</style>
+</head>
+<body>
+
+<h1>训练分享卡 · 美化方向对照稿</h1>
+<p class="lede">
+  同一场训练、同一份数据（2026/09/15 · 2970 kg · 28:10 · 4 个动作 · 破 2 项纪录），三种版式并排。
+  宽度都按 <code>750px</code>（= 设计稿 750rpx 口径）等比还原，右边是各自新增的元素。
+</p>
+<p class="note">
+  这份对照稿用于定方向，不是最终像素交付：真实出图由 <code>utils/shareCard.js</code> 的 <code>layout()</code> 产出，
+  色彩组合会被 <code>scripts/verify-share-card.cjs</code> 逐对验对比度。稿子里刻意保留了各方案的原始层级与字重。
+</p>
+
+<div class="row">
+
+  <!-- 现状 -->
+  <div class="col">
+    <p class="cap">现状 <span>— 信息齐全，但像一张规格表</span></p>
+    <div class="shell" style="width:465px;height:645px">
+      <div class="scale" style="transform:scale(.62)">
+        <div class="card c1">
+          <div class="a hdr">
+            <div class="brand"><div class="dot"></div><b>衡砺健身记录</b></div>
+            <div class="date">2026/09/15</div>
+          </div>
+          <div class="a verdict">共同动作容量比上场 +13% · 强度适中，稳步推进即可</div>
+          <div class="a metrics">
+            <div class="m"><i>时长</i><div class="v"><b>28:10</b></div></div>
+            <div class="m"><i>训练量</i><div class="v"><b>2970</b><s>kg</s></div></div>
+            <div class="m"><i>平均吃力</i><div class="v"><b>8.2/10</b></div></div>
+          </div>
+          <div class="a sec"><b>逐动作表现</b><em>共 4 个动作</em></div>
+          <div class="a rows">
+            <div class="r"><b>卧推</b><div class="chip flat">与上次持平</div><div class="best">最好一组 60kg × 10</div><div class="meta">3 组 × 10/8/6 次</div><div class="div"></div></div>
+            <div class="r"><b>上斜哑铃卧推</b><div class="chip up">比上次 ↑41%</div><div class="best">最好一组 22.5kg × 12</div><div class="meta">4 组 × 12/10/10/8 次</div><div class="div"></div></div>
+            <div class="r"><b>绳索夹胸</b><div class="chip flat">首次记录</div><div class="best">最好一组 15kg × 15</div><div class="meta">3 组 × 15/15/12 次</div><div class="div"></div></div>
+            <div class="r"><b>双杠臂屈伸</b><div class="chip flat">首次记录</div><div class="best">最好一组 自重 × 12</div><div class="meta">3 组 × 12/10/8 次</div></div>
+          </div>
+          <div class="a pb">
+            <div class="a accent"></div><div class="a badge">新</div>
+            <div class="a txt">本场刷新 2 项个人纪录 · 卧推 60kg…</div>
+          </div>
+          <div class="a foot"><b>衡砺健身记录</b><em>记录每一次进步</em></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案 A -->
+  <div class="col">
+    <p class="cap">方案 A · 精修 <span>— 浅色，保留信息架构，重排层级</span></p>
+    <div class="shell" style="width:465px;height:718px">
+      <div class="scale" style="transform:scale(.62)">
+        <div class="card c2">
+          <div class="a sheet"></div>
+          <div class="a topbar"></div>
+          <div class="a hdr">
+            <div class="l"><i></i><b>衡砺健身记录</b></div>
+            <div class="p">2026/09/15</div>
+          </div>
+          <div class="a hero">
+            <i>本场训练量</i>
+            <div class="v"><b>2,970</b><s>KG</s></div>
+          </div>
+          <div class="a quote">
+            <div class="a bar"></div>
+            <p>共同动作容量比上场 +13% · 强度适中，稳步推进即可</p>
+          </div>
+          <div class="a second"><span>28:10 时长</span><em>·</em><span>8.2/10 平均吃力</span><em>·</em><span>13 组</span></div>
+          <div class="a sec"><b>逐动作表现</b><em>共 4 个动作</em></div>
+          <div class="a rows">
+            <div class="r"><b>卧推</b><div class="chip flat">与上次持平</div><div class="track"><i style="width:220px"></i></div><div class="best">最好一组 60kg × 10</div><div class="meta">3 组 × 10/8/6 次</div><div class="div"></div></div>
+            <div class="r"><b>上斜哑铃卧推</b><div class="chip up">比上次 ↑41%</div><div class="track"><i style="width:137px"></i></div><div class="best">最好一组 22.5kg × 12</div><div class="meta">4 组 × 12/10/10/8 次</div><div class="div"></div></div>
+            <div class="r"><b>绳索夹胸</b><div class="chip flat">首次记录</div><div class="track"><i style="width:96px"></i></div><div class="best">最好一组 15kg × 15</div><div class="meta">3 组 × 15/15/12 次</div><div class="div"></div></div>
+            <div class="r"><b>双杠臂屈伸</b><div class="chip flat">首次记录</div><div class="track"><i style="width:6px;background:#D3D3CF"></i></div><div class="best">最好一组 自重 × 12</div><div class="meta">3 组 × 12/10/8 次</div></div>
+          </div>
+          <div class="a pb"><b>本场刷新 2 项个人纪录</b><span>卧推 60kg × 10 · 上斜哑铃卧推 22.5kg × 12</span></div>
+          <div class="a fdiv"></div>
+          <div class="a foot">衡砺健身记录 · 记录每一次进步</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案 B -->
+  <div class="col">
+    <p class="cap">方案 B · 战报 <span>— 深色，主视觉是本场总量</span></p>
+    <div class="shell" style="width:465px;height:761px">
+      <div class="scale" style="transform:scale(.62)">
+        <div class="card c3">
+          <div class="a hdr"><b>衡砺健身记录</b><em>2026/09/15</em></div>
+          <div class="a hr" style="top:112px"></div>
+          <div class="a hero">
+            <i>本场训练量</i>
+            <div class="v"><b>2,970</b><s>KG</s></div>
+          </div>
+          <div class="a second"><span>28:10 时长</span><em>·</em><span>8.2/10 平均吃力</span><em>·</em><span>13 组</span></div>
+          <div class="a verdict"><i></i><p>共同动作容量比上场 +13% · 强度适中，稳步推进即可</p></div>
+          <div class="a sec"><b>逐动作表现</b><em>共 4 个动作</em></div>
+          <div class="a rows">
+            <div class="r"><b class="is-pb"><i></i>卧推</b><div class="chip flat">与上次持平</div><div class="best">最好一组 60kg × 10</div><div class="meta">3 组 × 10/8/6 次</div><div class="div"></div></div>
+            <div class="r"><b class="is-pb"><i></i>上斜哑铃卧推</b><div class="chip up">比上次 ↑41%</div><div class="best">最好一组 22.5kg × 12</div><div class="meta">4 组 × 12/10/10/8 次</div><div class="div"></div></div>
+            <div class="r"><b><i></i>绳索夹胸</b><div class="chip flat">首次记录</div><div class="best">最好一组 15kg × 15</div><div class="meta">3 组 × 15/15/12 次</div><div class="div"></div></div>
+            <div class="r"><b><i></i>双杠臂屈伸</b><div class="chip flat">首次记录</div><div class="best">最好一组 自重 × 12</div><div class="meta">3 组 × 12/10/8 次</div></div>
+          </div>
+          <div class="a pb"><b>本场刷新 2 项个人纪录</b><span>卧推 60kg × 10 · 上斜哑铃卧推 22.5kg × 12</span></div>
+          <div class="a hr" style="top:1128px"></div>
+          <div class="a foot"><b>衡砺健身记录</b><em>记录每一次进步</em></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

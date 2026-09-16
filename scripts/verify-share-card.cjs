@@ -478,6 +478,85 @@ isTrue('G3 剥注释器不误伤真代码（空实现仍能被抓到）',
 isTrue('G3 剥注释器不误伤 https:// 这类含 // 的字面量',
   stripComments("var u = 'https://x.dev/a';").indexOf('https://x.dev/a') >= 0);
 
+/* ============ [H] 解剖图纯数据契约 + 动作库 target 全覆盖 ============ */
+// 分享卡要画解剖图（参考图的主视觉）。能不能画不重要，能不能**在 node 里断言**才重要 ——
+// 所以 bodymap 必须暴露「纯数据」的 bodyPaths()，而不是只能直接往 canvas 上画。
+// 同时锁死一条本轮修掉的真缺陷：动作库 target 里有 6 个值在图集里没有同名 slug。
+console.log('\n[H] \u89e3\u5256\u56fe \u2014\u2014 \u8def\u5f84\u662f\u7eaf\u6570\u636e\uff0c\u4e14\u6bcf\u4e2a target \u90fd\u80fd\u843d\u5230\u808c\u7fa4');
+const bm = require(ROOT + '/utils/bodymap.js');
+const BM_DATA = require(ROOT + '/utils/bodymap-data.js');
+const EX = require(ROOT + '/utils/exercises.js');
+
+const sidesOf = (arr) => arr.reduce((s, p) =>
+  s + (p.path.common || []).length + (p.path.left || []).length + (p.path.right || []).length, 0);
+
+const bf = bm.bodyPaths('front', new Set(['chest']));
+const bb = bm.bodyPaths('back', new Set(['upper-back']));
+eq('H1 前视段数 = 数据侧段数', bf.parts.length, sidesOf(BM_DATA.FRONT));
+eq('H2 后视段数 = 数据侧段数', bb.parts.length, sidesOf(BM_DATA.BACK));
+isTrue('H2 前视坐标 724×1448', bf.vw === 724 && bf.vh === 1448);
+eq('H2 后视需 x 偏移 -724（back 路径整体 +724）', bb.xOffset, -724);
+eq('H2 前视无偏移', bf.xOffset, 0);
+isTrue('H3 每段自带 d/fill/stroke/lw（纯数据，几何可直接断言）',
+  bf.parts.every(p => typeof p.d === 'string' && p.d.length > 10 && !!p.fill && !!p.stroke && p.lw === 2));
+eq('H3 activeCount = 该肌群在图中的段数（胸左右各一）', bf.activeCount, 2);
+isTrue('H3 未激活用静默灰、激活用亮绿',
+  bf.parts.find(p => p.slug === 'abs').fill === bm.BODY_COLORS.base &&
+  bf.parts.find(p => p.slug === 'chest').fill === bm.BODY_COLORS.on);
+isTrue('H4 bodymap 不依赖 wx（纯几何，可 node 直跑）', !/\bwx\./.test(readCode('utils/bodymap.js')));
+
+// —— 动作库 target 全覆盖（本轮修的真缺陷，防它再漏回来）——
+const targets = {};
+Object.keys(EX.library).forEach(cat => EX.library[cat].forEach(a => { targets[a.target] = 1; }));
+const tk = Object.keys(targets);
+isTrue('H5 动作库 target 取值数 ≥ 18（现 ' + tk.length + ' 个）', tk.length >= 18);
+eq('H5 每个 target 都能映射到 slug（曾漏 delts/upper back/spine/abductors/serrated/levator）',
+  tk.filter(k => !bm.SLUG[String(k).toLowerCase()]), []);
+const mappedSlugs = Array.from(new Set(tk.map(k => bm.SLUG[String(k).toLowerCase()])));
+eq('H5 映射结果都真实存在于图集（前/后视之一）',
+  mappedSlugs.filter(s => !bm.FRONT_SLUGS.has(s) && !bm.BACK_SLUGS.has(s)), []);
+
+const allEx = [];
+Object.keys(EX.library).forEach(cat => { EX.library[cat].forEach(a => allEx.push(a)); });
+eq('H6 没有「一个肌群都点不亮」的动作', allEx.filter(a => bm.collectSlugs(a).size === 0).length, 0);
+eq('H6 没有「主练肌群标不出」的动作（此前 262 个 / 20.2%）',
+  allEx.filter(a => !bm.primarySlugOf(a)).length, 0);
+
+// —— drawBody 仍按原调用序列作画（bodyPaths 抽取不许改变任何现有页面的渲染）——
+function mkRecCtx() {
+  const calls = [];
+  const bare = (k) => () => { calls.push(k); };
+  const args = (k) => (...a) => { calls.push(k + '(' + a.join(',') + ')'); };
+  return {
+    calls, fillStyle: '', strokeStyle: '', lineWidth: 0,
+    save: bare('save'), restore: bare('restore'), scale: args('scale'), translate: args('translate'),
+    clearRect: args('clearRect'), beginPath: bare('beginPath'), closePath: bare('closePath'),
+    moveTo: bare('moveTo'), lineTo: bare('lineTo'), bezierCurveTo: bare('bezierCurveTo'),
+    quadraticCurveTo: bare('quadraticCurveTo'), arcTo: bare('arcTo'), arc: bare('arc'),
+    fill: bare('fill'), stroke: bare('stroke')
+  };
+}
+const cnt = (arr, k) => arr.filter(x => x === k).length;
+const c1 = mkRecCtx(); bm.drawBody({ width: 300, height: 600 }, c1, 'front', new Set(['chest']));
+eq('H7 beginPath 次数 = 1 轮廓 + N 肌段', cnt(c1.calls, 'beginPath'), 1 + bf.parts.length);
+eq('H7 fill 次数 = beginPath 次数', cnt(c1.calls, 'fill'), 1 + bf.parts.length);
+eq('H7 stroke 次数 = beginPath 次数', cnt(c1.calls, 'stroke'), 1 + bf.parts.length);
+eq('H7 save / restore 成对', [cnt(c1.calls, 'save'), cnt(c1.calls, 'restore')], [1, 1]);
+isTrue('H7 真的画了曲线（bezierCurveTo 被调用）', cnt(c1.calls, 'bezierCurveTo') > 0);
+const c2 = mkRecCtx(); bm.drawBody({ width: 300, height: 600 }, c2, 'back', new Set());
+eq('H7 先 clearRect（不被上帧残留污染）', c2.calls[0], 'clearRect(0,0,300,600)');
+isTrue('H7 后视图带 translate(-724,0)', c2.calls.indexOf('translate(-724,0)') >= 0);
+isTrue('H7 画布尺寸为 0 时直接返回（不抛异常）',
+  (() => { const c = mkRecCtx(); bm.drawBody({ width: 0, height: 0 }, c, 'front', new Set()); return c.calls.length === 0; })());
+
+// —— 校准：上面这些判据自己不能是恒绿空转 ——
+const fakeTargets = ['pectorals', 'delts', 'not-a-real-muscle'];
+eq('H8 校准：覆盖检查器能抓出未映射值', fakeTargets.filter(k => !bm.SLUG[k]), ['not-a-real-muscle']);
+isTrue('H8 校准：段数判据能区分前/后视（' + sidesOf(BM_DATA.FRONT) + ' ≠ ' + sidesOf(BM_DATA.BACK) + '）',
+  sidesOf(BM_DATA.FRONT) !== sidesOf(BM_DATA.BACK));
+isTrue('H8 校准：activeCount 判据能区分「点了」与「没点」',
+  bm.bodyPaths('front', new Set()).activeCount === 0 && bf.activeCount === 2);
+
 console.log('\n--------------------------------------------------------');
 console.log('share-card: pass=' + pass + '  fail=' + fail);
 if (fail) { console.log('存在失败断言'); process.exit(1); }

@@ -15,9 +15,15 @@ const FRONT_SLUGS = new Set(D.FRONT.map(p => p.slug));
 const BACK_SLUGS = new Set(D.BACK.map(p => p.slug));
 
 // 英文 / 中文 target 字段 -> 真实 slug（FreeExerciseDB 风格 -> 该库 slug）
+//
+// ⚠️ 下面带「近似」注释的 6 条不是等价翻译，而是**把动作库真实用到的词汇映射到本图集存在的最近肌群**。
+// 背景：utils/exercises.js 的 target 取自 _T 字典（18 个值），其中 6 个在本图集里没有同名 slug。
+// 不加这几条，这些动作会**一个肌群都点不亮**（此前确实如此）。映射取舍见每行注释。
 const SLUG = {
   pectorals: 'chest', chest: 'chest',
+  'serratus anterior': 'chest',            // 近似：前锯肌分布于肋侧，本图集无该 slug，并入胸廓区域
   deltoids: 'deltoids', shoulders: 'deltoids', deltoid: 'deltoids', 'shoulder': 'deltoids',
+  delts: 'deltoids',                       // 近似：动作库实际用 delts 而非 deltoids
   biceps: 'biceps',
   triceps: 'triceps',
   abs: 'abs', abdominals: 'abs', abdominal: 'abs', core: 'abs', 'core/abs': 'abs',
@@ -25,9 +31,13 @@ const SLUG = {
   quadriceps: 'quadriceps', quad: 'quadriceps', quads: 'quadriceps',
   hamstrings: 'hamstring', 'biceps femoris': 'hamstring', hamstring: 'hamstring',
   glutes: 'gluteal', gluteus: 'gluteal', glute: 'gluteal',
+  abductors: 'gluteal',                    // 近似：外展肌（臀中/小肌）本图集并入 gluteal
   calves: 'calves', calf: 'calves', soleus: 'calves',
   lats: 'upper-back', latissimus: 'upper-back', lat: 'upper-back',
+  'upper back': 'upper-back',              // 近似：动作库带空格的写法
   traps: 'trapezius', trapezius: 'trapezius',
+  'levator scapulae': 'trapezius',         // 近似：肩胛提肌在本图集并入斜方区域
+  spine: 'lower-back',                     // 近似：spine 指竖脊肌，本图集归 lower-back
   'lower back': 'lower-back', lowerback: 'lower-back', 'erector spinae': 'lower-back',
   forearms: 'forearm', forearm: 'forearm',
   neck: 'neck', tibialis: 'tibialis', adductors: 'adductors',
@@ -286,57 +296,81 @@ function parsePath(ctx, d) {
 }
 
 // ===================== 绘制 =====================
-// canvas: WeChat canvas 2d node；ctx: canvas.getContext('2d')
-// slugSet: Set<slug>（需要高亮的肌群）；opts 可选配色
-function drawBody(canvas, ctx, side, slugSet, opts) {
-  opts = opts || {};
+// 默认配色（与 app.wxss 的浅色 token 对齐）。分享卡会覆盖其中一部分。
+const BODY_COLORS = {
+  outlineFill: '#F1F3F5', outlineStroke: '#C9CFD6',
+  base: '#E2E6EA', baseStroke: '#D2D8DF',
+  on: '#C8FF00', onStroke: '#7CB800'
+};
+
+// ⚠️ 这里返回的是**纯数据**（只有 path 字符串和色值），不碰 canvas。
+//
+// 为什么要这一层：分享卡的版式是「纯函数产出绘制指令」的（utils/shareCard.js 的 layout()），
+// 目的是让守卫能在 node 里穷举断言「没有一张图、没有一个越界元素」。如果解剖图只能
+// 「直接往 canvas 上画」，分享卡就不得不退化成真机截图验收。
+// 抽出这一层后：layout() 能拿到 shape 列表算几何，draw() 才把它落到 canvas。
+// drawBody() 也改为消费本函数 —— 解剖图只有一份实现。
+function bodyPaths(side, slugSet, opts) {
+  const o = Object.assign({}, BODY_COLORS, opts || {});
   const data = side === 'back' ? D.BACK : D.FRONT;
   const outline = side === 'back' ? D.OUTLINE_BACK : D.OUTLINE_FRONT;
-  const cw = canvas.width, ch = canvas.height;
-  if (!cw || !ch) return;
-  ctx.clearRect(0, 0, cw, ch);
-  ctx.save();
-  const scale = Math.min(cw / VBW, ch / VBH);
-  const ox = (cw - VBW * scale) / 2;
-  const oy = (ch - VBH * scale) / 2;
-  ctx.translate(ox, oy);
-  ctx.scale(scale, scale);
-  if (side === 'back') ctx.translate(-724, 0);
 
-  // 人体轮廓（浅色填充，作为干净的身体边界）
-  ctx.beginPath();
-  parsePath(ctx, outline);
-  ctx.fillStyle = opts.outlineFill || '#F1F3F5';
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = opts.outlineStroke || '#C9CFD6';
-  ctx.stroke();
-
-  // 肌群：未激活浅灰，激活荧光绿
-  const base = opts.base || '#E2E6EA';
-  const baseStroke = opts.baseStroke || '#D2D8DF';
-  const on = opts.on || '#C8FF00';
-  const onStroke = opts.onStroke || '#7CB800';
+  const parts = [];
   for (const part of data) {
-    const active = slugSet && slugSet.has(part.slug);
-    ctx.fillStyle = active ? on : base;
-    ctx.strokeStyle = active ? onStroke : baseStroke;
-    ctx.lineWidth = 2;
+    const active = !!(slugSet && slugSet.has(part.slug));
+    const fill = active ? o.on : o.base;
+    const stroke = active ? o.onStroke : o.baseStroke;
     const sides = []
       .concat(part.path.common || [])
       .concat(part.path.left || [])
       .concat(part.path.right || []);
-    for (const d of sides) {
-      ctx.beginPath();
-      parsePath(ctx, d);
-      ctx.fill();
-      ctx.stroke();
-    }
+    for (const d of sides) parts.push({ slug: part.slug, active: active, d: d, fill: fill, stroke: stroke, lw: 2 });
   }
+
+  return {
+    side: side === 'back' ? 'back' : 'front',
+    vw: VBW, vh: VBH,
+    // back 路径的 x 整体 +724；消费方需自行 translate(-724, 0)
+    xOffset: side === 'back' ? -724 : 0,
+    outline: { d: outline, fill: o.outlineFill, stroke: o.outlineStroke, lw: 2 },
+    parts: parts,
+    activeCount: parts.filter(p => p.active).length
+  };
+}
+
+// 把 shape 列表画到已定位好的 ctx 上（调用方负责 translate/scale）。
+function drawShapes(ctx, shapes) {
+  const defs = [shapes.outline].concat(shapes.parts);
+  for (const s of defs) {
+    ctx.beginPath();
+    parsePath(ctx, s.d);
+    ctx.fillStyle = s.fill;
+    ctx.fill();
+    ctx.lineWidth = s.lw || 2;
+    ctx.strokeStyle = s.stroke;
+    ctx.stroke();
+  }
+}
+
+// canvas: WeChat canvas 2d node；ctx: canvas.getContext('2d')
+// slugSet: Set<slug>（需要高亮的肌群）；opts 可选配色
+function drawBody(canvas, ctx, side, slugSet, opts) {
+  const cw = canvas.width, ch = canvas.height;
+  if (!cw || !ch) return;
+  const shapes = bodyPaths(side, slugSet, opts);
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.save();
+  const scale = Math.min(cw / shapes.vw, ch / shapes.vh);
+  ctx.translate((cw - shapes.vw * scale) / 2, (ch - shapes.vh * scale) / 2);
+  ctx.scale(scale, scale);
+  if (shapes.xOffset) ctx.translate(shapes.xOffset, 0);
+  drawShapes(ctx, shapes);
   ctx.restore();
 }
 
 module.exports = {
+  VBW, VBH, BODY_COLORS,
   FRONT_SLUGS, BACK_SLUGS, SLUG, CN_SLOT, SLUG_TO_CN, MUSCLE_BY_CAT,
-  collectSlugs, primarySlugOf, targetCn, buildMuscles, drawBody
+  collectSlugs, primarySlugOf, targetCn, buildMuscles,
+  bodyPaths, drawShapes, drawBody
 };
