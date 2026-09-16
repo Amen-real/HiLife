@@ -652,18 +652,28 @@ W.toasts = []; W.shareFail = { errMsg: 'showShareImageMenu:fail system error' };
 I8.shareShareCard();
 eq('E11 分享真失败 → 给提示', W.toasts.length, 1);
 
-// —— 朋友圈通道：微信没有「一键发朋友圈」的开放接口 ——
-// 唯一相关的是 onShareTimeline（单页模式，交互密集页加它就是残废入口，本项目刻意不加）。
-// 所以这条通道只能是「存到相册 + 引导用户自己去发」，且**必须真的存了**。
+// —— 分享通道：**通道数 = 真实能力数**，不为同一个能力开两个入口 ——
+// 曾有第三条「存相册发朋友圈」：微信没有「一键发朋友圈」的开放接口
+//（唯一相关的 onShareTimeline 是单页模式，交互密集页加它就是残废入口，本项目刻意不加），
+// 早期做法是「存到相册 + 弹一句引导」。但它的实现与 saveShareCard **逐行相同**
+//（都是 saveImageToPhotosAlbum + 提示），区别只有一句 modal 文案；
+// 而 wx.showShareImageMenu 的转发面板里本来就能直接选朋友圈。真机确认后整条通道删除。
+// 这里守两件事：① 它不许悄悄长回来；② 剩下的两条仍是**真实能力**，不是空壳入口。
+const TRW = 'components/training-review/training-review.wxml';
+const TRC = 'components/training-review/training-review.wxss';
+// 同 [F] 组的 stripComments：本仓 wxml 的注释里会**原样引用**被删掉的旧入口名
+// （「曾有的第三条 XXX 已删除」），不剥注释尺子会把自己的说明文字当成真缺陷。
+const trwCode = read(TRW).replace(/<!--[\s\S]*?-->/g, ' ');
 W.reset();
 const I8b = mkInst(); I8b.rebuild(); I8b.openShareCard();
-W.toasts = []; W.modals = [];
-I8b.saveMomentsShareCard();
-eq('E12 朋友圈通道真的调了保存接口', W.savedCalls.length, 1);
-eq('E12 存的是同一张卡', W.savedCalls[0].filePath, '/tmp/share-card.png');
-eq('E12 保存后给出朋友圈引导（不是假装已经发布了）', W.modals.length, 1);
-isTrue('E12 引导文案里点明「朋友圈」与路径', /\u670b\u53cb\u5708/.test(W.modals[0].content + W.modals[0].title));
-isFalse('E12 不谎称「已分享到朋友圈」', /\u5df2\u5206\u4eab\u5230\u670b\u53cb\u5708/.test(W.modals[0].content));
+eq('E12 分享通道只剩两个处理器', typeof I8b.shareShareCard + '/' + typeof I8b.saveShareCard, 'function/function');
+eq('E12 不再有「存相册发朋友圈」处理器', typeof I8b.saveMomentsShareCard, 'undefined');
+eq('E12 通道行恰好两个入口', (trwCode.match(/class="sc-ch"/g) || []).length, 2);
+isFalse('E12 面板上不再出现「存相册发朋友圈」', /\u5b58\u76f8\u518c\u53d1\u670b\u53cb\u5708/.test(trwCode));
+isFalse('E12 图标样式不留死代码（ico-moment-sc 已随之删除）', /ico-moment-sc/.test(read(TRC)));
+isTrue('E12 说明文案指的是真实路径（转发面板里可发朋友圈）',
+  /\u8f6c\u53d1\u9762\u677f[\s\S]{0,30}\u670b\u53cb\u5708/.test(trwCode));
+isFalse('E12 不谎称「已分享到朋友圈」', /\u5df2\u5206\u4eab\u5230\u670b\u53cb\u5708/.test(trwCode));
 
 // 保存相册：权限被拒必须走设置页（重试无用）
 W.reset();
@@ -694,8 +704,7 @@ const I12 = mkInst(); I12.rebuild();
 W.toasts = [];
 I12.shareShareCard();
 I12.saveShareCard();
-I12.saveMomentsShareCard();
-eq('E14 未生成图 → 三次都只提示', W.toasts.length, 3);
+eq('E14 未生成图 → 两个通道都只提示', W.toasts.length, 2);
 eq('E14 未生成图 → 不调分享接口', W.shareCalls.length, 0);
 eq('E14 未生成图 → 不调保存接口', W.savedCalls.length, 0);
 
@@ -740,10 +749,12 @@ isTrue('F6 画布由 wx:if 控制挂载', /canvas\s+wx:if=/.test(readCode('compo
 isFalse('F7 分享弹层文字不用 --n-500 / --text-weak（P2-9 盲区色）',
   /\.sc-(tip|busy)\s*\{[^}]*var\(--(n-500|text-weak)\)/.test(readCode('components/training-review/training-review.wxss')));
 
-// 三个开关必须在 wxml 里都绑到**真实处理器**（静态事件名，禁 Mustache 动态事件名）
-['toggleShareOpt', 'cycleShareStyle', 'shareShareCard', 'saveMomentsShareCard', 'saveShareCard', 'closeShare'].forEach(fn => {
+// 分享面板的每个可点项都必须绑到**真实处理器**（静态事件名，禁 Mustache 动态事件名）
+['toggleShareOpt', 'cycleShareStyle', 'shareShareCard', 'saveShareCard', 'closeShare'].forEach(fn => {
   isTrue('F8 分享面板绑定了 ' + fn, new RegExp('bindtap="' + fn + '"').test(read('components/training-review/training-review.wxml')));
 });
+isTrue('F8 面板上不再有指向已删除处理器的绑定',
+  !/bindtap="saveMomentsShareCard"/.test(read('components/training-review/training-review.wxml')));
 isFalse('F8 分享面板没有 Mustache 动态事件名',
   /bind[a-z:]*="\{\{/.test(read('components/training-review/training-review.wxml')));
 
@@ -917,6 +928,117 @@ isTrue('I2 分享面板的画布上没有任何图片元素（主视觉不是 <i
     const i = wxml.indexOf('sc-canvas');
     return i >= 0 && !/<image\b/.test(wxml.slice(Math.max(0, i - 1200), i));
   })());
+
+/* ============ [J] 底部「取消」永不被遮挡（真机反馈的两个独立成因） ============ */
+// 真机反馈：分享卡弹层底部的「取消」被挡住。成因有两个，必须各自钉一条 ——
+//   ① 抽屉总高**没有上限** → 内容一多（小屏 / 文案变长 / 加一行说明）就把「取消」顶出屏幕；
+//   ② 宿主页是「数据」tab（自定义 tabBar 是框架级固定层，页面弹层 z-index 压不住）→ 底栏盖住按钮。
+// 组件里另一个弹层（.ka-mask / .ka-sheet）早就用 with-tab 处理过 ②，分享弹层两样都缺 ——
+// 「同一个组件里同一类 bug 修了一半」是最典型的漏网，所以这里按**结构不变量**钉死，
+// 而不是按当下的像素值（像素值会随设备与文案变化）。
+console.log('\n[J] \u5e95\u90e8\u300c\u53d6\u6d88\u300d\u6c38\u4e0d\u88ab\u906e\u6321');
+
+const CSS_SC = read(TRC);
+// 取某个选择器**自己的**声明块（避开 .sc-cancel:active / .sc-sheet.with-tab 这类同前缀邻居）
+function blockOf(css, sel) {
+  const i = css.indexOf(sel + ' {');
+  if (i < 0) return '';
+  const j = css.indexOf('}', i);
+  return j < 0 ? '' : css.slice(i + sel.length, j);
+}
+const SHEET = blockOf(CSS_SC, '.sc-sheet');
+isTrue('J1 抽屉有高度上限（max-height 存在，不再靠「经验上装得下」）', /max-height\s*:/.test(SHEET));
+isTrue('J2 上限用 vh 表达（随屏高自适应，不写死 px）', /max-height\s*:\s*calc\(\s*100vh\s*-/.test(SHEET));
+isTrue('J3 上限留出顶部空隙（遮罩仍可见，用户知道可以点空白关闭）',
+  /100vh\s*-\s*(4[0-9]|[5-9][0-9]|[0-9]{3,})rpx/.test(SHEET));
+const PREV = blockOf(CSS_SC, '.sc-preview');
+isTrue('J4 预览图承担全部压缩（flex-shrink 不为 0，且带 min-height 下限）',
+  /flex\s*:\s*0\s+1\s+auto/.test(PREV) && /min-height\s*:/.test(PREV));
+['.sc-switches', '.sc-channels', '.sc-tip', '.sc-cancel'].forEach(sel => {
+  isTrue('J5 ' + sel + ' 禁止被压缩（flex-shrink: 0）', /flex-shrink\s*:\s*0/.test(blockOf(CSS_SC, sel)));
+});
+const SHEET_TAB = blockOf(CSS_SC, '.sc-sheet.with-tab');
+isTrue('J6 tab 页抽屉让出底栏（.sc-sheet.with-tab 存在）', /padding-bottom\s*:/.test(SHEET_TAB));
+isTrue('J7 让出的高度与 .ka-mask.with-tab 同一口径（88rpx 底栏 + 44rpx 呼吸 + 安全区）',
+  /calc\(\s*88rpx\s*\+\s*44rpx\s*\+\s*env\(safe-area-inset-bottom\)\s*\)/.test(SHEET_TAB));
+isTrue('J8 wxml 把 with-tab 绑到运行时探测结果（不是写死某一个页面）',
+  /class="sc-sheet \{\{scTabSafe \? 'with-tab' : ''\}\}"/.test(read(TRW)));
+
+// 探测必须是**运行时**的，且真的改变结果 —— 桩 getCurrentPages 后跑真实 openShareCard
+W.reset();
+const savedGCP = global.getCurrentPages;
+delete global.getCurrentPages;
+const J_1 = mkInst(); J_1.rebuild(); J_1.openShareCard();
+isFalse('J9 拿不到页面栈 → 不预留（最坏只是少留白，不误伤复盘页）', J_1.data.scTabSafe);
+
+global.getCurrentPages = () => [{ getTabBar: () => ({}) }];      // 有自定义 tabBar 的 tab 页
+const J_2 = mkInst(); J_2.rebuild(); J_2.openShareCard();
+isTrue('J9 在数据 tab 打开 → 置位 scTabSafe', J_2.data.scTabSafe);
+
+global.getCurrentPages = () => [{}];                             // 普通页（复盘页）
+const J_3 = mkInst(); J_3.rebuild(); J_3.openShareCard();
+isFalse('J9 在复盘页打开 → 不预留', J_3.data.scTabSafe);
+
+global.getCurrentPages = () => { throw new Error('boom'); };      // 探测抛异常
+const J_4 = mkInst(); J_4.rebuild(); J_4.openShareCard();
+isFalse('J9 探测抛异常 → 兜底 false 而不是把弹层弄崩', J_4.data.scTabSafe);
+isTrue('J9 探测失败也照常出图（弹层不因探测而残废）', !!J_4.data.shareImg);
+if (savedGCP) global.getCurrentPages = savedGCP; else delete global.getCurrentPages;
+
+// —— 校准：上面这几条判据自己不能是恒绿空转 ——
+isTrue('J10 校准：把 max-height 删掉后 J1/J2 判据会报错',
+  !/max-height\s*:/.test(SHEET.replace(/max-height[^;]*;/, '')));
+isTrue('J10 校准：把 flex-shrink:0 改成 1 后 J5 判据会报错',
+  !/flex-shrink\s*:\s*0/.test(blockOf(CSS_SC.replace(/flex-shrink\s*:\s*0/g, 'flex-shrink: 1'), '.sc-cancel')));
+isFalse('J10 校准：blockOf 不会误取到 .sc-cancel:active 的同名声明', /:active/.test(blockOf(CSS_SC, '.sc-cancel')));
+isFalse('J10 校准：blockOf(.sc-sheet) 没有误吃进 .with-tab 的声明', /with-tab/.test(SHEET));
+
+/* J11 几何复算 —— 把「为什么必须这么改」写成可执行的算式，而不是注释里一句话。
+   两个真实机型 × 两种状态（有无 with-tab）。**坏样本必须被判为「取消被底栏盖住」**，
+   否则这条尺子就是恒绿空转（J12 校准在下面兜）。 */
+function sheetGeom(vw, vh, safeBottom, withTab) {
+  const r = vw / 750;                                        // 1rpx = ?px
+  const padTop = 28 * r;
+  const padBottom = 28 * r + (withTab ? (88 + 44) * r : 0) + safeBottom;
+  const rows = (76 + 96 + 12 + 22 + 88) * r;                 // 开关 + 圆图标 + 图标间隙 + 通道文案 + 取消
+  const gaps = 4 * 20 * r;                                   // 5 个子项 → 4 个 gap
+  const tip = 3 * 20 * r * 1.6;                              // 说明文字按最坏折 3 行
+  const others = padTop + padBottom + rows + gaps + tip;
+  const cap = vh - 96 * r;                                   // .sc-sheet 的 max-height
+  const previewWant = 0.5 * vh;                              // .sc-preview 的 height: 50vh
+  const previewMin = 220 * r;                                // .sc-preview 的 min-height
+  let sheet = Math.min(cap, others + previewWant);
+  let preview = sheet - others;
+  if (preview < previewMin) { preview = previewMin; sheet = Math.min(vh, others + preview); }
+  const tabTop = vh - (88 * r + safeBottom);                 // 自定义 tabBar 顶边
+  const cancelBottom = vh - padBottom;                       // 「取消」底边
+  const cancelTop = cancelBottom - 88 * r;
+  const covered = Math.max(0, cancelBottom - Math.max(cancelTop, tabTop));
+  return { r, sheet, cap, preview, cancelTop, cancelBottom, tabTop, covered, visible: 88 * r - covered, safeBottom, tabBar: true };
+}
+const PROFILES = [[375, 667, 0, '\u5c0f\u5c4f\u65e0\u5b89\u5168\u533a'], [375, 812, 34, 'iPhone X \u7cfb']];
+PROFILES.forEach(([vw, vh, safe, name]) => {
+  const bad = sheetGeom(vw, vh, safe, false);
+  const fixed = sheetGeom(vw, vh, safe, true);
+  isTrue('J11 ' + name + '\uff1a\u65e0 with-tab \u65f6\u300c\u53d6\u6d88\u300d\u786e\u5b9e\u88ab\u5e95\u680f\u76d6\u4f4f\uff08'
+    + Math.round(bad.covered) + 'px / ' + Math.round(88 * bad.r) + 'px\uff09', bad.visible < 88 * bad.r * 0.5);
+  eq('J11 ' + name + '\uff1a\u52a0 with-tab \u540e\u300c\u53d6\u6d88\u300d\u5b8c\u6574\u53ef\u89c1', Math.round(fixed.covered), 0);
+  isTrue('J11 ' + name + '\uff1a\u62bd\u5c49\u6c38\u4e0d\u9ad8\u8fc7\u5c4f\u5e55\uff08max-height \u751f\u6548\uff09', fixed.sheet <= fixed.cap + 0.01);
+  isTrue('J11 ' + name + '\uff1a\u9884\u89c8\u56fe\u88ab\u538b\u7f29\u540e\u4ecd \u2265 220rpx\uff08\u4e0d\u5854\u6210 0\uff09', fixed.preview >= 220 * fixed.r - 0.01);
+});
+// 复盘页没有自定义 tabBar：只要求不压到 iPhone 的横条，别把 with-tab 的账算到它头上
+PROFILES.forEach(([vw, vh, safe, name]) => {
+  const rev = sheetGeom(vw, vh, safe, false);
+  isTrue('J11 复盘页 / ' + name + '：取消边距尊重安全区（不压横条）',
+    rev.cancelBottom <= vh - safe + 0.01);
+});
+
+// 模型里的常量必须与 CSS 同源 —— 否则改了 CSS 而模型没改，J11 会开始骗人
+isTrue('J12 模型锚点：.sc-preview 仍是 height: 50vh', /height\s*:\s*50vh/.test(PREV));
+isTrue('J12 模型锚点：.sc-cancel 仍是 height: 88rpx', /height\s*:\s*88rpx/.test(blockOf(CSS_SC, '.sc-cancel')));
+isTrue('J12 模型锚点：.sc-sheet 的 max-height 仍是 100vh - 96rpx', /calc\(\s*100vh\s*-\s*96rpx\s*\)/.test(SHEET));
+isTrue('J12 校准：改掉 50vh 后 J12 判据会报错',
+  !/height\s*:\s*50vh/.test(PREV.replace(/height\s*:\s*50vh/, 'height: 60vh')));
 
 console.log('\n--------------------------------------------------------');
 console.log('share-card: pass=' + pass + '  fail=' + fail);

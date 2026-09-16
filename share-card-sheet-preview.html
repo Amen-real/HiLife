@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>分享卡弹层 · 通道删减 + 「取消」不再被遮挡 · 视觉稿</title>
+<style>
+  /* ============================================================
+     HiLife 小程序页面 → HTML 预览稿（等比换算，1rpx = 0.52px）
+     令牌照搬 app.wxss 的 page{...} 块；深色帧只重定义变量，
+     与 pages/review/review.wxss 的 .page.theme-dark 块同构。
+     遮罩 / 抽屉的每个尺寸都由 components/training-review/training-review.wxss
+     的 .sc-* 规则 ×0.52 换算，**不是目测**。
+     本文件只画弹层，不画页面业务内容（底下那层是示意，已减淡）。
+     ============================================================ */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 32px 72px;
+    background: #EFEFEA;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    color: #0A0A0A;
+  }
+  .head { max-width: 1300px; margin: 0 auto 28px; }
+  .head .eyebrow {
+    display: inline-block; font-size: 12px; letter-spacing: 2px; font-weight: 700;
+    color: #4C7300; background: #F2FFD6; border: 1px solid #C8FF00;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .head h1 { font-size: 26px; margin: 14px 0 8px; letter-spacing: -0.4px; }
+  .head p { margin: 0; font-size: 14px; line-height: 1.75; color: #444; max-width: 1000px; }
+  .head code { background: #FFFFFF; border: 1px solid #E1E1DC; border-radius: 4px; padding: 1px 5px; font-size: 13px; }
+
+  .stage { display: flex; flex-wrap: wrap; gap: 30px; max-width: 1300px; margin: 0 auto; }
+  .shot { width: 390px; }
+  .cap { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .cap .tag {
+    display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600; vertical-align: 1px;
+    padding: 2px 8px; border-radius: 999px; background: #FFFFFF; border: 1px solid #D9D9D5; color: #707070;
+  }
+  .cap .tag.hot { background: #C8FF00; border-color: #C8FF00; color: #0A0A0A; }
+  .cap .tag.bad { background: #FBEDEB; border-color: #C4363B; color: #C4363B; }
+  .cap .sub { display: block; font-weight: 400; color: #707070; font-size: 12px; margin-top: 4px; line-height: 1.6; }
+
+  /* ---------- 机身 ---------- */
+  .phone {
+    position: relative; width: 390px; height: 844px; border-radius: 46px; overflow: hidden;
+    background: var(--n-50); color: var(--text);
+    box-shadow: 0 18px 50px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.10);
+
+    --primary: #C8FF00;
+    --primary-deep: #7CB800;
+    --primary-tint: #F2FFD6;
+    --primary-text: #4C7300;
+    --n-50: #F7F7F5;
+    --n-100: #F1F1EE;
+    --n-700: #5A5A5A;
+    --n-900: #0A0A0A;
+    --white: #FFFFFF;
+    --card: #FFFFFF;
+    --card-gray: #EFEFEB;
+    --bg: #F1F1EE;
+    --glass-strong: #FFFFFF;
+    --glass-border: #E8E8E4;
+    --text: #0A0A0A;
+    --text-sub: #444444;
+    --text-weak: #A0A0A0;
+    --line: #E8E8E4;
+    --line-strong: #D9D9D5;
+    --accent: #FF9500;
+    --r-pill: 999px;
+    --shadow-card: 0 2px 8px rgba(0,0,0,.06);
+  }
+  /* 深色帧：与 pages/review/review.wxss 的 .page.theme-dark 块逐条对应 */
+  .phone.dark {
+    --n-50: #0A0A0A;
+    --n-100: #1E1E1E;
+    --n-700: rgba(255,255,255,.75);
+    --n-900: #FFFFFF;
+    --white: #161616;
+    --card: #161616;
+    --card-gray: #1E1E1E;
+    --bg: rgba(255,255,255,.06);
+    --glass-strong: #1E1E1E;
+    --glass-border: rgba(255,255,255,.10);
+    --text: #FFFFFF;
+    --text-sub: rgba(255,255,255,.70);
+    --text-weak: rgba(255,255,255,.45);
+    --line: rgba(255,255,255,.10);
+    --line-strong: rgba(255,255,255,.20);
+    --primary-tint: rgba(200,255,0,.12);
+    --shadow-card: 0 2px 8px rgba(0,0,0,.35);
+  }
+
+  /* ---------- 状态栏 / 导航栏 / 底栏 ---------- */
+  .statusbar {
+    height: 47px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px; font-size: 14px; font-weight: 600; color: var(--text);
+  }
+  .statusbar .right { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; opacity: .85; position: relative; }
+  .batt::after { content: ''; position: absolute; inset: 1.5px; right: 6px; background: var(--text); border-radius: 1px; }
+  .navbar {
+    height: 44px; display: flex; align-items: center; justify-content: center;
+    position: relative; font-size: 17px; font-weight: 600; color: var(--text); background: var(--n-50);
+  }
+  .navbar .back { position: absolute; left: 16px; font-size: 20px; line-height: 1; opacity: .9; }
+
+  /* 页面业务内容（示意层）：本稿不验它，画出来只为说明「底下是什么页」 */
+  .screen { position: absolute; left: 0; right: 0; top: 91px; bottom: 0; background: var(--n-50); overflow: hidden; }
+  .pg { padding: 14px 16px 0; }
+  .pg-title { font-size: 21px; font-weight: 800; color: var(--text); margin: 4px 0 10px; }
+  .pg-strip { display: flex; gap: 8px; margin-bottom: 14px; }
+  .pg-day {
+    flex: 1; text-align: center; padding: 8px 0; border-radius: 10px;
+    background: var(--card-gray); color: var(--n-700); font-size: 11px; font-weight: 700;
+  }
+  .pg-day.on { background: var(--primary); color: #0A0A0A; }
+  .pg-card {
+    background: var(--glass-strong); border: .52px solid var(--glass-border); border-radius: 14px;
+    padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow-card);
+  }
+  .pg-card h4 { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; color: var(--text); }
+  .pg-card p { margin: 0; font-size: 11.5px; color: var(--text-sub); line-height: 1.7; }
+  .pg-shot { height: 74px; border-radius: 10px; margin-top: 8px; background: var(--bg); }
+
+  /* 自定义 tabBar：**框架级固定层**，真机由 app.json tabBar.custom 渲染，
+     页面里 z-index 调到 2000 也压不住它 —— 本稿按真机层级画在遮罩之上。 */
+  .tabbar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 900;
+    background: var(--glass-strong); border-top: .52px solid var(--glass-border);
+    padding-bottom: 34px;                     /* 安全区 */
+  }
+  .tabbar-row { height: 45.76px; display: flex; align-items: center; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .tab svg { width: 21px; height: 21px; stroke: var(--text-weak); fill: none; stroke-width: 1.8; }
+  .tab span { font-size: 9.5px; font-weight: 600; color: var(--text-weak); }
+  .tab.on svg { stroke: var(--primary-deep); }
+  .tab.on span { color: var(--primary-text); font-weight: 700; }
+
+  /* ============================================================
+     分享卡弹层（尺寸逐条由 training-review.wxss 的 .sc-* ×0.52 换算）
+     ============================================================ */
+  .sc-mask {                                  /* .sc-mask: fixed inset 0, flex-end, z-index:2000 */
+    position: absolute; inset: 0; z-index: 800;
+    background: rgba(15,23,42,.62);
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .sc-sheet {                                 /* .sc-sheet */
+    width: 390px;                              /* 750rpx */
+    background: var(--n-50);
+    border-radius: 20.8px 20.8px 0 0;          /* 40rpx */
+    padding: 14.5px 20.8px 48.5px;             /* 28rpx / 40rpx / calc(28rpx + safe 34) */
+    display: flex; flex-direction: column; gap: 10.4px;   /* 20rpx */
+    max-height: 794px;                         /* 新增：max-height: calc(100vh - 96rpx) */
+  }
+  /* 新增：宿主页有自定义 tabBar 时让出底栏 —— 与 .ka-mask.with-tab 同口径
+     88rpx + 44rpx + safe34 = 45.76 + 22.88 + 34 = 102.64 */
+  .sc-sheet.with-tab { padding-bottom: 102.64px; }
+
+  .sc-preview {                               /* .sc-preview：占屏高一半，唯一可压缩项 */
+    height: 422px; min-height: 114.4px;       /* 50vh / 220rpx */
+    flex: 0 1 auto;
+    border-radius: 12.5px; overflow: hidden;  /* 24rpx */
+    background: var(--n-100);
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* 出图后的 <image>：真实是 canvas 导出的 750×H 整图，这里按卡片版式缩绘示意 */
+  .card {
+    width: 260px; height: 392px; border-radius: 12px; background: #FFFFFF; color: #0A0A0A;
+    padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.14);
+  }
+  .card-id { display: flex; align-items: center; gap: 8px; }
+  .card-av {
+    width: 26px; height: 26px; border-radius: 50%; background: #C8FF00; color: #0A0A0A;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+  }
+  .card-nick { font-size: 12px; font-weight: 700; }
+  .card-streak { margin-left: auto; font-size: 10px; font-weight: 700; color: #4C7300; }
+  .card-verdict {
+    background: #F2FFD6; border-left: 3px solid #C8FF00; border-radius: 4px;
+    padding: 6px 8px; font-size: 11px; font-weight: 700; line-height: 1.5;
+  }
+  .card-anat { display: flex; gap: 10px; align-items: center; }
+  .card-fig { width: 62px; height: 118px; flex: none; }
+  .card-metrics { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+  .card-m { display: flex; align-items: baseline; gap: 5px; }
+  .card-m b { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+  .card-m i { font-size: 9px; font-style: normal; color: #5A5A5A; }
+  .card-row { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+  .card-row .nm { flex: 1; color: #0A0A0A; font-weight: 600; }
+  .card-chip { background: #F2FFD6; color: #4C7300; border-radius: 999px; padding: 1px 6px; font-weight: 700; }
+  .card-chip.dn { background: #FBEDEB; color: #C4363B; }
+  .card-pb { background: #C8FF00; color: #0A0A0A; border-radius: 6px; padding: 5px 8px; font-size: 10px; font-weight: 700; }
+
+  .sc-busy { font-size: 13.5px; font-weight: 600; color: var(--n-700); }
+
+  .sc-switches { display: flex; gap: 8.32px; flex-shrink: 0; }        /* 16rpx */
+  .sc-sw {                                                            /* .sc-sw */
+    flex: 1; height: 39.5px; border-radius: var(--r-pill);            /* 76rpx */
+    display: flex; align-items: center; justify-content: center;
+    background: var(--n-100); color: var(--n-900);
+    font-size: 12.5px; font-weight: 700;                              /* 24rpx */
+  }
+  /* 亮绿实底 → 字恒 #0A0A0A（铁律）：--primary 是全库唯一不随主题翻转的色 */
+  .sc-sw.on { background: var(--primary); color: #0A0A0A; }
+
+  /* 通道行：**两条**（改后）/ 三条（改前）。两条时居中 + 固定列宽，
+     平摊会让两个图标落在 1/4 与 3/4 处、中间空近 240rpx。 */
+  .sc-channels { display: flex; justify-content: center; gap: 72.8px; flex-shrink: 0; }  /* 140rpx */
+  .sc-channels.three { justify-content: flex-start; gap: 0; }
+  .sc-ch { width: 104px; display: flex; flex-direction: column; align-items: center; gap: 6.24px; } /* 200rpx / 12rpx */
+  .sc-channels.three .sc-ch { flex: 1; width: auto; }
+  .sc-ch-ico {                                                        /* .sc-ch-ico：亮绿圆 + 深色字形 */
+    width: 49.9px; height: 49.9px; border-radius: 50%;                /* 96rpx */
+    background: var(--primary); display: flex; align-items: center; justify-content: center;
+  }
+  /* 真机是 mask-image + background-color（字形与主题无关，恒 #0A0A0A）；
+     HTML 里可以内联 SVG，故此处 stroke 直接写 #0A0A0A，两者等价。 */
+  .sc-ch-ico svg { width: 24px; height: 24px; stroke: #0A0A0A; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .sc-ch-tx { font-size: 11.4px; font-weight: 600; color: var(--n-700); }   /* 22rpx */
+
+  .sc-tip { font-size: 10.4px; font-weight: 500; line-height: 1.6; color: var(--n-700); flex-shrink: 0; }
+  .sc-cancel {                                                        /* .sc-cancel */
+    height: 45.76px; border-radius: var(--r-pill); flex-shrink: 0;     /* 88rpx */
+    display: flex; align-items: center; justify-content: center;
+    background: var(--card); color: var(--n-900);
+    font-size: 14.5px; font-weight: 700;                               /* 28rpx */
+  }
+
+  /* ---------- 批注（**不是 UI**，只为指认两个成因） ---------- */
+  .annot {
+    position: absolute; z-index: 1200; pointer-events: none;
+    border: 1.5px dashed #C4363B; border-radius: 6px;
+    font-size: 10px; font-weight: 700; color: #FFFFFF;
+    background: #C4363B; padding: 1px 6px; line-height: 1.5;
+  }
+  .annot.ok { border-color: #4C7300; background: #4C7300; }
+  .annot.tab { left: 50%; transform: translateX(-50%); background: transparent; color: #C4363B; border: none; }
+  .annot.tab span { background: #FFFFFF; border: 1.5px dashed #C4363B; border-radius: 6px; padding: 1px 6px; }
+  .notes { max-width: 1300px; margin: 40px auto 0; background: #FFFFFF; border: 1px solid #E1E1DC; border-radius: 16px; padding: 24px 26px; }
+  .notes h2 { font-size: 17px; margin: 0 0 6px; }
+  .notes h3 { font-size: 14px; margin: 22px 0 8px; color: #222; }
+  .notes ol, .notes ul { margin: 0; padding-left: 22px; }
+  .notes li { font-size: 13.5px; line-height: 1.85; color: #333; margin-bottom: 6px; }
+  .notes code { background: #F6F6F3; border: 1px solid #E1E1DC; border-radius: 4px; padding: 1px 5px; font-size: 12.5px; }
+  .was { color: #C4363B; text-decoration: line-through; }
+  .now { color: #4C7300; font-weight: 700; }
+  .notes table { border-collapse: collapse; margin: 10px 0 4px; font-size: 13px; }
+  .notes th, .notes td { border: 1px solid #E1E1DC; padding: 7px 11px; text-align: left; }
+  .notes th { background: #F6F6F3; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="eyebrow">视觉稿 · 第八轮</span>
+  <h1>「生成本场分享卡」弹层：通道删一条 + 底部「取消」不再被遮挡</h1>
+  <p>
+    用户两处反馈：<b>①</b> 弹层底部「取消」被遮挡；<b>②</b> 「分享给朋友」的转发面板本身就能发朋友圈，
+    所以「存相册发朋友圈」这条通道不需要。两处都已改，本稿用四个状态帧对照。
+    所有尺寸由 <code>training-review.wxss</code> 的 <code>.sc-*</code> 规则 ×0.52 换算（1rpx = 0.52px，画布 390×844），
+    遮罩与抽屉的层级关系按真机绘制：<b>自定义 tabBar 是框架级固定层，页面弹层 z-index 调到 2000 也压不住它</b>。
+  </p>
+</div>
+
+<div class="stage">
+
+  <!-- ══════════ 帧 1：数据 tab · 改前 ══════════ -->
+  <div class="shot">
+    <div class="cap">数据 tab · 弹层
+      <span class="tag bad">改前 · Bug</span>
+      <span class="sub">tabBar 盖住「取消」：31.2px / 45.8px，按钮上的字整个看不见</span>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">5G<span class="batt"></span></span></div>
+      <div class="screen">
+        <div class="pg">
+          <div class="pg-title">数据</div>
+          <div class="pg-strip">
+            <div class="pg-day">4/12</div><div class="pg-day">4/13</div>
+            <div class="pg-day on">4/14</div><div class="pg-day">4/15</div><div class="pg-day">4/16</div>
+          </div>
+          <div class="pg-card"><h4>胸 + 三头</h4><p>52:18 · 8.4t · 418 kcal（估算）</p><div class="pg-shot"></div></div>
+          <div class="pg-card"><h4>背 + 二头</h4><p>47:02 · 7.1t · 376 kcal（估算）</p></div>
+        </div>
+      </div>
+      <div class="sc-mask">
+        <div class="sc-sheet">
+          <div class="sc-preview">
+            <div class="card">
+              <div class="card-id"><div class="card-av">衡</div><div class="card-nick">小明</div><div class="card-streak">23 天 连续</div></div>
+              <div class="card-verdict">今天比上一场多做 1 组，卧推重量持平</div>
+              <div class="card-anat">
+                <svg class="card-fig" viewBox="0 0 62 118" aria-hidden="true">
+                  <ellipse cx="31" cy="13" rx="9" ry="11" fill="#E8E8E4"/>
+                  <path d="M21 26h20l5 30-7 34h-6l-2-30-2 30h-6l-7-34z" fill="#E8E8E4"/>
+                  <path d="M21 28h20l3 16H18z" fill="#C8FF00"/>
+                  <path d="M17 31l4 2-2 22-6-4z" fill="#E8E8E4"/>
+                  <path d="M45 31l-4 2 2 22 6-4z" fill="#E8E8E4"/>
+                </svg>
+                <div class="card-metrics">
+                  <div class="card-m"><b>418</b><i>kcal 估算</i></div>
+                  <div class="card-m"><b>8.4t</b><i>总重量 · 96 次</i></div>
+                  <div class="card-m"><b>52:18</b><i>总耗时</i></div>
+                </div>
+              </div>
+              <div class="card-row"><span class="nm">卧推</span><span class="card-chip">+2.5kg</span></div>
+              <div class="card-row"><span class="nm">上斜哑铃卧推</span><span class="card-chip dn">−1 次</span></div>
+              <div class="card-pb">个人纪录 · 卧推 45kg × 8</div>
+            </div>
+          </div>
+          <div class="sc-switches">
+            <div class="sc-sw">隐藏训练内容</div>
+            <div class="sc-sw on">合并当天</div>
+            <div class="sc-sw">样式 · 浅色</div>
+          </div>
+          <div class="sc-channels three">
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 15.2V4.2"/><path d="M8 8.2l4-4 4 4"/><path d="M5 14v5a2 2 0 002 2h10a2 2 0 002-2v-5"/></svg></div>
+              <div class="sc-ch-tx">分享给朋友</div>
+            </div>
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="5.6" r="1.5" fill="#0A0A0A" stroke="none"/><circle cx="18.4" cy="12" r="1.5" fill="#0A0A0A" stroke="none"/><circle cx="12" cy="18.4" r="1.5" fill="#0A0A0A" stroke="none"/><circle cx="5.6" cy="12" r="1.5" fill="#0A0A0A" stroke="none"/></svg></div>
+              <div class="sc-ch-tx">存相册发朋友圈</div>
+            </div>
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 4.2v11"/><path d="M8 11.2l4 4 4-4"/><path d="M5 18.5h14"/></svg></div>
+              <div class="sc-ch-tx">保存到相册</div>
+            </div>
+          </div>
+          <div class="sc-tip">「合并当天」把同一天的多场训练合成一张；「隐藏训练内容」只保留肌群与数据，不出现动作和重量。朋友圈需存到相册后自行发布。</div>
+          <div class="sc-cancel">取消</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-row">
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5v8.5h-5v-5h-6v5H4z"/></svg><span>首页</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 9v6M20 9v6M7.5 7v10M16.5 7v10M7.5 12h9"/></svg><span>训练</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM5 10h14M10 10v9"/></svg><span>计划</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-5"/></svg><span>数据</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.5-3.6 4-5.4 7-5.4s5.5 1.8 7 5.4"/></svg><span>我的</span></div>
+        </div>
+      </div>
+      <div class="annot" style="left:20.8px; right:20.8px; bottom:105px;">
+        取消（45.8px 高）被下面这层盖住 31.2px
+      </div>
+      <div class="annot tab" style="bottom:22px;"><span>自定义 tabBar · 框架级固定层，压不住</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 帧 2：数据 tab · 改后 ══════════ -->
+  <div class="shot">
+    <div class="cap">数据 tab · 弹层
+      <span class="tag hot">改后</span>
+      <span class="sub">抽屉让出底栏 → 「取消」完整落在 tabBar 之上；通道 3 → 2</span>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">5G<span class="batt"></span></span></div>
+      <div class="screen">
+        <div class="pg">
+          <div class="pg-title">数据</div>
+          <div class="pg-strip">
+            <div class="pg-day">4/12</div><div class="pg-day">4/13</div>
+            <div class="pg-day on">4/14</div><div class="pg-day">4/15</div><div class="pg-day">4/16</div>
+          </div>
+          <div class="pg-card"><h4>胸 + 三头</h4><p>52:18 · 8.4t · 418 kcal（估算）</p><div class="pg-shot"></div></div>
+          <div class="pg-card"><h4>背 + 二头</h4><p>47:02 · 7.1t · 376 kcal（估算）</p></div>
+        </div>
+      </div>
+      <div class="sc-mask">
+        <div class="sc-sheet with-tab">
+          <div class="sc-preview">
+            <div class="card">
+              <div class="card-id"><div class="card-av">衡</div><div class="card-nick">小明</div><div class="card-streak">23 天 连续</div></div>
+              <div class="card-verdict">今天比上一场多做 1 组，卧推重量持平</div>
+              <div class="card-anat">
+                <svg class="card-fig" viewBox="0 0 62 118" aria-hidden="true">
+                  <ellipse cx="31" cy="13" rx="9" ry="11" fill="#E8E8E4"/>
+                  <path d="M21 26h20l5 30-7 34h-6l-2-30-2 30h-6l-7-34z" fill="#E8E8E4"/>
+                  <path d="M21 28h20l3 16H18z" fill="#C8FF00"/>
+                  <path d="M17 31l4 2-2 22-6-4z" fill="#E8E8E4"/>
+                  <path d="M45 31l-4 2 2 22 6-4z" fill="#E8E8E4"/>
+                </svg>
+                <div class="card-metrics">
+                  <div class="card-m"><b>418</b><i>kcal 估算</i></div>
+                  <div class="card-m"><b>8.4t</b><i>总重量 · 96 次</i></div>
+                  <div class="card-m"><b>52:18</b><i>总耗时</i></div>
+                </div>
+              </div>
+              <div class="card-row"><span class="nm">卧推</span><span class="card-chip">+2.5kg</span></div>
+              <div class="card-row"><span class="nm">上斜哑铃卧推</span><span class="card-chip dn">−1 次</span></div>
+              <div class="card-pb">个人纪录 · 卧推 45kg × 8</div>
+            </div>
+          </div>
+          <div class="sc-switches">
+            <div class="sc-sw">隐藏训练内容</div>
+            <div class="sc-sw on">合并当天</div>
+            <div class="sc-sw">样式 · 浅色</div>
+          </div>
+          <div class="sc-channels">
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 15.2V4.2"/><path d="M8 8.2l4-4 4 4"/><path d="M5 14v5a2 2 0 002 2h10a2 2 0 002-2v-5"/></svg></div>
+              <div class="sc-ch-tx">分享给朋友</div>
+            </div>
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 4.2v11"/><path d="M8 11.2l4 4 4-4"/><path d="M5 18.5h14"/></svg></div>
+              <div class="sc-ch-tx">保存到相册</div>
+            </div>
+          </div>
+          <div class="sc-tip">「合并当天」把同一天的多场训练合成一张；「隐藏训练内容」只保留肌群与数据，不出现动作和重量。点「分享给朋友」，在转发面板里可直接发到朋友圈。</div>
+          <div class="sc-cancel">取消</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-row">
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5v8.5h-5v-5h-6v5H4z"/></svg><span>首页</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 9v6M20 9v6M7.5 7v10M16.5 7v10M7.5 12h9"/></svg><span>训练</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM5 10h14M10 10v9"/></svg><span>计划</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-5"/></svg><span>数据</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.5-3.6 4-5.4 7-5.4s5.5 1.8 7 5.4"/></svg><span>我的</span></div>
+        </div>
+      </div>
+      <div class="annot ok" style="left:20.8px; right:20.8px; bottom:110px;">
+        取消完整可见（底栏之上留 22.9px 呼吸）
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 帧 3：复盘页 · 改后 ══════════ -->
+  <div class="shot">
+    <div class="cap">复盘页 · 弹层
+      <span class="tag hot">改后</span>
+      <span class="sub">普通页（无 tabBar）→ 只吃安全区；运行时会探测，不给它多留白</span>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="right">5G<span class="batt"></span></span></div>
+      <div class="navbar"><span class="back">‹</span>训练复盘</div>
+      <div class="screen" style="top:91px;">
+        <div class="pg">
+          <div class="pg-title">今天 · 胸 + 三头</div>
+          <div class="pg-card"><h4>52:18 · 8.4t · 418 kcal（估算）</h4><p>4 个动作 · 12 组 · 96 次</p><div class="pg-shot"></div></div>
+          <div class="pg-card"><h4>进步趋势</h4><p>最近 6 场训练量</p><div class="pg-shot" style="height:52px;"></div></div>
+        </div>
+      </div>
+      <div class="sc-mask">
+        <div class="sc-sheet">
+          <div class="sc-preview">
+            <div class="card">
+              <div class="card-id"><div class="card-av">衡</div><div class="card-nick">小明</div><div class="card-streak">23 天 连续</div></div>
+              <div class="card-verdict">今天比上一场多做 1 组，卧推重量持平</div>
+              <div class="card-anat">
+                <svg class="card-fig" viewBox="0 0 62 118" aria-hidden="true">
+                  <ellipse cx="31" cy="13" rx="9" ry="11" fill="#E8E8E4"/>
+                  <path d="M21 26h20l5 30-7 34h-6l-2-30-2 30h-6l-7-34z" fill="#E8E8E4"/>
+                  <path d="M21 28h20l3 16H18z" fill="#C8FF00"/>
+                  <path d="M17 31l4 2-2 22-6-4z" fill="#E8E8E4"/>
+                  <path d="M45 31l-4 2 2 22 6-4z" fill="#E8E8E4"/>
+                </svg>
+                <div class="card-metrics">
+                  <div class="card-m"><b>418</b><i>kcal 估算</i></div>
+                  <div class="card-m"><b>8.4t</b><i>总重量 · 96 次</i></div>
+                  <div class="card-m"><b>52:18</b><i>总耗时</i></div>
+                </div>
+              </div>
+              <div class="card-row"><span class="nm">卧推</span><span class="card-chip">+2.5kg</span></div>
+              <div class="card-row"><span class="nm">上斜哑铃卧推</span><span class="card-chip dn">−1 次</span></div>
+              <div class="card-pb">个人纪录 · 卧推 45kg × 8</div>
+            </div>
+          </div>
+          <div class="sc-switches">
+            <div class="sc-sw">隐藏训练内容</div>
+            <div class="sc-sw on">合并当天</div>
+            <div class="sc-sw">样式 · 浅色</div>
+          </div>
+          <div class="sc-channels">
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 15.2V4.2"/><path d="M8 8.2l4-4 4 4"/><path d="M5 14v5a2 2 0 002 2h10a2 2 0 002-2v-5"/></svg></div>
+              <div class="sc-ch-tx">分享给朋友</div>
+            </div>
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 4.2v11"/><path d="M8 11.2l4 4 4-4"/><path d="M5 18.5h14"/></svg></div>
+              <div class="sc-ch-tx">保存到相册</div>
+            </div>
+          </div>
+          <div class="sc-tip">「合并当天」把同一天的多场训练合成一张；「隐藏训练内容」只保留肌群与数据，不出现动作和重量。点「分享给朋友」，在转发面板里可直接发到朋友圈。</div>
+          <div class="sc-cancel">取消</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 帧 4：数据 tab · 改后 · 深色 ══════════ -->
+  <div class="shot">
+    <div class="cap">数据 tab · 弹层
+      <span class="tag">改后 · 深色</span>
+      <span class="sub">深色帧只重定义变量 —— 抽屉与通道图标自动跟随，无一处手写颜色</span>
+    </div>
+    <div class="phone dark">
+      <div class="statusbar"><span>9:41</span><span class="right">5G<span class="batt"></span></span></div>
+      <div class="screen">
+        <div class="pg">
+          <div class="pg-title">数据</div>
+          <div class="pg-strip">
+            <div class="pg-day">4/12</div><div class="pg-day">4/13</div>
+            <div class="pg-day on">4/14</div><div class="pg-day">4/15</div><div class="pg-day">4/16</div>
+          </div>
+          <div class="pg-card"><h4>胸 + 三头</h4><p>52:18 · 8.4t · 418 kcal（估算）</p><div class="pg-shot"></div></div>
+          <div class="pg-card"><h4>背 + 二头</h4><p>47:02 · 7.1t · 376 kcal（估算）</p></div>
+        </div>
+      </div>
+      <div class="sc-mask">
+        <div class="sc-sheet with-tab">
+          <div class="sc-preview">
+            <div class="card">
+              <div class="card-id"><div class="card-av">衡</div><div class="card-nick">小明</div><div class="card-streak">23 天 连续</div></div>
+              <div class="card-verdict">今天比上一场多做 1 组，卧推重量持平</div>
+              <div class="card-anat">
+                <svg class="card-fig" viewBox="0 0 62 118" aria-hidden="true">
+                  <ellipse cx="31" cy="13" rx="9" ry="11" fill="#E8E8E4"/>
+                  <path d="M21 26h20l5 30-7 34h-6l-2-30-2 30h-6l-7-34z" fill="#E8E8E4"/>
+                  <path d="M21 28h20l3 16H18z" fill="#C8FF00"/>
+                  <path d="M17 31l4 2-2 22-6-4z" fill="#E8E8E4"/>
+                  <path d="M45 31l-4 2 2 22 6-4z" fill="#E8E8E4"/>
+                </svg>
+                <div class="card-metrics">
+                  <div class="card-m"><b>418</b><i>kcal 估算</i></div>
+                  <div class="card-m"><b>8.4t</b><i>总重量 · 96 次</i></div>
+                  <div class="card-m"><b>52:18</b><i>总耗时</i></div>
+                </div>
+              </div>
+              <div class="card-row"><span class="nm">卧推</span><span class="card-chip">+2.5kg</span></div>
+              <div class="card-row"><span class="nm">上斜哑铃卧推</span><span class="card-chip dn">−1 次</span></div>
+              <div class="card-pb">个人纪录 · 卧推 45kg × 8</div>
+            </div>
+          </div>
+          <div class="sc-switches">
+            <div class="sc-sw">隐藏训练内容</div>
+            <div class="sc-sw on">合并当天</div>
+            <div class="sc-sw">样式 · 浅色</div>
+          </div>
+          <div class="sc-channels">
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 15.2V4.2"/><path d="M8 8.2l4-4 4 4"/><path d="M5 14v5a2 2 0 002 2h10a2 2 0 002-2v-5"/></svg></div>
+              <div class="sc-ch-tx">分享给朋友</div>
+            </div>
+            <div class="sc-ch">
+              <div class="sc-ch-ico"><svg viewBox="0 0 24 24"><path d="M12 4.2v11"/><path d="M8 11.2l4 4 4-4"/><path d="M5 18.5h14"/></svg></div>
+              <div class="sc-ch-tx">保存到相册</div>
+            </div>
+          </div>
+          <div class="sc-tip">「合并当天」把同一天的多场训练合成一张；「隐藏训练内容」只保留肌群与数据，不出现动作和重量。点「分享给朋友」，在转发面板里可直接发到朋友圈。</div>
+          <div class="sc-cancel">取消</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabbar-row">
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5v8.5h-5v-5h-6v5H4z"/></svg><span>首页</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 9v6M20 9v6M7.5 7v10M16.5 7v10M7.5 12h9"/></svg><span>训练</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM5 10h14M10 10v9"/></svg><span>计划</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-5"/></svg><span>数据</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.5-3.6 4-5.4 7-5.4s5.5 1.8 7 5.4"/></svg><span>我的</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="notes">
+  <h2>这次改了什么</h2>
+  <h3>① 删掉「存相册发朋友圈」——通道数 = 能力数</h3>
+  <ol>
+    <li>那条通道的处理器 <code>saveMomentsShareCard</code> 与「保存到相册」的 <code>saveShareCard</code>
+      <b>逐行相同</b>（都是 <code>_saveToAlbum(path, …)</code>），唯一差别是成功后多弹一个 modal 讲「微信 → 发现 → 朋友圈 → 从相册选这张图」。</li>
+    <li>而 <code>wx.showShareImageMenu</code> 打开的<b>就是微信原生图片转发面板</b>，面板里本来就有「分享到朋友圈」
+      ⇒ 那条通道里<b>没有一个独有能力</b>：保存是重复的，引导是多余的。同一个能力开两个入口，用户会以为它们是两件事。</li>
+    <li>连带清理：处理器删除 · 图标 <code>.ico-moment-sc</code>（mask data-URI）删除 · <code>.sc-ch</code> 3 → 2 ·
+      文案把「朋友圈需存到相册后自行发布」换成「点『分享给朋友』，在转发面板里可直接发到朋友圈」。</li>
+    <li>只剩两条通道后，若沿用 <code>flex: 1</code> 平摊，两个图标会落在 1/4 与 3/4 处、中间空出近 240rpx（看着像少了第三项）
+      ⇒ 改 <span class="was">flex:1 平摊</span> <span class="now">居中 + 固定列宽 200rpx + gap 140rpx</span>（帧 2/3/4）。</li>
+  </ol>
+
+  <h3>② 「取消」被遮挡：两个独立成因，一次堵掉</h3>
+  <table>
+    <tr><th>成因</th><th>为什么会挡</th><th>修法</th></tr>
+    <tr>
+      <td><b>A · 真凶</b><br>宿主页有自定义 tabBar 时没让出底栏</td>
+      <td>组件同时挂在<b>「数据」tab</b> 与<b>复盘页</b>。自定义 tabBar 是<b>框架级固定层</b>，页面里 <code>z-index</code> 调到 2000 也压不住。
+        组件里另一个弹层（关键动作抽屉 <code>.ka-mask</code> / <code>.ka-sheet</code>）早就用 <code>with-tab</code> 处理过，<b>分享弹层漏了</b>。</td>
+      <td><code>.sc-sheet.with-tab { padding-bottom: calc(88rpx + 44rpx + safe) }</code>；
+        <code>with-tab</code> 由运行时探测（复用 <code>_hasTabBar()</code>，<b>每次开弹层重探</b>，探测异常兜底 false，最坏只是少留白）。</td>
+    </tr>
+    <tr>
+      <td><b>B · 隐患</b><br>抽屉总高没有上限</td>
+      <td>注释写着「总高控制在 100vh 内」，但那是<b>算出来的经验值</b>，不是 CSS 上限。预览图是 <code>50vh</code>（随屏高走），
+        小屏 / 文案一长就会把「取消」顶出屏幕，届时<b>只剩点遮罩一条退路</b>。</td>
+      <td><code>.sc-sheet { max-height: calc(100vh - 96rpx) }</code>（顶部留遮罩，用户才知道能点空白关）+
+        <code>.sc-preview { height:50vh; min-height:220rpx; flex:0 1 auto }</code>（唯一可压缩项）+
+        开关 / 通道 / 说明 / 取消一律 <code>flex-shrink: 0</code>。</td>
+    </tr>
+  </table>
+  <p style="font-size:13.5px;line-height:1.85;color:#333;margin:10px 0 0;">
+    几何复算（已写进守卫 <code>verify-share-card.cjs [J]</code>，按 <code>1rpx = 宽/750</code> 复算 375×667 与 375×812 两个机型）：
+    <b>无 <code>with-tab</code> 时「取消」被盖 30 / 44 px（两个机型都一样）</b>，加 <code>with-tab</code> 后 0 px。
+    另外即使不加 <code>max-height</code>，最坏情况（320×568 + 有底栏 + 说明折 3 行）总高 <b>564.7px vs 屏高 568px</b> —— 只剩 3.3px 余量，
+    所以那个上限不是摆设，是随时会越界的护栏。
+  </p>
+
+  <h3>本稿的诚实边界</h3>
+  <ul>
+    <li>分享卡缩略图在真机上是 <code>canvas</code> 导出的 <b>750×H 整张图</b>（<code>&lt;image&gt;</code> 展示，可长按调原生菜单）。
+      本稿按卡片版式用 HTML 重绘示意，<b>版式细节以 canvas 出图为准</b>。</li>
+    <li>通道图标在真机走 <code>mask-image</code> + <code>background-color: #0A0A0A</code>（字形与主题无关，亮绿底铁律）；
+      本稿用内联 SVG 画同样的字色，两者等价。</li>
+    <li>机身按 390×844（1rpx = 0.52px）。<b>真机 375×667 上「其他各项合计」会占更大比例</b>，抽屉更快触及上限 ——
+      那正是加 <code>max-height</code> 的原因。</li>
+    <li>红色虚线框与红/绿标签是<b>批注</b>，不是 UI。</li>
+  </ul>
+</div>
+
+</body>
+</html>

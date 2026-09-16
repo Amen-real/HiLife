@@ -224,9 +224,19 @@
        画布在视口外绘制（.sc-canvas），出图后立刻用 wx:if 摘掉，只留 <image> 展示：
        原生画布留在弹层里会压住内容，而 opacity:0 隐藏的原生组件在真机会泄漏。
        长按图片可直接调起原生菜单，是分享面板之外的第二条路径。
-       三个开关都**真的重建卡片**（隐藏内容 / 合并同日 / 换样式），不是只改本地状态。 -->
+       三个开关都**真的重建卡片**（隐藏内容 / 合并同日 / 换样式），不是只改本地状态。
+
+       两条通道（**两条，不是三条**）：
+         ① 分享给朋友 → wx.showShareImageMenu，转发面板里本身就能直接发到朋友圈；
+         ② 保存到相册 → 只落相册，不发请求。
+       曾有的第三条「存相册发朋友圈」与 ② 的实现**逐行相同**（都是 saveImageToPhotosAlbum
+       + 一句提示），唯一区别只是一段引导文案，而 ① 已经覆盖朋友圈 —— 真机确认后删除。
+       通道数是**能力数**，不是「入口越多越好」：同一个能力开两个入口，用户会以为它们是两件事。
+
+       with-tab：宿主页有自定义 tabBar（「数据」tab）时，抽屉底部必须预留底栏高度 ——
+       自定义 tabBar 是框架级固定层，页面弹层 z-index 再高也压不住，只能避让。 -->
   <view wx:if="{{shareShow}}" class="sc-mask" bindtap="closeShare">
-    <view class="sc-sheet" catchtap="noop">
+    <view class="sc-sheet {{scTabSafe ? 'with-tab' : ''}}" catchtap="noop">
 
       <view class="sc-preview">
         <view wx:if="{{shareBusy}}" class="sc-busy">正在生成分享卡…</view>
@@ -244,17 +254,13 @@
           <view class="sc-ch-ico"><view class="sc-ch-glyph ico-sharefriend-sc"></view></view>
           <text class="sc-ch-tx">分享给朋友</text>
         </view>
-        <view class="sc-ch" bindtap="saveMomentsShareCard">
-          <view class="sc-ch-ico"><view class="sc-ch-glyph ico-moment-sc"></view></view>
-          <text class="sc-ch-tx">存相册发朋友圈</text>
-        </view>
         <view class="sc-ch" bindtap="saveShareCard">
           <view class="sc-ch-ico"><view class="sc-ch-glyph ico-albumdown-sc"></view></view>
           <text class="sc-ch-tx">保存到相册</text>
         </view>
       </view>
 
-      <text class="sc-tip">「合并当天」把同一天的多场训练合成一张；「隐藏训练内容」只保留肌群与数据，不出现动作和重量。朋友圈需存到相册后自行发布。</text>
+      <text class="sc-tip">「合并当天」把同一天的多场训练合成一张；「隐藏训练内容」只保留肌群与数据，不出现动作和重量。点「分享给朋友」，在转发面板里可直接发到朋友圈。</text>
 
       <view class="sc-cancel" bindtap="closeShare">取消</view>
     </view>

@@ -436,9 +436,13 @@
 
 /* ===== 分享卡预览弹层（底部抽屉）=====
    遮罩 z-index 与 ka-mask 同档（2000，高于 nav-bar 的 999）。
-   面板是底部抽屉：预览图在上、开关在中、通道在下，总高控制在 100vh 内。
+   面板是底部抽屉：预览图在上、开关在中、通道在下，总高控制在 100vh 内——
+   「控制在 100vh 内」由 .sc-sheet 的 max-height **兜住**，不是靠算出来的经验值：
+   预览图高度是设备相关的（小屏 50vh 会更大占比），哪天加一行文案就可能把
+   「取消」推出屏幕，只剩点遮罩一条退路。
    文字一律 --n-700 / --n-900：不用 --n-500（#A0A0A0）—— 它压浅底只有 2.6:1，见报告 P2-9。
-   底部留 env(safe-area-inset-bottom)，避免「取消」压到 iPhone 的横条。 */
+   底部留 env(safe-area-inset-bottom)，避免「取消」压到 iPhone 的横条；
+   宿主页有自定义 tabBar 时另加 .with-tab 让出底栏（tabBar 是框架级固定层，压不住）。 */
 .sc-mask {
   position: fixed; left: 0; right: 0; top: 0; bottom: 0;
   background: rgba(15, 23, 42, 0.62);
@@ -453,9 +457,19 @@
   padding: 28rpx 40rpx calc(28rpx + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 20rpx;
   animation: sc-up 0.22s ease;
+  /* 抽屉高度上限：顶部留 96rpx，遮罩仍可见（否则用户会以为弹层卡住、无法点空白关闭）。
+     内容超出时**只压缩预览图** —— .sc-preview 是这里唯一的 `flex-shrink: 1` 项，
+     开关 / 通道 / 说明 / 取消统统 flex-shrink:0，保证「取消」按钮永远在屏幕内。 */
+  max-height: calc(100vh - 96rpx);
 }
+/* 宿主页带自定义 tabBar（组件同时挂在「数据」tab）时，抽屉底部再让出底栏高度。
+   自定义 tabBar 是框架级固定层：页面里 z-index 调到 2000 也压不住，只能避让。
+   与 .ka-mask.with-tab 同源，两处都要有 —— 少一处就有一处按钮被底栏盖住。 */
+.sc-sheet.with-tab { padding-bottom: calc(88rpx + 44rpx + env(safe-area-inset-bottom)); }
 .sc-preview {
-  height: 50vh; border-radius: 24rpx; overflow: hidden;
+  height: 50vh; min-height: 220rpx;
+  flex: 0 1 auto;                              /* 唯一的可压缩项，下限 220rpx */
+  border-radius: 24rpx; overflow: hidden;
   background: var(--n-100);
   display: flex; align-items: center; justify-content: center;
 }
@@ -466,13 +480,14 @@
   color: var(--n-700);
 }
 .sc-img { width: 100%; height: 100%; }
-.sc-tip { font-size: 20rpx; font-weight: 500; line-height: 1.6; color: var(--n-700); }
+/* 说明文字不参与压缩：它被压窄就会多折一行，反而更容易把「取消」顶出去 */
+.sc-tip { font-size: 20rpx; font-weight: 500; line-height: 1.6; color: var(--n-700); flex-shrink: 0; }
 
 /* 三个开关：未选中 = 中性胶囊；选中 = 亮绿实底。
    亮绿底上的字必须写死 #0A0A0A，**不能**用 var(--n-900) ——
    --primary 是全库唯一不随主题翻转的色，而 --n-900 在深色下会翻成白色，
    白压亮绿只有 1.6:1（铁律）。 */
-.sc-switches { display: flex; gap: 16rpx; }
+.sc-switches { display: flex; gap: 16rpx; flex-shrink: 0; }
 .sc-sw {
   flex: 1; height: 76rpx; border-radius: var(--r-pill);
   display: flex; align-items: center; justify-content: center;
@@ -482,10 +497,12 @@
 .sc-sw.on { background: var(--primary); color: #0A0A0A; }
 .sc-sw:active { opacity: 0.82; }
 
-/* 三条分享通道：圆形图标 + 文字，对齐设计稿。
-   图标一律「亮绿圆 + 深色字形」—— 同一个合法色对，深色主题下也成立。 */
-.sc-channels { display: flex; }
-.sc-ch { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12rpx; }
+/* 两条分享通道：圆形图标 + 文字，对齐设计稿。
+   图标一律「亮绿圆 + 深色字形」—— 同一个合法色对，深色主题下也成立。
+   只有两条时用居中 + 固定列宽：若沿用 flex:1 平摊，两个图标会分别贴在 1/4 与 3/4 处，
+   中间空出近 240rpx，看起来像少了第三项。 */
+.sc-channels { display: flex; justify-content: center; gap: 140rpx; flex-shrink: 0; }
+.sc-ch { width: 200rpx; display: flex; flex-direction: column; align-items: center; gap: 12rpx; }
 .sc-ch:active { opacity: 0.7; }
 .sc-ch-ico {
   width: 96rpx; height: 96rpx; border-radius: 50%;
@@ -497,6 +514,7 @@
 
 .sc-cancel {
   height: 88rpx; border-radius: var(--r-pill);
+  flex-shrink: 0;                              /* 全屏最后一个可点元素，绝不许被挤掉 */
   display: flex; align-items: center; justify-content: center;
   background: var(--card); color: var(--n-900);
   font-size: 28rpx; font-weight: 700;
@@ -522,5 +540,4 @@
   -webkit-mask-size: contain; mask-size: contain;
 }
 .ico-sharefriend-sc { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%2015.2V4.2%27%2F%3E%3Cpath%20d%3D%27M8%208.2l4-4%204%204%27%2F%3E%3Cpath%20d%3D%27M5%2014v5a2%202%200%20002%202h10a2%202%200%20002-2v-5%27%2F%3E%3C%2Fsvg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%2015.2V4.2%27%2F%3E%3Cpath%20d%3D%27M8%208.2l4-4%204%204%27%2F%3E%3Cpath%20d%3D%27M5%2014v5a2%202%200%20002%202h10a2%202%200%20002-2v-5%27%2F%3E%3C%2Fsvg%3E"); }
-.ico-moment-sc { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%278.4%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%275.6%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2718.4%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2718.4%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%275.6%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3C%2Fsvg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%278.4%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%275.6%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2718.4%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2718.4%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%275.6%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3C%2Fsvg%3E"); }
 .ico-albumdown-sc { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%204v11%27%2F%3E%3Cpath%20d%3D%27M8%2011l4%204%204-4%27%2F%3E%3Cpath%20d%3D%27M5%2017v2a2%202%200%20002%202h10a2%202%200%20002-2v-2%27%2F%3E%3C%2Fsvg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%204v11%27%2F%3E%3Cpath%20d%3D%27M8%2011l4%204%204-4%27%2F%3E%3Cpath%20d%3D%27M5%2017v2a2%202%200%20002%202h10a2%202%200%20002-2v-2%27%2F%3E%3C%2Fsvg%3E"); }

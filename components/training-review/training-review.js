@@ -81,6 +81,7 @@ Component({
     shareShow: false,                           // 预览弹层
     shareBusy: false,                           // 生成中（此时画布在视口外绘制）
     shareImg: '',                               // 生成好的临时图片路径
+    scTabSafe: false,                           // true = 宿主页有自定义 tabBar → 抽屉底部让出底栏
     // 三个开关都作用在**内容模型**上（真实能力），不是只存本地布尔值：
     shareHide: false,                           // 隐藏训练内容 → 不出动作明细卡
     shareMerge: false,                          // 合并当天 → 同日多场合成一张
@@ -504,12 +505,16 @@ Component({
          · 合并当天     → buildModel(opt.merge) 把同日多场合成一张；
          · 样式         → buildModel(opt.style) 换调色板（浅色 / 深色）。
        平台能力：wx.showShareImageMenu 需基础库 ≥ 2.14.3。低版本**不假装能分享**。
-       朋友圈没有「一键发朋友圈」的开放接口，所以那条通道是「存相册 + 引导」——
+       分享通道只有两条，且是**两种不同能力**：① 分享给朋友（转发面板里可再选朋友圈）
+       ② 保存到相册。**没有**独立的「朋友圈」通道 —— 微信没有「一键发朋友圈」的开放接口，
+       而转发面板本身就能发朋友圈，再单开一个入口只会让用户以为是两件事。
        文案与行为一致是红线：只写实现得了的事。 */
     openShareCard() {
       const log = (this._logs || [])[this._selIdx];
       if (!log) { wx.showToast({ title: '暂无可分享的场次', icon: 'none' }); return; }
-      this.setData({ shareShow: true }, () => this._applyCard());
+      // scTabSafe 在**每次打开时**探测：同一组件既挂在「数据」tab（有自定义 tabBar，
+      // 是框架级固定层、页面弹层压不住）也挂在复盘页（没有），不能写死在 data 里。
+      this.setData({ shareShow: true, scTabSafe: this._hasTabBar() }, () => this._applyCard());
     },
 
     // 按当前开关重建模型并重新出图。每次都先把 shareImg 清空：
@@ -604,27 +609,19 @@ Component({
       });
     },
 
-    // 朋友圈通道：微信**没有**「一键发朋友圈」的开放接口（唯一相关的 onShareTimeline 是
-    // 单页模式分享，交互密集页加它就是残废入口，本项目刻意不加）。
-    // 能做的只有「存到相册 + 引导用户自己去朋友圈发」—— 所以这里就是保存 + 一句引导。
-    saveMomentsShareCard() {
-      const path = this.data.shareImg;
-      if (!path) { wx.showToast({ title: '分享卡还没生成好', icon: 'none' }); return; }
-      this._saveToAlbum(path, () => wx.showModal({
-        title: '已保存到相册',
-        content: '微信 → 发现 → 朋友圈 → 从相册选这张图即可发布。',
-        showCancel: false, confirmText: '知道了'
-      }));
-    },
-
+    // 曾经这里还有一条「存相册发朋友圈」：微信**没有**「一键发朋友圈」的开放接口
+    //（唯一相关的 onShareTimeline 是单页模式分享，交互密集页加它就是残废入口，本项目刻意不加），
+    // 所以早期做法是「存到相册 + 弹一句引导」。但它的实现与上面的 saveShareCard **逐行相同**，
+    // 区别只有一句 modal 文案；而 wx.showShareImageMenu 的转发面板里本来就能直接选「朋友圈」。
+    // 同一个能力开两个入口 = 用户以为它们是两件事，真机确认后整条通道删除。
     saveShareCard() {
       const path = this.data.shareImg;
       if (!path) { wx.showToast({ title: '分享卡还没生成好', icon: 'none' }); return; }
       this._saveToAlbum(path, () => wx.showToast({ title: '已保存到相册', icon: 'success' }));
     },
 
-    // 保存到相册（两条通道共用）：失败路径必须分清「用户取消」与「权限被拒」——
-    // 后者重试无用，只能引导去设置页。
+    // 保存到相册（「保存到相册」按钮 + 分享接口缺失时的降级路径共用）：
+    // 失败路径必须分清「用户取消」与「权限被拒」—— 后者重试无用，只能引导去设置页。
     _saveToAlbum(path, onOk) {
       wx.saveImageToPhotosAlbum({
         filePath: path,
