@@ -8,6 +8,10 @@ const media = require('../../utils/media.js').media;
 const vision = require('../../utils/foodvision.js');
 const nutrition = require('../../utils/nutrition.js');
 const theme = require('../../utils/theme.js');
+// A3：本页是「手动录入」的既有入口，也就是知识库**唯一能靠打字命中、零模型调用**的地方
+// （识别路径的签名要等模型返回才知道，没法在调用前拦）。所以成本杠杆接在这里。
+const foodkb = require('../../utils/foodkb.js');
+const metrics = require('../../utils/metrics.js');
 
 const COLOR = { p: '#6F9F00', c: '#FF9500', f: '#FFB020' }; // 蛋白质/碳水/脂肪 配色
 
@@ -516,6 +520,7 @@ Page({
       // 直接调用视觉识别（相机/相册 → 识别 → 记录到当前餐别），不再跳转页面
       this.startAI();
     } else {
+      this._kbHitKey = '';   // A3：新一轮手输，重新计知识库命中
       this.setData({ showManual: true });
     }
   },
@@ -525,7 +530,37 @@ Page({
     const field = e.currentTarget.dataset.field;
     this.setData({ ['form.' + field]: e.detail.value });
   },
-  closeManual() { this.setData({ showManual: false, editingMealId: '' }); },
+
+  // A3：食物名失焦 → 查本地知识库并回填。
+  // **这是全应用唯一「零模型调用」的成单路径**：识别路径的签名要等模型返回才算得出来，
+  // 没法在花钱之前拦住；而手输的名字是唯一在调用发生前就拿到手的键。
+  onNameBlur(e) {
+    const name = String(((e && e.detail && e.detail.value) || this.data.form.name || '')).trim();
+    if (!name) return;
+    const key = foodkb.normName(name);
+    // 同一个名字只算一次命中：KB_HIT 的含义是「省下的调用次数」，
+    // 反复失焦重复计数会让这个数字虚高到失去意义。
+    const isNewHit = !!key && key !== this._kbHitKey;
+    const hit = foodkb.lookup({ name: name }, isNewHit);
+    if (!hit) { this._kbHitKey = ''; return; }
+    // 已命中的同一个名字不再回填 —— 否则用户手改过的数值会被重新盖回去
+    if (!isNewHit) return;
+    this._kbHitKey = key;
+    metrics.inc(metrics.EVENTS.KB_HIT);
+    // 只回填「有值」的字段：foodkb 用 null 区分「0」与「未知」
+    const patch = {};
+    if (hit.calories != null) patch['form.calories'] = String(hit.calories);
+    if (hit.protein != null) patch['form.protein'] = String(hit.protein);
+    if (hit.carb != null) patch['form.carb'] = String(hit.carb);
+    if (hit.fat != null) patch['form.fat'] = String(hit.fat);
+    if (Object.keys(patch).length) this.setData(patch);
+    wx.showToast({ title: '已从本地记录带入，未消耗 AI 识别次数', icon: 'none' });
+  },
+
+  closeManual() {
+    this.setData({ showManual: false, editingMealId: '' });
+    this._kbHitKey = '';   // 下一次打开表单重新计命中
+  },
 
   // 编辑某条饮食记录：把 meal 当前值塞入表单，打开手动 modal
   editMeal(e) {
@@ -590,6 +625,12 @@ Page({
     } else {
       store.addMeal(Object.assign({}, patch, { time: this.mealTimeFor(this.data.selectedDate) }));
     }
+    // A3：手填/改过的值落进本地知识库 → 下次输入同名食物直接带出，零模型调用。
+    // 签名用 `{ name }`（无 items）= 单品条目，正是 lookup({ name }) 能命中的形态。
+    const learned = foodkb.learn({ name: name }, {
+      calories: patch.calories, protein: patch.protein, carb: patch.carb, fat: patch.fat, weight: null
+    }, name);
+    if (learned) metrics.inc(metrics.EVENTS.KB_LEARN);
     this.setData({
       showManual: false,
       editingMealId: '',
@@ -616,13 +657,45 @@ Page({
 
   runRecognize(path) {
     this.setData({ recognizing: true, recResult: null });
+    const t0 = Date.now();
+    metrics.inc(metrics.EVENTS.VISION_START);
     vision.analyzeImage(path)
       .then((res) => {
         const r = res || {};
-        const foods = (r.foods || []).map(f => Object.assign({}, f, { emoji: emojiFor(f.name) }));
-        this.setData({ recognizing: false, recResult: Object.assign({}, r, { foods }) });
+        metrics.inc(metrics.EVENTS.VISION_OK);
+        metrics.addMs(metrics.EVENTS.VISION_MS, Date.now() - t0);
+        // ⚠️ 服务端合约是 { name, items:[{name,weight_g,calories}], total_weight_g,
+        //    total_calories, protein, carb, fat, confidence, mock } —— **没有 foods / total 字段**。
+        //    这里曾经照着一份过期注释写成 `r.foods.map(...)`，于是 foods 恒为空数组、
+        //    面板永远显示「未能识别到食物」，识别成功也一个词记不进来。
+        //    下面把**真源映射**成本面板的展示模型（视图层写法，不是第二份口径）。
+        const items = r.items || [];
+        const single = items.length === 1;
+        const foods = items.map(it => ({
+          name: it.name || '食物',
+          calories: (it.calories == null ? 0 : Math.round(it.calories)),
+          // 逐项三大营养素服务端**不给**（只给整餐的）。仅当整餐只有一项时，
+          // 「这一项」就是「整餐」，把整餐值给它才是同口径；多项时留 null（未知）——
+          // 不把整餐值复制给每一行，那是看起来有来源的假数据。
+          protein: single ? r.protein : null,
+          carb: single ? r.carb : null,
+          fat: single ? r.fat : null,
+          emoji: emojiFor(it.name),
+          metaText: (it.weight_g != null && it.weight_g !== '') ? '约 ' + it.weight_g + 'g' : '份量未知'
+        }));
+        // 合计行拼成整串再交出去：逐字段塞进 wxml 会在缺值时渲染出「蛋白 g」这种残句
+        const parts = [];
+        if (r.total_calories != null) parts.push(Math.round(r.total_calories) + ' 千卡');
+        if (r.protein != null) parts.push('蛋白 ' + r.protein + 'g');
+        if (r.carb != null) parts.push('碳水 ' + r.carb + 'g');
+        if (r.fat != null) parts.push('脂肪 ' + r.fat + 'g');
+        this.setData({
+          recognizing: false,
+          recResult: Object.assign({}, r, { foods: foods, totalText: parts.join(' · ') })
+        });
       })
       .catch((err) => {
+        metrics.inc(metrics.EVENTS.VISION_FAIL);
         this.setData({ recognizing: false });
         const msg = (err && (err.errMsg || err.message)) || '识别失败，请重试';
         wx.showToast({ title: '识别失败', icon: 'none' });

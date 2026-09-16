@@ -130,7 +130,29 @@ function analyzeByUpload(tempFilePath, cfg) {
 }
 
 // tempFilePath: wx.chooseMedia 返回的临时文件路径
-// 返回 Promise<{ foods:[...], total:{...}, note, mock, provider }>
+//
+// 返回 Promise<服务端统一合约>。**两条模式返回的字段并不完全相同**，读之前先看清：
+//
+//   共同字段：
+//     name: str                          // 菜名（可能是泛称「识别到的食物」）
+//     items: [{ name, weight_g, calories }]
+//     total_weight_g / total_calories: int
+//     confidence: float|null             // 0–1
+//     mock: bool
+//
+//   仅 LLM 路径（云托管 → server/vision_llm.py）额外有：
+//     protein / carb / fat: int          // 三大营养素，只有这条路给
+//     provider: str                      // 形如 "llm:qwen-vl-max"
+//
+//   仅 CalorieScan / mock 路径（server/analyzer.py）额外有：
+//     success: bool（恒 true，失败以 HTTP 异常表达）、note: str
+//     ⚠️ **没有** protein/carb/fat ⇒ 这三项会是 null，页面必须按「未知」而不是 0 展示。
+//     ⚠️ 局域网 uploadFile 模式（POST /analyze）**只走这一条**，接不到 LLM
+//        （见 server/app.py:76）—— 所以联调时看不到蛋白质/碳水/脂肪是正常的。
+//
+//   两条路径都**没有** `foods` 字段。曾有一版注释把它写成 `{ foods, total, ... }`，
+//   结果 `pages/food-vision` 照着错口径写成 `r.foods.map(...)`，任何一条服务端路径都
+//   拿不到数据（该页同时也没有任何入口，属双重死代码）。**改合约先改这里。**
 function analyzeImage(tempFilePath) {
   const cfg = getCfg();
   if (cfg.useCC) return analyzeByCallContainer(tempFilePath, cfg);

@@ -73,8 +73,22 @@
     </view>
 
     <scroll-view scroll-y class="r-scroll">
-      <view class="r-title">{{photo.name}}</view>
-      <view class="r-conf">识别置信度: {{photo.confText}}</view>
+      <view class="r-title" bindtap="editName">
+        <text>{{photo.name}}</text>
+        <text class="r-title-tag" wx:if="{{photo.canEdit}}">改</text>
+      </view>
+      <view class="r-conf">
+        <text>识别置信度: {{photo.confText}}</text>
+        <text class="r-badge" wx:if="{{photo.reused}}">已套用你的修正值</text>
+        <text class="r-badge" wx:if="{{photo.edited}}">已修正</text>
+      </view>
+
+      <!-- A3 低置信度引导：主动说「这个数不可信」，而不是让用户自己去猜。
+           紧挨着置信度那一行 —— 它解释的就是上面那个数。 -->
+      <view class="r-alert" wx:if="{{photo.lowConf}}">
+        <text class="r-alert-t">置信度偏低，下面的数值可能不准</text>
+        <text class="r-alert-s" bindtap="gotoManualHint">怎么手动录入 ›</text>
+      </view>
 
       <!-- 食物照片 -->
       <view class="r-photo-card">
@@ -82,17 +96,29 @@
         <view wx:else class="r-photo-ph">历史记录不保留原图</view>
       </view>
 
-      <!-- 营养成分（估算） -->
+      <!-- 营养成分（估算）—— A3：每一行都可点改 -->
       <view class="r-card">
         <view class="r-card-head">
           <text class="r-card-title">营养成分（估算）</text>
           <text class="r-unit" wx:if="{{photo.weight}}">单位（每份{{photo.weight}}g）</text>
         </view>
+        <view class="r-hint" wx:if="{{photo.canEdit}}">点任意数值即可修改 · 改过就会被记住，下次同款自动带出</view>
+        <!-- ⚠️ 本行的事件名必须**静态**。若把事件名写成 Mustache 动态串，
+             整串会被当成字面量事件名 → 点击静默无反应且不报错。
+             可否编辑一律由 JS 内的 canEdit 判断。
+             注：守卫 verify-event-binding.cjs 是**逐字扫源码**的，
+             所以这里刻意不把那个动态写法本身写出来 —— 否则连注释都会被判违规。 -->
         <view class="r-nutri">
-          <view class="r-nutri-row"><view class="dot dot-kcal"></view><text class="r-n-name">热量</text><text class="r-n-val">{{photo.kcal == null ? '—' : photo.kcal}} kcal</text></view>
-          <view class="r-nutri-row"><view class="dot dot-pro"></view><text class="r-n-name">蛋白质</text><text class="r-n-val">{{photo.protein == null ? '—' : photo.protein}} g</text></view>
-          <view class="r-nutri-row"><view class="dot dot-carb"></view><text class="r-n-name">碳水化合物</text><text class="r-n-val">{{photo.carb == null ? '—' : photo.carb}} g</text></view>
-          <view class="r-nutri-row"><view class="dot dot-fat"></view><text class="r-n-name">脂肪</text><text class="r-n-val">{{photo.fat == null ? '—' : photo.fat}} g</text></view>
+          <view class="r-nutri-row" wx:for="{{photo.nutri}}" wx:key="k"
+                data-field="{{item.k}}" bindtap="editNum"
+                hover-class="{{photo.canEdit ? 'r-nutri-hover' : 'none'}}">
+            <view class="dot {{item.dot}}"></view>
+            <text class="r-n-name">{{item.label}}</text>
+            <view class="r-n-right">
+              <text class="r-n-val {{photo.canEdit ? 'can-edit' : ''}}">{{item.val == null ? '—' : item.val}} {{item.unit}}</text>
+              <text class="r-n-tag" wx:if="{{photo.canEdit}}">改</text>
+            </view>
+          </view>
         </view>
       </view>
 
@@ -106,6 +132,8 @@
       </view>
 
       <view class="r-note">⚠ 识别结果仅供参考，请以实际为准</view>
+      <!-- 知识库状态：不给它一个位置，「纠正被记住了」这件事就是不可见的魔法 -->
+      <view class="r-kb" wx:if="{{kbSize}}">本地知识库已记 {{kbSize}} 条 · 本周省下 {{kbSaved}} 次 AI 识别</view>
       <view class="r-bottom-gap"></view>
     </scroll-view>
 

@@ -192,7 +192,7 @@
       <view class="form">
         <view class="f-row">
           <text class="f-lab">食物名称</text>
-          <input class="f-input" placeholder="如：鸡胸肉" value="{{form.name}}" bindinput="onForm" data-field="name" />
+          <input class="f-input" placeholder="如：鸡胸肉" value="{{form.name}}" bindinput="onForm" bindblur="onNameBlur" data-field="name" />
         </view>
         <view class="f-row">
           <text class="f-lab">份数</text>
@@ -256,9 +256,9 @@
       <view class="sheet-title">AI 识别结果 · {{addType}}</view>
       <view wx:if="{{recResult.mock}}" class="mock-tip">演示数据（未配置视觉模型 key），接入真实模型后即替换为估算结果。</view>
 
-      <view class="rec-total" wx:if="{{recResult.total}}">
+      <view class="rec-total" wx:if="{{recResult.totalText}}">
         <text class="rt-k">本餐合计</text>
-        <text class="rt-v">{{recResult.total.calories}} 千卡 · 蛋白 {{recResult.total.protein}}g · 碳水 {{recResult.total.carb}}g · 脂肪 {{recResult.total.fat}}g</text>
+        <text class="rt-v">{{recResult.totalText}}</text>
       </view>
 
       <view wx:if="{{recResult.foods.length === 0}}" class="meal-empty">未能识别到食物，请换一张更清晰的图。</view>
@@ -268,7 +268,7 @@
           <view class="rec-thumb">{{item.emoji || '🍽️'}}</view>
           <view class="rec-body">
             <view class="rec-name">{{item.name}}</view>
-            <view class="rec-meta">蛋白 {{item.protein}}g · 碳水 {{item.carb}}g · 脂肪 {{item.fat}}g</view>
+            <view class="rec-meta">{{item.metaText}}</view>
           </view>
           <view class="rec-right">
             <view class="rec-cal">{{item.calories}}</view>

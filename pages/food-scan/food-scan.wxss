@@ -174,15 +174,48 @@
 .r-nutri { margin-top: 10rpx; }
 .r-nutri-row {
   display: flex; flex-direction: row; align-items: center;
-  padding: 18rpx 0;
+  /* 左右各 16rpx 内缩 + 负外边距：视觉不变，但 hover 底色有地方铺开 */
+  padding: 18rpx 16rpx; margin: 0 -16rpx; border-radius: 16rpx;
 }
+.r-nutri-hover { background: var(--n-200); }
 .dot { width: 16rpx; height: 16rpx; border-radius: 50%; margin-right: 18rpx; }
 .dot-kcal { background: #B7E600; }
 .dot-pro { background: #FF9500; }
 .dot-carb { background: #34C759; }
 .dot-fat { background: #F2545B; }
 .r-n-name { flex: 1; font-size: 28rpx; color: var(--n-700); }
+.r-n-right { display: flex; flex-direction: row; align-items: center; }
 .r-n-val { font-size: 30rpx; font-weight: 800; color: var(--n-900); font-feature-settings: "tnum"; }
+/* 「这里能点」的线索：数值下加虚线底。纯装饰，不承担信息 */
+.r-n-val.can-edit { border-bottom: 2rpx dashed var(--n-300); padding-bottom: 2rpx; }
+
+/* ── A3：结果纠错 ───────────────────────────────────────────── */
+/* 「改」标（标题旁 / 每行数值旁）。底色 --n-200 + 字色 --n-700：
+   浅 #E8E8E4/#444 7.9:1，深 rgba(255,255,255,.10)/rgba(255,255,255,.75) ≈7.6:1，两侧都过 AA。
+   ⚠️ 刻意不用 --primary-tint + --primary-text：那对是浅色专属 token，
+      必须在本页 .page.theme-dark 里成对翻转才不出事 —— 为一个小方标不值得多背一处翻转头。 */
+.r-n-tag {
+  margin-left: 12rpx; padding: 2rpx 12rpx; border-radius: 8rpx;
+  font-size: 22rpx; font-weight: 700;
+  background: var(--n-200); color: var(--n-700);
+}
+.r-title-tag, .r-badge {
+  margin-left: 14rpx; padding: 2rpx 14rpx; border-radius: 8rpx;
+  font-size: 22rpx; font-weight: 700;
+  background: var(--n-200); color: var(--n-700);
+}
+.r-hint { margin-top: 12rpx; font-size: 22rpx; color: var(--n-700); }
+
+/* 低置信度提示。浅琥珀底 + --accent-ink 字（浅 6.1:1），
+   深色底由文件底部 .page.theme-dark 换成深琥珀 + 提亮字色（8.9:1），两侧都过 AA。
+   ⚠️ --accent-ink 根值 #A8380A 压深底只有 2.8:1 —— 它是「语义深字 token」，
+      深色侧必须由**本页**提亮，不能指望它自己翻（见 app.wxss 的口径）。 */
+.r-alert {
+  margin-top: 20rpx; padding: 20rpx 24rpx;
+  background: #FFF6E8; border: 2rpx solid #FFE0B2; border-radius: 20rpx;
+}
+.r-alert-t { display: block; font-size: 26rpx; font-weight: 700; color: var(--accent-ink); }
+.r-alert-s { display: block; margin-top: 8rpx; font-size: 24rpx; color: var(--accent-ink); text-decoration: underline; }
 
 .r-food {
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
@@ -192,6 +225,10 @@
 .r-food-weight { font-size: 28rpx; font-weight: 700; color: var(--n-900); font-feature-settings: "tnum"; }
 
 .r-note { color: var(--text-weak); font-size: 22rpx; text-align: center; margin-top: 28rpx; }
+/* A3：知识库状态。不给它一个位置，「纠正被记住了」就是不可见的魔法。
+   用 --n-700 而不是 --text-weak —— 后者（#A0A0A0）压 --n-50 只有 2.44:1，小字读不出来
+   （该 token 的门禁盲区已单独记录，见交付文档）。 */
+.r-kb { color: var(--n-700); font-size: 22rpx; text-align: center; margin-top: 10rpx; }
 .r-bottom-gap { height: 200rpx; }
 
 .r-foot {
@@ -233,8 +270,18 @@
   --bg:        rgba(255, 255, 255, 0.06);
 
   --success: #C8FF00;
+  /* A3：语义深字 token 的深色提亮。--accent-ink 根值 #A8380A 压深底只有 2.8:1，
+     而它**不会**随主题自动翻（不是「浅色面 token」）⇒ 用它的页面必须自己提亮。
+     同口径：橙 → #FFC08A（与 app.wxss 的 --accent-ink 语义轴一致）。 */
+  --accent-ink: #FFC08A;
 
   background: var(--n-50);
   color: var(--text);
 }
 .page.theme-dark .card { box-shadow: none; }
+/* A3：低置信度提示的深色底。浅琥珀 #FFF6E8 在深色下会变成一块刺眼白卡
+   （且卡内字色已提亮为 #FFC08A，白底上只剩 1.6:1）⇒ 必须换深琥珀。 */
+.page.theme-dark .r-alert {
+  background: rgba(255, 149, 0, 0.14);
+  border-color: rgba(255, 149, 0, 0.30);
+}
