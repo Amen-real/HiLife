@@ -71,7 +71,12 @@ Component({
     // ===== 分享卡 =====
     shareShow: false,                           // 预览弹层
     shareBusy: false,                           // 生成中（此时画布在视口外绘制）
-    shareImg: ''                                // 生成好的临时图片路径
+    shareImg: '',                               // 生成好的临时图片路径
+    // 三个开关都作用在**内容模型**上（真实能力），不是只存本地布尔值：
+    shareHide: false,                           // 隐藏训练内容 → 不出动作明细卡
+    shareMerge: false,                          // 合并当天 → 同日多场合成一张
+    shareStyle: 'light',                        // 卡片样式 → 换调色板
+    shareStyleName: '浅色'
   },
 
   lifetimes: { attached() { this.rebuild(); } },
@@ -463,14 +468,54 @@ Component({
 
     /* ===== 分享卡（B2）=====
        流程：点入口 → 开弹层 → 视口外画布绘制 → 导出临时图 → 摘掉画布、只留图片。
-       平台能力：wx.showShareImageMenu 需基础库 ≥ 2.14.3。低版本**不假装能分享**，
-       直接告诉用户「存相册再手动发」——本仓红线：文案只写实现得了的事。 */
+       三个开关都会**重建内容模型并重新出图**（不是只改个本地布尔值）：
+         · 隐藏训练内容 → buildModel(opt.hideContent) 不出动作明细卡；
+         · 合并当天     → buildModel(opt.merge) 把同日多场合成一张；
+         · 样式         → buildModel(opt.style) 换调色板（浅色 / 深色）。
+       平台能力：wx.showShareImageMenu 需基础库 ≥ 2.14.3。低版本**不假装能分享**。
+       朋友圈没有「一键发朋友圈」的开放接口，所以那条通道是「存相册 + 引导」——
+       文案与行为一致是红线：只写实现得了的事。 */
     openShareCard() {
       const log = (this._logs || [])[this._selIdx];
-      const model = log ? shareCard.buildModel({ log, logsDesc: this._logs, idx: this._selIdx }) : null;
-      if (!model) { wx.showToast({ title: '暂无可分享的场次', icon: 'none' }); return; }
+      if (!log) { wx.showToast({ title: '暂无可分享的场次', icon: 'none' }); return; }
+      this.setData({ shareShow: true }, () => this._applyCard());
+    },
+
+    // 按当前开关重建模型并重新出图。每次都先把 shareImg 清空：
+    // 画布由 wx:if="{{!shareImg}}" 控制挂载，不清掉旧图就取不到 canvas 节点（查询会返回 null）。
+    _applyCard() {
+      const log = (this._logs || [])[this._selIdx];
+      const model = log
+        ? shareCard.buildModel({ log: log, logsDesc: this._logs, idx: this._selIdx, opts: this._cardOpts() })
+        : null;
+      if (!model) { this._cardFail('暂无可分享的场次'); return; }
       this._cardModel = model;
-      this.setData({ shareShow: true, shareBusy: true, shareImg: '' }, () => this._renderCard(model));
+      this.setData({ shareBusy: true, shareImg: '' }, () => this._renderCard(model));
+    },
+
+    _cardOpts() {
+      const g = store.get();
+      const u = (g && g.userInfo) || {};
+      return {
+        style: this.data.shareStyle,
+        merge: !!this.data.shareMerge,
+        hideContent: !!this.data.shareHide,
+        nickname: u.nickname || ''
+      };
+    },
+
+    toggleShareOpt(e) {
+      const k = e.currentTarget.dataset.k;
+      if (k === 'hide') this.setData({ shareHide: !this.data.shareHide }, () => this._applyCard());
+      else if (k === 'merge') this.setData({ shareMerge: !this.data.shareMerge }, () => this._applyCard());
+    },
+
+    // 循环切换样式：样式键的唯一真源是 shareCard.STYLE_KEYS，这里不写死「浅色↔深色」
+    cycleShareStyle() {
+      const keys = shareCard.STYLE_KEYS;
+      const i = keys.indexOf(this.data.shareStyle);
+      const next = keys[(i + 1) % keys.length];
+      this.setData({ shareStyle: next, shareStyleName: shareCard.PALETTES[next].name }, () => this._applyCard());
     },
 
     // 画布 backing store 固定为 750×measure()，**不乘 dpr**：
@@ -528,16 +573,34 @@ Component({
       });
     },
 
+    // 朋友圈通道：微信**没有**「一键发朋友圈」的开放接口（唯一相关的 onShareTimeline 是
+    // 单页模式分享，交互密集页加它就是残废入口，本项目刻意不加）。
+    // 能做的只有「存到相册 + 引导用户自己去朋友圈发」—— 所以这里就是保存 + 一句引导。
+    saveMomentsShareCard() {
+      const path = this.data.shareImg;
+      if (!path) { wx.showToast({ title: '分享卡还没生成好', icon: 'none' }); return; }
+      this._saveToAlbum(path, () => wx.showModal({
+        title: '已保存到相册',
+        content: '微信 → 发现 → 朋友圈 → 从相册选这张图即可发布。',
+        showCancel: false, confirmText: '知道了'
+      }));
+    },
+
     saveShareCard() {
       const path = this.data.shareImg;
       if (!path) { wx.showToast({ title: '分享卡还没生成好', icon: 'none' }); return; }
+      this._saveToAlbum(path, () => wx.showToast({ title: '已保存到相册', icon: 'success' }));
+    },
+
+    // 保存到相册（两条通道共用）：失败路径必须分清「用户取消」与「权限被拒」——
+    // 后者重试无用，只能引导去设置页。
+    _saveToAlbum(path, onOk) {
       wx.saveImageToPhotosAlbum({
         filePath: path,
-        success: () => wx.showToast({ title: '已保存到相册', icon: 'success' }),
+        success: () => onOk(),
         fail: e => {
           const msg = String((e && e.errMsg) || '');
           if (/cancel/i.test(msg)) return;
-          // 用户此前拒过相册授权 → 必须走设置页，重试是没用的
           if (/auth|deny|permission/i.test(msg)) {
             wx.showModal({
               title: '需要相册权限',

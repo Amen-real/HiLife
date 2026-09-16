@@ -220,19 +220,43 @@
     </view>
   </view>
 
-  <!-- ===== 分享卡预览弹层 =====
+  <!-- ===== 分享卡预览弹层（底部抽屉，对齐设计稿）=====
        画布在视口外绘制（.sc-canvas），出图后立刻用 wx:if 摘掉，只留 <image> 展示：
        原生画布留在弹层里会压住内容，而 opacity:0 隐藏的原生组件在真机会泄漏。
-       长按图片可直接调起原生菜单，是分享面板之外的第二条路径。 -->
+       长按图片可直接调起原生菜单，是分享面板之外的第二条路径。
+       三个开关都**真的重建卡片**（隐藏内容 / 合并同日 / 换样式），不是只改本地状态。 -->
   <view wx:if="{{shareShow}}" class="sc-mask" bindtap="closeShare">
-    <view class="sc-panel" catchtap="noop">
-      <view wx:if="{{shareBusy}}" class="sc-busy">正在生成分享卡…</view>
-      <image wx:elif="{{shareImg}}" class="sc-img" src="{{shareImg}}" mode="aspectFit" show-menu-by-longpress></image>
-      <view class="sc-tip">「分享给好友」会把图片发出去并带上小程序入口；存到相册后需自行发送</view>
-      <view class="sc-actions">
-        <view class="sc-btn ghost" bindtap="saveShareCard">保存到相册</view>
-        <view class="sc-btn main" bindtap="shareShareCard">分享给好友</view>
+    <view class="sc-sheet" catchtap="noop">
+
+      <view class="sc-preview">
+        <view wx:if="{{shareBusy}}" class="sc-busy">正在生成分享卡…</view>
+        <image wx:elif="{{shareImg}}" class="sc-img" src="{{shareImg}}" mode="aspectFit" show-menu-by-longpress></image>
       </view>
+
+      <view class="sc-switches">
+        <view class="sc-sw {{shareHide ? 'on' : ''}}" data-k="hide" bindtap="toggleShareOpt">隐藏训练内容</view>
+        <view class="sc-sw {{shareMerge ? 'on' : ''}}" data-k="merge" bindtap="toggleShareOpt">合并当天</view>
+        <view class="sc-sw" bindtap="cycleShareStyle">样式 · {{shareStyleName}}</view>
+      </view>
+
+      <view class="sc-channels">
+        <view class="sc-ch" bindtap="shareShareCard">
+          <view class="sc-ch-ico"><view class="sc-ch-glyph ico-sharefriend-sc"></view></view>
+          <text class="sc-ch-tx">分享给朋友</text>
+        </view>
+        <view class="sc-ch" bindtap="saveMomentsShareCard">
+          <view class="sc-ch-ico"><view class="sc-ch-glyph ico-moment-sc"></view></view>
+          <text class="sc-ch-tx">存相册发朋友圈</text>
+        </view>
+        <view class="sc-ch" bindtap="saveShareCard">
+          <view class="sc-ch-ico"><view class="sc-ch-glyph ico-albumdown-sc"></view></view>
+          <text class="sc-ch-tx">保存到相册</text>
+        </view>
+      </view>
+
+      <text class="sc-tip">「合并当天」把同一天的多场训练合成一张；「隐藏训练内容」只保留肌群与数据，不出现动作和重量。朋友圈需存到相册后自行发布。</text>
+
+      <view class="sc-cancel" bindtap="closeShare">取消</view>
     </view>
     <canvas wx:if="{{!shareImg}}" type="2d" id="shareCanvas" class="sc-canvas"></canvas>
   </view>

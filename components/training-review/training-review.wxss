@@ -434,43 +434,74 @@
 .sc-entry-dot { flex: none; width: 14rpx; height: 14rpx; border-radius: 50%; background: var(--primary); }
 .sc-entry-txt { font-size: 27rpx; font-weight: 700; color: var(--n-900); letter-spacing: 0.01em; }
 
-/* ===== 分享卡预览弹层 =====
+/* ===== 分享卡预览弹层（底部抽屉）=====
    遮罩 z-index 与 ka-mask 同档（2000，高于 nav-bar 的 999）。
-   面板居中且总高 < 100vh，压不到自定义 tabBar（框架层），故不需要 .with-tab 让位。
-   文字一律 --n-700 / --n-900：不用 --n-500（#A0A0A0）—— 它压浅底只有 2.6:1，见报告 P2-9。 */
+   面板是底部抽屉：预览图在上、开关在中、通道在下，总高控制在 100vh 内。
+   文字一律 --n-700 / --n-900：不用 --n-500（#A0A0A0）—— 它压浅底只有 2.6:1，见报告 P2-9。
+   底部留 env(safe-area-inset-bottom)，避免「取消」压到 iPhone 的横条。 */
 .sc-mask {
   position: fixed; left: 0; right: 0; top: 0; bottom: 0;
-  background: rgba(15, 23, 42, 0.55);
-  display: flex; align-items: center; justify-content: center;
+  background: rgba(15, 23, 42, 0.62);
+  display: flex; align-items: flex-end; justify-content: center;
   z-index: 2000;
   animation: sc-fade 0.18s ease;
 }
-.sc-panel {
-  width: 620rpx; box-sizing: border-box;
-  background: var(--card);
-  border-radius: 32rpx;
-  padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+.sc-sheet {
+  width: 750rpx; box-sizing: border-box;
+  background: var(--n-50);
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 28rpx 40rpx calc(28rpx + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 20rpx;
-  box-shadow: 0 20rpx 60rpx rgba(15, 23, 42, 0.28);
+  animation: sc-up 0.22s ease;
+}
+.sc-preview {
+  height: 50vh; border-radius: 24rpx; overflow: hidden;
+  background: var(--n-100);
+  display: flex; align-items: center; justify-content: center;
 }
 .sc-busy {
-  height: 58vh;
+  height: 100%;
   display: flex; align-items: center; justify-content: center;
   font-size: 26rpx; font-weight: 600;
   color: var(--n-700);
 }
-.sc-img { width: 100%; height: 58vh; border-radius: 20rpx; background: var(--n-50); }
-.sc-tip { font-size: 20rpx; font-weight: 500; line-height: 1.55; color: var(--n-700); text-align: center; }
-.sc-actions { display: flex; gap: 20rpx; }
-.sc-btn {
-  flex: 1; height: 88rpx; border-radius: var(--r-pill);
+.sc-img { width: 100%; height: 100%; }
+.sc-tip { font-size: 20rpx; font-weight: 500; line-height: 1.6; color: var(--n-700); }
+
+/* 三个开关：未选中 = 中性胶囊；选中 = 亮绿实底。
+   亮绿底上的字必须写死 #0A0A0A，**不能**用 var(--n-900) ——
+   --primary 是全库唯一不随主题翻转的色，而 --n-900 在深色下会翻成白色，
+   白压亮绿只有 1.6:1（铁律）。 */
+.sc-switches { display: flex; gap: 16rpx; }
+.sc-sw {
+  flex: 1; height: 76rpx; border-radius: var(--r-pill);
   display: flex; align-items: center; justify-content: center;
+  background: var(--n-100); color: var(--n-900);
+  font-size: 24rpx; font-weight: 700;
+}
+.sc-sw.on { background: var(--primary); color: #0A0A0A; }
+.sc-sw:active { opacity: 0.82; }
+
+/* 三条分享通道：圆形图标 + 文字，对齐设计稿。
+   图标一律「亮绿圆 + 深色字形」—— 同一个合法色对，深色主题下也成立。 */
+.sc-channels { display: flex; }
+.sc-ch { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12rpx; }
+.sc-ch:active { opacity: 0.7; }
+.sc-ch-ico {
+  width: 96rpx; height: 96rpx; border-radius: 50%;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+}
+.sc-ch-glyph { width: 46rpx; height: 46rpx; background-color: #0A0A0A; }
+.sc-ch-tx { font-size: 22rpx; font-weight: 600; color: var(--n-700); }
+
+.sc-cancel {
+  height: 88rpx; border-radius: var(--r-pill);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card); color: var(--n-900);
   font-size: 28rpx; font-weight: 700;
 }
-.sc-btn.ghost { background: var(--n-100); color: var(--n-700); }
-/* 主按钮亮绿底 → 文字一律 #0A0A0A（对比度铁律） */
-.sc-btn.main { background: var(--primary); color: #0A0A0A; }
-.sc-btn:active { opacity: 0.86; }
+.sc-cancel:active { opacity: 0.86; }
 
 /* 画布只用于出图，摆在视口外：不参与布局、不遮挡；出图后立即由 wx:if 摘除。
    显式给 CSS 尺寸是为了保证节点有真实布局尺寸（display:none 会让它取不到尺寸），
@@ -478,3 +509,18 @@
 .sc-canvas { position: fixed; left: -2000px; top: 0; width: 375px; height: 550px; }
 
 @keyframes sc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sc-up { from { transform: translateY(60rpx); opacity: 0.4; } to { transform: translateY(0); opacity: 1; } }
+
+/* 通道图标（mask 方案，与 styles/icons.wxss 同一套编码约定）。
+   为什么在本组件内重复定义、而不复用全局 .ico-* ：
+   本组件（含弹层）的**每一个** class 都在本文件里定义（已核对：tr.wxml 里 0 个类来自 app.wxss），
+   从不依赖 app.wxss 的类穿透进自定义组件 —— 赌错的话图标会**静默不渲染**，
+   是这类 bug 里最难发现的一种。与 custom-tab-bar 的处理方式一致。 */
+.sc-ch-glyph {
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
+}
+.ico-sharefriend-sc { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%2015.2V4.2%27%2F%3E%3Cpath%20d%3D%27M8%208.2l4-4%204%204%27%2F%3E%3Cpath%20d%3D%27M5%2014v5a2%202%200%20002%202h10a2%202%200%20002-2v-5%27%2F%3E%3C%2Fsvg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%2015.2V4.2%27%2F%3E%3Cpath%20d%3D%27M8%208.2l4-4%204%204%27%2F%3E%3Cpath%20d%3D%27M5%2014v5a2%202%200%20002%202h10a2%202%200%20002-2v-5%27%2F%3E%3C%2Fsvg%3E"); }
+.ico-moment-sc { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%278.4%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%275.6%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2718.4%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2718.4%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%275.6%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3C%2Fsvg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%278.4%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%275.6%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2718.4%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2718.4%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3Ccircle%20cx%3D%275.6%27%20cy%3D%2712%27%20r%3D%271.5%27%20fill%3D%27%23000%27%20stroke%3D%27none%27%2F%3E%3C%2Fsvg%3E"); }
+.ico-albumdown-sc { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%204v11%27%2F%3E%3Cpath%20d%3D%27M8%2011l4%204%204-4%27%2F%3E%3Cpath%20d%3D%27M5%2017v2a2%202%200%20002%202h10a2%202%200%20002-2v-2%27%2F%3E%3C%2Fsvg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%204v11%27%2F%3E%3Cpath%20d%3D%27M8%2011l4%204%204-4%27%2F%3E%3Cpath%20d%3D%27M5%2017v2a2%202%200%20002%202h10a2%202%200%20002-2v-2%27%2F%3E%3C%2Fsvg%3E"); }

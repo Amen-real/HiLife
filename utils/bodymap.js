@@ -295,6 +295,58 @@ function parsePath(ctx, d) {
   }
 }
 
+// ===================== 包围盒（引线锚点用） =====================
+// 复用 parsePath，但把「画到 canvas」换成「记录所有坐标点」——
+// 这样包围盒的算法与真实绘制路径**同源**，不会出现「图上画的位置」和「标签引线指的位置」两套坐标。
+//
+// 口径：取的是**控制点**的外包矩形，而非曲线真实边界的紧致包围盒（贝塞尔控制点可能落在曲线上方）。
+// 对「引线锚点」这个用途足够，且完全确定性 —— 不依赖 canvas、不依赖真机渲染就能在 node 里断言。
+function boundsOf(d) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const acc = (x, y) => {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  };
+  parsePath({
+    moveTo: (x, y) => acc(x, y),
+    lineTo: (x, y) => acc(x, y),
+    bezierCurveTo: (x1, y1, x2, y2, x, y) => { acc(x1, y1); acc(x2, y2); acc(x, y); },
+    quadraticCurveTo: (x1, y1, x, y) => { acc(x1, y1); acc(x, y); },
+    closePath: () => {}
+  }, d);
+  if (!Number.isFinite(minX)) return null;
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+}
+
+// 按 slug 汇总包围盒：一个肌群的左右两侧（或多段路径）取并集，
+// 得到「这个肌群整体在哪」——标签引线就指向它的几何中心。
+function slugBounds(shapes) {
+  const map = {};
+  for (const p of shapes.parts) {
+    const b = boundsOf(p.d);
+    if (!b) continue;
+    const cur = map[p.slug];
+    if (!cur) map[p.slug] = { x: b.x, y: b.y, x2: b.x + b.w, y2: b.y + b.h, active: p.active };
+    else {
+      if (b.x < cur.x) cur.x = b.x;
+      if (b.y < cur.y) cur.y = b.y;
+      if (b.x + b.w > cur.x2) cur.x2 = b.x + b.w;
+      if (b.y + b.h > cur.y2) cur.y2 = b.y + b.h;
+    }
+  }
+  Object.keys(map).forEach(k => {
+    const c = map[k];
+    c.w = c.x2 - c.x;
+    c.h = c.y2 - c.y;
+    c.cx = (c.x + c.x2) / 2;
+    c.cy = (c.y + c.y2) / 2;
+  });
+  return map;
+}
+
 // ===================== 绘制 =====================
 // 默认配色（与 app.wxss 的浅色 token 对齐）。分享卡会覆盖其中一部分。
 const BODY_COLORS = {
@@ -310,8 +362,13 @@ const BODY_COLORS = {
 // 「直接往 canvas 上画」，分享卡就不得不退化成真机截图验收。
 // 抽出这一层后：layout() 能拿到 shape 列表算几何，draw() 才把它落到 canvas。
 // drawBody() 也改为消费本函数 —— 解剖图只有一份实现。
+// 描边宽度**以图集坐标（724 宽）为单位**，最终粗细 = lw × 缩放比。
+// 所以同一份数据在不同尺寸的宿主上观感差异很大：动作详情页画到 ~600px 宽（缩放 ≈0.83）
+// 用默认 2 就够了；分享卡只画到 175px 宽（缩放 ≈0.24）时 2 相当于 0.48px —— 形同没有描边，
+// 故分享卡会显式把 lw 抬到 6（≈1.45px）。默认值保持 2，不动既有页面。
 function bodyPaths(side, slugSet, opts) {
   const o = Object.assign({}, BODY_COLORS, opts || {});
+  const lw = Number(o.lw) > 0 ? Number(o.lw) : 2;
   const data = side === 'back' ? D.BACK : D.FRONT;
   const outline = side === 'back' ? D.OUTLINE_BACK : D.OUTLINE_FRONT;
 
@@ -324,7 +381,7 @@ function bodyPaths(side, slugSet, opts) {
       .concat(part.path.common || [])
       .concat(part.path.left || [])
       .concat(part.path.right || []);
-    for (const d of sides) parts.push({ slug: part.slug, active: active, d: d, fill: fill, stroke: stroke, lw: 2 });
+    for (const d of sides) parts.push({ slug: part.slug, active: active, d: d, fill: fill, stroke: stroke, lw: lw });
   }
 
   return {
@@ -332,7 +389,7 @@ function bodyPaths(side, slugSet, opts) {
     vw: VBW, vh: VBH,
     // back 路径的 x 整体 +724；消费方需自行 translate(-724, 0)
     xOffset: side === 'back' ? -724 : 0,
-    outline: { d: outline, fill: o.outlineFill, stroke: o.outlineStroke, lw: 2 },
+    outline: { d: outline, fill: o.outlineFill, stroke: o.outlineStroke, lw: lw },
     parts: parts,
     activeCount: parts.filter(p => p.active).length
   };
@@ -372,5 +429,8 @@ module.exports = {
   VBW, VBH, BODY_COLORS,
   FRONT_SLUGS, BACK_SLUGS, SLUG, CN_SLOT, SLUG_TO_CN, MUSCLE_BY_CAT,
   collectSlugs, primarySlugOf, targetCn, buildMuscles,
-  bodyPaths, drawShapes, drawBody
+  boundsOf, slugBounds, bodyPaths, drawShapes, drawBody,
+  // 低层导出：只给工具链用（scripts/dump-sharecard-ops.cjs 需把路径拍平成折线交给 PIL 预览）。
+  // 页面代码不要直接调它 —— 绘制请走 drawShapes / drawBody。
+  parsePath
 };

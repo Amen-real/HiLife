@@ -25,6 +25,10 @@ __pycache__/
 
 # ===== 生成 / 预览产物 =====
 *.log
+# 分享卡预览产物（scripts/dump-sharecard-ops.cjs + render-sharecard.py 的输出）。
+# 放 scripts/ 下是为了避开主包体积扫描（scripts 是 folder 级打包忽略目录），
+# 但它们本身是 1.4MB JSON + 十几张 PNG，也不该进版本库 —— 需要时本地重跑即可。
+scripts/_out/
 # 纯生成预览页面（设计稿 ui-*.html 保留）
 preview.html
 icon-sheet.html

@@ -1,63 +1,132 @@
 // utils/shareCard.js
 // 训练分享卡（图片）—— 把「本次训练」变成一张可直接发到微信的卡片。
 //
-// 为什么独立成模块：卡片 = 内容模型 + 版式 + 绘制，其中前两件是**纯逻辑**，
-// 能在 node 里直接跑。守卫 scripts/verify-share-card.cjs 正是靠这一点断言：
-// 版式不越界、配色达 AA、超长文案被截断、亮绿底上的字必为深字。
-// draw() 只负责把版式 ops 翻译成 canvas 调用，本身不含任何口径。
+// 为什么独立成模块：卡片 = 内容模型 + 版式 + 绘制，其中前两件是**纯逻辑**，能在 node 里直接跑。
+// 守卫 scripts/verify-share-card.cjs 正是靠这一点断言：版式不越界、配色达 AA、超长文案被截断、
+// 亮绿底上的字必为深字、解剖图恰好落在给定的子矩形内。draw() 只负责把版式 ops 翻译成 canvas 调用。
 //
 // 口径：
-//   · 所有指标都取自 utils/trainingStats.js —— 卡片**不许**自己再算一遍训练量/时长/结论/chip，
+//   · 所有指标都取自 utils/trainingStats.js —— 卡片**不许**自己再算一遍训练量/时长/结论/chip/kcal，
 //     否则「同一场训练，卡片和复盘页数字不一样」是迟早的事；
-//   · 卡片恒定使用**浅色品牌版**，不跟随 App 深浅主题：图片会进别人的聊天窗口，
-//     收图的人看不到你的主题设置，品牌观感必须稳定（这是刻意选择，不是漏做深色）；
+//   · 主视觉 = 解剖图，走 utils/bodymap.js 的**纯路径**（bodyPaths + drawShapes），
+//     卡内因此**不含任何图片资源** ⇒ 版式/对比度/越界都能在 node 里穷举断言，不必靠真机截图；
 //   · canvas 读不到 CSS 变量，故配色在此硬编码一份 app.wxss 根 token 的镜像。
-//     改 token 要同步改这里 —— 守卫 [A] 组会把每个色值对着底色验一遍对比度，改错就红。
+//     改 token 要同步改这里 —— 守卫 [A] 组会**遍历每一套调色板**逐个色对验对比度；
+//   · 卡片**不跟随 App 深浅主题**，只跟随用户显式选的「样式」（浅色 / 深色）：
+//     跟随本机主题会让同一场训练在不同手机上产出两张不同的图，而图片是要发出去的。
 const stats = require('./trainingStats.js');
 const dateRange = require('./dateRange.js');
+const bodymap = require('./bodymap.js');
 
-/* ================= 尺寸与配色 ================= */
+/* ================= 尺寸 ================= */
 
 // 卡片宽度 = 750，即设计稿 rpx 口径（750rpx = 375px）。字号可直接沿用设计系统的 rpx 数值。
 // 输出图片恒为 750px 宽（backing store 固定，不乘 dpr）→ 跨设备出图完全一致。
 const CARD_W = 750;
+const PAGE_PAD = 24;                       // 画布四边留白（卡片浮在底色上）
+const CARD_PAD = 32;                       // 卡片内边距
+const CARD_R = 32;
+const CARD_X = PAGE_PAD;
+const CARD_W_IN = CARD_W - PAGE_PAD * 2;   // 702
+const INNER_X = PAGE_PAD + CARD_PAD;       // 56 —— 卡片内容左边界
+const INNER_W = CARD_W - INNER_X * 2;      // 638 —— 卡片内容宽度
+const GAP_CARD = 20;                       // 卡片之间
 
-const PAD = 56;              // 四边留白
-const MAX_ROWS = 4;          // 动作行上限，超出折叠成「共 N 个动作」
-const ROW_H = 88;            // 单行动作高度
-const CONTENT_W = CARD_W - PAD * 2;
+const AV_R = 40;                           // 头像圈半径（文字头像，纯矢量）
+const ID_H = AV_R * 2;                     // 身份行高 80
+const PB_H = 56;                           // 个人纪录条（结论条高度由折行数决定，见 layout）
 
-// 与 app.json navigationBarTitleText 保持一致
-const BRAND = '衡砺健身记录';
+// —— 解剖图区（横向五栏：前标签 | 前视图 | 后视图 | 后标签 | 指标）——
+// 62 + 12 + 175 + 12 + 175 + 12 + 62 + 12 + 116 = 638 = INNER_W（刚好铺满，无浮点误差）
+const LAB_W = 62;
+const FIG_W = 175;
+const FIG_H = 350;                         // 724:1448 = 175:350 —— 与图集 viewBox 同比，不拉伸
+const KPI_W = 116;
+const AGAP = 12;
+const LAB_TO_FIG = 6;                      // 引线起点相对标签文字的留白
+const MAX_LABELS = 6;                      // 单侧最多标几个肌群（超出的并进「等 N 处」）
 
-// —— app.wxss 根 token 的镜像（括号内为对应 token）——
-const P = {
-  bg: '#F7F7F5',        // --n-50 页面暖白底
-  card: '#FFFFFF',      // --card
-  border: '#E8E8E4',    // --n-200 边框线
-  ink: '#0A0A0A',       // --n-950 主文字
-  sub: '#444444',       // --n-700 次级文字（不用 --n-500 #A0A0A0：压暖白底仅 2.44:1，见报告 P2-9）
-  brand: '#C8FF00',     // --primary
-  brandInk: '#0A0A0A',  // 亮绿底上的字（对比度铁律：亮绿底必须配深字，16.74:1）
-  upFg: '#4C7300',      // --success-text / --primary-text
-  upBg: '#F1F5E6',      // rgba(111,159,0,.10) 叠白
-  downFg: '#C4363B',    // --danger-text
-  downBg: '#FBEDEB',    // rgba(216,72,59,.10) 叠白
-  flatFg: '#444444',    // --n-700
-  flatBg: '#F1F1EE'     // --n-100
+// —— 动作卡 ——
+const MAX_ROWS = 4;                        // 动作行上限
+const ROW_H = 112;
+const CAP_H = 40;                          // 逐组胶囊高度
+const CAP_GAP = 10;
+const MAX_CAPS = 3;                        // 单行最多几个胶囊（canvas 不会自动折行，多出的并成「+N 组」）
+const SEC_H = 48;                          // 动作卡小标题行高
+
+const BRAND = '衡砺健身记录';               // 与 app.json navigationBarTitleText 一致
+const SLOGAN = '记录每一次进步';
+
+/* ================= 调色板 =================
+   每套调色板里的每一个「字色 × 底色」组合都由守卫 [A] 逐个验对比度；
+   加新色对一定要同时加进守卫，否则就是给自己留了一个隐形文字的口子。 */
+const PALETTES = {
+  light: {
+    key: 'light', name: '浅色',
+    bg: '#F7F7F5',        // --n-50 页面暖白底
+    card: '#FFFFFF',      // --card
+    border: '#E8E8E4',    // --n-200 边框线
+    ink: '#0A0A0A',       // --n-950 主文字
+    sub: '#444444',       // --n-700 次级文字（不用 --n-500 #A0A0A0：压暖白底仅 2.44:1，见报告 P2-9）
+    brand: '#C8FF00',     // --primary（全库唯一不随主题翻转的色）
+    brandInk: '#0A0A0A',  // 亮绿底上的字（对比度铁律，16.74:1）
+    accBg: '#F1F5E6',     // 结论条底（浅绿调）
+    chipBg: '#F1F1EE',    // --n-100 胶囊底
+    chipInk: '#0A0A0A',
+    upFg: '#4C7300',      // --success-text / --primary-text
+    upBg: '#F1F5E6',
+    downFg: '#C4363B',    // --danger-text
+    downBg: '#FBEDEB',
+    flatFg: '#444444',    // --n-700
+    flatBg: '#F1F1EE',    // --n-100
+    anat: { outlineFill: '#F1F3F5', outlineStroke: '#C9CFD6', base: '#E2E6EA', baseStroke: '#D2D8DF', on: '#C8FF00', onStroke: '#7CB800', lw: 6 }
+  },
+  dark: {
+    key: 'dark', name: '深色',
+    bg: '#0A0A0A',
+    card: '#16181A',
+    border: '#2A2E33',
+    ink: '#FFFFFF',
+    sub: '#B4B8BD',
+    brand: '#C8FF00',     // 亮绿在深底上依旧只配深字
+    brandInk: '#0A0A0A',
+    accBg: '#23272B',
+    chipBg: '#23272B',
+    chipInk: '#FFFFFF',
+    upFg: '#C8FF00',
+    upBg: '#232A1C',
+    downFg: '#FF6B70',
+    downBg: '#2E1F20',
+    flatFg: '#B4B8BD',
+    flatBg: '#23272B',
+    anat: { outlineFill: '#202428', outlineStroke: '#3A4046', base: '#2A2F34', baseStroke: '#3E454C', on: '#C8FF00', onStroke: '#7CB800', lw: 6 }
+  }
+};
+const PALETTE = PALETTES.light;
+const STYLE_KEYS = ['light', 'dark'];
+function paletteOf(m) { return PALETTES[(m && m.style) || 'light'] || PALETTE; }
+
+// 字号（rpx 口径，与 app.wxss 的 --fs-* 同级）
+const FS = {
+  avatar: 40,
+  nickname: 32, verdict: 24,
+  streakVal: 34, streakUnit: 20, streakLab: 18,
+  kpiVal: 36, kpiUnit: 20, kpiLab: 18,
+  anatLab: 19,
+  secTit: 26, secMeta: 20,
+  actName: 28, capTxt: 20, actMeta: 22,
+  pbBadge: 20, pbText: 22,
+  foot: 24, footSub: 20
 };
 
-// 每个色对都被守卫验证过（浅色底 → 深色字；亮绿底 → #0A0A0A）：
-//   ink/bg 18.46 · ink/card 19.80 · ink/brand 16.74
-//   sub/bg  9.08 · sub/card 9.74 · sub/flatBg 8.61
-//   upFg/upBg 5.04 · downFg/downBg 4.68      —— 全部 ≥ AA 4.5:1
-const FS = {
-  brand: 32, date: 24,
-  verdict: 30,
-  metricLab: 22, metricVal: 46, metricUnit: 22,
-  section: 28, rowName: 28, rowChip: 22, rowBest: 26, rowMeta: 22,
-  pbBadge: 22, pbText: 26,
-  foot: 24, footSub: 22
+// 肌群标签用的短名：标签栏只有 62px，长名（股四头肌/小腿肌群）放不下。
+// 这些是健身圈通用的简称，不是自造词。
+const LABEL_CN = {
+  chest: '胸', deltoids: '三角肌', biceps: '二头', triceps: '三头',
+  abs: '腹', obliques: '侧腹', forearm: '前臂', trapezius: '斜方',
+  neck: '颈', gluteal: '臀', quadriceps: '股四', adductors: '内收',
+  hamstring: '腘绳', calves: '小腿', tibialis: '胫前',
+  'lower-back': '下背', 'upper-back': '上背'
 };
 
 /* ================= 文本度量（纯函数） ================= */
@@ -87,6 +156,13 @@ function fit(s, size, maxW) {
   return out.replace(/\s+$/, '') + '…';
 }
 
+// 缩小字号直到放得下（数字**不能截断**：把 12800 显示成 12… 比换行更糟）
+function fitSize(s, size, maxW, min) {
+  const w = estWidth(s, size);
+  if (w <= maxW || w <= 0) return size;
+  return Math.max(min || 12, Math.floor(size * maxW / w));
+}
+
 // 折行到最多 maxLines 行，放不下的用省略号收在末行
 function wrap(s, size, maxW, maxLines) {
   const chars = Array.from(String(s == null ? '' : s).trim());
@@ -104,175 +180,434 @@ function wrap(s, size, maxW, maxLines) {
   return kept;
 }
 
+/* ================= 动作库查表（拿 target 才能点亮肌群） ================= */
+
+// 训练日志里落库的动作**没有 target / secondary_muscles** 字段（见 store.saveTrainingLog），
+// 只有一个 id。要画肌群高亮必须按 id 回查内置动作库。
+// 懒建 + 缓存：动作库是 550KB 的压缩表，只有真的出卡时才付这一次解析成本。
+let _exIndex = null;
+function exIndex() {
+  if (_exIndex) return _exIndex;
+  _exIndex = {};
+  try {
+    const lib = require('./exercises.js').library || {};
+    Object.keys(lib).forEach(cat => (lib[cat] || []).forEach(e => { if (e && e.id) _exIndex[String(e.id)] = e; }));
+  } catch (e) { _exIndex = {}; }
+  return _exIndex;
+}
+
+// 日志动作 → 肌群 slug 集合：优先动作库 target，日志自带 target 次之，最后用分类兜底。
+// （collectSlugs 内部已按 category 兜底，这里只负责把 target 补上。）
+function targetOfAction(a) {
+  const ex = exIndex()[String(a && a.id)];
+  return (a && a.target) || (ex && ex.target) || '';
+}
+
+function slugsOfAction(a) {
+  const ex = exIndex()[String(a && a.id)];
+  const target = targetOfAction(a);
+  const category = (a && a.category) || (ex && ex.category) || '';
+  return bodymap.collectSlugs({ target: target, category: category });
+}
+
+/* ================= 解剖图（纯数据，带缓存） ================= */
+
+const _shapeCache = {};
+function anatomyShapes(side, slugs, pal) {
+  const key = side + '|' + pal.key + '|' + slugs.join(',');
+  if (!_shapeCache[key]) _shapeCache[key] = bodymap.bodyPaths(side, new Set(slugs), pal.anat);
+  return _shapeCache[key];
+}
+
 /* ================= 内容模型 ================= */
 
-// 从「已落库的一场训练」构建卡片内容。log = trainingLogs 里的一条，logsDesc = 按日期倒序的全部日志。
-// 全部字段都是标量/字符串 —— 直接可以渲染，也可以直接断言。
+// 从「已落库的一场（或同一天的多场）训练」构建卡片内容。
+//   opts.log / opts.logsDesc / opts.idx  —— 与旧版一致
+//   opts.opts = {
+//     style:  'light' | 'dark'     卡片样式（用户显式选，不跟随 App 主题）
+//     merge:  bool                 合并当天：把同一日期的所有场次合成一张卡
+//     hideContent: bool            隐藏训练内容：不出动作明细卡（只留身份/解剖/指标）
+//     nickname: string             昵称（头像圈取首字）
+//   }
+// 返回值全部是标量/字符串 —— 可以直接渲染，也可以直接断言。
 function buildModel(opts) {
   const o = opts || {};
   const log = o.log;
   if (!log) return null;
+  const opt = o.opts || {};
   const logsDesc = o.logsDesc || [];
-  const idx = Math.max(0, Number(o.idx) || 0);
-  const actions = log.actions || [];
+  const anchorIdx = Math.max(0, Number(o.idx) || 0);
 
-  let totalSets = 0, totalReps = 0;
-  actions.forEach(a => stats.setsOf(a).forEach(x => {
-    totalSets++;
-    totalReps += stats.num(x.reps);
-  }));
+  // 合并当天：同一 date 的所有场次（logsDesc 是倒序，取出来仍是倒序，最新一场在前）
+  const srcs = [];
+  if (opt.merge) {
+    logsDesc.forEach((l, i) => {
+      if (l && l.date === log.date) srcs.push({ log: l, idx: i });
+    });
+  }
+  if (!srcs.length) srcs.push({ log: log, idx: anchorIdx });
 
-  const vol = stats.loadOfLog(log);
-  const sec = stats.durationSecOfLog(log);
-  const rpe = stats.avgRpeOfActions(actions);
-  const pbs = stats.sessionRecords(log, logsDesc, idx);
-  const pbByKey = {};
-  pbs.forEach(p => { pbByKey[p.key] = p; });
-
-  // 训练量：纯自重场次（负重恒 0）时退化为总次数。
-  // 直接显示「训练量 0 kg」既难看也不传达任何信息，而且会让人以为数据丢了。
-  const volumeMetric = vol > 0
-    ? { lab: '训练量', val: stats.fmtVol(vol), unit: 'kg' }
-    : { lab: '总次数', val: String(totalReps), unit: '次' };
-
-  const rows = actions.map(a => {
-    const key = stats.actionKey(a);
-    const best = stats.bestSetOf(a);
-    const pb = pbByKey[key];
-    return {
-      key,
-      name: (a.nameZh || a.name) || '动作',
-      best: best.topW > 0
-        ? stats.fmtW(best.topW) + 'kg × ' + best.reps
-        : (best.reps ? '自重 × ' + best.reps : '—'),
-      setsMeta: stats.setsMetaOf(a),
-      chip: stats.sessionChip(a, logsDesc, idx),   // 与复盘页同一份 chip，不另算
-      isPb: !!pb,
-      pbTxt: pb ? pb.valTxt : ''
-    };
+  // —— 汇总指标（全部走 trainingStats 单源，卡片自己不重算口径）——
+  let totalSets = 0, totalReps = 0, vol = 0, sec = 0, trainSec = 0;
+  srcs.forEach(s => {
+    (s.log.actions || []).forEach(a => stats.setsOf(a).forEach(x => {
+      totalSets++;
+      totalReps += stats.num(x.reps);
+    }));
+    vol += stats.loadOfLog(s.log);
+    sec += stats.durationSecOfLog(s.log);
+    trainSec += stats.trainSecOfLog(s.log);
   });
 
-  // 动作行只画前 MAX_ROWS 行；超出数量用「共 N 个动作」交代 —— 不静默丢弃信息
+  // 训练量：纯自重场次（负重恒 0）时退化为总次数。
+  // 直接显示「总重量 0 kg」既难看也不传达任何信息，还会让人以为数据丢了。
+  const volumeMetric = vol > 0
+    ? { lab: '总重量(kg)', val: stats.fmtVol(vol), unit: '' }
+    : { lab: '总次数', val: String(totalReps), unit: '次' };
+
+  const kpis = [
+    // 消耗是**粗估**（EST_KCAL_PER_MIN × 纯训练秒），标签里必须写明「估算」，
+    // 否则「1 大卡」这种数字会被当成实测值 —— 文案只写实现得了的事。
+    { lab: '消耗(估算)', val: String(stats.estKcal(trainSec)), unit: '千卡' },
+    volumeMetric,
+    { lab: '总耗时', val: Math.floor(sec / 60) + ':' + dateRange.pad2(sec % 60), unit: '' }
+  ];
+
+  // 破纪录 + 逐动作行：每行携带它所属场次的下标，这样「合并当天」时
+  // 「比上次 ↑x%」仍是拿该动作自己那场去比，不会被合并后的总数带偏。
+  const pbSeen = {};
+  const rows = [];
+  srcs.forEach(s => {
+    const pbs = stats.sessionRecords(s.log, logsDesc, anchorIdxOf(s));
+    const pbByKey = {};
+    pbs.forEach(p => { pbByKey[p.key] = p; if (!pbSeen[p.key]) pbSeen[p.key] = p; });
+    (s.log.actions || []).forEach(a => {
+      const key = stats.actionKey(a);
+      const best = stats.bestSetOf(a);
+      const ss = stats.setsOf(a);
+      const caps = ss.map(x => {
+        const w = stats.num(x.weight), r = stats.num(x.reps);
+        return {
+          txt: w > 0 ? stats.fmtW(w) + 'kg × ' + r : (r ? '自重 × ' + r : '—'),
+          best: best.topW === w && best.reps === r && r > 0
+        };
+      });
+      if (!caps.length) caps.push({ txt: '—', best: false });
+      rows.push({
+        key: key + '@' + s.idx,
+        name: (a.nameZh || a.name) || '动作',
+        caps: caps.slice(0, MAX_CAPS),
+        more: Math.max(0, caps.length - MAX_CAPS),
+        counts: caps.length,
+        chip: stats.sessionChip(a, logsDesc, anchorIdxOf(s)),   // 与复盘页同一份 chip，不另算
+        isPb: !!pbByKey[key]
+      });
+    });
+  });
+  const pbs = Object.keys(pbSeen).map(k => pbSeen[k]);
+
+  // 连续训练天数：口径取「截至这场训练那天」而非「截至今天」。
+  // 取今天的话，分享一张两周前的卡会显示「0 天」，把已经形成的连续记录说成没有。
+  const streakDays = dateRange.streakFromDates(
+    new Set(logsDesc.filter(l => l && l.date).map(l => l.date)), log.date);
+
+  // 结论：合并多场时「只比共同动作」的场间结论已不适用 —— 换一句话说清楚
+  let verdict;
+  if (srcs.length > 1) {
+    verdict = '这天共 ' + srcs.length + ' 场训练 · ' + rows.length + ' 个动作';
+  } else {
+    verdict = String(stats.buildVerdict({ log: log, logsDesc: logsDesc, idx: anchorIdx, rpe: stats.avgRpeOfActions(log.actions || []) }).text || '');
+  }
+
+  const nick = String(opt.nickname == null ? '' : opt.nickname).trim();
+  const nickChars = Array.from(nick);
+
+  const visibleRows = opt.hideContent ? [] : rows;
+  const shown = visibleRows.slice(0, MAX_ROWS);
+
   return {
+    style: STYLE_KEYS.indexOf(opt.style) >= 0 ? opt.style : 'light',
     dateText: dateRange.fmtDateSlash(log.date),
-    verdict: String(stats.buildVerdict({ log, logsDesc, idx, rpe }).text || ''),
-    metrics: [
-      { lab: '时长', val: Math.floor(sec / 60) + ':' + dateRange.pad2(sec % 60), unit: '' },
-      volumeMetric,
-      { lab: '平均吃力', val: rpe.count ? rpe.avg + '/10' : '—', unit: '' }
-    ],
-    actionCount: actions.length,
-    rows: rows.slice(0, MAX_ROWS),
-    pbs,
-    empty: actions.length === 0
+    nickname: nick || '健身用户',
+    avatarText: nickChars.length ? nickChars[0] : 'F',
+    streakDays: streakDays,
+    verdict: verdict,
+    kpis: kpis,
+    actionCount: rows.length,
+    totalSets: totalSets,
+    rows: shown,
+    hiddenRows: Math.max(0, visibleRows.length - shown.length),
+    showActions: !opt.hideContent,
+    merged: srcs.length > 1,
+    pbs: pbs,
+    anatomy: slugSetOf(srcs),
+    empty: rows.length === 0
   };
+}
+
+// 逐动作场次下标：合并当天时 s.idx 是「在 logsDesc 里的真实下标」，直接用即可。
+function anchorIdxOf(s) { return s.idx; }
+
+// 前/后视图各自的肌群 slug 集合 + 「主练肌群」集合（标签据此分主次）。
+// 刻意返回**排序后的数组**而不是 Set：模型要能被 JSON.stringify（守卫据此断言模型内容），
+// 而 Set 在 JSON 里会变成 {}；`Object.keys(set)` 恒为 [] 这类错也一并被这个约定挡在门外。
+function slugSetOf(srcs) {
+  const all = new Set();
+  const prim = new Set();
+  srcs.forEach(s => (s.log.actions || []).forEach(a => {
+    slugsOfAction(a).forEach(slug => all.add(slug));
+    const p = bodymap.primarySlugOf({ target: targetOfAction(a) });
+    if (p) prim.add(p);
+  }));
+  const front = [], back = [], primary = [];
+  Array.from(all).sort().forEach(slug => {
+    const inF = bodymap.FRONT_SLUGS.has(slug), inB = bodymap.BACK_SLUGS.has(slug);
+    if (inF) front.push(slug);
+    if (inB) back.push(slug);
+    if (!inF && !inB) front.push(slug);   // 兜底：图集里没有的 slug 也画在前视图，不静默丢掉
+  });
+  Array.from(prim).sort().forEach(slug => primary.push(slug));
+  return { front: front, back: back, primary: primary };
 }
 
 /* ================= 版式（纯函数 → ops 列表） ================= */
 
-function chipStyle(cls) {
-  if (cls === 'up') return { fg: P.upFg, bg: P.upBg };
-  if (cls === 'down') return { fg: P.downFg, bg: P.downBg };
-  return { fg: P.flatFg, bg: P.flatBg };
+function chipStyle(cls, pal) {
+  if (cls === 'up') return { fg: pal.upFg, bg: pal.upBg };
+  if (cls === 'down') return { fg: pal.downFg, bg: pal.downBg };
+  return { fg: pal.flatFg, bg: pal.flatBg };
+}
+
+// 解剖图区：五栏横向铺满，返回各栏的 x 坐标（与 draw() 共用同一份算术）
+function anatCols() {
+  const frontLabX = INNER_X + LAB_W;                                   // 118：前视图标签的右对齐基线
+  const frontFigX = INNER_X + LAB_W + AGAP;                            // 130
+  const backFigX = frontFigX + FIG_W + AGAP;                           // 317
+  const backLabX = backFigX + FIG_W + AGAP;                            // 504：后视图标签的左对齐基线
+  const kpiX = INNER_X + INNER_W - KPI_W;                              // 578
+  return { frontLabX: frontLabX, frontFigX: frontFigX, backFigX: backFigX, backLabX: backLabX, kpiX: kpiX };
+}
+
+// 单侧肌群标签：按锚点 y 排序 → 在标签栏里**等距分槽**（槽位由数量决定，
+// 因此任意组合都不会重叠），再从槽位拉一条引线指向该肌群的包围盒中心。
+// 主练肌群用正文色加重（一眼看出这场练的重点），其余用次级色。超出的不静默丢弃 —— 折成一句「等 N 处」。
+// `side` 只用于给引线打标：守卫据此断言「后视引线落在后视图那一栏里」——
+// 也就是「xOffset 必须补回来」这条规则是可被机器检查的，而不是靠读代码。
+function pushLabels(ops, pal, shapes, primSet, figX, x, align, top, height, scale, labelBg, side) {
+  const bounds = bodymap.slugBounds(shapes);
+  const items = [];
+  Object.keys(bounds).forEach(slug => {
+    if (!bounds[slug].active) return;
+    items.push({ slug: slug, cy: bounds[slug].cy, cx: bounds[slug].cx });
+  });
+  items.sort((a, b) => a.cy - b.cy);
+  const shown = items.slice(0, MAX_LABELS);
+  const extra = items.length - shown.length;
+  const n = shown.length + (extra > 0 ? 1 : 0);
+  if (!n) return;
+
+  const slotH = height / n;
+  const edge = x;                                    // 文字贴边的那条线（右对齐=右端，左对齐=左端）
+  const lineX = align === 'right' ? edge + LAB_TO_FIG : edge - LAB_TO_FIG;
+
+  shown.forEach((it, i) => {
+    const cy = top + slotH * (i + 0.5);
+    const isPrim = !!primSet[it.slug];
+    ops.push({
+      t: 'text', s: fit(LABEL_CN[it.slug] || it.slug, FS.anatLab, LAB_W), x: edge, y: cy,
+      size: FS.anatLab, weight: isPrim ? 800 : 600, color: isPrim ? pal.ink : pal.sub,
+      align: align, baseline: 'middle', bg: labelBg
+    });
+    // 引线：从标签内侧拉到该肌群包围盒中心。
+    // back 视图的路径 x 整体 +724（shapes.xOffset = -724），必须补回来，
+    // 否则后视图的引线会整体飞出画布右侧 —— 这正是「同源坐标」要挡住的那类错。
+    const bx = figX + (it.cx + shapes.xOffset) * scale;
+    const by = top + it.cy * scale;
+    ops.push({ t: 'line', kind: 'leader', side: side, x1: lineX, y1: cy, x2: bx, y2: by, color: pal.border, lw: 1 });
+  });
+
+  if (extra > 0) {
+    const cy = top + slotH * (shown.length + 0.5);
+    ops.push({
+      t: 'text', s: '等 ' + extra + ' 处', x: edge, y: cy,
+      size: FS.anatLab, weight: 600, color: pal.sub, align: align, baseline: 'middle', bg: labelBg
+    });
+  }
 }
 
 // 把模型摊成绘制指令。每个 text op 都带 bg（它压在什么底色上）——
-// 守卫据此断言「亮绿底上必须是深字」，而不是靠肉眼看代码。
+// 守卫据此断言「亮绿底上必须是深字」「正文不许浮在不确定的底色上」，而不是靠肉眼看代码。
 function layout(m) {
+  // 空模型（没选到任何场次）返回空版式而不是抛错：调用方已经会拦，但脚本/守卫里
+  // 一次空手滑就让整条流水线崩掉，不如在这里收口成「0 高的空卡」。
+  if (!m) return { w: CARD_W, h: 0, ops: [], palette: PALETTE.key };
   const ops = [];
+  const pal = paletteOf(m);
   const W = CARD_W;
-  let y = PAD;
+  let y = PAGE_PAD;
 
-  // —— 页头：品牌点 + 品牌名 | 日期 ——
-  ops.push({ t: 'circle', cx: PAD + 14, cy: y + 18, r: 14, fill: P.brand });
-  ops.push({ t: 'text', s: BRAND, x: PAD + 42, y: y + 18, size: FS.brand, weight: 800, color: P.ink, align: 'left', baseline: 'middle', bg: P.bg });
-  ops.push({ t: 'text', s: m.dateText, x: W - PAD, y: y + 18, size: FS.date, weight: 600, color: P.sub, align: 'right', baseline: 'middle', bg: P.bg });
-  y += 36 + 24;
+  /* ---------- 卡片 A：身份行 + 结论条 + 解剖图 + 右列指标 ---------- */
+  // 结论是这张卡片的「一句话标题」，被截断就等于没说 —— 允许折到第 2 行，行数决定条高。
+  const vLines = m.verdict ? wrap(m.verdict, FS.verdict, INNER_W - 24 - 16, 2) : [];
+  const verdictH = vLines.length ? (24 + vLines.length * 32) : 0;
+  const aH = CARD_PAD + ID_H + (verdictH ? 20 + verdictH : 0) + 24 + FIG_H + CARD_PAD;
+  ops.push({ t: 'rect', x: CARD_X, y: y, w: CARD_W_IN, h: aH, r: CARD_R, fill: pal.card, stroke: pal.border, lw: 1 });
 
-  // —— 一句话结论（亮绿块：块内文字必须是 #0A0A0A）——
-  const vLines = wrap(m.verdict, FS.verdict, CONTENT_W - 56, 2);
-  if (vLines.length) {
-    const vLH = 46;
-    const vH = vLines.length * vLH + 44;
-    ops.push({ t: 'rect', x: PAD, y, w: CONTENT_W, h: vH, r: 24, fill: P.brand });
-    vLines.forEach((ln, i) => ops.push({
-      t: 'text', s: ln, x: PAD + 28, y: y + 22 + vLH * i + vLH / 2,
-      size: FS.verdict, weight: 700, color: P.brandInk, align: 'left', baseline: 'middle', bg: P.brand
-    }));
-    y += vH + 28;
-  }
+  // 身份行
+  const idY = y + CARD_PAD;
+  const avCx = INNER_X + AV_R;
+  const avCy = idY + AV_R;
+  ops.push({ t: 'circle', cx: avCx, cy: avCy, r: AV_R, fill: pal.brand });
+  // 文字头像（昵称首字）是**刻意的**：微信头像要异步下载，一旦这里依赖网络图片，
+  // 「版式是纯函数」这个前提就没了，对比度与越界也就无法在 node 里穷尽断言。
+  ops.push({ t: 'text', s: m.avatarText, x: avCx, y: avCy, size: FS.avatar, weight: 800, color: pal.brandInk, align: 'center', baseline: 'middle', bg: pal.brand });
 
-  // —— 3 个指标 ——
-  const colGap = 16;
-  const colW = Math.floor((CONTENT_W - colGap * 2) / 3);
-  const mH = 120;
-  m.metrics.forEach((mt, i) => {
-    const cx = PAD + i * (colW + colGap);
-    ops.push({ t: 'rect', x: cx, y, w: colW, h: mH, r: 20, fill: P.card, stroke: P.border, lw: 1 });
-    ops.push({ t: 'text', s: mt.lab, x: cx + colW / 2, y: y + 32, size: FS.metricLab, weight: 600, color: P.sub, align: 'center', baseline: 'middle', bg: P.card });
-    const valW = estWidth(mt.val, FS.metricVal);
-    const unitW = mt.unit ? estWidth(mt.unit, FS.metricUnit) + 6 : 0;
-    const x0 = cx + colW / 2 - (valW + unitW) / 2;
-    ops.push({ t: 'text', s: mt.val, x: x0, y: y + 78, size: FS.metricVal, weight: 800, color: P.ink, align: 'left', baseline: 'middle', bg: P.card });
-    if (mt.unit) ops.push({ t: 'text', s: mt.unit, x: x0 + valW + 6, y: y + 84, size: FS.metricUnit, weight: 700, color: P.sub, align: 'left', baseline: 'middle', bg: P.card });
+  const cols = anatCols();
+  ops.push({
+    t: 'text', s: fit(m.nickname, FS.nickname, cols.kpiX - 24 - (avCx + AV_R + 20)),
+    x: avCx + AV_R + 20, y: avCy, size: FS.nickname, weight: 800, color: pal.ink,
+    align: 'left', baseline: 'middle', bg: pal.card
   });
-  y += mH + 36;
 
-  // —— 逐动作表现 ——
-  ops.push({ t: 'text', s: '逐动作表现', x: PAD, y: y + 14, size: FS.section, weight: 800, color: P.ink, align: 'left', baseline: 'middle', bg: P.bg });
-  // 动作超过上限时明说「只列前 N 个」—— 卡片是摘要，但不能让人以为这场就只有 4 个动作
-  const countTxt = m.actionCount > MAX_ROWS
-    ? '共 ' + m.actionCount + ' 个动作 · 列前 ' + MAX_ROWS + ' 个'
-    : '共 ' + m.actionCount + ' 个动作';
-  ops.push({ t: 'text', s: countTxt, x: W - PAD, y: y + 14, size: FS.rowMeta, weight: 600, color: P.sub, align: 'right', baseline: 'middle', bg: P.bg });
-  y += 28 + 18;
+  // 连续天数（与右列指标左对齐，形成一条竖线）
+  const stVal = String(m.streakDays);
+  const stValW = estWidth(stVal, FS.streakVal);
+  ops.push({ t: 'text', s: stVal, x: cols.kpiX, y: avCy - 4, size: FS.streakVal, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+  ops.push({ t: 'text', s: '天', x: cols.kpiX + stValW + 4, y: avCy + 2, size: FS.streakUnit, weight: 700, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card });
+  ops.push({ t: 'text', s: '连续训练', x: cols.kpiX, y: avCy + 26, size: FS.streakLab, weight: 600, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card });
 
-  if (m.empty) {
-    // 没记录动作的场次（例如只记了时长）也要能出卡，给一句实话而不是一张空壳
-    const h = 88;
-    ops.push({ t: 'rect', x: PAD, y, w: CONTENT_W, h, r: 24, fill: P.card, stroke: P.border, lw: 1 });
-    ops.push({ t: 'text', s: '这场训练没有记录动作明细', x: PAD + 28, y: y + h / 2, size: FS.rowBest, weight: 600, color: P.sub, align: 'left', baseline: 'middle', bg: P.card });
-    y += h + 24;
+  // 一句话结论条（浅绿底 → 深字；左侧亮绿竖条是装饰，不承载文字）
+  if (vLines.length) {
+    const vy = idY + ID_H + 20;
+    ops.push({ t: 'rect', x: INNER_X, y: vy, w: INNER_W, h: verdictH, r: 16, fill: pal.accBg });
+    ops.push({ t: 'rect', x: INNER_X, y: vy + (verdictH - 32) / 2, w: 6, h: 32, r: 3, fill: pal.brand });
+    vLines.forEach((ln, i) => ops.push({
+      t: 'text', s: ln, x: INNER_X + 24, y: vy + 28 + i * 32, size: FS.verdict, weight: 700,
+      color: pal.ink, align: 'left', baseline: 'middle', bg: pal.accBg
+    }));
+    y = vy + verdictH + 24;
   } else {
-    const rowsH = m.rows.length * ROW_H;
-    ops.push({ t: 'rect', x: PAD, y, w: CONTENT_W, h: rowsH, r: 24, fill: P.card, stroke: P.border, lw: 1 });
-    m.rows.forEach((r, i) => {
-      const ry = y + i * ROW_H;
-      const chipW = estWidth(r.chip.text, FS.rowChip) + 32;
-      const cs = chipStyle(r.chip.cls);
-      ops.push({ t: 'text', s: fit(r.name, FS.rowName, CONTENT_W - 56 - chipW - 16), x: PAD + 28, y: ry + 32, size: FS.rowName, weight: 700, color: P.ink, align: 'left', baseline: 'middle', bg: P.card });
-      ops.push({ t: 'rect', x: W - PAD - 28 - chipW, y: ry + 12, w: chipW, h: 40, r: 20, fill: cs.bg });
-      ops.push({ t: 'text', s: r.chip.text, x: W - PAD - 28 - chipW / 2, y: ry + 32, size: FS.rowChip, weight: 700, color: cs.fg, align: 'center', baseline: 'middle', bg: cs.bg });
-      ops.push({ t: 'text', s: fit('最好一组 ' + r.best, FS.rowBest, CONTENT_W - 56 - 168), x: PAD + 28, y: ry + 64, size: FS.rowBest, weight: 700, color: P.ink, align: 'left', baseline: 'middle', bg: P.card });
-      ops.push({ t: 'text', s: r.setsMeta, x: W - PAD - 28, y: ry + 64, size: FS.rowMeta, weight: 600, color: P.sub, align: 'right', baseline: 'middle', bg: P.card });
-      if (i < m.rows.length - 1) ops.push({ t: 'line', x1: PAD + 28, y1: ry + ROW_H, x2: W - PAD - 28, y2: ry + ROW_H, color: P.border, lw: 1 });
+    y = idY + ID_H + 24;
+  }
+
+  // 解剖图：前视图（标签在左）+ 后视图（标签在右）
+  const anatY = y;
+  const scale = FIG_W / bodymap.VBW;
+  const front = anatomyShapes('front', m.anatomy.front, pal);
+  const back = anatomyShapes('back', m.anatomy.back, pal);
+  const primSet = {};
+  m.anatomy.primary.forEach(s => { primSet[s] = 1; });
+  ops.push({ t: 'body', side: 'front', x: cols.frontFigX, y: anatY, w: FIG_W, h: FIG_H, scale: scale, active: front.activeCount, slugs: m.anatomy.front });
+  ops.push({ t: 'body', side: 'back', x: cols.backFigX, y: anatY, w: FIG_W, h: FIG_H, scale: scale, active: back.activeCount, slugs: m.anatomy.back });
+  pushLabels(ops, pal, front, primSet, cols.frontFigX, cols.frontLabX, 'right', anatY, FIG_H, scale, pal.card, 'front');
+  pushLabels(ops, pal, back, primSet, cols.backFigX, cols.backLabX, 'left', anatY, FIG_H, scale, pal.card, 'back');
+
+  // 右列三指标（值在上、标签在下，纵向等分解剖图高度 —— 与左上的连续天数同列对齐）
+  const slotH = FIG_H / m.kpis.length;
+  m.kpis.forEach((mt, i) => {
+    const cy = anatY + slotH * (i + 0.5);
+    const unitW = mt.unit ? estWidth(mt.unit, FS.kpiUnit) + 6 : 0;
+    const vSize = fitSize(mt.val, FS.kpiVal, KPI_W - unitW, 22);
+    ops.push({ t: 'text', s: mt.val, x: cols.kpiX, y: cy, size: vSize, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+    if (mt.unit) ops.push({ t: 'text', s: mt.unit, x: cols.kpiX + estWidth(mt.val, vSize) + 6, y: cy + 6, size: FS.kpiUnit, weight: 700, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card });
+    ops.push({ t: 'text', s: fit(mt.lab, FS.kpiLab, KPI_W), x: cols.kpiX, y: cy + 26, size: FS.kpiLab, weight: 600, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card });
+  });
+
+  y += FIG_H + CARD_PAD;
+
+  /* ---------- 卡片 B：逐动作表现 ---------- */
+  if (m.showActions) {
+    y += GAP_CARD;
+    const bodyH = m.empty ? 88 : (m.rows.length * ROW_H + (m.hiddenRows ? 44 : 0));
+    const bH = CARD_PAD + SEC_H + bodyH + CARD_PAD;
+    ops.push({ t: 'rect', x: CARD_X, y: y, w: CARD_W_IN, h: bH, r: CARD_R, fill: pal.card, stroke: pal.border, lw: 1 });
+
+    ops.push({ t: 'text', s: '本场动作', x: INNER_X, y: y + CARD_PAD + SEC_H / 2, size: FS.secTit, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+    ops.push({
+      t: 'text', s: fit(m.actionCount + ' 个动作 · ' + m.totalSets + ' 组', FS.secMeta, INNER_W * 0.5),
+      x: INNER_X + INNER_W, y: y + CARD_PAD + SEC_H / 2, size: FS.secMeta, weight: 600, color: pal.sub,
+      align: 'right', baseline: 'middle', bg: pal.card
     });
-    y += rowsH + 24;
+
+    const bodyY = y + CARD_PAD + SEC_H;
+    if (m.empty) {
+      // 没记录动作的场次（例如只记了时长）也要能出卡，给一句实话而不是一张空壳
+      ops.push({ t: 'rect', x: INNER_X, y: bodyY + 4, w: INNER_W, h: 80, r: 20, fill: pal.chipBg });
+      ops.push({ t: 'text', s: '这场训练没有记录动作明细', x: INNER_X + 28, y: bodyY + 44, size: FS.actName, weight: 600, color: pal.chipInk, align: 'left', baseline: 'middle', bg: pal.chipBg });
+    } else {
+      m.rows.forEach((r, i) => {
+        const ry = bodyY + i * ROW_H;
+        const cs = chipStyle(r.chip.cls, pal);
+        const chipW = estWidth(r.chip.text, FS.actMeta) + 28;
+        ops.push({
+          t: 'text', s: fit(r.name, FS.actName, INNER_W - chipW - 16),
+          x: INNER_X, y: ry + 24, size: FS.actName, weight: 700, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card
+        });
+        ops.push({ t: 'rect', x: INNER_X + INNER_W - chipW, y: ry + 4, w: chipW, h: 40, r: 20, fill: cs.bg });
+        ops.push({
+          t: 'text', s: r.chip.text, x: INNER_X + INNER_W - chipW / 2, y: ry + 24,
+          size: FS.actMeta, weight: 700, color: cs.fg, align: 'center', baseline: 'middle', bg: cs.bg
+        });
+
+        // 逐组胶囊：最好的一组用亮绿实底（→ 深字），其余用中性胶囊底
+        let cx = INNER_X;
+        r.caps.forEach(c => {
+          const cw = estWidth(c.txt, FS.capTxt) + 32;
+          const cbg = c.best ? pal.brand : pal.chipBg;
+          const cfg = c.best ? pal.brandInk : pal.chipInk;
+          ops.push({ t: 'rect', x: cx, y: ry + 56, w: cw, h: CAP_H, r: CAP_H / 2, fill: cbg });
+          ops.push({ t: 'text', s: c.txt, x: cx + cw / 2, y: ry + 56 + CAP_H / 2, size: FS.capTxt, weight: 700, color: cfg, align: 'center', baseline: 'middle', bg: cbg });
+          cx += cw + CAP_GAP;
+        });
+        if (r.more > 0) {
+          const t = '+' + r.more + ' 组';
+          const cw = estWidth(t, FS.capTxt) + 32;
+          ops.push({ t: 'rect', x: cx, y: ry + 56, w: cw, h: CAP_H, r: CAP_H / 2, fill: pal.chipBg, stroke: pal.border, lw: 1 });
+          ops.push({ t: 'text', s: t, x: cx + cw / 2, y: ry + 56 + CAP_H / 2, size: FS.capTxt, weight: 700, color: pal.chipInk, align: 'center', baseline: 'middle', bg: pal.chipBg });
+        }
+
+        if (i < m.rows.length - 1) {
+          ops.push({ t: 'line', kind: 'rule', x1: INNER_X, y1: ry + ROW_H, x2: INNER_X + INNER_W, y2: ry + ROW_H, color: pal.border, lw: 1 });
+        }
+      });
+      if (m.hiddenRows) {
+        ops.push({
+          t: 'text', s: '另有 ' + m.hiddenRows + ' 个动作未列出', x: INNER_X, y: bodyY + m.rows.length * ROW_H + 22,
+          size: FS.secMeta, weight: 600, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card
+        });
+      }
+    }
+    y += bH;
   }
 
-  // —— 个人纪录条（只在本场真的破了纪录时出现，不做「无数据也占位」）——
+  /* ---------- 个人纪录条（只在本场真的破了纪录时出现，不做「无数据也占位」）---------- */
   if (m.pbs.length) {
-    const h = 68;
-    const badgeX = PAD + 28;
-    const textX = badgeX + 60 + 16;
+    y += GAP_CARD;
+    const badgeW = 44;
+    const txtX = INNER_X + 24 + badgeW + 14;
     const detail = m.pbs.map(x => x.name + ' ' + x.valTxt).join(' · ');
-    ops.push({ t: 'rect', x: PAD, y, w: CONTENT_W, h, r: 20, fill: P.card, stroke: P.border, lw: 1 });
-    ops.push({ t: 'rect', x: PAD, y, w: 8, h, r: 4, fill: P.brand });
-    ops.push({ t: 'rect', x: badgeX, y: y + 16, w: 60, h: 36, r: 18, fill: P.brand });
-    ops.push({ t: 'text', s: '新', x: badgeX + 30, y: y + 34, size: FS.pbBadge, weight: 800, color: P.brandInk, align: 'center', baseline: 'middle', bg: P.brand });
-    ops.push({ t: 'text', s: fit('本场刷新 ' + m.pbs.length + ' 项个人纪录 · ' + detail, FS.pbText, W - PAD - 28 - textX), x: textX, y: y + 34, size: FS.pbText, weight: 700, color: P.ink, align: 'left', baseline: 'middle', bg: P.card });
-    y += h + 26;
+    // 圆角取 min(CARD_R, PB_H/2)：这条只有 56 高，写满 CARD_R=32 会被 roundRect 静默夹到 28。
+    // 声明值要与渲染结果一致 —— 否则「圆角超过半高」这类结构检查就永远说不清了。
+    ops.push({ t: 'rect', x: CARD_X, y: y, w: CARD_W_IN, h: PB_H, r: Math.min(CARD_R, PB_H / 2), fill: pal.brand });
+    ops.push({ t: 'rect', x: INNER_X, y: y + 12, w: badgeW, h: 32, r: 16, fill: pal.brandInk });
+    ops.push({ t: 'text', s: '新', x: INNER_X + badgeW / 2, y: y + 28, size: FS.pbBadge, weight: 800, color: pal.brand, align: 'center', baseline: 'middle', bg: pal.brandInk });
+    ops.push({
+      t: 'text', s: fit('本场刷新 ' + m.pbs.length + ' 项个人纪录 · ' + detail, FS.pbText, INNER_W - (txtX - INNER_X) - 24),
+      x: txtX, y: y + 28, size: FS.pbText, weight: 700, color: pal.brandInk, align: 'left', baseline: 'middle', bg: pal.brand
+    });
+    y += PB_H;
   }
 
-  // —— 页脚 ——
-  ops.push({ t: 'text', s: BRAND, x: PAD, y: y + 12, size: FS.foot, weight: 800, color: P.ink, align: 'left', baseline: 'middle', bg: P.bg });
-  ops.push({ t: 'text', s: '记录每一次进步', x: W - PAD, y: y + 12, size: FS.footSub, weight: 600, color: P.sub, align: 'right', baseline: 'middle', bg: P.bg });
-  y += 32 + PAD;
+  /* ---------- 页脚 ---------- */
+  y += 20;
+  ops.push({ t: 'text', s: BRAND, x: CARD_X, y: y + 12, size: FS.foot, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.bg });
+  ops.push({ t: 'text', s: SLOGAN, x: CARD_X + CARD_W_IN, y: y + 12, size: FS.footSub, weight: 600, color: pal.sub, align: 'right', baseline: 'middle', bg: pal.bg });
+  y += 32 + PAGE_PAD;
 
-  return { w: W, h: y, ops };
+  return { w: W, h: y, ops, palette: pal.key };
 }
 
-// 卡片总高（内容自适应：1 行结论 vs 2 行结论、有没有纪录条、几个动作行，高度都不一样）
+// 卡片总高（内容自适应：有没有结论条/纪录条、动作行数、是否隐藏训练内容，高度都不一样）
 function measure(m) { return layout(m).h; }
 
 /* ================= 绘制 ================= */
@@ -287,22 +622,40 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.lineTo(x + rr, y + h);
   ctx.arcTo(x, y + h, x, y + h - rr, rr);
   ctx.lineTo(x, y + rr);
+  ctx.arcTo(x, y + h, x, y + h - rr, rr);
+  ctx.lineTo(x, y + rr);
   ctx.arcTo(x, y, x + rr, y, rr);
   ctx.closePath();
 }
 
 // 把 ops 画到 canvas 2d 上下文。ctx 形状与 wx canvas 2d 一致：
 // 只需 fillRect / clearRect / beginPath / moveTo / lineTo / arcTo / arc / closePath
-// / fill / stroke / fillText 与 fillStyle / strokeStyle / lineWidth / font / textAlign / textBaseline。
+// / fill / stroke / fillText / save / restore / translate / scale
+// 与 fillStyle / strokeStyle / lineWidth / font / textAlign / textBaseline。
 // 因此守卫可以用一个「只记录调用的假 ctx」把它跑完，验证真的产出了图元。
 function draw(ctx, m) {
   const L = layout(m);
+  const pal = paletteOf(m);
   ctx.clearRect(0, 0, L.w, L.h);
-  ctx.fillStyle = P.bg;
+  ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, L.w, L.h);
 
+  // 解剖图与其它图元分开画：bodyPaths 的路径坐标在「图集 viewBox」里，
+  // 必须先 save/translate/scale 定位，画完 restore 回来，否则后面所有图元都会被带偏。
+  // 注意**不能**用 bodymap.drawBody：它会先 clearRect 把已经铺好的卡片擦掉。
+  const shapeCache = {};
   L.ops.forEach(op => {
-    if (op.t === 'rect') {
+    if (op.t === 'body') {
+      const skey = op.side + '|' + op.slugs.join(',');
+      if (!shapeCache[skey]) shapeCache[skey] = anatomyShapes(op.side, op.slugs, pal);
+      const shapes = shapeCache[skey];
+      ctx.save();
+      ctx.translate(op.x, op.y);
+      ctx.scale(op.scale, op.scale);
+      if (shapes.xOffset) ctx.translate(shapes.xOffset, 0);
+      bodymap.drawShapes(ctx, shapes);
+      ctx.restore();
+    } else if (op.t === 'rect') {
       ctx.beginPath();
       roundRect(ctx, op.x, op.y, op.w, op.h, op.r);
       if (op.fill) { ctx.fillStyle = op.fill; ctx.fill(); }
@@ -331,7 +684,10 @@ function draw(ctx, m) {
 }
 
 module.exports = {
-  CARD_W, PAD, MAX_ROWS, ROW_H, BRAND, PALETTE: P, FONT_SIZE: FS,
-  estWidth, fit, wrap,
+  CARD_W, PAGE_PAD, CARD_PAD, CARD_W_IN, INNER_X, INNER_W, CARD_R,
+  MAX_ROWS, ROW_H, MAX_CAPS, MAX_LABELS, FIG_W, FIG_H, LAB_W, KPI_W, AGAP,
+  BRAND, SLOGAN,
+  PALETTE, PALETTES, STYLE_KEYS, FONT_SIZE: FS, LABEL_CN,
+  estWidth, fit, fitSize, wrap,
   buildModel, layout, measure, draw
 };
