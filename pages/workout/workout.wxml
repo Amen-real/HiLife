@@ -210,7 +210,12 @@
            无报错、点了没反应，work 阶段弹窗只有这一个按钮，用户无法结束本组。
            正确：拆成两个节点，wx:if 控事件名，三元只控文案。守卫 verify-event-binding.cjs [A] 拦截。 -->
       <view wx:if="{{trainPhase === 'ready'}}" class="pop-btn primary" hover-class="press" bindtap="skipTrain">跳过</view>
-      <view wx:if="{{trainPhase !== 'ready'}}" class="pop-btn primary" hover-class="press" bindtap="cancelTrain">结束训练</view>
+      <!-- 文案「完成本组」而非「结束训练」：本弹窗是**组级**计时（环里写着「总共 60 秒」），
+           而设计稿 05-workout.html:383 的「结束训练」是**页面顶栏的整场出口**（隔壁就是「训练时长」）。
+           本仓顶栏已改叫「完成训练」，若弹窗再用「结束训练」就是同名反义 ——
+           用户会以为按下去会结束整场训练。设计系统 ui-hilife-designsystem.html:1019 给组级动作的词
+           正是「完成本组」。 -->
+      <view wx:if="{{trainPhase !== 'ready'}}" class="pop-btn primary" hover-class="press" bindtap="cancelTrain">完成本组</view>
     </view>
   </view>
 </view>

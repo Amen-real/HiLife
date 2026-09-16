@@ -6,7 +6,9 @@
  *       `bindtap="{{cond ? 'a' : 'b'}}"` —— 微信**不会**把事件名当数据绑定编译，
  *       整个字符串被当成字面量事件名，永远匹配不到任何方法 →
  *       **静默失效**（无报错、无警告、点了没反应）。这是本项目踩过的真实事故，
- *       见 pages/workout/workout.wxml:209「结束训练」按钮。
+ *       见 pages/workout/workout.wxml 计时弹窗的那组按钮（取消 / 跳过 / 完成本组）。
+ *       事故发生时那个动态绑定的按钮文案是「结束训练」，2026-09-16 已按设计稿改名 ——
+ *       组级动作用「完成本组」，顶栏的整场出口才叫「完成训练」。
  *       正确写法：拆成两个静态绑定的节点，用 wx:if / 三元只控制**文案**，不控制**事件名**。
  *
  *   [B] wxml 里绑定的每个事件名，必须在该页/组件的 js 里真实存在同名方法
@@ -99,8 +101,34 @@ function methodNames(src, isWxs) {
 /** 去掉 wxml 注释，避免把注释里的示例当真实绑定 */
 const stripWxmlComments = s => s.replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' '));
 
+// ---------- [A0] 探测能力自检 ----------
+// 与 [A] 用同一个 EVENT_ATTR 正则跑内联样本。样本刻意覆盖三类形状：
+//   ① 事故原形（bind 家族 + 三元决定事件名）→ 必须命中
+//   ② 另一个 bind 家族成员（catchtap）→ 必须命中，证明前缀枚举没退化成只认 bindtap
+//   ③ 正确写法（事件名静态、三元只控文案）→ 必须放行，证明不会把合法代码误杀
+console.log('[A0] 探测能力自检（校准样本：正则被改坏时这里会先红）');
+{
+  const SAMPLES = [
+    { src: `<view bindtap="{{trainPhase === 'ready' ? 'skipTrain' : 'cancelTrain'}}">x</view>`, want: 1, why: '事故原形：三元决定事件名' },
+    { src: `<view catchtap="{{a ? 'x' : 'y'}}">x</view>`, want: 1, why: 'catch 家族同样不编译' },
+    { src: `<view bindtap="skipTrain">{{phase === 'ready' ? '跳过' : '完成本组'}}</view>`, want: 0, why: '正确写法：静态事件名 + 三元只控文案' }
+  ];
+  const wrong = [];
+  for (const s of SAMPLES) {
+    EVENT_ATTR.lastIndex = 0;
+    const hits = [...s.src.matchAll(EVENT_ATTR)].filter(m => /\{\{/.test(m[3]));
+    if (hits.length !== s.want) wrong.push(`${s.why}（期望命中 ${s.want}，实得 ${hits.length}）`);
+  }
+  if (wrong.length) {
+    for (const w of wrong) bad('校准样本失准：' + w);
+    console.log('      [A] 的结论不可信 —— 先修 EVENT_ATTR 正则，再看 [A] 的输出');
+  } else {
+    ok(`${SAMPLES.length} 个校准样本全部符合预期（2 命中 / 1 放行）`);
+  }
+}
+
 // ---------- [A] 事件名禁 Mustache ----------
-console.log('[A] 事件名属性禁止 Mustache 表达式（绑定了就是静默失效）');
+console.log('\n[A] 事件名属性禁止 Mustache 表达式（绑定了就是静默失效）');
 const wxmls = [];
 collect(process.cwd(), '.wxml', wxmls);
 wxmls.sort();

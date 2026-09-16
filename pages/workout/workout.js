@@ -478,7 +478,13 @@ Page({
 
   // 点 ✓ 启动该组训练计时：5秒准备 → 60秒训练；结束自动标记该组完成并弹休息
   openTrain(ai, si) {
-    if (this.data.showTrain) return;
+    // 已有一只表在跑（弹层打开中，或已最小化成悬浮球 —— 悬浮球态下列表是**可点的**）：
+    // 不叠第二只表，但必须给反馈。早期这里静默 return，用户点别的组 ✓ 时界面毫无变化，
+    // 与 P0-1（Mustache 事件名）是同一类「静默无反应」体验事故。
+    if (this.data.showTrain) {
+      wx.showToast({ title: '已有计时进行中', icon: 'none' });
+      return;
+    }
     const a = this.data.actions[ai];
     const set = a && a.sets && a.sets[si];
     if (set && set.done) return;
@@ -525,7 +531,7 @@ Page({
     this._trainTimer = setInterval(() => this.trainTick(), 1000);
   },
 
-  // 训练计时弹窗：手动「结束训练」→ 记录实际时长并标记该组完成；「取消」→ 直接关闭
+  // 训练计时弹窗：手动「完成本组」→ 记录实际时长并标记该组完成；「取消」→ 直接关闭
   cancelTrain() {
     this.clearTrainTimer();
     if (this.data.trainPhase === 'work') {
