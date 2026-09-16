@@ -67,12 +67,9 @@ function fmtDur(totalSec) {
   const h = s / 3600;
   return (h >= 10 ? Math.round(h) : Math.round(h * 10) / 10) + 'h';
 }
-// 累计容量：12800 → '12.8k'（与复盘页 fmtVol 同款）
-function fmtVol(v) {
-  const n = Number(v) || 0;
-  if (n >= 10000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-  return String(Math.round(n));
-}
+// 累计容量的格式化取 trainingStats.fmtVol（单源）。
+// 这里原本有一份逐字相同的副本，注释还写着「与复盘页 fmtVol 同款」——
+// 一份口径抄两遍，改一处就漂一处，现已收回。
 // 称号：按训练天数分档，给正反馈而非考核
 function rankOf(days) {
   const d = Number(days) || 0;
@@ -311,7 +308,7 @@ Page({
       week: weekCount,
       weekTarget,
       dur: fmtDur(totalSec),
-      vol: fmtVol(totalVol)
+      vol: stats.fmtVol(totalVol)
     };
 
     /* ===== ② 我的数据：健康四格 + 体重变化 ===== */

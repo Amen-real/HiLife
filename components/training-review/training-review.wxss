@@ -420,3 +420,61 @@
 
 @keyframes ka-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ka-up { from { transform: translateY(40rpx); } to { transform: translateY(0); } }
+
+/* ===== 分享卡入口（B2）===== */
+.sc-entry {
+  display: flex; align-items: center; justify-content: center; gap: 12rpx;
+  height: 88rpx;
+  margin: -12rpx 0 32rpx;
+  background: var(--card);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-pill);
+}
+.sc-entry:active { background: var(--n-100); }
+.sc-entry-dot { flex: none; width: 14rpx; height: 14rpx; border-radius: 50%; background: var(--primary); }
+.sc-entry-txt { font-size: 27rpx; font-weight: 700; color: var(--n-900); letter-spacing: 0.01em; }
+
+/* ===== 分享卡预览弹层 =====
+   遮罩 z-index 与 ka-mask 同档（2000，高于 nav-bar 的 999）。
+   面板居中且总高 < 100vh，压不到自定义 tabBar（框架层），故不需要 .with-tab 让位。
+   文字一律 --n-700 / --n-900：不用 --n-500（#A0A0A0）—— 它压浅底只有 2.6:1，见报告 P2-9。 */
+.sc-mask {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000;
+  animation: sc-fade 0.18s ease;
+}
+.sc-panel {
+  width: 620rpx; box-sizing: border-box;
+  background: var(--card);
+  border-radius: 32rpx;
+  padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 20rpx;
+  box-shadow: 0 20rpx 60rpx rgba(15, 23, 42, 0.28);
+}
+.sc-busy {
+  height: 58vh;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26rpx; font-weight: 600;
+  color: var(--n-700);
+}
+.sc-img { width: 100%; height: 58vh; border-radius: 20rpx; background: var(--n-50); }
+.sc-tip { font-size: 20rpx; font-weight: 500; line-height: 1.55; color: var(--n-700); text-align: center; }
+.sc-actions { display: flex; gap: 20rpx; }
+.sc-btn {
+  flex: 1; height: 88rpx; border-radius: var(--r-pill);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 700;
+}
+.sc-btn.ghost { background: var(--n-100); color: var(--n-700); }
+/* 主按钮亮绿底 → 文字一律 #0A0A0A（对比度铁律） */
+.sc-btn.main { background: var(--primary); color: #0A0A0A; }
+.sc-btn:active { opacity: 0.86; }
+
+/* 画布只用于出图，摆在视口外：不参与布局、不遮挡；出图后立即由 wx:if 摘除。
+   显式给 CSS 尺寸是为了保证节点有真实布局尺寸（display:none 会让它取不到尺寸），
+   真正的出图尺寸由 JS 设的 canvas.width/height 决定（恒 750×H）。 */
+.sc-canvas { position: fixed; left: -2000px; top: 0; width: 375px; height: 550px; }
+
+@keyframes sc-fade { from { opacity: 0; } to { opacity: 1; } }

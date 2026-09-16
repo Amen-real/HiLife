@@ -11,6 +11,8 @@
 const store = require('../../utils/store.js');
 const dateRange = require('../../utils/dateRange.js');
 const stats = require('../../utils/trainingStats.js');
+// 分享卡：内容模型 + 版式 + 绘制都在 utils/shareCard.js（纯函数，守卫可在 node 里断言）
+const shareCard = require('../../utils/shareCard.js');
 
 // 低于这个场次不画趋势图：1 根柱不是趋势，只会让人觉得「这页没用」
 const TREND_MIN_LOGS = 2;
@@ -18,12 +20,10 @@ const TREND_MIN_LOGS = 2;
 // 关键动作卡位上限：自动列表与自定义选择共用同一容量（改这里会同时影响两边）
 const KA_MAX = 3;
 
-function fmtW(w) { return (w % 1 === 0) ? String(w) : w.toFixed(1); }
-// 训练量格式化（≥10000 走 k 缩写），仅本组件展示用
-function fmtVol(v) {
-  if (v >= 10000) return (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-  return String(Math.round(v));
-}
+// 重量/训练量/个人纪录/chip 一律取 trainingStats 的单源实现。
+// 【历史】本组件曾自己维护 fmtW / fmtVol / buildRecords / 「比上次 ↑x%」四份口径，
+// 「我的」页也各写了一份 fmtVol（注释还写着「与复盘页 fmtVol 同款」）——
+// 同一场训练在不同页面数字/说法不一致，就是这么来的。现已全部收回 stats。
 
 Component({
   properties: {
@@ -66,7 +66,12 @@ Component({
     kaTabSafe: false,                           // true = 宿主页有自定义 tabBar → 抽屉底部预留 88rpx
     kaCustom: false,                            // true = 用户自定义过（空数组视为未自定义）
     kaPickedCount: 0,
-    kaMax: KA_MAX
+    kaMax: KA_MAX,
+
+    // ===== 分享卡 =====
+    shareShow: false,                           // 预览弹层
+    shareBusy: false,                           // 生成中（此时画布在视口外绘制）
+    shareImg: ''                                // 生成好的临时图片路径
   },
 
   lifetimes: { attached() { this.rebuild(); } },
@@ -132,7 +137,7 @@ Component({
         const ss = stats.setsOf(a);
         const aVol = stats.loadOfAction(a);
         const best = stats.bestSetOf(a);
-        const bestTxt = best.topW > 0 ? fmtW(best.topW) + 'kg × ' + best.reps : (best.reps ? '自重 × ' + best.reps : '—');
+        const bestTxt = best.topW > 0 ? stats.fmtW(best.topW) + 'kg × ' + best.reps : (best.reps ? '自重 × ' + best.reps : '—');
 
         const rpes = ss.map(x => stats.num(x.rpe)).filter(v => v > 0 && v <= 10);
         const rmin = rpes.length ? Math.round(Math.min.apply(null, rpes)) : 0;
@@ -140,18 +145,9 @@ Component({
         const rpeTxt = !rpes.length ? '—' : (rmin === rmax ? String(rmin) : rmin + '–' + rmax);
         const avgR = rpes.length ? Math.round(rpes.reduce((s, v) => s + v, 0) / rpes.length * 10) / 10 : 0;
 
-        // vs 上次（同动作同器械的最近更早场次）；用可比容量，自重动作退化为总次数
-        let chip;
-        const prevVol = stats.findPrevVol(stats.actionKey(a), logs, idx);
-        if (prevVol == null) {
-          chip = { cls: 'flat', text: '首次记录' };
-        } else {
-          const cap = stats.capacityOfAction(a);
-          const pct = prevVol ? Math.round((cap - prevVol) / prevVol * 100) : 0;
-          if (pct >= stats.DELTA_SESSION) chip = { cls: 'up', text: '比上次 ↑' + pct + '%' };
-          else if (pct <= -stats.DELTA_SESSION) chip = { cls: 'down', text: '比上次 ↓' + Math.abs(pct) + '%' };
-          else chip = { cls: 'flat', text: '与上次持平' };
-        }
+        // vs 上次（同动作同器械的最近更早场次）；用可比容量，自重动作退化为总次数。
+        // 判据在 trainingStats.sessionChip —— 与分享卡共用同一份，避免「复盘说 ↑8%、卡片说 ↑9%」
+        const chip = stats.sessionChip(a, logs, idx);
 
         return {
           key: ai,
@@ -176,7 +172,7 @@ Component({
         verdict,
         stats: {
           duration: Math.floor(sec / 60) + ':' + dateRange.pad2(sec % 60),
-          volume: fmtVol(vol),
+          volume: stats.fmtVol(vol),
           effort: rpe.count ? rpe.avg + '/10' : '—'
         },
         perAction: rows,
@@ -223,7 +219,7 @@ Component({
           key: 'w' + w,
           label: w === 0 ? '本周' : 'W-' + w,
           vol,
-          volTxt: vol > 0 ? fmtVol(vol) : '',
+          volTxt: vol > 0 ? stats.fmtVol(vol) : '',
           days: days.size,
           has: vol > 0
         });
@@ -273,7 +269,7 @@ Component({
           style: 'height: ' + Math.max(4, Math.round(x.cap / maxC * 100)) + '%;',
           hot: i === arr.length - 1
         }));
-        const fmtOne = (x) => x.topW > 0 ? fmtW(x.topW) + 'kg×' + x.reps : '自重×' + x.reps;
+        const fmtOne = (x) => x.topW > 0 ? stats.fmtW(x.topW) + 'kg×' + x.reps : '自重×' + x.reps;
 
         // chip 用容量：与「本次训练」tab 的「比上次 ↑x%」同口径 —— 全 App 对「进步」只有一个定义
         let chip;
@@ -291,8 +287,8 @@ Component({
           chip,
           firstTxt: fmtOne(s[0]),
           lastTxt: fmtOne(last),
-          firstCap: s[0].cap > 0 ? fmtVol(s[0].cap) : '0',
-          lastCap: last.cap > 0 ? fmtVol(last.cap) : '0',
+          firstCap: s[0].cap > 0 ? stats.fmtVol(s[0].cap) : '0',
+          lastCap: last.cap > 0 ? stats.fmtVol(last.cap) : '0',
           firstDate: String(s[0].date).slice(5).replace('-', '/'),
           lastDate: String(last.date).slice(5).replace('-', '/'),
           bars
@@ -328,47 +324,10 @@ Component({
     // 只回答一句话——我最近破纪录了吗？这是「进步趋势」最该先说的结论（原来完全缺失）。
     // 只保留练过 ≥2 场的动作：只练过一次谈不上「破纪录」。
     buildRecords(logsDesc) {
-      const best = {};
-      logsDesc.forEach(l => (l.actions || []).forEach(a => {
-        const k = stats.actionKey(a);
-        if (!best[k]) best[k] = { key: k, name: (a.nameZh || a.name) || '动作', score: -1, topW: 0, reps: 0, date: '', n: 0 };
-        const rec = best[k];
-        rec.n++;
-        stats.setsOf(a).forEach(x => {
-          const w = stats.num(x.weight), r = stats.num(x.reps);
-          if (r <= 0) return;
-          const score = w > 0 ? w * r : r;
-          // 严格大于：并列时保留「更近」的那次（logsDesc 已按日期倒序）
-          if (score > rec.score) { rec.score = score; rec.topW = w; rec.reps = r; rec.date = l.date; }
-        });
-      }));
-
-      // 以「最新一场」为时间基准（而非 Date.now()）——纯函数化，守卫测试可稳定复现
-      const ref = logsDesc.length ? String(logsDesc[0].date) : '';
-      const daysAgo = (d) => {
-        const a = Date.parse(String(d) + 'T00:00:00');
-        const b = Date.parse(ref + 'T00:00:00');
-        return (isFinite(a) && isFinite(b)) ? Math.round((b - a) / 86400000) : 0;
-      };
-
-      const list = Object.keys(best).map(k => best[k]).filter(r => r.n >= 2 && r.score > 0);
-      list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
-      const fresh = list.filter(r => daysAgo(r.date) <= 7).length;
-
-      const records = list.slice(0, 3).map(r => ({
-        key: r.key,
-        name: r.name,
-        valTxt: r.topW > 0 ? fmtW(r.topW) + 'kg × ' + r.reps : '自重 × ' + r.reps,
-        dateTxt: String(r.date).slice(5).replace('-', '/'),
-        isNew: daysAgo(r.date) <= 7
-      }));
-
-      let recordsSummary = '';
-      if (!list.length) recordsSummary = '每个动作练满 2 场后，这里开始记录个人最好成绩';
-      else if (fresh) recordsSummary = '近 7 天刷新 ' + fresh + ' 项个人纪录';
-      else recordsSummary = '最近一次破纪录在 ' + daysAgo(list[0].date) + ' 天前';
-
-      this.setData({ records, recordsSummary });
+      // 口径在 trainingStats.buildRecords（单源）—— 本方法只负责把结果塞进 data。
+      // 分享卡要靠同一份排行判断「本场是否破纪录」，两处各算一遍必然对不上。
+      const r = stats.buildRecords(logsDesc);
+      this.setData({ records: r.records, recordsSummary: r.recordsSummary });
     },
 
     /* ===== 交互 ===== */
@@ -500,6 +459,97 @@ Component({
       store.updatePlan(plan.id, { actions: nextActions });
       wx.showToast({ title: rows.every(r => r.deload) ? '已按减载更新计划' : '已更新计划', icon: 'success' });
       this.rebuild();
+    },
+
+    /* ===== 分享卡（B2）=====
+       流程：点入口 → 开弹层 → 视口外画布绘制 → 导出临时图 → 摘掉画布、只留图片。
+       平台能力：wx.showShareImageMenu 需基础库 ≥ 2.14.3。低版本**不假装能分享**，
+       直接告诉用户「存相册再手动发」——本仓红线：文案只写实现得了的事。 */
+    openShareCard() {
+      const log = (this._logs || [])[this._selIdx];
+      const model = log ? shareCard.buildModel({ log, logsDesc: this._logs, idx: this._selIdx }) : null;
+      if (!model) { wx.showToast({ title: '暂无可分享的场次', icon: 'none' }); return; }
+      this._cardModel = model;
+      this.setData({ shareShow: true, shareBusy: true, shareImg: '' }, () => this._renderCard(model));
+    },
+
+    // 画布 backing store 固定为 750×measure()，**不乘 dpr**：
+    // 出图尺寸跨设备完全一致，也不会因高清屏导出 2000px+ 的巨图被聊天二次压缩。
+    _renderCard(model) {
+      const q = wx.createSelectorQuery().in(this);
+      q.select('#shareCanvas').fields({ node: true, size: true }).exec(res => {
+        const canvas = res && res[0] && res[0].node;
+        if (!canvas) { this._cardFail('画布初始化失败，请重试'); return; }
+        try {
+          const ctx = canvas.getContext('2d');
+          canvas.width = shareCard.CARD_W;
+          canvas.height = shareCard.measure(model);
+          shareCard.draw(ctx, model);
+        } catch (e) {
+          this._cardFail('生成分享卡失败，请重试');
+          return;
+        }
+        wx.canvasToTempFilePath({
+          canvas,
+          success: r => this.setData({ shareBusy: false, shareImg: r.tempFilePath }),
+          fail: () => this._cardFail('导出图片失败，请重试')
+        }, this);
+      });
+    },
+
+    _cardFail(msg) {
+      this.setData({ shareShow: false, shareBusy: false, shareImg: '' });
+      wx.showToast({ title: msg, icon: 'none' });
+    },
+
+    closeShare() { this.setData({ shareShow: false, shareBusy: false, shareImg: '' }); },
+
+    shareShareCard() {
+      const path = this.data.shareImg;
+      if (!path) { wx.showToast({ title: '分享卡还没生成好', icon: 'none' }); return; }
+      if (typeof wx.showShareImageMenu !== 'function') {
+        // 低版本微信没有这个接口 —— 给出真实可行的替代路径，而不是一句「分享失败」
+        wx.showModal({
+          title: '当前微信版本不支持直接分享图片',
+          content: '可以先把卡片保存到相册，再在聊天里手动发给好友。',
+          confirmText: '保存到相册', cancelText: '取消',
+          success: r => { if (r.confirm) this.saveShareCard(); }
+        });
+        return;
+      }
+      wx.showShareImageMenu({
+        path,
+        needShowEntrance: true,   // 图片消息带小程序入口（<3.2.0 的基础库会忽略该参数）
+        fail: e => {
+          // 用户自己关掉分享面板不算失败，别弹提示打扰
+          if (/cancel/i.test(String((e && e.errMsg) || ''))) return;
+          wx.showToast({ title: '分享未完成，可试试保存到相册', icon: 'none' });
+        }
+      });
+    },
+
+    saveShareCard() {
+      const path = this.data.shareImg;
+      if (!path) { wx.showToast({ title: '分享卡还没生成好', icon: 'none' }); return; }
+      wx.saveImageToPhotosAlbum({
+        filePath: path,
+        success: () => wx.showToast({ title: '已保存到相册', icon: 'success' }),
+        fail: e => {
+          const msg = String((e && e.errMsg) || '');
+          if (/cancel/i.test(msg)) return;
+          // 用户此前拒过相册授权 → 必须走设置页，重试是没用的
+          if (/auth|deny|permission/i.test(msg)) {
+            wx.showModal({
+              title: '需要相册权限',
+              content: '保存图片需要「保存到相册」权限，去设置里打开即可。',
+              confirmText: '去设置',
+              success: r => { if (r.confirm) wx.openSetting({}); }
+            });
+            return;
+          }
+          wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+        }
+      });
     }
   }
 });

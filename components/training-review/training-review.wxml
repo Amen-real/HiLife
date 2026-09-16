@@ -51,6 +51,13 @@
             </view>
           </view>
 
+          <!-- 分享卡入口：把这场训练变成一张图片。个人主体做不了社交关系链，
+               图片分享不受限，这是最现实的增长手段（B2） -->
+          <view class="sc-entry" bindtap="openShareCard">
+            <view class="sc-entry-dot"></view>
+            <text class="sc-entry-txt">生成本场分享卡</text>
+          </view>
+
           <!-- 逐动作表现：最好一组 + 比上次 + 内联下次建议 -->
           <view class="section-title">逐动作表现</view>
           <view class="pa-list">
@@ -211,5 +218,22 @@
         <view class="ka-sheet-btn main" bindtap="saveKaPicks">完成</view>
       </view>
     </view>
+  </view>
+
+  <!-- ===== 分享卡预览弹层 =====
+       画布在视口外绘制（.sc-canvas），出图后立刻用 wx:if 摘掉，只留 <image> 展示：
+       原生画布留在弹层里会压住内容，而 opacity:0 隐藏的原生组件在真机会泄漏。
+       长按图片可直接调起原生菜单，是分享面板之外的第二条路径。 -->
+  <view wx:if="{{shareShow}}" class="sc-mask" bindtap="closeShare">
+    <view class="sc-panel" catchtap="noop">
+      <view wx:if="{{shareBusy}}" class="sc-busy">正在生成分享卡…</view>
+      <image wx:elif="{{shareImg}}" class="sc-img" src="{{shareImg}}" mode="aspectFit" show-menu-by-longpress></image>
+      <view class="sc-tip">「分享给好友」会把图片发出去并带上小程序入口；存到相册后需自行发送</view>
+      <view class="sc-actions">
+        <view class="sc-btn ghost" bindtap="saveShareCard">保存到相册</view>
+        <view class="sc-btn main" bindtap="shareShareCard">分享给好友</view>
+      </view>
+    </view>
+    <canvas wx:if="{{!shareImg}}" type="2d" id="shareCanvas" class="sc-canvas"></canvas>
   </view>
 </view>

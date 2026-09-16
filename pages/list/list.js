@@ -287,5 +287,16 @@ Page({
   closeExSheet() { this.setData({ showExSheet: false }); },
   noop() {},
 
-  onShareAppMessage() {}
+  // 分享（P2-4）。原来是 `onShareAppMessage() {}` —— 空实现不会报错，
+  // 但分享出去是一张没有标题、也没有可跳转路径的空白卡；更关键的是：
+  // 「分享图片给好友」（wx.showShareImageMenu）附带的**小程序入口路径**取决于
+  // 当前页是否允许分享给朋友，页面没实现就等于入口退化到首页。
+  //
+  // 这里只做「发送给朋友」，**不做 onShareTimeline（朋友圈）**：
+  // 朋友圈打开走的是「单页模式」——tabBar 不渲染、路由与多数交互接口被禁用，
+  // 而本页是日期筛选 + 抽屉的交互密集页，落地即成「诚实的残废入口」。
+  // 要发朋友圈得另做一个纯内容页，不是给这里加个 onShareTimeline 就能成立。
+  onShareAppMessage() {
+    return { title: '衡砺健身记录 · 训练记录', path: '/pages/list/list' };
+  }
 });
