@@ -310,6 +310,20 @@
   text-align: center; font-size: var(--fs-caption); color: var(--text-weak); line-height: 1.6;
 }
 .attribution text { display: block; }
+
+/* 备案号展示位：紧跟在署名之后，同为页脚常驻内容。
+   字号与署名一致（--fs-caption），但**字色必须用 --n-700 而不是 --text-weak**：
+   本仓铁律「小字一律 --n-700」—— 对比度门禁不把祖先底色纳入候选，
+   --text-weak(#A0A0A0) 压在 --n-50 上只有 ≈2.3:1，看着像「有内容」其实读不清。
+   这是合规展示项，读不清等于没展示。 */
+.icp {
+  padding: 0 36rpx 24rpx;
+  text-align: center; font-size: var(--fs-caption); color: var(--n-700); line-height: 1.6;
+}
+.icp text { display: block; }
+/* 「工信部备案查询 ›」是这一块的可点提示，用品牌绿文字色（--primary-text：浅色 5.6:1 / 深色翻亮绿） */
+.icp .icp-q { margin-top: 4rpx; color: var(--primary-text); }
+.icp:active { opacity: .7; }
 .bottom-gap { height: 20rpx; }
 
 /* ══════════════ 数据管理弹层（导出 / 导入 / 清除） ══════════════ */

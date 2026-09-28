@@ -281,6 +281,19 @@
     <text>动作演示媒体 © Gym visual · gymvisual.com</text>
   </view>
 
+  <!-- 备案号展示位（合规硬性要求，勿删）：
+       官方《互联网信息服务备案承诺书》要求上线时在小程序「主体介绍位置（设置-关于两级菜单以内
+       页面底部显著位置或三级专用菜单内）」标明备案编号并链接至 beian.miit.gov.cn。
+       本页「我的」就在两级菜单以内、这是页面底部的常驻区，故落在这里。
+       ⚠️ 号在 ICP_NO（profile.js）里，别把号写进 wxml —— 拿到号只改那一处。
+       ⚠️ icpNo 为空串时整块不渲染：现在没号也不会留下空壳或影响版式。
+       点击只能「复制链接」：web-view 需要把目标域名配成业务域名（须上传校验文件证明域名归属），
+       工信部域名不是我们的 ⇒ 配不了。 -->
+  <view class="icp" wx:if="{{icpNo}}" bindtap="copyIcp">
+    <text>{{icpNo}}</text>
+    <text class="icp-q">工信部备案查询 ›</text>
+  </view>
+
   <view class="bottom-gap" />
 
   <!-- 数据管理面板（底部弹出：导出 / 导入 / 清除） -->

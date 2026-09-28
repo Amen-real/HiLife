@@ -21,6 +21,16 @@ const BG_DARK = '/static/my-bg-dark.jpg';
 // 主题 → 底图（唯一映射点，别在别处再写一遍三元）
 function bgOf(themeCls) { return themeCls === 'theme-dark' ? BG_DARK : BG_LIGHT; }
 
+// 备案号（ICP）—— 合规展示位，别删。
+// 依据：官方《互联网信息服务备案承诺书》要求「上线时在小程序主体介绍位置（设置-关于两级菜单
+// 以内页面底部显著位置或三级专用菜单内）规范标明对应备案编号，并链接至 beian.miit.gov.cn」。
+// ⚠️ 号以公众平台「设置 → 基本设置」显示的为准；**拿到号只改这一行**（别写进 wxml）。
+// ⚠️ 留空时页脚那一块整体不渲染（不留空壳），因此现在填不填都不影响现有版式。
+// 为什么不做成可点击外跳：小程序 web-view 要求把目标域名配成「业务域名」，而业务域名必须上传
+//    校验文件证明域名归属 ⇒ beian.miit.gov.cn 不是我们的域名，配不了。故走通行做法：
+//    点击 → 复制工信部查询地址 + 弹一句提示。
+const ICP_NO = '';
+
 // 用户数据字段（导出/导入/清除只作用于这些，设备运行配置如 visionBackendUrl 等不纳入）
 const DATA_KEYS = [
   'userInfo', 'profile', 'selectedActions', 'trainingPlans', 'activePlanId',
@@ -124,6 +134,8 @@ Page({
     nickname: '',
     avatarText: '衡',
     avatarUrl: '',
+    // 备案号：为空串时页脚那块不渲染（见 ICP_NO 的说明）
+    icpNo: ICP_NO,
     // Hero 背景图：明/暗两版各自随包发布；加载失败置 bgFailed 隐藏，露出页面底色
     bgUrl: BG_LIGHT,
     bgFailed: false,
@@ -218,6 +230,25 @@ Page({
       content: '本地优先的健身记录工具：训练 / 体重 / 饮食数据默认只存本机，可导出备份后换机恢复。\n动作演示媒体 © Gym visual · gymvisual.com',
       confirmText: '知道了',
       showCancel: false
+    });
+  },
+
+  // 点备案号 → 复制工信部查询地址。
+  // 为什么是「复制」而不是打开：小程序 web-view 要求把目标域名配成「业务域名」，
+  // 而业务域名必须上传校验文件证明域名归属 ⇒ beian.miit.gov.cn 不是我们的域名，配不了。
+  // ⚠️ wx.setClipboardData 是官方隐私接口（「剪贴板」）：用户拒绝授权时它会失败，
+  //    所以成功/失败都必须有可见出口，否则就是「点了没反应」（与 _copyPath 同一类坑）。
+  copyIcp() {
+    const tip = '查询地址：https://beian.miit.gov.cn\n（小程序内无法直接打开外部网站，请复制后在浏览器中访问）';
+    const show = (copied) => wx.showModal({
+      title: '备案信息查询',
+      content: (copied ? '链接已复制\n' : '链接复制失败，请手动记录\n') + tip,
+      showCancel: false
+    });
+    wx.setClipboardData({
+      data: 'https://beian.miit.gov.cn',
+      success: () => show(true),
+      fail: () => show(false)
     });
   },
 
