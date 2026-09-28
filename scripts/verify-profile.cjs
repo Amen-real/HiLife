@@ -398,5 +398,24 @@ truthy(/联系开发者/.test(privacyWxml), 'C16b privacy.wxml 指向「我的 �
 truthy(/联系开发者/.test(wxml) && /<button[^>]*open-type="contact"/.test(wxml),
   'C16c 这个指向在 profile.wxml 里真实可点（能唤起客服的那一行）');
 
+/* C17 备案号展示位（合规硬性要求，别被顺手删掉）。
+   官方《互联网信息服务备案承诺书》要求上线时在小程序「主体介绍位置（设置-关于两级菜单以内页面
+   底部显著位置或三级专用菜单内）」标明备案编号并链接至 beian.miit.gov.cn。
+   本页「我的」在两级菜单以内、页脚是常驻区 —— 这个展示位是承诺书条款的落点，不是普通装饰。 */
+truthy(/const\s+ICP_NO\s*=/.test(js), 'C17a 备案号是 profile.js 里的常量 ICP_NO（改号只改一处）');
+truthy(/icpNo:\s*ICP_NO/.test(js), 'C17b data.icpNo 接常量');
+// 号必须由数据渲染，不许硬编码进 wxml（否则每次备案变更都要改模板，且容易漏改）
+truthy(/\{\{icpNo\}\}/.test(wxml), 'C17c wxml 用 {{icpNo}} 渲染，未硬编码备案号');
+truthy(/wx:if="\{\{icpNo\}\}"/.test(wxml), 'C17d 号为空时不渲染（不留空壳，也不影响现有版式）');
+truthy(/class="icp"[^>]*bindtap="copyIcp"|bindtap="copyIcp"/.test(wxml), 'C17e 展示位可点（对应承诺书的「链接至」）');
+truthy(/\bcopyIcp\s*\(/.test(js), 'C17f copyIcp() 已定义');
+// 「链接至」只能做成复制：web-view 需要业务域名归属校验，工信部域名配不了
+truthy(/beian\.miit\.gov\.cn/.test(js), 'C17g 点击后给出工信部查询地址');
+// wx.setClipboardData 是隐私接口：拒绝授权时会失败 → 必须有可见出口，否则「点了没反应」
+truthy(/setClipboardData\(\{[\s\S]{0,400}?fail:/.test(js), 'C17h 复制失败也有出口（剪贴板被拒时不许静默）');
+// 小字铁律：合规展示项读不清等于没展示 → 用 --n-700，不用 --text-weak
+const icpRule = (wxss.match(/\.icp\s*\{[^}]*\}/) || [])[0] || '';
+truthy(icpRule.indexOf('var(--n-700)') >= 0, 'C17i 备案号字色用 --n-700（小字铁律：--text-weak 压浅底仅 ≈2.3:1）');
+
 console.log('\npass=' + pass + '  fail=' + fail);
 process.exit(fail ? 1 : 0);

@@ -321,6 +321,47 @@ function runEnsure(stub, label) {
     has(code, "require('../../utils/privacy.js')", 'C3 ' + f + ' 引入 privacy 门禁');
   });
 
+  /* ═══════════ [D] 隐私政策页声明 ⊇ 实际用到的隐私接口 ═══════════ */
+  console.log('[D] 隐私政策页声明 ↔ 实际调用（审核会逐条核对这一对）');
+
+  // 官方《用户隐私保护指引》里的「信息类型」名称。用了哪个接口，页内就必须出现对应类型名。
+  // 刻意写成声明式映射：将来新增隐私接口时在这里补一行 —— 忘了同步隐私政策，这条守卫就按红。
+  // （B7-2 就是这么来的：用了「相册（仅写入）」与「剪贴板」却没声明，用户看不到，审核也会问。）
+  const DECLARE_RULES = [
+    { api: 'saveImageToPhotosAlbum', need: '相册（仅写入）', why: '保存训练分享卡到相册' },
+    { api: 'setClipboardData', need: '剪贴板', why: '导出时复制备份文件路径' },
+    { api: 'getClipboardData', need: '剪贴板', why: '读取剪贴板' },
+    { api: 'chooseMedia', need: '相册', why: '拍照/选图识别、换头像' },
+    { api: 'chooseImage', need: '相册', why: '选图' },
+    { api: 'getLocation', need: '位置', why: '地理位置' }
+  ];
+
+  const usedApis = new Set();
+  jsFiles.forEach((f) => {
+    const bare = blankStr(stripJs(fs.readFileSync(f, 'utf8')));
+    const rx = new RegExp('[A-Za-z_$][\\w$]*\\.(' + PRIV.join('|') + ')\\s*\\(', 'g');
+    let m;
+    while ((m = rx.exec(bare))) usedApis.add(m[1]);
+  });
+  truthy(usedApis.size >= 3, 'D0 全仓扫到 ' + usedApis.size + ' 个在用的隐私接口（样本量正常）：' + [...usedApis].join(', '));
+
+  const privPage = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxml'), 'utf8');
+  const misses = (pageText) => DECLARE_RULES.filter(r => usedApis.has(r.api) && pageText.indexOf(r.need) < 0);
+  const undeclared = misses(privPage);
+  eq(undeclared.length, 0, 'D1 用到的隐私接口在隐私政策里都有对应声明' + (undeclared.length
+    ? ' → 缺：' + undeclared.map(r => r.api + ' 须声明「' + r.need + '」（用途：' + r.why + '）').join('；') : ''));
+
+  // 尺子自检：把已声明的类型名从文本里抠掉，规则必须立刻报红（否则「全绿」可能只是规则空转）
+  eq(misses(privPage.replace(/相册（仅写入）/g, '').replace(/剪贴板/g, '')).length >= 2, true,
+    'D2 抠掉「相册（仅写入）」「剪贴板」后规则报红（证明尺子盯着这几个词）');
+
+  // 反向：实际没用的接口不该在页里瞎声明（空承诺的另一种形态）
+  ['getLocation', 'getWeRunData', 'startRecord'].forEach((api) => {
+    if (usedApis.has(api)) return;
+    const name = api === 'getLocation' ? '位置信息' : (api === 'getWeRunData' ? '微信运动' : '麦克风');
+    truthy(privPage.indexOf(name) < 0, 'D3 未使用 ' + api + ' → 页内不声明「' + name + '」（不写做不到的事）');
+  });
+
   console.log('\npass=' + pass + '  fail=' + fail);
   process.exit(fail ? 1 : 0);
 })();
