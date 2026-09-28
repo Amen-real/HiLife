@@ -63,7 +63,8 @@ App({
     // true: callContainer 调云托管。⚠️ callContainer 有 15s 硬超时（errCode 102002），同步识别必超时，
     //   已改为「异步任务」：POST /task/submit 秒回 taskId → 每 2s GET /task/{id} 轮询（约 90s 上限）。
     //   云托管 hilife-vision 需部署 server/ 最新代码，并在服务设置配环境变量：
-    //   LLM_API_KEY（必填，配了走大模型；不配回退 mock）、LLM_MODEL（默认 qwen-vl-plus）、LLM_BASE_URL（默认百炼）。
+    //   LLM_API_KEY（**必填**：配了走大模型；不配则识别明确报 503，**不再回退 mock** ——
+    //   见 server/analyzer.py 顶部）、LLM_MODEL（默认 qwen-vl-plus）、LLM_BASE_URL（默认百炼）。
     // false: 走普通 wx.uploadFile 到 visionBackendUrl（局域网 vision-server，开发联调用）。
     useCallContainer: true,
     // 云托管所在「云开发环境 ID」（云托管是云开发的能力，与上方云存储同环境）
@@ -103,15 +104,14 @@ App({
     // 关键：onLaunch 内 getApp() 不可靠，必须把已恢复登录态的 this 传入，否则已登录用户也会被误弹
     auth.promptLoginOnLaunch(this);
 
-    // 隐私授权（基础库 2.32.3+ 强制）：首次触发隐私相关接口前，微信弹官方授权窗。
-    // 需先在公众平台「设置 → 服务内容声明 → 用户隐私保护指引」填写并发布，否则可能不弹或报错。
-    if (wx.requirePrivacyAuthorize) {
-      wx.requirePrivacyAuthorize({
-        success: () => { console.log('[privacy] 用户已同意隐私政策'); },
-        fail: () => { console.warn('[privacy] 用户拒绝隐私授权'); },
-        complete: () => {}
-      });
-    }
+    // 隐私授权（基础库 2.32.3+）：**故意不在这里提前请求**。
+    // 微信会在「首次真正调用隐私接口时」自动弹官方授权窗 —— 那一刻用户正点着
+    // 「拍照识别食物」/「换头像」，上下文清楚，也知道自己在给哪件事授权。
+    // 放在 onLaunch 只会在冷启动、用户还没做任何操作时弹一个说不清的窗（原实现如此，已改）。
+    // 三处 wx.chooseMedia 已各自先过 utils/privacy.js：确需授权时才请求，
+    // 并在用户拒绝后给出一句人话 + 一次重新授权的机会。
+    // ⚠️ 仍需先在公众平台「设置 → 服务内容声明 → 用户隐私保护指引」填写并**发布**，
+    //    否则官方窗不弹、隐私接口直接失败。
   },
 
   // 统一持久化

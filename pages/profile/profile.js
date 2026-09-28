@@ -10,6 +10,7 @@ const todayPlan = require('../../utils/todayPlan.js');
 const auth = require('../../utils/auth.js');
 // 「今日未训练提醒」的口径真源：本页只负责开关与文案，判据一律读 utils/reminder.js，
 // 文案里的时间阈值也取自它，避免「改了逻辑忘了改文案」两处漂移。
+const privacy = require('../../utils/privacy.js');
 const reminder = require('../../utils/reminder.js');
 
 // Hero 背景图：明暗两张都随包发布在 static/（packOptions.ignore 为空，static 不参与忽略）。
@@ -457,27 +458,32 @@ Page({
   },
 
   // 头像：从相册/拍照选择，保存到本地持久目录（不依赖微信临时路径，刷新不失效）
+  // 先过隐私授权：拒绝后 wx.chooseMedia 只会静默失败（点了没反应），
+  // 由 utils/privacy.js 统一给一句人话说明，并留一次重新授权的机会。
   onChooseAvatar() {
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        const temp = res.tempFiles[0].tempFilePath;
-        wx.getFileSystemManager().saveFile({
-          tempFilePath: temp,
-          success: (r) => {
-            const saved = r.savedFilePath;
-            store.setUserProfile(undefined, saved);
-            this.setData({ avatarUrl: saved });
-          },
-          fail: () => {
-            // 保存失败则退回临时路径
-            store.setUserProfile(undefined, temp);
-            this.setData({ avatarUrl: temp });
-          }
-        });
-      }
+    privacy.ensure('更换头像').then((ok) => {
+      if (!ok) return;
+      wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: ['album', 'camera'],
+        success: (res) => {
+          const temp = res.tempFiles[0].tempFilePath;
+          wx.getFileSystemManager().saveFile({
+            tempFilePath: temp,
+            success: (r) => {
+              const saved = r.savedFilePath;
+              store.setUserProfile(undefined, saved);
+              this.setData({ avatarUrl: saved });
+            },
+            fail: () => {
+              // 保存失败则退回临时路径
+              store.setUserProfile(undefined, temp);
+              this.setData({ avatarUrl: temp });
+            }
+          });
+        }
+      });
     });
   },
   // 昵称输入实时回显（避免受控 input 光标跳动）
@@ -585,14 +591,22 @@ Page({
     }
   },
 
+  // 导出降级链的最后一环：复制文件路径。
+  // wx.setClipboardData 是官方隐私接口（「剪贴板」），用户拒绝隐私授权时它会失败。
+  // 原先这里**只写了 success**，于是导出在「PC 端 / 不支持 shareFileMessage」的环境里
+  // 会静默断掉：loading 结束、面板关闭，然后什么都没有，用户以为导出成功了。
+  // 路径本身才是这次导出的结果 —— 成败都要让用户看到它，只是文案换一句。
   _copyPath(path) {
+    const show = (copied) => wx.showModal({
+      title: '导出',
+      content: (copied ? '文件已生成，路径已复制：\n' : '文件已生成，但路径复制失败，请手动记录：\n')
+        + path + '\n（当前环境不支持直接转发，请在文件管理器中找到该文件手动发送）',
+      showCancel: false
+    });
     wx.setClipboardData({
       data: path,
-      success: () => wx.showModal({
-        title: '导出',
-        content: '文件已生成，路径已复制：\n' + path + '\n（当前环境不支持直接转发，请在文件管理器中找到该文件手动发送）',
-        showCancel: false
-      })
+      success: () => show(true),
+      fail: () => show(false)
     });
   },
 

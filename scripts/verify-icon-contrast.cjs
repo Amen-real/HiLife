@@ -144,7 +144,8 @@ for (const wxml of WXMLS) {
     while (idx >= 0) {
       const tagEnd = before.indexOf('>', idx);
       const tag = before.slice(idx, tagEnd < 0 ? before.length : tagEnd);
-      const c = /class="([^"]*)"/.exec(tag);
+      // 要求 class 前面不是 `-`/字母数字：否则 `hover-class="none"` 会被当成 class="none"
+      const c = /(?:^|[^-A-Za-z0-9_])class="([^"]*)"/.exec(tag);
       if (c) { wrapCls = c[1]; break; }
       idx = before.lastIndexOf('<view', idx - 1);
     }

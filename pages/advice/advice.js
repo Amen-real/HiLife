@@ -11,6 +11,7 @@ const theme = require('../../utils/theme.js');
 // A3：本页是「手动录入」的既有入口，也就是知识库**唯一能靠打字命中、零模型调用**的地方
 // （识别路径的签名要等模型返回才知道，没法在调用前拦）。所以成本杠杆接在这里。
 const foodkb = require('../../utils/foodkb.js');
+const privacy = require('../../utils/privacy.js');
 const metrics = require('../../utils/metrics.js');
 
 const COLOR = { p: '#6F9F00', c: '#FF9500', f: '#FFB020' }; // 蛋白质/碳水/脂肪 配色
@@ -642,16 +643,21 @@ Page({
 
   /* ---------- AI 识别拍照（内联，直接调用视觉识别） ---------- */
   // 打开相机/相册后直接识别，结果记录到当前餐别（addType），全程不离开本页
+  // 先过隐私授权：拒绝后 wx.chooseMedia 只会静默失败（点了没反应），
+  // 由 utils/privacy.js 统一给一句人话说明，并留一次重新授权的机会。
   startAI() {
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['camera', 'album'],
-      success: (r) => {
-        const f = (r.tempFiles && r.tempFiles[0]) || {};
-        if (f.tempFilePath) this.runRecognize(f.tempFilePath);
-      },
-      fail: () => {}
+    privacy.ensure('拍照/选图识别食物').then((ok) => {
+      if (!ok) return;
+      wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: ['camera', 'album'],
+        success: (r) => {
+          const f = (r.tempFiles && r.tempFiles[0]) || {};
+          if (f.tempFilePath) this.runRecognize(f.tempFilePath);
+        },
+        fail: () => {}
+      });
     });
   },
 
@@ -697,8 +703,11 @@ Page({
       .catch((err) => {
         metrics.inc(metrics.EVENTS.VISION_FAIL);
         this.setData({ recognizing: false });
-        const msg = (err && (err.errMsg || err.message)) || '识别失败，请重试';
-        wx.showToast({ title: '识别失败', icon: 'none' });
+        // 只弹 userMessage 翻好的人话。服务端的 err.message 是给运维排查用的
+        // （可能含「去配哪个环境变量」），原样甩给用户既看不懂、也等于泄漏内部配置。
+        // 用 showModal 而不是 showToast：toast 对 20 字以上的文案会截断。
+        console.warn('[advice] 识别失败', err && err.code, err);
+        wx.showModal({ title: '识别失败', content: vision.userMessage(err), showCancel: false });
       });
   },
 

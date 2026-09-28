@@ -4,6 +4,7 @@
 //   [A] dateRange.streakFromDates 边界（首页「连续打卡」与本页「连续训练天数」共用的唯一回溯实现）
 //   [B] profile.js refresh() 派生数据（训练天数/连续天数/总次数/本月/本周/时长/容量 + 最近一场卡片）
 //   [C] 静态闭环：wxml 类名 ↔ wxss/icons、行内 style 禁 Mustache、wxml 字段 ↔ js data
+//       以及「联系开发者」入口（button open-type）与隐私政策「联系我们」文案的跨文件闭环
 //
 // 用法：node scripts/verify-profile.cjs
 const path = require('path');
@@ -226,7 +227,9 @@ const defined = new Set();
 wxss.replace(/\.([A-Za-z0-9_-]+)/g, (_, n) => { defined.add(n); return ''; });
 icons.replace(/\.([A-Za-z0-9_-]+)/g, (_, n) => { defined.add(n); return ''; });
 const usedCls = new Set();
-wxml.replace(/class="([^"]*)"/g, (_, v) => {
+// ⚠️ 必须要求 class 前面不是 `-`/字母数字：否则 `hover-class="none"` 会被当成 class="none"，
+// 于是「none」变成一个从未定义的类名 → 假警报（任何合法的 hover-class 都会踩）。
+wxml.replace(/(?:^|[^-A-Za-z0-9_])class="([^"]*)"/g, (_, v) => {
   v.replace(/\{\{[^}]*\}\}/g, ' ').split(/\s+/).forEach(t => { if (t) usedCls.add(t); });
   return '';
 });
@@ -362,6 +365,38 @@ truthy(/goPlan\(\)\s*\{\s*wx\.switchTab\(\{\s*url:\s*'\/pages\/plan\/plan'/.test
 // 完成态的名称/度量复用同一对纯函数，避免两处各写一套命名规则
 truthy(/function logTitleOf\(/.test(js) && /function logMetaOf\(/.test(js),
   'C13h 训练命名/度量抽成 logTitleOf / logMetaOf');
+
+/* C14 「联系开发者」= 微信客服会话，只能靠 open-type 唤起，而 open-type **只对 <button> 生效**。
+   写成 <view open-type="contact"> 不报错、点了也没反应（跟动态事件名一个坑）。
+   背景：隐私政策原先承诺「可通过小程序内反馈渠道联系开发者」，但仓里根本没有这个入口 ——
+   承诺了做不到的事，用户照着找只会找不到。这个入口就是补上的那个落点。 */
+truthy(/<button[^>]*\bopen-type="contact"/.test(wxml), 'C14a 联系开发者是 <button open-type="contact">（view 挂 open-type 会被吃掉）');
+truthy(!/<view[^>]*open-type="contact"/.test(wxml), 'C14b 没有把 open-type 挂在 view 上');
+truthy(/联系开发者/.test(wxml), 'C14c 入口文案在位');
+
+/* C15 用 button 当行容器，必须清掉它自带的灰底/圆角/居中/line-height/::after 描边，
+   否则这一行比上下三行 <view class="mi"> 高或胖一圈。
+   ⚠️ line-height / font-size 必须是 inherit，**不能是 normal**：
+   .menu .mi-t 自己不设 line-height，靠从 page（1.5）继承；button 默认是 2.55，
+   写 normal 又变成 1.2 —— 两种都会让这一行明显比相邻行高。 */
+const miBtn = (wxss.match(/\.menu\s+\.mi-btn\s*\{[^}]*\}/) || [])[0] || '';
+truthy(!!miBtn, 'C15 .menu .mi-btn 规则存在');
+['margin: 0', 'background-color: transparent', 'border-radius: 0',
+  'line-height: inherit', 'font-size: inherit', 'text-align: left'].forEach(d => {
+  truthy(miBtn.indexOf(d) >= 0, 'C15 清 button 默认：' + d);
+});
+truthy(/\.menu\s+\.mi-btn::after\s*\{[^}]*display:\s*none/.test(wxss), 'C15b 干掉 button 的 ::after 描边');
+
+/* C16 隐私政策的「六、联系我们」必须指向**真实存在**的入口（B2）。
+   这是跨文件的：文案在 privacy.wxml，落点在 profile.wxml ——
+   只改一边就成了又一次空承诺，所以只能两边一起核。 */
+const privacyWxml = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxml'), 'utf8');
+['小程序内反馈渠道', '意见反馈入口'].forEach(w => {
+  truthy(privacyWxml.indexOf(w) < 0, 'C16 privacy.wxml 不再出现无落点的空承诺：' + w);
+});
+truthy(/联系开发者/.test(privacyWxml), 'C16b privacy.wxml 指向「我的 → 联系开发者」');
+truthy(/联系开发者/.test(wxml) && /<button[^>]*open-type="contact"/.test(wxml),
+  'C16c 这个指向在 profile.wxml 里真实可点（能唤起客服的那一行）');
 
 console.log('\npass=' + pass + '  fail=' + fail);
 process.exit(fail ? 1 : 0);

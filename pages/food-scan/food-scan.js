@@ -20,6 +20,7 @@ const auth = require('../../utils/auth.js');
 const vision = require('../../utils/foodvision.js');
 const theme = require('../../utils/theme.js');
 const foodkb = require('../../utils/foodkb.js');
+const privacy = require('../../utils/privacy.js');
 const metrics = require('../../utils/metrics.js');
 
 const HISTORY_KEY = 'hh_food_scan_history';
@@ -83,7 +84,7 @@ Page({
     flash: false,         // 闪光灯（torch）
     camError: false,      // 相机权限被拒/不可用
     statusBarStyle: 'height: 0px',
-    photo: null,          // 识别结果 {name, kcal, weight, protein, carb, fat, confText, items[], img, mock, nutri[], canEdit, edited, reused, lowConf}
+    photo: null,          // 识别结果 {name, kcal, weight, protein, carb, fat, confText, items[], img, nutri[], canEdit, edited, reused, lowConf}
     history: [],          // 识别历史（本地存储，仅文字/数字字段）
     kbSize: 0,            // A3：本地知识库已记条目数
     kbSaved: 0            // A3：本周命中知识库、因而**没有调用模型**的次数
@@ -143,17 +144,22 @@ Page({
   },
 
   // 相册选图 → 识别
+  // 先过隐私授权：用户拒绝后 wx.chooseMedia 只会**静默失败**（点了完全没反应），
+  // 由 utils/privacy.js 统一给一句人话说明，并留一次重新授权的机会。
   pickAlbum() {
     if (this._busy) return;
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['album'],
-      success: (res) => {
-        const f = (res.tempFiles && res.tempFiles[0]) || {};
-        if (f.tempFilePath) this.analyze(f.tempFilePath);
-      },
-      fail: () => {}
+    privacy.ensure('从相册选图识别食物').then((ok) => {
+      if (!ok) return;
+      wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sourceType: ['album'],
+        success: (res) => {
+          const f = (res.tempFiles && res.tempFiles[0]) || {};
+          if (f.tempFilePath) this.analyze(f.tempFilePath);
+        },
+        fail: () => {}
+      });
     });
   },
 
@@ -206,7 +212,6 @@ Page({
         confText: pct != null ? pct + '%' : '—',
         items: items,
         img: tempFilePath || '',
-        mock: !!raw.mock,
         canEdit: true,      // 刚识别出的结果可纠正；历史回看不可（见 onPickHistory）
         edited: false,
         reused: false,      // 是否套用了你此前的修正值
@@ -235,9 +240,12 @@ Page({
       this._busy = false;
       this._raw = null;
       this.setData({ view: 'camera' });
+      // 只弹 userMessage 翻好的人话。服务端的 err.message 是给运维排查用的
+      // （可能含「去配哪个环境变量」），原样甩给用户既看不懂、也等于泄漏内部配置。
+      console.warn('[food-scan] 识别失败', err && err.code, err);
       wx.showModal({
         title: '识别失败',
-        content: String((err && (err.errMsg || err.message)) || err),
+        content: vision.userMessage(err),
         showCancel: false
       });
     });
@@ -348,7 +356,6 @@ Page({
       confText: it.conf || '—',
       items: [],
       img: '',
-      mock: false,
       canEdit: false,
       edited: false,
       reused: false,
@@ -380,8 +387,7 @@ Page({
     const type = mealByHour(new Date().getHours());
     const note = 'AI拍照估算' + (p.weight ? ' ' + p.weight + 'g' : '')
       + (p.edited ? '（已修正）' : '')
-      + (p.reused ? '（套用本地修正值）' : '')
-      + (p.mock ? '（示例数据）' : '');
+      + (p.reused ? '（套用本地修正值）' : '');
     store.addMeal({
       type: type,
       name: p.name,

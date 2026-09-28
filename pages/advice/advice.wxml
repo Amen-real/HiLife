@@ -254,7 +254,6 @@
   <view wx:if="{{recResult}}" class="mask" bindtap="closeRec">
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">AI 识别结果 · {{addType}}</view>
-      <view wx:if="{{recResult.mock}}" class="mock-tip">演示数据（未配置视觉模型 key），接入真实模型后即替换为估算结果。</view>
 
       <view class="rec-total" wx:if="{{recResult.totalText}}">
         <text class="rt-k">本餐合计</text>

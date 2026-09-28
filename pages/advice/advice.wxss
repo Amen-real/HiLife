@@ -473,10 +473,6 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* AI 识别结果 */
-.mock-tip {
-  font-size: 22rpx; color: var(--accent-ink); background: var(--warning-tint);
-  border-radius: var(--r-s); padding: 12rpx 16rpx; margin-bottom: 12rpx; line-height: 1.5;
-}
 .rec-total {
   display: flex; flex-direction: column; gap: 6rpx;
   background: var(--n-50); border-radius: var(--r-m); padding: 20rpx 24rpx; margin-bottom: 12rpx;

@@ -2,10 +2,14 @@
 
 把「拍菜品图 → 出热量」的视觉模型跑在你自己的服务器上，供微信小程序 `wx.uploadFile` 调用。
 
-- `app.py`：FastAPI 服务，`POST /analyze`（multipart 图片字段名 `image`）→ 返回热量/重量 JSON；`GET /health` 健康检查。
-- `analyzer.py`：推理封装。默认 **mock 模式**（无需 GPU/模型即可跑通小程序链路）；设置环境变量后切换为 **CalorieScan 真实推理**。
+- `app.py`：FastAPI 服务。`POST /analyze`（multipart 图片字段名 `image`，同步）；`POST /task/submit` + `GET /task/{id}`（云托管 `callContainer` 用的异步链路，避开 15s 硬超时）；`GET /health` 健康检查。
+- `vision_llm.py`：**多模态大模型识别（生产推荐）** —— 只需环境变量 `LLM_API_KEY`，无需 GPU、无需模型权重。
+- `analyzer.py`：自托管 CalorieScan 推理封装。需 `CALORIESCAN_REAL=1` + `CALORIESCAN_REPO` 指向已克隆仓库。
 
-## 1. 本地开发（mock 模式，零依赖跑通链路）
+> ⚠️ **两条路都没配好时不再回退 mock**（2026-09-28 起）：`/analyze` 返回 **503**、异步任务 `status=error`，并带 `{code, message}` —— `code` 供小程序翻成用户文案（`utils/foodvision.js` 的 `userMessage()`），`message` 供运维排查。
+> 此前的行为是**静默返回一份写死的示例数据**（鸡胸肉沙拉 280g / 360kcal）。它长得和真实结果一样，用户会把这份假热量当成自己那盘菜记进饮食 —— 那是事故，不是兜底。
+
+## 1. 本地开发
 
 ```bash
 cd server
@@ -15,8 +19,10 @@ python app.py
 # 或 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-健康检查：`curl http://localhost:8000/health` → `{"status":"ok","model_loaded":false,"mock":true}`
+健康检查：`curl http://localhost:8000/health` → `{"status":"ok","llm":false,"model_loaded":false,"ready":false,"reason":"..."}`
+`ready=false` 时 `reason` 就是「该配哪一项」；此时识别返回 **503**，**不会**给假数据。
 识别测试：`curl -F image=@demo.jpg http://localhost:8000/analyze`
+本地想立刻跑通，最省事的是配一个 `LLM_API_KEY`（见 `vision_llm.py`）。需要完全离线的联调请用旁的 `../vision-server/`（独立的开发服务，与生产链路互不影响）。
 
 小程序端不走第三方库：把 `app.js` 的 `globalData.useCallContainer` 置为 `false`，并在
 `globalData.visionBackendUrl` 填本机/局域网地址（如 `http://<你的局域网IP>:8000`）。

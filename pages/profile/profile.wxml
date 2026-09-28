@@ -254,6 +254,15 @@
         <view class="mi-t">隐私政策</view>
         <text class="mi-ar">›</text>
       </view>
+      <!-- 联系开发者：唤起微信客服会话，必须有 open-type，所以只能用 <button> 当行容器
+           （用 view 包一层会把 open-type 吃掉，点了没反应）。
+           代价是 button 自带灰底 / 圆角 / 居中 / ::after 描边，需在 wxss 用 .mi-btn 清干净。 -->
+      <button class="mi mi-btn" open-type="contact" hover-class="none">
+        <view class="ico ico-chat ico--ink mi-i"></view>
+        <view class="mi-t">联系开发者</view>
+        <view class="mi-note">意见反馈</view>
+        <text class="mi-ar">›</text>
+      </button>
       <view class="mi" bindtap="tapAbout">
         <view class="ico ico-heart ico--ink mi-i"></view>
         <view class="mi-t">关于我们</view>

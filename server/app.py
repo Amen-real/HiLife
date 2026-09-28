@@ -7,12 +7,14 @@
 #                        —— 云托管 callContainer 用（callContainer 有 15s 硬超时，识别必须异步）
 #   GET  /task/{task_id} 轮询任务：{status: processing|done|error, result?}
 #
-# 识别引擎优先级：LLM（需环境变量 LLM_API_KEY，见 vision_llm.py）→ CalorieScan 真实模型 → mock
+# 识别引擎：LLM（需环境变量 LLM_API_KEY，见 vision_llm.py）优先 → CalorieScan 真实模型。
+# 两者都不可用时**明确报错**（503 / task.status=error），不再回退 mock ——
+# 静默返回假热量会让用户把示例数据当成自己那餐记录，见 analyzer.py 顶部说明。
 import base64
 import threading
 import uuid
 
-from fastapi import FastAPI, UploadFile, File, Request
+from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 import analyzer
@@ -47,11 +49,16 @@ def _run_task(task_id: str, data: bytes, filename: str):
         if vision_llm is not None and vision_llm.llm_ready():
             result = vision_llm.analyze_bytes(data, filename)
         else:
-            result = analyzer.analyze(data, filename)  # CalorieScan / mock 回退
+            result = analyzer.analyze(data, filename)  # CalorieScan 真实模型（无 mock 兜底）
         result["status"] = "done"
         _remember(task_id, result)
+    except analyzer.EngineNotReady as e:
+        # 引擎不可用：message 是给运维排查的人话，code 才是跨端给用户翻译用的键
+        print("[vision] 引擎不可用：", e)
+        _remember(task_id, {"status": "error", "code": e.code, "message": str(e)})
     except Exception as e:  # noqa: BLE001
-        _remember(task_id, {"status": "error", "message": str(e)})
+        print("[vision] 识别失败：", repr(e))
+        _remember(task_id, {"status": "error", "code": "VISION_FAILED", "message": str(e)})
 
 def _decode_b64_image(s: str) -> bytes:
     if s.startswith("data:") and "," in s:
@@ -61,19 +68,29 @@ def _decode_b64_image(s: str) -> bytes:
 
 @app.get("/health")
 def health():
+    """健康检查。/ready=false 时 reason 里是「该配哪一项」的人话，可直接拿去排查。"""
     llm_on = bool(vision_llm is not None and vision_llm.llm_ready())
-    return {
+    model_on = analyzer.is_ready()
+    out = {
         "status": "ok",
-        "model_loaded": analyzer.is_ready(),
-        "mock": analyzer.is_mock() and not llm_on,
         "llm": llm_on,
+        "model_loaded": model_on,
+        "ready": llm_on or model_on,
     }
+    if not out["ready"]:
+        out["reason"] = analyzer.not_ready_reason()
+    return out
 
 
 @app.post("/analyze")
 async def analyze(image: UploadFile = File(...)):
     data = await image.read()
-    return analyzer.analyze(data, image.filename or "image.jpg")
+    try:
+        return analyzer.analyze(data, image.filename or "image.jpg")
+    except analyzer.EngineNotReady as e:
+        # 引擎不可用是**服务端配置问题**，不是用户输入问题 → 503 而不是 400，
+        # 并把「该配哪一项」原样带出去，让小程序端能直接弹给用户 / 让运维一眼看到。
+        raise HTTPException(status_code=503, detail={"code": e.code, "message": str(e)})
 
 
 @app.post("/task/submit")

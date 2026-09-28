@@ -21,6 +21,47 @@ function getCfg() {
   };
 }
 
+/* ---------- 失败对象的统一形状 ---------- */
+// 服务端返回的 { code, message } 里，message 是**给运维排查**的人话（含「去配哪个环境变量」），
+// 绝不能直接弹给用户；跨端只认 code，由 userMessage() 翻成用户可见文案。
+// 兼容 FastAPI 的两种包法：{detail:{code,message}} 与 {detail:"..."}。
+function visionError(code, message) {
+  const e = new Error(message || code || '识别失败');
+  e.code = code || 'VISION_FAILED';
+  return e;
+}
+
+function parseBody(data) {
+  if (data && typeof data === 'object') return data;
+  try { return JSON.parse(data); } catch (e) { return null; }
+}
+
+function fromServer(d) {
+  const det = (d && typeof d.detail === 'object') ? d.detail : d;
+  const code = (det && det.code) || (d && d.code) || 'VISION_FAILED';
+  const msg = (det && det.message) || (d && d.message)
+    || (d && typeof d.detail === 'string' ? d.detail : '');
+  return visionError(code, msg);
+}
+
+// 用户可见文案的唯一真源。改文案只改这里，页面只管 err 传进来。
+const USER_TEXT = {
+  // 引擎没配好：这是服务端配置问题，用户做什么都没用 → 不要让他反复重拍
+  VISION_NOT_READY: '照片识别暂时不可用，请稍后重试，或手动填写热量。',
+  // 引擎跑了但这次没成：可能是照片或网络 → 引导重拍
+  VISION_FAILED: '没能认出这道菜，换一张更清晰的照片再试试。'
+};
+
+function userMessage(err) {
+  const code = err && err.code;
+  if (code && USER_TEXT[code]) return USER_TEXT[code];
+  const raw = String((err && (err.errMsg || err.message)) || '');
+  if (/timeout|超时/i.test(raw)) return '识别超时，请检查网络后重试。';
+  // 未映射的失败照实记一笔，方便排查；但只给用户一句通用话术
+  if (raw) console.warn('[vision] 未映射的失败：', raw);
+  return '识别失败，请稍后重试。';
+}
+
 // 把临时图片压缩到 100K 以内并读成 base64（云托管 callContainer 限制）
 function compressToBase64(tempFilePath) {
   return new Promise((resolve, reject) => {
@@ -58,13 +99,12 @@ function analyzeByCallContainer(tempFilePath, cfg) {
       header: { 'X-WX-SERVICE': cfg.service, 'content-type': 'application/json' },
       data: { image: b64 },
       success: (res) => {
-        try {
-          const d = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-          if (d && d.taskId) resolve(d.taskId);
-          else reject(new Error(d && d.message ? d.message : '提交识别任务失败'));
-        } catch (e) {
-          reject(new Error('返回数据解析失败'));
-        }
+        const d = parseBody(res.data);
+        // 服务端 5xx 时 wx.cloud.callContainer 同样走 success 回调 —— 不看 statusCode
+        // 就会把 503 的错误体当成正常返回，最后以一句莫名其妙的「提交识别任务失败」收场。
+        if (res.statusCode >= 400) { reject(fromServer(d)); return; }
+        if (d && d.taskId) { resolve(d.taskId); return; }
+        reject(visionError('VISION_FAILED', (d && d.message) || '提交识别任务失败'));
       },
       fail: reject
     });
@@ -84,11 +124,12 @@ function pollTask(cfg, taskId) {
         method: 'GET',
         header: { 'X-WX-SERVICE': cfg.service },
         success: (res) => {
-          let d = null;
-          try { d = typeof res.data === 'string' ? JSON.parse(res.data) : res.data; } catch (e) {}
+          const d = parseBody(res.data);
+          if (res.statusCode >= 400) { reject(fromServer(d)); return; }
           if (d && d.status === 'done') { resolve(d); return; }
-          if (d && d.status === 'error') { reject(new Error(d.message || '识别失败')); return; }
-          if (tries >= MAX) { reject(new Error('识别超时，请重试')); return; }
+          // 引擎不可用/识别失败都走这里，带着 code 让 userMessage() 翻成人话
+          if (d && d.status === 'error') { reject(visionError(d.code, d.message)); return; }
+          if (tries >= MAX) { reject(visionError('VISION_FAILED', '识别超时')); return; }
           setTimeout(tick, 2000);
         },
         fail: (err) => {
@@ -117,12 +158,12 @@ function analyzeByUpload(tempFilePath, cfg) {
       name: 'image', // 与服务端 multipart 字段名一致
       formData: {},
       success: (res) => {
-        try {
-          const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-          resolve(data);
-        } catch (e) {
-          reject(new Error('返回数据解析失败'));
-        }
+        const data = parseBody(res.data);
+        // wx.uploadFile 对 4xx / 5xx 同样走 success 回调 —— 必须自己看 statusCode，
+        // 否则 503 的错误体会被当成识别结果一路传到「加入记录」。
+        if (res.statusCode >= 400) { reject(fromServer(data)); return; }
+        if (!data) { reject(visionError('VISION_FAILED', '返回数据解析失败')); return; }
+        resolve(data);
       },
       fail: reject
     });
@@ -138,13 +179,21 @@ function analyzeByUpload(tempFilePath, cfg) {
 //     items: [{ name, weight_g, calories }]
 //     total_weight_g / total_calories: int
 //     confidence: float|null             // 0–1
-//     mock: bool
+//     mock: bool                         // **恒 false**：服务端已无 mock 兜底（2026-09-28 移除）。
+//                                        // 页面若仍读到 true，说明服务端违约 → 一律按「引擎异常」阻断，
+//                                        // 绝不能把示例数据写进饮食记录。
+//
+//   ⚠️ **失败一律以 reject 表达，且 err.code 是跨端唯一的失败标识**：
+//     VISION_NOT_READY  引擎没配好（服务端配置问题）——用户重拍也没用
+//     VISION_FAILED     引擎跑了但这次没成（照片/网络）——可引导重拍
+//   服务端 err.message 是给运维排查的（可能含「去配哪个环境变量」），**不要弹给用户**；
+//   页面只调 userMessage(err) 取用户可见文案，那里是唯一真源。
 //
 //   仅 LLM 路径（云托管 → server/vision_llm.py）额外有：
 //     protein / carb / fat: int          // 三大营养素，只有这条路给
 //     provider: str                      // 形如 "llm:qwen-vl-max"
 //
-//   仅 CalorieScan / mock 路径（server/analyzer.py）额外有：
+//   仅 CalorieScan 路径（server/analyzer.py）额外有：
 //     success: bool（恒 true，失败以 HTTP 异常表达）、note: str
 //     ⚠️ **没有** protein/carb/fat ⇒ 这三项会是 null，页面必须按「未知」而不是 0 展示。
 //     ⚠️ 局域网 uploadFile 模式（POST /analyze）**只走这一条**，接不到 LLM
@@ -155,8 +204,14 @@ function analyzeByUpload(tempFilePath, cfg) {
 //   拿不到数据（该页同时也没有任何入口，属双重死代码）。**改合约先改这里。**
 function analyzeImage(tempFilePath) {
   const cfg = getCfg();
-  if (cfg.useCC) return analyzeByCallContainer(tempFilePath, cfg);
-  return analyzeByUpload(tempFilePath, cfg);
+  const p = cfg.useCC ? analyzeByCallContainer(tempFilePath, cfg) : analyzeByUpload(tempFilePath, cfg);
+  // mock 结果一律当**失败**处理。服务端已无 mock 兜底（2026-09-28 移除），这里再兜一道：
+  // 示例数据长得和真实结果一模一样，一旦漏进来就会被用户当成自己那盘菜记进饮食 ——
+  // 放在这个统一出口，food-scan 与 advice 两个页面一次性都受保护，不必各自判一遍。
+  return p.then((r) => {
+    if (r && r.mock) throw visionError('VISION_NOT_READY', '服务端返回了 mock 结果（服务端违约）');
+    return r;
+  });
 }
 
-module.exports = { analyzeImage, getCfg };
+module.exports = { analyzeImage, getCfg, userMessage, visionError };

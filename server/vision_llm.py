@@ -2,7 +2,8 @@
 # 多模态大模型食物识别（OpenAI 兼容 chat.completions + image_url）
 #
 # 环境变量（云托管控制台 → 服务设置 → 环境变量 配置）：
-#   LLM_API_KEY   必填。阿里云百炼 / 其它 OpenAI 兼容服务的 API Key；未配置则走 mock/CalorieScan 回退
+#   LLM_API_KEY   必填。阿里云百炼 / 其它 OpenAI 兼容服务的 API Key；
+#                 未配置则识别明确报 503（**无 mock 兜底**，见 analyzer.py 顶部说明）
 #   LLM_BASE_URL  默认 https://dashscope.aliyuncs.com/compatible-mode/v1 （阿里云百炼 Qwen-VL）
 #   LLM_MODEL     默认 qwen-vl-plus（可换 qwen-vl-max / qwen-vl-flash / MiMo 兼容模型）
 #
