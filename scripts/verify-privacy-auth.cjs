@@ -7,6 +7,11 @@
 //       要么调用前过 privacy.ensure() 门禁，要么在该调用自己给出 fail 降级。
 //       （只用字符串数 chooseMedia 是不够的：新增一处 wx.getLocation 就漏了。）
 //   [C] 单源：requirePrivacyAuthorize / getPrivacySetting 只准出现在 utils/privacy.js
+//   [D] 隐私政策页的声明 ⊇ 全仓实际用到的隐私接口（接口 → 官方「信息类型」声明式映射）
+//   [E] 隐私政策页的第三方披露 ↔ 服务端真实的模型出口（vision_llm.py 的默认域名）
+//       出口是第三方，政策就必须写「第三方」；出口换回自托管，政策就不许再写「第三方大模型」。
+//       —— B7-3（2026-09-28）：旧文案把识别能力归给「微信云开发提供」，而云开发根本不提供
+//          视觉识别，真实出口是阿里云百炼（第三方）。两者一错一漏，靠这条反查盯住。
 //
 // 用法：node scripts/verify-privacy-auth.cjs
 const path = require('path');
@@ -29,6 +34,11 @@ function stripJs(s) {
     .split(/\r?\n/)
     .map(l => l.replace(/^\s*\/\/.*$/, '').replace(/\s\/\/.*$/, ''))
     .join('\n');
+}
+// wxml 注释同样要剥：文档注释里写的「我们要声明的信息类型」不是声明本身，
+// 而解释「旧文案错在哪」的注释会原样引用旧文案 —— 不剥就会和待检查的正文互相抵消（假绿灯）。
+function stripWxml(s) {
+  return String(s).replace(/<!--[\s\S]*?-->/g, '');
 }
 // 括号匹配用：把字符串**内容**挖空成等长空格（引号保留）。
 // 必须等长 —— 否则挖空后的偏移量与原文不再对应，拿它去原文里定位处理器就会错位。
@@ -345,7 +355,8 @@ function runEnsure(stub, label) {
   });
   truthy(usedApis.size >= 3, 'D0 全仓扫到 ' + usedApis.size + ' 个在用的隐私接口（样本量正常）：' + [...usedApis].join(', '));
 
-  const privPage = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxml'), 'utf8');
+  // 先剥 wxml 注释：声明必须写在正文里，写在注释里不算（见 stripWxml 的说明）。
+  const privPage = stripWxml(fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxml'), 'utf8'));
   const misses = (pageText) => DECLARE_RULES.filter(r => usedApis.has(r.api) && pageText.indexOf(r.need) < 0);
   const undeclared = misses(privPage);
   eq(undeclared.length, 0, 'D1 用到的隐私接口在隐私政策里都有对应声明' + (undeclared.length
@@ -361,6 +372,56 @@ function runEnsure(stub, label) {
     const name = api === 'getLocation' ? '位置信息' : (api === 'getWeRunData' ? '微信运动' : '麦克风');
     truthy(privPage.indexOf(name) < 0, 'D3 未使用 ' + api + ' → 页内不声明「' + name + '」（不写做不到的事）');
   });
+
+  /* ═══════════ [E] 第三方披露 ↔ 服务端真实出口 ═══════════ */
+  console.log('[E] 第三方披露 ↔ 服务端模型出口（说了没有 / 有了没说，两种都算错）');
+
+  const llmSrc = fs.readFileSync(path.join(ROOT, 'server/vision_llm.py'), 'utf8');
+  const hostM = llmSrc.match(/DEFAULT_BASE_URL\s*=\s*["']https?:\/\/([^/"']+)/);
+  truthy(!!hostM, 'E0 能从 vision_llm.py 读出默认出口域名（读不到说明改了写法，须同步这条守卫）');
+  const llmHost = hostM ? hostM[1] : '';
+
+  // 第三方判定写成「判非微信自家」而不是「匹配 dashscope」：
+  // 换供应商（百炼 → 火山 / 硅基流动 / 自建代理）时不必改守卫，判定自动跟着走。
+  const isThirdParty = !!llmHost && !/(^|\.)(tcb\.qcloud\.la|weixin\.qq\.com|qq\.com)$/i.test(llmHost);
+  truthy(!!llmHost, 'E1 出口域名 = ' + (llmHost || '(空)') + ' ⇒ 判定为' + (isThirdParty ? '第三方' : '自托管 / 微信自家'));
+
+  // 只认**正文**：段标题（class="h"）不算声明 ——
+  // 「四、第三方服务」这个标题里天然带「第三方」，拿它去满足断言就是假绿灯。
+  // （本守卫第一版真踩了这个坑：注入旧文案时 E2 没报「缺第三方声明」，全靠后来做注入复核才发现。）
+  const privBody = privPage.replace(/<view class="h">[\s\S]*?<\/view>/g, '');
+
+  // 纯函数：喂一段政策正文，报出第三方披露的缺失项（做成纯函数才能喂已知违规样本自检，见 E3）。
+  function disclosureMisses(text) {
+    const out = [];
+    if (text.indexOf('第三方') < 0) out.push('缺「第三方」声明');
+    if (text.indexOf('大模型') < 0) out.push('未点明是大模型服务');
+    return out;
+  }
+  // 旧文案（B7-3 之前的原文）—— 既把能力归错给云开发，又完全没提第三方。
+  const OLD_TP_TEXT = '饮食照片识别依赖微信云开发提供的视觉识别能力；媒体资源（动作图片 / 演示）由云存储或 CDN 提供。';
+
+  if (isThirdParty) {
+    const miss = disclosureMisses(privBody);
+    eq(miss.length, 0, 'E2 出口是第三方 ⇒ 政策正文须写明第三方' + (miss.length ? ' → ' + miss.join('；') : ''));
+    eq(disclosureMisses(OLD_TP_TEXT).length, 2,
+      'E3 尺子自检：旧文案必须被报出 2 项缺失（证明规则盯着正文，不是恒绿）');
+    eq(privBody.indexOf('第三方服务') < 0, true,
+      'E3b 段标题已从待检正文中剥离（「四、第三方服务」不许顶替正文声明）');
+    eq(disclosureMisses('<view class="h">四、第三方服务</view>'.replace(/<view class="h">[\s\S]*?<\/view>/g, '')).length, 2,
+      'E3c 尺子自检：只有那个标题、正文为空 ⇒ 两项都报缺（标题不顶用）');
+  } else {
+    // 反向：出口已换回自托管 ⇒ 政策里不许再点名第三方大模型（空承诺的另一种形态）。
+    // 只盯「第三方多模态大模型」这个具体说法，不波及正文里合法的「不会提供给任何第三方」。
+    hasNot(privBody, '第三方多模态大模型', 'E2′ 出口已是自托管 → 政策正文不许再写「第三方多模态大模型」');
+  }
+
+  // 归属正确性：本项目里微信云开发只承载云托管 / 云存储，**不提供**视觉识别。
+  const FALSE_ATTR_RX = /云开发[^。；]{0,24}(提供|负责|实现|识别|运算)/;
+  eq(FALSE_ATTR_RX.test(OLD_TP_TEXT), true,
+    'E4 尺子自检：注入旧的错误归属文案 → 规则必须报红');
+  eq(FALSE_ATTR_RX.test(privPage), false,
+    'E5 政策未把识别能力归给微信云开发（云开发不提供视觉识别，识别由云托管上的服务完成）');
 
   console.log('\npass=' + pass + '  fail=' + fail);
   process.exit(fail ? 1 : 0);
