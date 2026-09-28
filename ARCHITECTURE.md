@@ -214,8 +214,8 @@ HiLife/
 ├── utils/                              # 状态 / 动作库 / 媒体 / 视觉 / 报表 / 登录 等
 ├── scripts/                            # gen-icons-data.cjs / fs-tokenize.py 等
 ├── assets/                             # 源素材（被 packOptions 排除，不进主包）
-├── upload-to-storage.cjs               # 云存储上传脚本
-├── check-missing-gifs.cjs              # 媒体缺口核对脚本
+├── upload-to-storage.cjs               # 云存储上传脚本（assets/upscaled → images/）
+├── scripts/check-storage-coverage.cjs  # 云存储覆盖率核验（零凭据 HEAD，动作图/GIF/饮食图全覆盖）
 └── CDN-DEPLOY-CHECKLIST.md / DESIGN.md / OVERVIEW.md / README.md
 ```
 

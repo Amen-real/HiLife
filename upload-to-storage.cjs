@@ -12,11 +12,15 @@
 //   或  node upload-to-storage.cjs --env cloud1-d0g5ihto42b4ed256
 //
 // 上传映射（与 media() / 云存储实际结构一致）：
-//   assets/images/*        →  云存储 images/         （动作静态图，文件名保留源名含哈希后缀，对应 exercises.js 的 /images/<id>-<hash>.jpg）
-//   assets/images/food/*   →  随 images/ 一并上传      （饮食推荐图，对应 mock.js 的 /images/food/<name>.jpg）
-//   assets/videos/*        →  云存储 videos/         （演示 GIF 动图，对应 /videos/<id>-<hash>.gif）
+//   assets/upscaled/*.jpg  →  云存储 images/   （动作静态图，文件名即 <id>-<hash>.jpg，对应 exercises.js 的 /images/<id>-<hash>.jpg）
 //
-// 注意：本项目 assets/videos/ 当前为空，演示 GIF 需先放到该目录再上传（或单独上传到 videos/）。
+// ⚠️ 注意（2026-09-28 校正）：本脚本原先写的源目录是 assets/images 与 assets/videos，都是错的 ——
+//   - assets/images/ 里放的是**首页背景图**（home-bg* / home-hero*），传上去会污染云存储 images/ 目录；
+//     首页背景实际走的是包内 static/（home-bg.jpg 等），**不需要上传**。
+//   - assets/videos/ 目录不存在；演示 GIF 与饮食图（images/food/）在仓库内**没有源文件**，
+//     其云端资源已存在且经核验齐备，如需重传必须先从外部找回源文件。
+//
+// 上传后请务必跑一次 node scripts/check-storage-coverage.cjs 核验覆盖率。
 
 const { execFileSync } = require('child_process');
 const path = require('path');
@@ -34,8 +38,8 @@ if (!env) {
 
 const ROOT = __dirname;
 const DEPLOYS = [
-  { local: path.join(ROOT, 'assets', 'images'), remote: 'images' },
-  { local: path.join(ROOT, 'assets', 'videos'), remote: 'videos' },
+  // 动作静态图：assets/upscaled/<id>-<hash>.jpg → 云存储 images/<id>-<hash>.jpg
+  { local: path.join(ROOT, 'assets', 'upscaled'), remote: 'images' },
 ];
 
 console.log(`目标环境: ${env}\n`);
@@ -75,6 +79,7 @@ for (const { local, remote } of DEPLOYS) {
 
 console.log('全部上传结束后，确认两件事：');
 console.log('1) 云开发控制台 → 存储 → 权限，已设为「所有用户可读，仅创建者可写」；');
-console.log('2) 上传任意 1 个文件，复制其 CloudID（cloud://<env>.<哈希>/...），运行：');
-console.log(`     node set-cloudsuffix.cjs "cloud://${env}.<哈希>/upscaled/任意.jpg"`);
-console.log('   把 CLOUD_ID_SUFFIX 填对后，media() 即返回正确的 cloud:// 地址。');
+console.log('2) 核验覆盖率（零凭据、无需登录）：');
+console.log('     node scripts/check-storage-coverage.cjs');
+console.log('   它会 HEAD 每个被引用的资源（动作图 / 演示 GIF / 饮食图），报出缺失项。');
+console.log('   （若 media.js 的 CLOUD_ID_SUFFIX 变了，先跑 set-cloudsuffix.cjs 更新。）');
