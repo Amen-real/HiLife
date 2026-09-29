@@ -55,6 +55,10 @@
         "type": "suffix"
       },
       {
+        "value": ".txt",
+        "type": "suffix"
+      },
+      {
         "value": ".gitignore",
         "type": "file"
       }
