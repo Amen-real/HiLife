@@ -105,10 +105,14 @@ Page({
     flash: false,         // 闪光灯（torch）
     camError: false,      // 相机权限被拒/不可用
     statusBarStyle: 'height: 0px',
-    // 顶部行右侧内缩（微信系统胶囊「··· ⊙」的让位量，px）。见 utils/navMetrics.js。
-    // ⚠️ 本页三处顶部行都有靠右控件（取景态闪光灯 / 结果态「完成」/ 历史态「清空」），
-    //    而这三行都正好落在胶囊那一格 ⇒ 三处都吃这一个值。
-    navInsetStyle: '',
+    // 顶部导航带的两串行内样式（见 utils/navMetrics.js）。它们同时管两件事：
+    //   ① 横向 —— 给微信系统胶囊「··· ⊙」让位（不让位则控件被系统截走触摸、点不到）；
+    //   ② 纵向 —— 行高钉成导航带 = 2×(胶囊上沿 − 状态栏) + 胶囊高，让行**与胶囊同心**。
+    // ⚠️ 本页顶部行有三处、形态分两类：结果/历史态是常流里的行（navRowStyle），
+    //    取景态是 <camera> 上的绝对定位覆盖层（camRowStyle，必须自带 top）。
+    //    三处都吃这两个值之一 —— 漏一处就是「差半个行高」或「压进状态栏」。
+    navRowStyle: '',
+    camRowStyle: '',
     photo: null,          // 识别结果 {name, kcal, weight, protein, carb, fat, confText, items[], img, nutri[], canEdit, edited, reused, lowConf}
     history: [],          // 识别历史（本地存储，仅文字/数字字段）
     anSec: 0,             // 识别中已用秒数（给用户一个「它在动」的证据）
@@ -118,10 +122,11 @@ Page({
   },
 
   onLoad() {
-    // 顶部两条内边距都从 navMetrics 取 —— 状态栏高度与胶囊内缩是同一套窗口度量，
+    // 顶部三条内边距都从 navMetrics 取 —— 状态栏高度、导航带高、胶囊让位量是同一套窗口度量，
     // 本页不再自己读一份 getWindowInfo（那正是「第二份实现」，会各走各的兜底值）。
     this.setData({ statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px' });
-    this.setData({ navInsetStyle: navMetrics.topRightStyle() });
+    this.setData({ navRowStyle: navMetrics.topRowStyle() });
+    this.setData({ camRowStyle: navMetrics.overlayRowStyle() });
     this.setData({ history: this.loadHistory() });
     this.syncKb();
   },

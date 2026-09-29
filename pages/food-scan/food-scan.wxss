@@ -18,14 +18,22 @@
    伪元素 / mask 图标 / 渐变，图标用文字字形或纯 CSS 圆环。 */
 .cam { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
 
-/* ⚠️ 这一行**必须**吃 navInsetStyle（见 utils/navMetrics.js）：
-   闪光灯靠右，而它正好落在微信系统胶囊（「··· ⊙」更多/关闭）那一格。
-   胶囊是微信自己渲染的：不进布局树、不参与 flex、z-index 压不住 —— 不让位就是
-   「闪光灯压在胶囊上」，触摸被系统截走 ⇒ 按钮完全点不到。2026-09-29 真机复现。
-   注意：这里是**横向**让位，与纵向位置无关（胶囊贴屏幕右缘，只要本行右边界在它左边界之左即安全）。 */
+/* ⚠️ 本行**必须**吃 camRowStyle（见 utils/navMetrics.js），它同时管两件事：
+   ① 横向 —— 闪光灯靠右，正落在微信系统胶囊（「··· ⊙」更多/关闭）那一格。
+      胶囊是微信自己渲染的：不进布局树、不参与 flex、z-index 压不住 —— 不让位就是
+      「闪光灯压在胶囊上」，触摸被系统截走 ⇒ 按钮完全点不到。2026-09-29 真机复现。
+   ② 纵向 —— 本行是 <camera> 上的**绝对定位覆盖层**，脱离文档流，
+      `top` 与 `height` 都得自己带（这也是它与 .r-nav / .h-nav 唯一的形态差别）。
+   下面这组是 **onLoad 注入前的兜底值**（44px 是微信自定义导航的典型值，不是真值），真值由 camRowStyle 覆盖。
+   ⚠️ 配套两条硬约束，少一条就白算：
+     · `box-sizing: border-box` —— 否则行内 `height` 是**内容盒**高，加上 padding 后总高 ≠ 导航带；
+     · **竖向 padding 必须为 0** —— 内容居中靠 `align-items: center`，留 padding 会把内容挤偏。
+   历史坑（2026-09-29 真机）：这里原来是 `padding: 90rpx 36rpx 0` —— 手调常量摆位，
+   390×47 机型上内容中线 65.5px、胶囊中线 69px ⇒ 按钮**偏上 3.5px**，一眼看出没对齐。 */
 .cam-top {
-  position: absolute; top: 0; left: 0; right: 0;
-  padding: 90rpx 36rpx 0;
+  position: absolute; top: 44px; left: 0; right: 0;
+  height: 44px; box-sizing: border-box;
+  padding: 0 36rpx;
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
 }
 /* @contrast-ok: 纸底是 <camera> 实时取景画面（非页面/卡片底色），静态推算会把白字压白纸判成 1:1。
@@ -132,14 +140,17 @@
 }
 /* 导航行同样不许被压缩：它是全屏唯一的返回出口（同 training-review 的
    .sc-cancel「绝不许被挤掉」）。
-   右侧内缩由 navInsetStyle 注入 —— 行内「清空」靠右，必须给微信系统胶囊让位
-   （理由与几何性质见 utils/navMetrics.js 与 .cam-top 注释）。
-   代价：padding-right 变大 ⇒ .h-title 的 flex:1 可分配宽度变小，标题视觉中心
-   会略左移。这是**必须付的**：换来的是这一行有一个真的点得到的「清空」。 */
+   行高由 navRowStyle 注入 = 导航带 = 2×(胶囊上沿 − 状态栏) + 胶囊高 ⇒ **与胶囊同心**
+   （返回/清空必须和胶囊在同一条中线上，用户 2026-09-29 真机报的就是这条没对上）。
+   44px 是注入前的兜底典型值。⚠️ 同样要求 `box-sizing:border-box` + 竖向 padding 归零。
+   代价：行高被钉死成导航带（比原来含 16rpx 上下 padding 的 ~50px 略矮），
+   且 padding-right 变大 ⇒ .h-title 的 flex:1 可分配宽度变小、标题视觉中心略左移。
+   两者都是**必须付的**：换来的是这一行与胶囊对齐、且「清空」真的点得到。 */
 .h-nav {
   display: flex; flex-direction: row; align-items: center;
   flex: 0 0 auto;
-  padding: 16rpx 32rpx;
+  height: 44px; box-sizing: border-box;
+  padding: 0 32rpx;
 }
 .h-back {
   width: 64rpx; height: 64rpx; border-radius: 50%;
@@ -173,13 +184,14 @@
   background: var(--n-50);
   display: flex; flex-direction: column;
 }
-/* 右侧内缩由 navInsetStyle 注入。「完成」靠右 ⇒ 与微信系统胶囊同一格，
-   不让位就点不到（同 .cam-top / .h-nav 的说明）。
-   代价同 .h-nav：本行无居中标题，所以这一处只有收益。 */
+/* 行高 + 右侧内缩由 navRowStyle 注入（见 .h-nav 与 .cam-top 的说明，两条约束同样适用：
+   `box-sizing:border-box` + 竖向 padding 归零；44px 是注入前的兜底典型值）。
+   本行无居中标题，所以让位与钉高都只有收益、没有 .h-nav 那点标题偏移的代价。 */
 .r-nav {
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
   flex: 0 0 auto;          /* 见 .h-nav 说明 */
-  padding: 16rpx 32rpx;
+  height: 44px; box-sizing: border-box;
+  padding: 0 32rpx;
 }
 .r-back {
   width: 64rpx; height: 64rpx; border-radius: 50%; background: var(--n-100);

@@ -4,11 +4,11 @@
   <!-- ============== 取景态（08）：live camera + cover-view 覆盖层 ============== -->
   <block wx:if="{{view === 'camera'}}">
     <camera wx:if="{{!camError}}" class="cam" device-position="back" flash="{{flash ? 'torch' : 'off'}}" binderror="onCamError">
-      <!-- 顶部：返回 + 闪光灯。⚠️ 这一行**必须**吃 navInsetStyle：
-           闪光灯靠右，而它正好落在微信系统胶囊（「··· ⊙」）那一格 ——
-           不让位就是两者重叠，闪光灯被系统胶囊截走触摸、完全点不到。
-           注：本行用的是 cover-view（camera 是原生组件），cover-view 支持 style。 -->
-      <cover-view class="cam-top" style="{{navInsetStyle}}">
+      <!-- 顶部：返回 + 闪光灯。⚠️ 这一行**必须**吃 camRowStyle：
+           ① 横向 —— 闪光灯靠右，正好落在微信系统胶囊（「··· ⊙」）那一格，不让位就被系统截走触摸、点不到；
+           ② 纵向 —— 它脱离文档流，高度和 top 都得自己带，否则要么压进状态栏、要么与胶囊不同心。
+           注：本行用 cover-view（camera 是原生组件），cover-view 支持 style。 -->
+      <cover-view class="cam-top" style="{{camRowStyle}}">
         <cover-view class="cam-top-btn" bindtap="goBack">‹</cover-view>
         <cover-view class="cam-flash {{flash ? 'on' : ''}}" bindtap="toggleFlash">⚡</cover-view>
       </cover-view>
@@ -55,8 +55,8 @@
   <!-- ============== 识别历史 ============== -->
   <view wx:elif="{{view === 'history'}}" class="hist">
     <view class="status-spacer" style="{{statusBarStyle}}"></view>
-    <!-- ⚠️ navInsetStyle 见 utils/navMetrics.js：本行「清空」靠右，必须给系统胶囊让位 -->
-    <view class="h-nav" style="{{navInsetStyle}}">
+    <!-- ⚠️ navRowStyle 见 utils/navMetrics.js：本行行高＝导航带（与胶囊同心）＋「清空」右侧让开胶囊 -->
+    <view class="h-nav" style="{{navRowStyle}}">
       <view class="h-back" bindtap="goBack"><view class="ico ico-arrowleft ico--ink" style="width:40rpx;height:40rpx"></view></view>
       <view class="h-title">识别历史</view>
       <view class="h-clear" bindtap="clearHistory" wx:if="{{history.length}}">清空</view>
@@ -76,9 +76,9 @@
   <!-- ============== 识别结果（09） ============== -->
   <view wx:elif="{{view === 'result'}}" class="result">
     <view class="status-spacer" style="{{statusBarStyle}}"></view>
-    <!-- ⚠️ navInsetStyle 见 utils/navMetrics.js：本行「完成」靠右，必须给系统胶囊让位。
-         漏掉这一处 = 用户点「完成」时点到微信的「··· ⊙」（2026-09-29 真机复现）。 -->
-    <view class="r-nav" style="{{navInsetStyle}}">
+    <!-- ⚠️ navRowStyle 见 utils/navMetrics.js：本行行高＝导航带（返回/完成须与胶囊同一条中线）
+         ＋「完成」右侧让开胶囊。漏掉这一处 = 用户点「完成」点到微信的「··· ⊙」。 -->
+    <view class="r-nav" style="{{navRowStyle}}">
       <view class="r-back" bindtap="backToCamera"><view class="ico ico-arrowleft ico--ink" style="width:40rpx;height:40rpx"></view></view>
       <view class="r-done" bindtap="saveAndExit">完成</view>
     </view>

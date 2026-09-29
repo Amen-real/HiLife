@@ -13,10 +13,11 @@
       <text wx:if="{{title}}" class="nb-title">{{title}}</text>
       <!-- ⚠️ 往右侧 slot 塞控件前必读：这一格正对微信系统胶囊（「··· ⊙」更多/关闭），
            它不进布局树、z-index 压不住 ⇒ 塞进来的控件会被胶囊盖住且**点不到**。
-           要么别用这个 slot，要么先在宿主页里
+           要么别用这个 slot，要么在宿主页里把顶部行度量接上：
              const navMetrics = require('../../utils/navMetrics');
-             this.setData({ navInsetStyle: navMetrics.topRightStyle() });
-           再给塞进来的控件加 style="{{navInsetStyle}}" 让出胶囊宽度。
+             this.setData({ navRowStyle: navMetrics.topRowStyle() });
+           再给塞进来的控件挂 style="{{navRowStyle}}" —— 它同时给出「行高＝导航带
+           （与胶囊同心）」与「右侧让开胶囊」两项，缺任一项都会在真机上露出来。
            （当前 16 页无人填充本 slot，因此暂无实际影响。） -->
       <view class="nb-side nb-right">
         <slot name="right"></slot>
