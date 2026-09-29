@@ -32,14 +32,29 @@ function stripJs(s) {
     .map(l => l.replace(/^\s*\/\/.*$/, '').replace(/\s\/\/.*$/, ''))
     .join('\n');
 }
+// Python 注释同样要剥（`# …` 到行尾）。**要求 `#` 前是行首或空白** —— 否则会把字符串里的
+// `#` 也切掉（如 '#0A0A0A'），而「`#` 前紧跟引号」正好就是这种情况。
+// 不剥的后果实例：vision_llm.py 里一句「# 不 raise_for_status()：…」的说明性注释，
+// 会让「已不再使用 raise_for_status」这条断言**永远报红**（注释被当成代码）。
+function stripPy(s) {
+  return String(s).split(/\r?\n/)
+    .map(l => l.replace(/(^|\s)#.*$/, '$1'))
+    .join('\n');
+}
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+// WXML 注释同样要剥：注释里提到的字段名会让「页面展示了 X」这类断言在**其实没展示**时也通过。
+function stripWxml(s) {
+  return String(s).replace(/<!--[\s\S]*?-->/g, '');
+}
 // 剥注释后的源（静态断言必须用这个，否则注释里的说明文字会顶替真实代码通过检查）
 const code = (rel) => stripJs(read(rel));
+// Python 源：JS 与 Python 两种注释都剥
+const pyCode = (rel) => stripPy(code(rel));
 
 /* ═══════════ [A] 服务端静态 ═══════════ */
 console.log('[A] 服务端：mock 路径已移除，失败改为显式报错');
-const analyzerPy = code('server/analyzer.py');
-const appPy = code('server/app.py');
+const analyzerPy = pyCode('server/analyzer.py');
+const appPy = pyCode('server/app.py');
 
 hasNot(analyzerPy, 'mock_result', 'A1 analyzer.py 不再有 mock_result()');
 hasNot(analyzerPy, 'is_mock', 'A2 analyzer.py 不再有 is_mock()');
@@ -61,7 +76,7 @@ has(appPy, '"ready": llm_on or model_on', 'A15 /health 给出 ready');
 has(appPy, 'out["reason"] = analyzer.not_ready_reason()', 'A16 /health 未就绪时给出原因');
 has(appPy, 'if vision_llm is not None and vision_llm.llm_ready()', 'A17 走 LLM 的前提是 llm_ready()（没配就不许当成了引擎跑了）');
 // LLM 未配置时必须明确拒绝，而不是回退
-const llmPy = code('server/vision_llm.py');
+const llmPy = pyCode('server/vision_llm.py');
 has(llmPy, 'def llm_ready', 'A18 vision_llm 暴露 llm_ready()');
 
 /* ═══════════ [B] 客户端真实行为 ═══════════ */
@@ -182,6 +197,77 @@ const catchIt = (p) => p.then(() => ({ ok: true }), (e) => ({ ok: false, code: e
   r = await catchIt(vision.analyzeImage('/tmp/a.jpg'));
   eq(r.ok, false, 'B6e submit 未返回 taskId → 失败（不静默挂着）');
 
+  /* ── B8–B11 「很慢 / 经常识别不出来」的两条真缺陷（2026-09-29）──
+     ① 任务在服务端丢了（实例重启/缩容/多实例）时，旧代码直接失败，用户被引导去重拍；
+     ② 客户端 60s 轮询窗口 < 服务端 120s 上游超时 ⇒ 倒挂，客户端先放弃。 */
+  const withFastTimers = async (fn) => {
+    const rs = global.setTimeout;
+    global.setTimeout = (f) => { f(); return 0; };
+    try { return await fn(); } finally { global.setTimeout = rs; }
+  };
+
+  // B8 任务丢失 → 自动重提一次并成功（用户不必重拍，也不知道发生过）
+  log = [];
+  useCallContainer((p) => (p === '/task/submit'
+    ? { statusCode: 200, data: json({ taskId: 't' + log.length, status: 'processing' }) }
+    : (log.filter(x => x === '/task/submit').length < 2
+      ? { statusCode: 200, data: json({ status: 'error', code: 'VISION_TASK_LOST', message: 'not found' }) }
+      : { statusCode: 200, data: json({ status: 'done', name: '番茄炒蛋', total_calories: 210, mock: false }) })), log);
+  r = await withFastTimers(() => catchIt(vision.analyzeImage('/tmp/a.jpg')));
+  eq(r.ok, true, 'B8 任务丢失 → 自动重提一次后成功');
+  eq(log.filter(x => x === '/task/submit').length, 2, 'B8b 恰好重提 1 次（不放大调用成本）');
+
+  // B9 重提后仍丢 → 以 VISION_TASK_LOST 收场，且**不许**归因到照片
+  log = [];
+  useCallContainer((p) => (p === '/task/submit'
+    ? { statusCode: 200, data: json({ taskId: 'tx', status: 'processing' }) }
+    : { statusCode: 200, data: json({ status: 'error', code: 'VISION_TASK_LOST', message: 'not found' }) }), log);
+  r = await withFastTimers(() => catchIt(vision.analyzeImage('/tmp/a.jpg')));
+  eq(r.code, 'VISION_TASK_LOST', 'B9 重提后仍丢失 → code 保持 VISION_TASK_LOST');
+  eq(log.filter(x => x === '/task/submit').length, 2, 'B9b 只重提 1 次就停手（不无限重试）');
+  hasNot(r.user, '照片', 'B9c 任务丢失不许归因成「照片不清晰」（用户重拍一百次也没用）');
+
+  // B10 提交阶段网络失败 → 重试 1 次后成功（云托管冷启动第一枪常直接超时）
+  log = [];
+  {
+    let first = true;
+    global.getApp = () => ({ globalData: CFG_CC.globalData });
+    global.wx = {
+      compressImage: (o) => o.success({ tempFilePath: '/tmp/c.jpg' }),
+      getFileSystemManager: () => ({ readFile: (o) => o.success({ data: 'AAAA' }) }),
+      cloud: {
+        callContainer: (o) => {
+          log.push(o.path);
+          if (o.path === '/task/submit' && first) { first = false; o.fail({ errMsg: 'request:fail timeout' }); return; }
+          if (o.path === '/task/submit') { o.success({ statusCode: 200, data: json({ taskId: 't9', status: 'processing' }) }); return; }
+          o.success({ statusCode: 200, data: json({ status: 'done', name: 'x', total_calories: 1, mock: false }) });
+        }
+      }
+    };
+    r = await withFastTimers(() => catchIt(vision.analyzeImage('/tmp/a.jpg')));
+  }
+  eq(r.ok, true, 'B10 提交阶段网络失败 → 重试 1 次后成功');
+  eq(log.filter(x => x === '/task/submit').length, 2, 'B10b 提交重试恰好 1 次');
+
+  // B11 服务端一直 processing → 到窗口上限给 VISION_TIMEOUT（而不是笼统的失败）
+  log = [];
+  useCallContainer((p) => (p === '/task/submit'
+    ? { statusCode: 200, data: json({ taskId: 'tz', status: 'processing' }) }
+    : { statusCode: 200, data: json({ status: 'processing' }) }), log);
+  r = await withFastTimers(() => catchIt(vision.analyzeImage('/tmp/a.jpg')));
+  eq(r.code, 'VISION_TIMEOUT', 'B11 一直 processing → 到窗口上限报 VISION_TIMEOUT（带 code，不是笼统失败）');
+  hasNot(r.user, 'LLM_API_KEY', 'B11b 超时文案不泄漏运维术语');
+
+  // B12 上游 429（额度/限流）→ 必须与「照片不清」区分开
+  log = [];
+  useCallContainer((p) => (p === '/task/submit'
+    ? { statusCode: 200, data: json({ taskId: 'tq', status: 'processing' }) }
+    : { statusCode: 200, data: json({ status: 'error', code: 'VISION_QUOTA', message: 'upstream 429' }) }), log);
+  r = await withFastTimers(() => catchIt(vision.analyzeImage('/tmp/a.jpg')));
+  eq(r.code, 'VISION_QUOTA', 'B12 上游限流 → VISION_QUOTA 原样透出');
+  hasNot(r.user, '照片', 'B12b 限流不许归因成照片问题');
+  hasNot(r.user, '429', 'B12c 用户文案里不出现上游状态码');
+
   /* ── userMessage 本身 ── */
   const GENERIC = vision.userMessage({ code: '__NO_SUCH_CODE__' });
   truthy(GENERIC.length > 0, 'B7 未知 code 也有通用兜底文案');
@@ -216,14 +302,19 @@ const catchIt = (p) => p.then(() => ({ ok: true }), (e) => ({ ok: false, code: e
 
   /* ═══════════ [D] 跨端对齐：服务端产出的每个 code 都要翻得出人话 ═══════════ */
   console.log('[D] 跨端 code 对齐');
-  const serverSrc = analyzerPy + '\n' + appPy + '\n' + code('server/vision_llm.py');
+  const llmSrc = pyCode('server/vision_llm.py');
+  const serverSrc = analyzerPy + '\n' + appPy + '\n' + llmSrc;
   const codes = new Set();
-  serverSrc.replace(/code\s*[:=]\s*['"]([A-Z][A-Z0-9_]*)['"]/g, (_, c) => { codes.add(c); return ''; });
+  // 抽「源码里出现过的每个 VISION_* 字面量」，而不是只抽 `code = "X"` 那种写法。
+  // 旧正则漏掉了以**映射表**返回的 code（vision_llm._code_for_http 是 `return "VISION_AUTH"`），
+  // 于是那几个码**没有用户文案也能过** —— 正是「服务端说过的 code 必须都能翻成人话」的反例。
+  // 宁可多抽：多抽只会要求补文案，不会漏。
+  serverSrc.replace(/['"](VISION_[A-Z0-9_]+)['"]/g, (_, c) => { codes.add(c); return ''; });
   // 客户端自己也会造 code（本地校验失败等），一并纳入
   const clientSrc = code('utils/foodvision.js');
-  clientSrc.replace(/visionError\(\s*['"]([A-Z][A-Z0-9_]*)['"]/g, (_, c) => { codes.add(c); return ''; });
+  clientSrc.replace(/['"](VISION_[A-Z0-9_]+)['"]/g, (_, c) => { codes.add(c); return ''; });
   // 尺子自检：抽不到 code 说明正则在空转，绿灯不算数
-  truthy(codes.size >= 2, 'D0 从服务端/客户端抽到 ' + codes.size + ' 个 code（样本量正常）：' + [...codes].join(', '));
+  truthy(codes.size >= 6, 'D0 从服务端/客户端抽到 ' + codes.size + ' 个 code（样本量正常）：' + [...codes].join(', '));
   const unmapped = [...codes].filter((c) => vision.userMessage({ code: c }) === GENERIC);
   eq(unmapped.length, 0, 'D1 每个 code 都有专属用户文案' + (unmapped.length ? ' → 未映射 ' + unmapped.join(', ') : ''));
   [...codes].forEach((c) => {
@@ -233,6 +324,83 @@ const catchIt = (p) => p.then(() => ({ ok: true }), (e) => ({ ok: false, code: e
     hasNot(t, '环境变量', 'D2 ' + c + ' 的用户文案不含「环境变量」');
     hasNot(t, c, 'D2 ' + c + ' 的用户文案不暴露内部 code 字面量');
   });
+
+  /* ═══════════ [E] 快慢与归因（2026-09-29 用户反馈「很慢 + 经常识别不出来」）═══════════ */
+  console.log('[E] 超时窗口不许倒挂 + 上游错误必须分类 + 任务丢失要能自愈');
+
+  // E1 客户端轮询窗口必须**大于**服务端单次上游超时。倒挂的后果：服务端还在算，
+  // 客户端已经放弃并弹一句笼统的「识别超时」，用户永远看不到「到底为什么慢」的 code。
+  // 判据抽成纯函数，才能喂倒挂样本验证尺子本身有效（E1c）。
+  const srvTimeoutOf = (src) => Number((src.match(/REQ_TIMEOUT\s*=\s*(\d+)/) || [0, 0])[1]);
+  const deadlineOf = (src) => Number((src.match(/POLL_DEADLINE_MS\s*=\s*(\d+)/) || [0, 0])[1]);
+  const noInversion = (llmS, cliS) => {
+    const s = srvTimeoutOf(llmS), c = deadlineOf(cliS);
+    return s > 0 && c > 0 && c > s * 1000;
+  };
+  const srvTimeout = srvTimeoutOf(llmSrc);
+  const cliWindow = deadlineOf(clientSrc);
+  truthy(srvTimeout > 0 && cliWindow > 0,
+    'E1 两侧超时参数都抽到了（抽不到说明改了写法，须同步这条守卫）：服务端 ' + srvTimeout + 's / 客户端 ' + cliWindow + 'ms');
+  truthy(noInversion(llmSrc, clientSrc),
+    'E1b 客户端窗口(' + cliWindow + 'ms) > 服务端上游超时(' + srvTimeout + 's) ⇒ 超时一定由服务端先报出并带 code');
+  eq(noInversion('REQ_TIMEOUT = 50', 'const POLL_DEADLINE_MS = 20000;'), false,
+    'E1c 尺子自检：倒挂样本（客户端 20s < 服务端 50s）被同一条判据判为不成立');
+  eq(noInversion('REQ_TIMEOUT = 50', 'const POLL_DEADLINE_MS = 70000;'), true,
+    'E1d 尺子自检：正常样本（70s > 50s）判为成立（判据不是恒 false）');
+
+  // E2 上游错误必须分类，不能再一股脑 VISION_FAILED
+  has(llmSrc, 'def _code_for_http', 'E2 上游状态码有专门映射函数');
+  has(llmSrc, 'VISION_QUOTA', 'E2b 429 → 限流/额度自成一档（不能被说成「照片不清晰」）');
+  has(llmSrc, 'VISION_AUTH', 'E2c 401/403 → 鉴权自成一档');
+  has(llmSrc, 'VISION_MODEL', 'E2d 400 → 模型名/未开通自成一档');
+  hasNot(llmSrc, 'raise_for_status', 'E2e 不再用 raise_for_status()（它把 401/429/400 抹成同一个笼统异常）');
+  has(appPy, 'getattr(e, "code", None)', 'E2f app.py 尊重异常自带的 code，只在真没有时兜底 VISION_FAILED');
+  has(appPy, 'VISION_TASK_LOST', 'E2g 任务找不到时给出专属 code（旧实现不带 code ⇒ 被兜底成「换张清晰照片」）');
+
+  // E3 任务丢失要能自愈：客户端自动重提**一次**
+  has(clientSrc, 'VISION_TASK_LOST', 'E3 客户端认识「任务丢失」这个 code');
+  has(clientSrc, 'allowResubmit', 'E3b 任务丢失 → 自动重提一次（识别是只读的，重提不产生重复记录）');
+  has(clientSrc, 'SUBMIT_RETRY_MS', 'E3c 提交阶段网络失败也要重试（云托管冷启动第一枪常直接超时）');
+
+  // E4 「重试有没有用」必须逐个 code 表态。给用户一个注定失败的重试，比不给他更伤：
+  // 他会连点几次、每次等满轮询窗口，最后判定「这功能就是坏的」。
+  // ⚠️ 只验 isRetryable() 的返回值验不出漏登记（undefined 被 !! 收成 false，
+  //    与「明确不可重试」返回值完全一样）⇒ 必须拿到真表反查。
+  truthy(vision.RETRYABLE && typeof vision.RETRYABLE === 'object',
+    'E4 导出 RETRYABLE 对照表（「重试有没有用」的唯一真源）');
+  const stated = (c) => Object.prototype.hasOwnProperty.call(vision.RETRYABLE, c);
+  const unStated = [...codes].filter((c) => !stated(c));
+  eq(unStated.length, 0, 'E4b 每个 code 都表过态' + (unStated.length ? ' → 漏登记 ' + unStated.join(', ') : ''));
+  // 尺子自检：喂一个肯定没登记的 code，同一条判据必须判红（否则这条断言恒绿）
+  eq(['__NO_SUCH_CODE__'].filter((c) => !stated(c)).length, 1, 'E4c 尺子自检：未登记的 code 会被判为漏登记');
+  const yes = [...codes].filter((c) => vision.RETRYABLE[c] === true);
+  const no = [...codes].filter((c) => vision.RETRYABLE[c] === false);
+  truthy(yes.length > 0 && no.length > 0,
+    'E4d 「可重试」与「不可重试」两类都存在（全 true/全 false 等于没分档）：可 ' + yes.join(',') + ' / 不可 ' + no.join(','));
+  const quirks = (() => {
+    try { return vision.isRetryable(null) === false && vision.isRetryable({}) === false; } catch (e) { return false; }
+  })();
+  truthy(quirks, 'E4e isRetryable 的边界：null / 无 code 一律判 false，且不抛异常');
+
+  /* ═══════════ [F] 页面接线：等待要有推进感、要有出口、重试只在有用时出现 ═══════════ */
+  console.log('[F] food-scan：识别中必须能看出「在动」且能退出');
+  const scanWxml = stripWxml(read('pages/food-scan/food-scan.wxml'));
+  const scanWxss = stripJs(read('pages/food-scan/food-scan.wxss'));
+  has(scanWxml, '{{anTip}}', 'F1 识别中展示**阶段文案**（整段只有一句静态文案时，20s 的等待就像卡死）');
+  has(scanWxml, '{{anSec}}', 'F2 识别中展示已用秒数（「它确实在推进」的证据）');
+  has(scanWxml, 'bindtap="cancelAnalyze"', 'F3 识别中留了**出口**（最长 70s 的等待不能没有返回路径）');
+  has(scanJs, 'cancelAnalyze()', 'F3b cancelAnalyze 已实现（wxml 里的事件名必须有对应处理器，否则点了静默无反应）');
+  has(scanJs, '_startAnTimer(', 'F4 秒数计时器已启动');
+  has(scanJs, '_stopAnTimer(', 'F5 计时器有停：成功/失败/取消/卸载都要停');
+  has(scanJs, 'onUnload() { this._stopAnTimer(); }', 'F5b onUnload 停表（setInterval 不会随页面卸载自动消失）');
+  has(scanJs, 'vision.isRetryable(', 'F6 失败弹窗按 isRetryable() 决定要不要给「重试」按钮');
+  has(scanJs, 'this._lastImg', 'F7 重试用同一张图（失败就逼人重拍，等于把我们的问题转嫁给他）');
+  has(scanJs, 'id !== this._anId', 'F8 取消后作废在途回调（否则迟到的响应会把结果页又拽回来）');
+  has(scanWxss, '.an-cancel', 'F9 .an-cancel 有样式（wxml 引了 class 却没样式 = 一行裸文字，看不出能不能点）');
+  has(scanWxss, '.an-sec', 'F10 .an-sec 有样式');
+  // 尺子自检：剥注释这条得真有效，否则 F1/F2 会被注释里的字面量顶替成假绿
+  eq(stripWxml('<!-- {{anTip}} --><view/>').indexOf('{{anTip}}'), -1,
+    'F11 尺子自检：stripWxml 确实剥掉了注释里的字段名');
 
   console.log('\npass=' + pass + '  fail=' + fail);
   process.exit(fail ? 1 : 0);
