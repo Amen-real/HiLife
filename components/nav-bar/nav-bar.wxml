@@ -11,6 +11,13 @@
         </view>
       </view>
       <text wx:if="{{title}}" class="nb-title">{{title}}</text>
+      <!-- ⚠️ 往右侧 slot 塞控件前必读：这一格正对微信系统胶囊（「··· ⊙」更多/关闭），
+           它不进布局树、z-index 压不住 ⇒ 塞进来的控件会被胶囊盖住且**点不到**。
+           要么别用这个 slot，要么先在宿主页里
+             const navMetrics = require('../../utils/navMetrics');
+             this.setData({ navInsetStyle: navMetrics.topRightStyle() });
+           再给塞进来的控件加 style="{{navInsetStyle}}" 让出胶囊宽度。
+           （当前 16 页无人填充本 slot，因此暂无实际影响。） -->
       <view class="nb-side nb-right">
         <slot name="right"></slot>
       </view>

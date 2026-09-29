@@ -20,6 +20,7 @@ const auth = require('../../utils/auth.js');
 const vision = require('../../utils/foodvision.js');
 const theme = require('../../utils/theme.js');
 const foodkb = require('../../utils/foodkb.js');
+const navMetrics = require('../../utils/navMetrics.js');
 const privacy = require('../../utils/privacy.js');
 const metrics = require('../../utils/metrics.js');
 
@@ -104,6 +105,10 @@ Page({
     flash: false,         // 闪光灯（torch）
     camError: false,      // 相机权限被拒/不可用
     statusBarStyle: 'height: 0px',
+    // 顶部行右侧内缩（微信系统胶囊「··· ⊙」的让位量，px）。见 utils/navMetrics.js。
+    // ⚠️ 本页三处顶部行都有靠右控件（取景态闪光灯 / 结果态「完成」/ 历史态「清空」），
+    //    而这三行都正好落在胶囊那一格 ⇒ 三处都吃这一个值。
+    navInsetStyle: '',
     photo: null,          // 识别结果 {name, kcal, weight, protein, carb, fat, confText, items[], img, nutri[], canEdit, edited, reused, lowConf}
     history: [],          // 识别历史（本地存储，仅文字/数字字段）
     anSec: 0,             // 识别中已用秒数（给用户一个「它在动」的证据）
@@ -113,8 +118,10 @@ Page({
   },
 
   onLoad() {
-    const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
-    this.setData({ statusBarStyle: 'height: ' + (info.statusBarHeight || 20) + 'px' });
+    // 顶部两条内边距都从 navMetrics 取 —— 状态栏高度与胶囊内缩是同一套窗口度量，
+    // 本页不再自己读一份 getWindowInfo（那正是「第二份实现」，会各走各的兜底值）。
+    this.setData({ statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px' });
+    this.setData({ navInsetStyle: navMetrics.topRightStyle() });
     this.setData({ history: this.loadHistory() });
     this.syncKb();
   },

@@ -18,6 +18,11 @@
    伪元素 / mask 图标 / 渐变，图标用文字字形或纯 CSS 圆环。 */
 .cam { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
 
+/* ⚠️ 这一行**必须**吃 navInsetStyle（见 utils/navMetrics.js）：
+   闪光灯靠右，而它正好落在微信系统胶囊（「··· ⊙」更多/关闭）那一格。
+   胶囊是微信自己渲染的：不进布局树、不参与 flex、z-index 压不住 —— 不让位就是
+   「闪光灯压在胶囊上」，触摸被系统截走 ⇒ 按钮完全点不到。2026-09-29 真机复现。
+   注意：这里是**横向**让位，与纵向位置无关（胶囊贴屏幕右缘，只要本行右边界在它左边界之左即安全）。 */
 .cam-top {
   position: absolute; top: 0; left: 0; right: 0;
   padding: 90rpx 36rpx 0;
@@ -126,7 +131,11 @@
   display: flex; flex-direction: column;
 }
 /* 导航行同样不许被压缩：它是全屏唯一的返回出口（同 training-review 的
-   .sc-cancel「绝不许被挤掉」）。 */
+   .sc-cancel「绝不许被挤掉」）。
+   右侧内缩由 navInsetStyle 注入 —— 行内「清空」靠右，必须给微信系统胶囊让位
+   （理由与几何性质见 utils/navMetrics.js 与 .cam-top 注释）。
+   代价：padding-right 变大 ⇒ .h-title 的 flex:1 可分配宽度变小，标题视觉中心
+   会略左移。这是**必须付的**：换来的是这一行有一个真的点得到的「清空」。 */
 .h-nav {
   display: flex; flex-direction: row; align-items: center;
   flex: 0 0 auto;
@@ -164,6 +173,9 @@
   background: var(--n-50);
   display: flex; flex-direction: column;
 }
+/* 右侧内缩由 navInsetStyle 注入。「完成」靠右 ⇒ 与微信系统胶囊同一格，
+   不让位就点不到（同 .cam-top / .h-nav 的说明）。
+   代价同 .h-nav：本行无居中标题，所以这一处只有收益。 */
 .r-nav {
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
   flex: 0 0 auto;          /* 见 .h-nav 说明 */
@@ -174,6 +186,8 @@
   display: flex; align-items: center; justify-content: center;
 }
 .r-back .ico-arrowleft { background-color: var(--n-700); }
+/* 「完成」——本行靠右控件，胶囊让位的受益者。「返回」在左侧，不受影响
+   （胶囊只贴右，左侧无系统遮挡）。 */
 .r-done {
   height: 60rpx; line-height: 60rpx; padding: 0 32rpx;
   background: var(--primary); color: #0A0A0A;
