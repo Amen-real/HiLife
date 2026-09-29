@@ -634,10 +634,16 @@
   animation: hist-up 0.26s ease;
 }
 @keyframes hist-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+/* ⚠️ 本抽屉是 max-height 定高（80vh）的纵向 flex —— 于是「谁能被压缩」不是可选项：
+   .hist-body 是 scroll-view，**必须** min-height:0 才会把自己收进剩余空间并内部滚动；
+   不给它这条，它会按内容高度撑开、顶破抽屉，溢出的负空间就按「shrink × 尺寸」
+   摊到 .hist-head 头上 —— 那是放 ✕ 关闭键的一行，被压矮后按钮溢出、点不到。
+   （2026-09-29 与 food-scan 顶栏同一根因；见该页 .status-spacer 的注释。） */
 .hist-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex: 0 0 auto;                 /* 唯一出口所在行，绝不许被挤掉 */
   padding: 32rpx 40rpx 16rpx;
 }
 .hist-title { font-size: var(--fs-title); font-weight: 600; color: var(--text); }
@@ -651,6 +657,7 @@
 }
 .hist-body {
   flex: 1;
+  min-height: 0;
   padding: 0 40rpx 40rpx;
   box-sizing: border-box;
 }

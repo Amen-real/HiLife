@@ -35,7 +35,9 @@
 }
 
 .p-hero-body { position: relative; z-index: 1; }
-.p-sb { width: 100%; }
+/* 状态栏占位（父容器 .p-hero-body 目前是块级流，不会被压缩 —— 显式钉死是防后人把它
+   挪进 flex 容器；food-scan 就是这么出事故的，见该页 .status-spacer 注释）。 */
+.p-sb { width: 100%; flex: 0 0 auto; }
 
 .p-title {
   padding: 18rpx 36rpx 0;

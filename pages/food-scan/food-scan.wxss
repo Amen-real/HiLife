@@ -3,7 +3,14 @@
 .page { min-height: 100vh; position: relative; }
 .page-dark { background: #0A0A0A; }
 .page-result { background: var(--n-50); }
-.status-spacer { width: 100%; }
+/* 状态栏占位。⚠️ flex 子项默认 flex-shrink:1 —— 本页它是落在 .result / .hist
+   （display:flex; flex-direction:column）里的，容器一旦溢出，这 44px 会被压缩成 ~0，
+   顶部「返回 / 完成」直接钻进手机状态栏里，**连点都点不到**（状态栏区域归系统，
+   触摸事件根本不下发给 WebView）。2026-09-29 真机复现。
+   ⇒ 必须显式钉死不可压缩。
+   对照：home 的 .page-body / profile 的 .p-hero-body 都只是普通块级流，
+   占位块天然不会被压 —— 那条路径只是「恰好安全」，不是本题的解法。 */
+.status-spacer { width: 100%; flex: 0 0 auto; }
 
 /* ==================== 取景态（08） ====================
    ⚠️ camera 是原生组件，覆盖物全部用 cover-view：
@@ -118,8 +125,11 @@
   background: #0A0A0A;
   display: flex; flex-direction: column;
 }
+/* 导航行同样不许被压缩：它是全屏唯一的返回出口（同 training-review 的
+   .sc-cancel「绝不许被挤掉」）。 */
 .h-nav {
   display: flex; flex-direction: row; align-items: center;
+  flex: 0 0 auto;
   padding: 16rpx 32rpx;
 }
 .h-back {
@@ -130,7 +140,13 @@
 .h-back .ico-arrowleft { background-color: #FFFFFF; }
 .h-title { flex: 1; text-align: center; color: #FFFFFF; font-size: 34rpx; font-weight: 700; }
 .h-clear { color: rgba(255,255,255,0.6); font-size: 26rpx; padding: 8rpx 0 8rpx 24rpx; }
-.h-scroll { flex: 1; padding: 8rpx 32rpx 60rpx; box-sizing: border-box; }
+/* scroll-view 作为纵向 flex 子项时必须能收缩 —— min-height:0 是这条约束的开关。
+   不加的后果（2026-09-29 真机）：它按**内容**高度撑开、顶破 .result，
+   溢出的负空间由可压缩的兄弟（状态栏占位、导航行）按「shrink × 内容尺寸」分摊，
+   于是顶部被压到状态栏里；同时因为自身高度 == 内容高度，**内部滚动也失效**，
+   结果卡片的底部内容根本滚不到。
+   这与 workout.wxss 的 .repl-body（flex:1; min-height:0）是同一套写法。 */
+.h-scroll { flex: 1; min-height: 0; padding: 8rpx 32rpx 60rpx; box-sizing: border-box; }
 .h-item {
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
   background: rgba(255,255,255,0.07); border-radius: 24rpx;
@@ -150,6 +166,7 @@
 }
 .r-nav {
   display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+  flex: 0 0 auto;          /* 见 .h-nav 说明 */
   padding: 16rpx 32rpx;
 }
 .r-back {
@@ -162,7 +179,8 @@
   background: var(--primary); color: #0A0A0A;
   border-radius: 999rpx; font-size: 26rpx; font-weight: 700;
 }
-.r-scroll { flex: 1; padding: 0 32rpx; box-sizing: border-box; }
+/* 见 .h-scroll 的说明（同一条约束，别漏改这一个）。 */
+.r-scroll { flex: 1; min-height: 0; padding: 0 32rpx; box-sizing: border-box; }
 .r-title { font-size: 44rpx; font-weight: 800; color: var(--n-900); letter-spacing: -0.01em; line-height: 1.25; }
 .r-conf { color: var(--text-weak); font-size: 24rpx; margin-top: 10rpx; }
 

@@ -21,7 +21,10 @@
   position: relative;
   z-index: 1;
 }
-.status-bar-spacer { width: 100%; }
+/* 状态栏占位。父容器 .page-body 目前只是块级流，理论上压不到它 ——
+   但仍显式钉死：占位一旦被压没，顶部就成了状态栏下面的死区。
+   同页 food-scan 的 .status-spacer 就是被 flex 压成 ~0 才出的事故（2026-09-29）。 */
+.status-bar-spacer { width: 100%; flex: 0 0 auto; }
 .hero-top { padding: 14rpx 38rpx 4rpx; }
 .brand-name {
   font-size: 34rpx;
