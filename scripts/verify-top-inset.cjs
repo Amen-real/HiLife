@@ -20,7 +20,17 @@
 //       [B] 手写占位块必须显式不可压缩
 //       [C] 定高 flex 纵向容器里的 scroll-view 必须能收缩
 //       [D] 行为：stub wx 跑真实 onLoad，占位块真的拿到状态栏高度
+//       [G] 顶部行的**靠右控件**必须为微信系统胶囊（「··· ⊙」）预留右侧内缩
 // 用法：node scripts/verify-top-inset.cjs
+//
+// ── [G] 的由来（2026-09-29，紧接 [A]~[C] 修完之后） ──────────────────────
+// 把顶部从状态栏里救出来之后，暴露了**下一个**遮挡者：微信系统胶囊。
+// 它是微信自己渲染的，不进布局树、不参与 flex、z-index 也压不住 ⇒
+// 页面把控件摆进它那一格，触摸就被系统截走，按钮**完全点不到**。
+// 几何关键：[胶囊贴屏幕右缘] ⇒ 只要控件右边界在胶囊左边界之左就永远不重叠，
+// **与纵向位置无关**。所以解法是横向让位，且内缩量必须实测（胶囊宽度随机型变化）。
+// 全仓现状：只有 food-scan 一页把控件放进了这一格（取景态闪光灯 / 结果态「完成」/
+// 历史态「清空」），三处都必须接上 utils/navMetrics.js。
 const path = require('path');
 const fs = require('fs');
 const ROOT = path.join(__dirname, '..');
@@ -207,6 +217,69 @@ truthy(scrollCanAbsorb('max-height: 56vh;') && isFixedHeightFlexColumn('display:
     + (offenders.length ? ' → 缺 ' + offenders.join(' , ') : ''));
 }
 
+/* ═══════════ [G] 顶部行靠右控件必须给微信系统胶囊让位 ═══════════ */
+console.log('[G] 顶部行的靠右控件必须为系统胶囊（「··· ⊙」）预留右侧内缩');
+/* 用可注入的假 wx 驱动**真实模块** utils/navMetrics.js —— 
+   只验「模块里有没有那句话」不算验，得让它在两种环境下各跑一次看返回值。 */
+function withWx(fake, fn) {
+  const prev = global.wx;
+  const had = Object.prototype.hasOwnProperty.call(global, 'wx');
+  global.wx = fake;
+  try { return fn(); } finally { if (had) global.wx = prev; else delete global.wx; }
+}
+const navMetrics = require(path.join(ROOT, 'utils', 'navMetrics.js'));
+
+const RECT = { left: 296, right: 383, width: 87, top: 53, bottom: 85, height: 32 };
+const G1 = withWx({ getWindowInfo: () => ({ windowWidth: 390, statusBarHeight: 47 }),
+                    getMenuButtonBoundingClientRect: () => RECT }, () => navMetrics.topRightInset());
+const G2 = withWx({ getWindowInfo: () => ({ windowWidth: 390, statusBarHeight: 47 }) },
+                  () => navMetrics.topRightInset());
+// 实测分支：胶囊左缘距屏右 390-296=94，加呼吸间隙 8 ⇒ 102
+eq(G1, 102, 'G1 实测分支：内缩 = 屏右→胶囊左缘(94) + 间隙(8) = 102px');
+// 兜底分支：API 不存在（低版本基础库 / 测试环境）也不许返回 0 / NaN / undefined
+truthy(Number.isFinite(G2), 'G2 测不到胶囊时返回值必须是有限数（不许 NaN/undefined，否则 style 串会写出 "padding-right: NaNpx"）');
+truthy(G2 >= 100, 'G3 兜底值不得小于常见胶囊宽+右边距（实测 ' + G2 + 'px）—— 兜底偏小 = 在测不到胶囊的机型上照样重叠');
+// 尺子自检：**证明它不是恒返回同一个数**，否则 G1/G2 是一对假绿
+truthy(G1 !== G2, 'G4 尺子自检：实测分支与兜底分支给出的值不同（' + G1 + ' vs ' + G2 + '）⇒ 判据真的读了胶囊，不是常量');
+eq(withWx({ getWindowInfo: () => ({ windowWidth: 390 }), getMenuButtonBoundingClientRect: () => ({}) },
+          () => navMetrics.topRightInset()), G2, 'G5 胶囊返回空对象时也必须走兜底（不能算出 NaN）');
+has(withWx({ getWindowInfo: () => ({ windowWidth: 390 }), getMenuButtonBoundingClientRect: () => RECT },
+           () => navMetrics.topRightStyle()), 'padding-right: 102px',
+  'G6 topRightStyle 只注入 padding-right 一条（长写覆盖简写的一侧，不动该行其它 padding）');
+
+{
+  /* 三处顶部行都接上了内缩。⚠️ 这里刻意**逐个列名**而不是「页面上出现过 navInsetStyle 就算过」——
+     后者会让「只接了一处」的漏网写法照样绿灯（本页就有三处，漏一处用户就点不到那个按钮）。 */
+  const w = stripWxml(wxmlOf('food-scan'));
+  const SITES = [
+    ['cam-top', '取景态闪光灯（靠右）'],
+    ['h-nav', '识别历史「清空」（靠右）'],
+    ['r-nav', '识别结果「完成」（靠右）']
+  ];
+  const missing = [];
+  for (const [cls, why] of SITES) {
+    const re = new RegExp('<[a-z-]+[^>]*class="' + cls + '"[^>]*>');
+    const tag = (w.match(re) || [])[0];
+    if (!tag) { missing.push(cls + '（源码里找不到这个元素 ⇒ 结构变了，本段失去对象）'); continue; }
+    if (!/style="\{\{navInsetStyle\}\}"/.test(tag)) missing.push(cls + ' — ' + why);
+  }
+  eq(missing.length, 0, 'G7 food-scan 三处顶部行都要挂 style="{{navInsetStyle}}"'
+    + (missing.length ? ' → 缺 ' + missing.join(' ; ') : ''));
+  truthy(SITES.length >= 3, 'G8 本段盯住了 ' + SITES.length + ' 处（少一处说明清单被改小了）');
+}
+
+{
+  /* 未来防线：有页面向 <nav-bar> 的右侧 slot 塞控件时，必须同时把内缩接上。
+     判据先喂样本证明「看得见被测物」——现在 0 页填充，否则这条就是个不会红的摆设。 */
+  const fillsSlot = (text) => /slot="right"/.test(stripWxml(text));
+  eq(fillsSlot('<nav-bar title="x"><view slot="right">a</view></nav-bar>'), true, 'G9 尺子自检：能认出填了右侧 slot 的写法');
+  eq(fillsSlot('<nav-bar title="x" show-back="{{true}}" />'), false, 'G10 尺子自检：普通 nav-bar 不算填充（本仓 16 页都是这种）');
+  const reservers = PAGES.filter((p) => fillsSlot(wxmlOf(p)));
+  const bad2 = reservers.filter((p) => !/navInsetStyle/.test(wxmlOf(p)) || !/navInsetStyle/.test(read('pages/' + p + '/' + p + '.js')));
+  eq(bad2.length, 0, 'G11 填了 nav-bar 右侧 slot 的页面必须同时接上 navInsetStyle'
+    + (bad2.length ? ' → ' + bad2.join(', ') : '（当前 ' + reservers.length + ' 页填充该 slot ⇒ 本条对现状无约束，仅防未来）'));
+}
+
 /* ═══════════ [D] 行为：占位块真的拿到状态栏高度 ═══════════ */
 console.log('[D] stub wx 跑真实 onLoad，确认占位块拿到的是真实状态栏高度（不是 0px 兜底）');
 (async () => {
@@ -214,6 +287,9 @@ console.log('[D] stub wx 跑真实 onLoad，确认占位块拿到的是真实状
   global.getApp = () => ({ globalData: { meals: [], trainingLogs: [], weightRecords: [], profile: {}, selectedActions: [] } });
   global.wx = {
     getWindowInfo: () => ({ statusBarHeight: 44, windowWidth: 390, windowHeight: 844 }),
+    // 走**生产路径**（实测胶囊），而不是让本段落到兜底分支上：
+    // 兜底分支已由 [G] 的 G2/G3/G5 在模块层覆盖，这里要证明的是「页面真的调了这个模块」。
+    getMenuButtonBoundingClientRect: () => ({ left: 296, right: 383, width: 87, top: 53, bottom: 85, height: 32 }),
     getStorageSync: (k) => storage[k],
     setStorageSync: (k, v) => { storage[k] = v; },
     showModal: () => {}, showToast: () => {}, openSetting: () => {},
@@ -235,6 +311,10 @@ console.log('[D] stub wx 跑真实 onLoad，确认占位块拿到的是真实状
       bad('D2 onLoad 抛错：' + (e && e.message));
     }
     eq(inst.data.anSec, 0, 'D3 识别中秒数初值为 0（配合 .an-sec 的 wx:if 门槛）');
+    // 102 = 屏宽390 − 胶囊左缘296 + 呼吸间隙8。写死这个数是**有意**的：
+    // 它同时证明「页面确实调了 navMetrics」（而不是自己拍了个常量）——
+    // 若只是摆设，这里多半会是 '' 或兜底的 112。
+    eq(inst.data.navInsetStyle, 'padding-right: 102px', 'D4 onLoad 后拿到系统胶囊的让位内缩（走真实测量分支）');
   }
 
   console.log('\npass=' + pass + '  fail=' + fail);
