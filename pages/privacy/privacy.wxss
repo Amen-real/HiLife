@@ -9,6 +9,11 @@
 .sec { margin-bottom: 36rpx; }
 .h { font-size: var(--fs-head); font-weight: 700; color: var(--text); margin-bottom: 14rpx; }
 .p { font-size: var(--fs-body); line-height: 1.75; color: var(--text-sub); margin-bottom: 8rpx; }
+/* 联系邮箱：可点复制。字色用 --text（随主题翻转：浅色近黑 / 深色翻白），
+   不用 --primary / --primary-deep —— 亮绿压浅底 ≈1.05:1 等于隐形、--primary-deep 压白底仅 2.4:1 不到 AA；
+   也不用 --primary-text（本页深色块没定义它，不会翻色，深色下同样低对比）。
+   下划线表意「可点」，与正文区分。 */
+.mail { color: var(--text); text-decoration: underline; }
 .updated { font-size: var(--fs-caption); color: var(--text-weak); margin-top: 24rpx; }
 
 /* ══════════════════════════════════════════════════════════════

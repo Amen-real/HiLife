@@ -282,28 +282,6 @@
 .menu .mi.danger .mi-t { color: var(--error); }
 .menu .mi.danger .ico--ink { background-color: var(--error); }
 
-/* 「联系开发者」必须是 <button open-type="contact"> 才能唤起微信客服会话。
-   button 自带灰底 / 圆角 / 居中 / line-height / ::after 描边，
-   不清干净就与上下几行的 <view class="mi"> 长得不一样。
-   （display / padding / gap 由上面的 .menu .mi 统一给，这里只清 button 专有的那几项；
-     这几项都与主题无关，故无需深色覆盖。）
-   ⚠️ line-height / font-size 必须用 inherit，**不能写 normal**：
-   .menu .mi-t 自己不设 line-height，靠从 page 继承（page 里是 1.5）。
-   button 默认 line-height 是 2.55，写 normal 又变成 1.2 —— 两种都会让这一行比
-   上下三行 <view class="mi"> 高一截。inherit 才能让四个菜单行量到同一个行高。 */
-.menu .mi-btn {
-  width: 100%;
-  margin: 0;
-  background-color: transparent;
-  border-radius: 0;
-  line-height: inherit;
-  text-align: left;
-  overflow: visible;
-  font-size: inherit;
-  color: inherit;
-}
-.menu .mi-btn::after { display: none; }
-
 /* 媒体署名 */
 .attribution {
   padding: 28rpx 36rpx calc(40rpx + env(safe-area-inset-bottom));
