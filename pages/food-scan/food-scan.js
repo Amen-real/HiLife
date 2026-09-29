@@ -64,6 +64,26 @@ function parseNum(txt, max) {
 }
 
 /**
+ * 识别中的阶段提示。为什么要按秒升级文案：
+ * 识别走的是「提交任务 → 轮询」的异步链路，模型通常 3~10s，慢时能到几十秒。
+ * 原先整段只有一句静态「AI 识别中…」，用户等 20 秒得不到任何反馈，
+ * 体感就从「慢」变成「卡死了 / 识别不出来」——**感知的一半是反馈，不是速度**。
+ * 最后一段要给出「可以不等」的出口，避免让人被困在一个可能还要等一分钟的页面里。
+ */
+const AN_TIPS = [
+  [8, '正在分析食物营养'],
+  [20, '还在识别，请稍候（模型较慢）'],
+  [Infinity, '还在识别…可以继续等，或返回后手动填写热量']
+];
+
+function anTipFor(sec) {
+  for (let i = 0; i < AN_TIPS.length; i++) {
+    if (sec < AN_TIPS[i][0]) return AN_TIPS[i][1];
+  }
+  return AN_TIPS[AN_TIPS.length - 1][1];
+}
+
+/**
  * 派生态：营养行**必须由源值同算**，不能在 setData 时手工维护。
  * 本项目已经踩过一次「派生态与源数据不同算」→ 改完 kcal 行上还留着旧数值。
  */
@@ -86,6 +106,8 @@ Page({
     statusBarStyle: 'height: 0px',
     photo: null,          // 识别结果 {name, kcal, weight, protein, carb, fat, confText, items[], img, nutri[], canEdit, edited, reused, lowConf}
     history: [],          // 识别历史（本地存储，仅文字/数字字段）
+    anSec: 0,             // 识别中已用秒数（给用户一个「它在动」的证据）
+    anTip: AN_TIPS[0][1], // 识别中阶段文案（见 AN_TIPS）
     kbSize: 0,            // A3：本地知识库已记条目数
     kbSaved: 0            // A3：本周命中知识库、因而**没有调用模型**的次数
   },
@@ -107,6 +129,10 @@ Page({
     }
     this.syncKb();
   },
+
+  // 页面销毁时一定要停掉计时器：setInterval 不会随页面卸载自动消失，
+  // 留着它就是一个对已销毁实例的 setData，静默报错且每秒一次。
+  onUnload() { this._stopAnTimer(); },
 
   // 知识库状态。数据量极小（一次 size + 一次区间聚合），onShow 里同步读不会拖慢页面。
   // 两个模块的存储访问内部都已吞异常，这里再兜一层：展示性数据不该让页面起不来。
@@ -172,14 +198,43 @@ Page({
   },
 
   /* ---------- 识别 ---------- */
+
+  /**
+   * 识别中计时器：每秒刷新已用秒数与阶段文案。
+   *
+   * 为什么非要让它动起来：识别走「提交任务 → 轮询」，模型常 3~10s、慢时几十秒。
+   * 原先整页只有一句静态「AI 识别中…」，等 20s 得不到任何新信息，
+   * 体感就从「慢」变成「卡死了 / 识别不出来」。**感知的一半来自反馈，不是速度本身。**
+   * 粒度刻意取 1s：够消除「卡死」感，又不至于给一个正在等的人额外加渲染负担。
+   */
+  _startAnTimer() {
+    this._stopAnTimer();
+    const t0 = Date.now();
+    this._anTimer = setInterval(() => {
+      const sec = Math.floor((Date.now() - t0) / 1000);
+      this.setData({ anSec: sec, anTip: anTipFor(sec) });
+    }, 1000);
+  },
+
+  _stopAnTimer() {
+    if (this._anTimer) { clearInterval(this._anTimer); this._anTimer = null; }
+  },
+
   analyze(tempFilePath) {
+    // 每次识别领一个自增号。取消或再次识别都会让号前进，在途回调据此作废 ——
+    // 否则「取消后请求才返回」会把用户又拽回结果页，看起来像页面自己在跳。
+    const id = (this._anId = (this._anId || 0) + 1);
     this._busy = true;
-    this.setData({ view: 'analyzing' });
+    this._lastImg = tempFilePath;   // 失败弹窗的「重试」用同一张图再跑，不必逼用户重拍
+    this.setData({ view: 'analyzing', anSec: 0, anTip: anTipFor(0) });
+    this._startAnTimer();
     const t0 = Date.now();
     // 记在「发起」而不是「成功」：识别失败也是真花了钱 —— 按次计费的调用已经发生
     metrics.inc(metrics.EVENTS.VISION_START);
     vision.analyzeImage(tempFilePath).then((raw) => {
+      if (id !== this._anId) return;   // 已被取消：结果作废，不落任何界面
       this._busy = false;
+      this._stopAnTimer();
       if (!raw || raw.success === false) {
         throw new Error((raw && raw.note) || '未识别出食物，请靠近重拍');
       }
@@ -236,19 +291,47 @@ Page({
       this.pushHistory(photo);
       this.setData({ photo: photo, view: 'result' });
     }).catch((err) => {
+      if (id !== this._anId) return;   // 已取消：不弹失败、也不记一笔失败
       metrics.inc(metrics.EVENTS.VISION_FAIL);
       this._busy = false;
+      this._stopAnTimer();
       this._raw = null;
       this.setData({ view: 'camera' });
       // 只弹 userMessage 翻好的人话。服务端的 err.message 是给运维排查用的
       // （可能含「去配哪个环境变量」），原样甩给用户既看不懂、也等于泄漏内部配置。
       console.warn('[food-scan] 识别失败', err && err.code, err);
+      // 「重试」只在该重试有用时出现。给一个注定失败的按钮，用户会连点几次、
+      // 每次等满轮询窗口，最后得出的结论是「这功能就是坏的」—— 比不给更伤。
+      const canRetry = vision.isRetryable(err);
       wx.showModal({
         title: '识别失败',
-        content: vision.userMessage(err),
-        showCancel: false
+        content: vision.userMessage(err)
+          + (canRetry ? '' : '\n\n（这属于识别服务侧的问题，重拍也解决不了，建议手动填写热量）'),
+        showCancel: canRetry,
+        confirmText: canRetry ? '重试' : '知道了',
+        cancelText: '取消',
+        success: (r) => {
+          if (canRetry && r.confirm && this._lastImg) this.analyze(this._lastImg);
+        }
       });
     });
+  },
+
+  /**
+   * 取消识别：作废在途回调（_anId 前进），回到取景。
+   *
+   * 为什么识别中那页必须留出口：轮询窗口最长 70s，没有出口就是把人困住 ——
+   * 而阶段文案里写着「可以返回后手动填写热量」，一个没有返回入口的页面
+   * 会把那句话变成实现不了的承诺。
+   * 注意**不谎报**：请求已经发出、按次计费的调用可能已经发生，所以只作废界面回填，
+   * 不去回滚已记的 VISION_START（成本是真的，不该在统计里消失）。
+   */
+  cancelAnalyze() {
+    this._anId = (this._anId || 0) + 1;
+    this._busy = false;
+    this._stopAnTimer();
+    this._raw = null;
+    this.setData({ view: 'camera', anSec: 0 });
   },
 
   /* ---------- A3：纠错 ---------- */

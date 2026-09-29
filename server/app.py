@@ -34,7 +34,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------- 异步任务存储（单实例内存态；云托管最小实例数保持 1 即可） ----------
+# ---------- 异步任务存储（单实例内存态） ----------
+# ⚠️ 部署前提：云托管**必须固定为 1 个实例**（最小实例数 = 1、最大实例数 = 1）。
+#    这张表只在进程内存里 ⇒ 一旦扩到多实例、或缩容/发布重启，轮询就会打到「没有这个 taskId」
+#    的实例，用户侧表现为**随机失败**（见 task_get 的 VISION_TASK_LOST）。
+#    客户端已加「任务丢失 → 自动重提一次」兜底，但那只是补救，不是允许你把实例数放开。
 TASKS = {}        # task_id -> {"status": processing|done|error, ...result}
 TASK_ORDER = []   # 插入顺序，用于淘汰旧任务
 
@@ -57,8 +61,12 @@ def _run_task(task_id: str, data: bytes, filename: str):
         print("[vision] 引擎不可用：", e)
         _remember(task_id, {"status": "error", "code": e.code, "message": str(e)})
     except Exception as e:  # noqa: BLE001
-        print("[vision] 识别失败：", repr(e))
-        _remember(task_id, {"status": "error", "code": "VISION_FAILED", "message": str(e)})
+        # 把异常自带的 code 带出去：vision_llm.LLMError 会分门别类（超时 / 额度 / 鉴权 / 模型名）。
+        # 旧实现无论什么异常都写死 VISION_FAILED ⇒ 上游 401/429 也被翻成
+        # 「换一张更清晰的照片再试试」，用户重拍一百次也没用。只有真没有 code 的才兜底。
+        code = getattr(e, "code", None) or "VISION_FAILED"
+        print("[vision] 识别失败(%s)：" % code, repr(e))
+        _remember(task_id, {"status": "error", "code": code, "message": str(e)})
 
 def _decode_b64_image(s: str) -> bytes:
     if s.startswith("data:") and "," in s:
@@ -126,7 +134,14 @@ async def task_submit(request: Request, image: UploadFile = File(None)):
 def task_get(task_id: str):
     t = TASKS.get(task_id)
     if not t:
-        return {"status": "error", "message": "task not found or expired"}
+        # 必须带 code。不带 code 会被客户端兜底成 VISION_FAILED ⇒ 用户看到
+        # 「换一张更清晰的照片再试试」，而实际上是任务在这台实例上不存在（丢了）。
+        # 客户端拿到 VISION_TASK_LOST 会**自动重提一次**，用户通常感觉不到。
+        return {
+            "status": "error",
+            "code": "VISION_TASK_LOST",
+            "message": "task not found or expired（本实例上没有此任务：可能重启 / 缩容 / 多实例）",
+        }
     return t
 
 

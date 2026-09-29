@@ -38,10 +38,15 @@
   </block>
 
   <!-- ============== 识别中 ============== -->
+  <!-- 这一页的三件事：① 转圈证明程序活着；② anSec/anTip 每秒更新，证明**它在推进**；
+       ③ 一个「取消」出口 —— 轮询窗口最长 70s，没有出口就是把用户困住，
+       而慢速档文案里写着「可以返回后手动填写热量」，那就成了一句实现不了的承诺。 -->
   <view wx:elif="{{view === 'analyzing'}}" class="analyzing">
     <view class="an-ring"></view>
     <view class="an-text">AI 识别中…</view>
-    <view class="an-sub">正在分析食物营养</view>
+    <view class="an-sub">{{anTip}}</view>
+    <view class="an-sec" wx:if="{{anSec >= 3}}">已等待 {{anSec}} 秒</view>
+    <view class="an-cancel" bindtap="cancelAnalyze">取消</view>
   </view>
 
   <!-- ============== 识别历史 ============== -->

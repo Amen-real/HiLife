@@ -5,7 +5,10 @@
 #   LLM_API_KEY   必填。阿里云百炼 / 其它 OpenAI 兼容服务的 API Key；
 #                 未配置则识别明确报 503（**无 mock 兜底**，见 analyzer.py 顶部说明）
 #   LLM_BASE_URL  默认 https://dashscope.aliyuncs.com/compatible-mode/v1 （阿里云百炼 Qwen-VL）
-#   LLM_MODEL     默认 qwen-vl-plus（可换 qwen-vl-max / qwen-vl-flash / MiMo 兼容模型）
+#   LLM_MODEL     默认 qwen-vl-plus（可换 qwen-vl-flash / qwen-vl-max / MiMo 兼容模型）
+#                 ⚠️ 延迟对比：plus 稳但慢，flash 明显更快。识别一餐食物属于「延迟比
+#                 极致精度更重要」的场景，用户抱怨「识别太慢」时先把这一项换成 qwen-vl-flash
+#                 —— 改环境变量即可，**不用重新发版**。
 #
 # 返回结构与 analyzer.analyze 保持一致：
 #   { name, items:[{name, weight_g, calories}], total_weight_g, total_calories, confidence, mock, provider }
@@ -19,6 +22,11 @@ import requests
 DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 DEFAULT_MODEL = "qwen-vl-plus"
 
+# 单次上游请求超时（秒）。**必须小于客户端的轮询总窗口**，否则服务端还在算、
+# 客户端已经弹「识别超时」了 —— 用户拿到的是超时，而不是「到底为什么慢」。
+# 客户端窗口见 utils/foodvision.js 的 POLL_DEADLINE_MS（70s）。
+REQ_TIMEOUT = 50
+
 PROMPT = (
     "你是食物营养分析助手。识别图片中的全部食物，只输出一个 JSON 对象，"
     "不要输出 markdown 代码块或其它文字。结构："
@@ -26,8 +34,49 @@ PROMPT = (
     '"total_weight_g":总克数,"total_calories":总热量kcal,'
     '"protein":总蛋白质g,"carb":总碳水化合物g,"fat":总脂肪g,'
     '"confidence":0到1的置信度}。'
+    # 限量是**为了速度**：输出 token 数直接决定生成耗时，放任模型列十几个调料会让
+    # 一次识别多等十几秒（用户感知就是「识别很慢」）。4 项足够覆盖一餐的主要热量来源。
+    "items 最多列 4 项（只列主要食材，调料可忽略）。"
     "克数、热量与三大营养素为估算值，取整数；confidence 为 0-1 小数。"
 )
+
+
+class LLMError(RuntimeError):
+    """上游多模态大模型调用失败。
+
+    message 是**给运维排查**的（含状态码/上游原文），code 才是跨端给用户翻译用的键 ——
+    与 analyzer.EngineNotReady 同一约定：app.py 会把 e.code 原样带进 task error，
+    客户端 utils/foodvision.js 的 userMessage() 再翻成人话。
+
+    分类的意义＝**区分「你的照片不行」与「我们这边出问题」**。
+    旧实现把所有上游异常一股脑记成 VISION_FAILED，用户看到的是
+    「没能认出这道菜，换一张更清晰的照片再试试」—— 明明是密钥失效 / 额度用尽 /
+    模型没开通，他重拍一百次也没用，只会觉得「这东西经常识别不出来」。
+    """
+
+    code = "VISION_FAILED"
+
+    def __init__(self, message, code=None):
+        super().__init__(message)
+        if code:
+            self.code = code
+
+
+def _code_for_http(status_code):
+    """上游 HTTP 状态码 → 跨端 code。
+
+    ⚠️ 这里每加一个 code，**必须**同步 utils/foodvision.js 的 USER_TEXT ——
+    守卫 scripts/verify-vision-result.cjs [D] 会反查「服务端说过的每个 code 都有用户文案」。
+    """
+    if status_code in (401, 403):
+        return "VISION_AUTH"       # 密钥无效 / 无权限
+    if status_code == 429:
+        return "VISION_QUOTA"      # 限流 / 额度用尽
+    if status_code == 400:
+        return "VISION_MODEL"      # 模型名写错 / 该模型未开通（百炼对这两种都回 400）
+    if status_code >= 500:
+        return "VISION_UPSTREAM"   # 供应商侧故障
+    return "VISION_FAILED"
 
 
 def llm_ready() -> bool:
@@ -69,15 +118,41 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
             }
         ],
     }
-    resp = requests.post(
-        base + "/chat/completions",
-        headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
-        json=payload,
-        timeout=120,
-    )
-    resp.raise_for_status()
-    content = resp.json()["choices"][0]["message"]["content"]
-    d = _extract_json(content)
+
+    # 网络层：超时与连不上要分开报 —— 超时是「再试可能就好」，连不上是「上游/出网有问题」
+    try:
+        resp = requests.post(
+            base + "/chat/completions",
+            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+            json=payload,
+            timeout=REQ_TIMEOUT,
+        )
+    except requests.exceptions.Timeout:
+        raise LLMError("上游模型响应超时（> %ds）。" % REQ_TIMEOUT, code="VISION_TIMEOUT")
+    except requests.exceptions.RequestException as e:
+        raise LLMError("连接上游模型服务失败：%r" % (e,), code="VISION_UPSTREAM")
+
+    # 不 raise_for_status()：**要把状态码分门别类**，而不是笼统一个 4xx。
+    # 上游原文只进日志/运维 message，绝不弹给用户（见 LLMError 的约定）。
+    if resp.status_code >= 400:
+        raise LLMError(
+            "上游模型返回 %d：%s" % (resp.status_code, (resp.text or "")[:200]),
+            code=_code_for_http(resp.status_code),
+        )
+
+    try:
+        content = resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:  # noqa: BLE001
+        raise LLMError("上游返回结构无法解析：%r" % (e,), code="VISION_FAILED")
+
+    try:
+        d = _extract_json(content)
+    except Exception as e:  # noqa: BLE001
+        # 模型答了，但不是 JSON —— 换张照片确实可能有用，归 VISION_FAILED（引导重拍）是对的
+        raise LLMError("模型没有返回可解析的 JSON：%r" % (e,), code="VISION_FAILED")
+
+    if not isinstance(d, dict):
+        raise LLMError("模型返回的不是 JSON 对象。", code="VISION_FAILED")
 
     items = []
     for it in (d.get("items") or []):

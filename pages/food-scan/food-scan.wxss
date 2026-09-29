@@ -97,6 +97,20 @@
 @keyframes an-spin { to { transform: rotate(360deg); } }
 .an-text { color: #FFFFFF; font-size: 32rpx; font-weight: 700; margin-top: 36rpx; }
 .an-sub { color: rgba(255,255,255,0.5); font-size: 24rpx; margin-top: 12rpx; }
+/* 已等待秒数。**3s 之后才出现**：模型常在 3s 内就出结果，
+   一上来就顶着「已等待 1 秒」等于把正常速度说成慢。
+   本页背景是写死的 #0A0A0A（不随主题翻转），所以白透明度即最终色：
+   rgba(255,255,255,.52) ≈ #898989，对 #0A0A0A ≈ 5.7:1，过 AA。 */
+.an-sec {
+  color: rgba(255,255,255,0.52); font-size: 22rpx; margin-top: 10rpx;
+  font-variant-numeric: tabular-nums;   /* 数字等宽，秒数跳动时不会左右抖 */
+}
+/* 出口。rgba(255,255,255,.60) ≈ #9C9C9C，对 #0A0A0A ≈ 7.3:1；边框只是装饰（非文本）。 */
+.an-cancel {
+  margin-top: 56rpx; padding: 16rpx 48rpx; border-radius: 999rpx;
+  border: 2rpx solid rgba(255,255,255,0.24);
+  color: rgba(255,255,255,0.60); font-size: 26rpx;
+}
 
 /* ==================== 识别历史 ==================== */
 .hist {

@@ -45,10 +45,25 @@ function fromServer(d) {
 }
 
 // 用户可见文案的唯一真源。改文案只改这里，页面只管 err 传进来。
+//
+// ⚠️ 这里必须覆盖**服务端说过的每一个 code** —— 守卫 scripts/verify-vision-result.cjs [D]
+// 会从服务端源码里抽出所有 code 反查，漏一个就按红。
+// 分档原则：**「我们的问题」不要包装成「你的照片不行」**。
+// 旧实现只有两档，于是上游 401/429/超时、任务丢失全落进 VISION_FAILED，
+// 用户拿到的永远是「换一张更清晰的照片再试试」—— 他重拍一百次也没用，
+// 体感就是「这功能经常识别不出来」。分档之后每一档都指向一个可执行的动作。
 const USER_TEXT = {
-  // 引擎没配好：这是服务端配置问题，用户做什么都没用 → 不要让他反复重拍
+  // ① 服务端配置/上游问题：用户做什么都没用，别让他反复重拍
   VISION_NOT_READY: '照片识别暂时不可用，请稍后重试，或手动填写热量。',
-  // 引擎跑了但这次没成：可能是照片或网络 → 引导重拍
+  VISION_AUTH: '照片识别暂时不可用，请稍后重试，或手动填写热量。',
+  VISION_MODEL: '照片识别暂时不可用，请稍后重试，或手动填写热量。',
+  VISION_UPSTREAM: '识别服务暂时不可用，请稍后重试，或手动填写热量。',
+  // ② 上游忙 / 额度受限：稍后重试有效，但别让用户以为是自己照片的问题
+  VISION_QUOTA: '识别服务当前繁忙（额度受限），请稍后重试，或手动填写热量。',
+  VISION_TIMEOUT: '识别用时过长，请检查网络后重试，或手动填写热量。',
+  // ③ 任务在服务端丢失（实例重启/缩容）——客户端会自动重提一次，走到这里说明重提也没成
+  VISION_TASK_LOST: '识别服务繁忙，请再试一次，或手动填写热量。',
+  // ④ 引擎跑了但这次没成：可能是照片或网络 → 引导重拍
   VISION_FAILED: '没能认出这道菜，换一张更清晰的照片再试试。'
 };
 
@@ -60,6 +75,27 @@ function userMessage(err) {
   // 未映射的失败照实记一笔，方便排查；但只给用户一句通用话术
   if (raw) console.warn('[vision] 未映射的失败：', raw);
   return '识别失败，请稍后重试。';
+}
+
+// 「再试一次」到底有没有意义 —— 页面据此决定失败弹窗要不要给「重试」按钮。
+//
+// 为什么必须分开：给用户一个**注定失败**的重试，比不给他更伤 —— 他会连点几次、
+// 每次等满 70s，最后判定「这功能就是坏的」。密钥失效 / 模型没开通 / 额度用尽
+// 都属于「你再点一百次也一样」，那就不该出现重试按钮，只能引导手动填写。
+// ⚠️ 新增 code 时必须在这里表态（守卫 scripts/verify-vision-result.cjs 有一张对照表）。
+const RETRYABLE = {
+  VISION_FAILED: true,      // 这次没认清，换一张/再跑一次都可能好
+  VISION_TIMEOUT: true,     // 上游或网络慢，重试是标准动作
+  VISION_TASK_LOST: true,   // 任务丢了，重提正好补上（客户端已自动重提一次）
+  VISION_UPSTREAM: true,    // 上游抖动/5xx，通常自愈
+  VISION_NOT_READY: false,  // 服务端没启用引擎：用户做什么都没用
+  VISION_AUTH: false,       // 密钥失效：用户做什么都没用
+  VISION_MODEL: false,      // 模型名错/未开通：用户做什么都没用
+  VISION_QUOTA: false       // 限流或额度用尽：重试只会更糟
+};
+
+function isRetryable(err) {
+  return !!(err && RETRYABLE[err.code]);
 }
 
 // 把临时图片压缩到 100K 以内并读成 base64（云托管 callContainer 限制）
@@ -85,37 +121,81 @@ function compressToBase64(tempFilePath) {
 
 // 云托管模式：异步任务（callContainer 有 15s 硬超时，同步识别必超时 102002）
 //   1) POST /task/submit（JSON base64，压缩图 <100K）→ 立即返回 {taskId}
-//   2) GET  /task/{id} 每 2s 轮询 → {status: processing|done|error, result}
+//   2) GET  /task/{id} 轮询 → {status: processing|done|error, result}
+//
+// ── 轮询节奏（2026-09-29 改）──
+// 原先固定 2s 一轮、30 轮：模型 4s 出结果也要等到第 3 轮（≈6s），平均白等 1s、最坏 2s，
+// 用户感知的「慢」有一大截出在这里。改为**首轮 0.6s、每轮 +0.7s、2s 封顶**，
+// 常见耗时（3~8s）能省下 1~2s；同时把上限从「30 次」改成**总时长窗口**更直观。
+const POLL_FIRST_MS = 600;
+const POLL_STEP_MS = 700;
+const POLL_MAX_MS = 2000;
+// 总窗口**必须大于**服务端单次上游超时（server/vision_llm.py 的 REQ_TIMEOUT = 50s），
+// 否则服务端还在算、客户端已经弹「识别超时」，用户永远拿不到「到底为什么慢」的那个 code。
+const POLL_DEADLINE_MS = 70000;
+const POLL_MAX_TRIES = 60;        // 兜底，防止轮询间隔被 stub 成 0 时死循环
+const SUBMIT_RETRY_MS = 800;      // 提交失败后的重试间隔
+
 function analyzeByCallContainer(tempFilePath, cfg) {
-  return compressToBase64(tempFilePath).then((b64) => new Promise((resolve, reject) => {
+  return compressToBase64(tempFilePath).then((b64) => runTask(cfg, b64, true));
+
+  // 一次完整尝试 = 提交 + 轮询；allowResubmit 控制「任务丢失时再提交一次」。
+  function runTask(cfg2, b64, allowResubmit) {
+    return submitTask(cfg2, b64)
+      .then((taskId) => pollTask(cfg2, taskId))
+      .catch((err) => {
+        // 任务在服务端丢了（实例重启 / 缩容 / 多实例——见 server/app.py 的 TASKS 说明）。
+        // 识别是**只读**的，重提不会产生重复记录，代价只是一次调用费；相比让用户
+        // 以为「识别不出来」再自己去重拍，显然划算。**只重提一次**，不放大成本。
+        if (allowResubmit && err && err.code === 'VISION_TASK_LOST') {
+          console.warn('[vision] 任务在服务端丢失（实例可能重启/缩容），自动重提一次');
+          return runTask(cfg2, b64, false);
+        }
+        throw err;
+      });
+  }
+}
+
+// 提交识别任务。网络层失败**重试 1 次**：云托管冷启动时第一枪很容易直接超时，
+// 而第二枪几乎立刻就好 —— 不重试的话用户看到「识别失败」，实际上根本没跑起来。
+function submitTask(cfg, b64) {
+  return new Promise((resolve, reject) => {
     if (typeof wx.cloud === 'undefined' || !wx.cloud.callContainer) {
       reject(new Error('wx.cloud.callContainer 不可用，请确认已 wx.cloud.init 且基础库 >= 2.13.1'));
       return;
     }
-    wx.cloud.callContainer({
-      config: { env: cfg.env },
-      path: '/task/submit',
-      method: 'POST',
-      header: { 'X-WX-SERVICE': cfg.service, 'content-type': 'application/json' },
-      data: { image: b64 },
-      success: (res) => {
-        const d = parseBody(res.data);
-        // 服务端 5xx 时 wx.cloud.callContainer 同样走 success 回调 —— 不看 statusCode
-        // 就会把 503 的错误体当成正常返回，最后以一句莫名其妙的「提交识别任务失败」收场。
-        if (res.statusCode >= 400) { reject(fromServer(d)); return; }
-        if (d && d.taskId) { resolve(d.taskId); return; }
-        reject(visionError('VISION_FAILED', (d && d.message) || '提交识别任务失败'));
-      },
-      fail: reject
-    });
-  })).then((taskId) => pollTask(cfg, taskId));
+    const once = (attempt) => {
+      wx.cloud.callContainer({
+        config: { env: cfg.env },
+        path: '/task/submit',
+        method: 'POST',
+        header: { 'X-WX-SERVICE': cfg.service, 'content-type': 'application/json' },
+        data: { image: b64 },
+        success: (res) => {
+          const d = parseBody(res.data);
+          // 服务端 5xx 时 wx.cloud.callContainer 同样走 success 回调 —— 不看 statusCode
+          // 就会把 503 的错误体当成正常返回，最后以一句莫名其妙的「提交识别任务失败」收场。
+          if (res.statusCode >= 400) { reject(fromServer(d)); return; }
+          if (d && d.taskId) { resolve(d.taskId); return; }
+          reject(visionError('VISION_FAILED', (d && d.message) || '提交识别任务失败'));
+        },
+        fail: (err) => {
+          if (attempt === 0) { setTimeout(() => once(1), SUBMIT_RETRY_MS); return; }
+          reject(err);
+        }
+      });
+    };
+    once(0);
+  });
 }
 
-// 轮询任务结果：2s 间隔，最长约 90s（30 次）
+// 轮询任务结果：首轮 0.6s、每轮 +0.7s、2s 封顶，总窗口 70s。
 function pollTask(cfg, taskId) {
   return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
     let tries = 0;
-    const MAX = 30;
+    const expired = () => tries >= POLL_MAX_TRIES || (Date.now() - startedAt) >= POLL_DEADLINE_MS;
+    const nextDelay = () => Math.min(POLL_FIRST_MS + (tries - 1) * POLL_STEP_MS, POLL_MAX_MS);
     const tick = () => {
       tries++;
       wx.cloud.callContainer({
@@ -127,15 +207,15 @@ function pollTask(cfg, taskId) {
           const d = parseBody(res.data);
           if (res.statusCode >= 400) { reject(fromServer(d)); return; }
           if (d && d.status === 'done') { resolve(d); return; }
-          // 引擎不可用/识别失败都走这里，带着 code 让 userMessage() 翻成人话
+          // 引擎不可用/识别失败/任务丢失都走这里，带着 code 让 userMessage() 翻成人话
           if (d && d.status === 'error') { reject(visionError(d.code, d.message)); return; }
-          if (tries >= MAX) { reject(visionError('VISION_FAILED', '识别超时')); return; }
-          setTimeout(tick, 2000);
+          if (expired()) { reject(visionError('VISION_TIMEOUT', '轮询到达客户端窗口上限')); return; }
+          setTimeout(tick, nextDelay());
         },
         fail: (err) => {
           // 单次网络抖动容忍，不立即失败
-          if (tries >= MAX) { reject(err); return; }
-          setTimeout(tick, 2000);
+          if (expired()) { reject(err); return; }
+          setTimeout(tick, nextDelay());
         }
       });
     };
@@ -183,9 +263,17 @@ function analyzeByUpload(tempFilePath, cfg) {
 //                                        // 页面若仍读到 true，说明服务端违约 → 一律按「引擎异常」阻断，
 //                                        // 绝不能把示例数据写进饮食记录。
 //
-//   ⚠️ **失败一律以 reject 表达，且 err.code 是跨端唯一的失败标识**：
-//     VISION_NOT_READY  引擎没配好（服务端配置问题）——用户重拍也没用
-//     VISION_FAILED     引擎跑了但这次没成（照片/网络）——可引导重拍
+//   ⚠️ **失败一律以 reject 表达，且 err.code 是跨端唯一的失败标识**（文案见上方 USER_TEXT）：
+//     VISION_NOT_READY  服务端没启用引擎（没配 LLM_API_KEY 等）——用户重拍没用
+//     VISION_AUTH       上游鉴权失败（密钥无效/无权限）
+//     VISION_MODEL      上游拒绝该模型（名字写错 / 该模型未开通）
+//     VISION_UPSTREAM   上游连接失败或 5xx
+//     VISION_QUOTA      上游 429：限流 / 额度用尽
+//     VISION_TIMEOUT    上游超时，或客户端轮询到达窗口上限
+//     VISION_TASK_LOST  任务在服务端丢了（实例重启/缩容）——已自动重提一次
+//     VISION_FAILED     引擎跑了但这次没成（解析失败/照片不清）——可引导重拍
+//   区别「我们的问题」与「你的照片问题」是这套 code 的全部意义：分错了，用户就会
+//   拿着一条他改不动的错误反复重拍。
 //   服务端 err.message 是给运维排查的（可能含「去配哪个环境变量」），**不要弹给用户**；
 //   页面只调 userMessage(err) 取用户可见文案，那里是唯一真源。
 //
@@ -214,4 +302,8 @@ function analyzeImage(tempFilePath) {
   });
 }
 
-module.exports = { analyzeImage, getCfg, userMessage, visionError };
+// RETRYABLE 一并导出：它是一张**对照表**（和 USER_TEXT 同性质），
+// 守卫 scripts/verify-vision-result.cjs [E4] 要逐个 code 反查「有没有表过态」，
+// 只有拿到真表才能验「漏登记」，光验 isRetryable() 的返回值验不出来
+// （undefined 会被 !! 收成 false，漏登记和「明确不可重试」在返回值上长得一模一样）。
+module.exports = { analyzeImage, getCfg, userMessage, visionError, isRetryable, RETRYABLE };
