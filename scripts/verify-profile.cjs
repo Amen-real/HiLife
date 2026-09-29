@@ -4,7 +4,7 @@
 //   [A] dateRange.streakFromDates 边界（首页「连续打卡」与本页「连续训练天数」共用的唯一回溯实现）
 //   [B] profile.js refresh() 派生数据（训练天数/连续天数/总次数/本月/本周/时长/容量 + 最近一场卡片）
 //   [C] 静态闭环：wxml 类名 ↔ wxss/icons、行内 style 禁 Mustache、wxml 字段 ↔ js data
-//       以及「联系开发者」入口（button open-type）与隐私政策「联系我们」文案的跨文件闭环
+//       以及反馈渠道（隐私政策「六、联系我们」的邮箱）的跨文件闭环（原先盯的是「联系开发者」客服入口）
 //
 // 用法：node scripts/verify-profile.cjs
 const path = require('path');
@@ -366,37 +366,41 @@ truthy(/goPlan\(\)\s*\{\s*wx\.switchTab\(\{\s*url:\s*'\/pages\/plan\/plan'/.test
 truthy(/function logTitleOf\(/.test(js) && /function logMetaOf\(/.test(js),
   'C13h 训练命名/度量抽成 logTitleOf / logMetaOf');
 
-/* C14 「联系开发者」= 微信客服会话，只能靠 open-type 唤起，而 open-type **只对 <button> 生效**。
-   写成 <view open-type="contact"> 不报错、点了也没反应（跟动态事件名一个坑）。
-   背景：隐私政策原先承诺「可通过小程序内反馈渠道联系开发者」，但仓里根本没有这个入口 ——
-   承诺了做不到的事，用户照着找只会找不到。这个入口就是补上的那个落点。 */
-truthy(/<button[^>]*\bopen-type="contact"/.test(wxml), 'C14a 联系开发者是 <button open-type="contact">（view 挂 open-type 会被吃掉）');
-truthy(!/<view[^>]*open-type="contact"/.test(wxml), 'C14b 没有把 open-type 挂在 view 上');
-truthy(/联系开发者/.test(wxml), 'C14c 入口文案在位');
+/* C14 反馈渠道 = 邮箱（2026-09-29 决定：不再用微信客服会话）。
+   历史：这里原先是 <button open-type="contact"> 唤起微信客服，起因是隐私政策承诺了
+   「小程序内反馈渠道」而仓里没有落点（B2）。改邮箱后三件事要一起成立：
+     ① 全仓不留半个客服入口；② 我的页不再有「联系开发者」行（同一能力不许两个入口）；
+     ③ 邮箱要真的渲染出来、点得到，且拒绝剪贴板授权时也有出口。
+   ⚠️ 必须先剥 wxml 注释：profile.wxml 里那段「为什么这里没有这个入口」的注释会原样引用
+   open-type="contact" 与「联系开发者」，不剥就会把注释当成实现（假警报）。 */
+const wxmlCode = wxml.replace(/<!--[\s\S]*?-->/g, '');
+truthy(!/open-type\s*=\s*"contact"/.test(wxmlCode), 'C14a 我的页不再挂 open-type="contact"（反馈改走邮箱）');
+truthy(!/联系开发者/.test(wxmlCode), 'C14b 我的页不再有「联系开发者」行（联系方式只有隐私政策页一个落点）');
 
-/* C15 用 button 当行容器，必须清掉它自带的灰底/圆角/居中/line-height/::after 描边，
-   否则这一行比上下三行 <view class="mi"> 高或胖一圈。
-   ⚠️ line-height / font-size 必须是 inherit，**不能是 normal**：
-   .menu .mi-t 自己不设 line-height，靠从 page（1.5）继承；button 默认是 2.55，
-   写 normal 又变成 1.2 —— 两种都会让这一行明显比相邻行高。 */
-const miBtn = (wxss.match(/\.menu\s+\.mi-btn\s*\{[^}]*\}/) || [])[0] || '';
-truthy(!!miBtn, 'C15 .menu .mi-btn 规则存在');
-['margin: 0', 'background-color: transparent', 'border-radius: 0',
-  'line-height: inherit', 'font-size: inherit', 'text-align: left'].forEach(d => {
-  truthy(miBtn.indexOf(d) >= 0, 'C15 清 button 默认：' + d);
-});
-truthy(/\.menu\s+\.mi-btn::after\s*\{[^}]*display:\s*none/.test(wxss), 'C15b 干掉 button 的 ::after 描边');
+/* C15 .mi-btn 是当初为清 <button> 默认样式（灰底 / 圆角 / 居中 / line-height / ::after 描边）而加的。
+   button 撤了，这些规则就是死 CSS，而且会让人以为那一行还在。 */
+truthy(!/\.mi-btn/.test(wxss), 'C15 .mi-btn 规则随 button 一起删除（不留死 CSS）');
 
-/* C16 隐私政策的「六、联系我们」必须指向**真实存在**的入口（B2）。
-   这是跨文件的：文案在 privacy.wxml，落点在 profile.wxml ——
-   只改一边就成了又一次空承诺，所以只能两边一起核。 */
+/* C16 隐私政策「六、联系我们」必须给出**真实可达**的联系方式 —— 原意的延续：
+   跨文件闭环（文案在 privacy.wxml、能力在 privacy.js），只改一边就是又一次空承诺。 */
 const privacyWxml = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxml'), 'utf8');
 ['小程序内反馈渠道', '意见反馈入口'].forEach(w => {
   truthy(privacyWxml.indexOf(w) < 0, 'C16 privacy.wxml 不再出现无落点的空承诺：' + w);
 });
-truthy(/联系开发者/.test(privacyWxml), 'C16b privacy.wxml 指向「我的 → 联系开发者」');
-truthy(/联系开发者/.test(wxml) && /<button[^>]*open-type="contact"/.test(wxml),
-  'C16c 这个指向在 profile.wxml 里真实可点（能唤起客服的那一行）');
+const privacyJs = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.js'), 'utf8');
+truthy(/const\s+CONTACT_EMAIL\s*=\s*'[^'\s]+@[^'\s]+\.[A-Za-z]{2,}'/.test(privacyJs),
+  'C16b 联系邮箱＝privacy.js 常量 CONTACT_EMAIL，且是合法邮箱（改邮箱只改这一处）');
+truthy(/email:\s*CONTACT_EMAIL/.test(privacyJs), 'C16c data.email 接常量');
+truthy(/\{\{email\}\}/.test(privacyWxml), 'C16d 隐私政策页真的渲染该邮箱（不是只写在 js 里）');
+truthy(/bindtap="copyEmail"/.test(privacyWxml) && /copyEmail\s*\(\s*\)\s*\{/.test(privacyJs),
+  'C16e 邮箱可点，且处理器真实存在（跨文件闭环）');
+truthy(/setClipboardData\(\{[\s\S]{0,240}?fail\s*:/.test(privacyJs),
+  'C16f 剪贴板被拒时也有可见出口（不能点了没反应）');
+const privacyWxss = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxss'), 'utf8');
+const mailRule = (privacyWxss.match(/\.mail\s*\{[^}]*\}/) || [''])[0];
+truthy(/color:\s*var\(--text\)/.test(mailRule), 'C16g 邮箱字色用随主题翻转的 --text（浅色近黑 / 深色翻白）');
+truthy(!/var\(--primary/.test(mailRule) && !/var\(--text-weak\)/.test(mailRule),
+  'C16h 邮箱字色不用 --primary / --primary-deep / --text-weak（分别≈1.05:1 与≈2.3:1，合规信息读不清等于没展示）');
 
 /* C17 备案号展示位（合规硬性要求，别被顺手删掉）。
    官方《互联网信息服务备案承诺书》要求上线时在小程序「主体介绍位置（设置-关于两级菜单以内页面

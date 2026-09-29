@@ -373,6 +373,19 @@ function runEnsure(stub, label) {
     truthy(privPage.indexOf(name) < 0, 'D3 未使用 ' + api + ' → 页内不声明「' + name + '」（不写做不到的事）');
   });
 
+  // D4 声明的**用途**也要跟得上实现：光有类型名不够。
+  // 「剪贴板」现有三处用途（导出备份路径 / 复制备案号查询地址 / 复制联系邮箱），
+  // 只写「导出」就与实现不符 —— 与 B7-2 同类，只是这次窄的是用途而不是类型。
+  // 纯函数 + 锚在剪贴板那一句上：在整页里找词的话，C16 段的「邮箱」会跑来顶替。
+  const CLIP_USES = ['导出', '备案', '邮箱'];
+  const clipMisses = (text) => CLIP_USES.filter(w => text.indexOf(w) < 0);
+  const clipLine = (privPage.match(/剪贴板[^<]*/) || [''])[0];
+  eq(clipMisses(clipLine).length, 0, 'D4 剪贴板声明覆盖全部真实用途' + (clipMisses(clipLine).length
+    ? ' → 缺：' + clipMisses(clipLine).join('、') : '（导出 / 备案 / 邮箱）'));
+  // 尺子自检：喂 B7-2 时的旧窄声明（只写「导出」），必须被报出缺 2 项
+  eq(clipMisses('· 剪贴板：仅在你导出数据、需要复制备份文件路径时写入一次，不会读取你的剪贴板内容。').length, 2,
+    'D4b 尺子自检：旧的窄声明（只说导出）→ 报出缺「备案」「邮箱」2 项');
+
   /* ═══════════ [E] 第三方披露 ↔ 服务端真实出口 ═══════════ */
   console.log('[E] 第三方披露 ↔ 服务端模型出口（说了没有 / 有了没说，两种都算错）');
 
