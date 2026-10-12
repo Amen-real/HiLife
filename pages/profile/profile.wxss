@@ -40,10 +40,11 @@
 .p-sb { width: 100%; flex: 0 0 auto; }
 
 /* 头像行：头像 + 昵称/副标题（profile 顶部不再放装饰性「我的」标题，身份行即头部）。
-   2026-10-12 删标题后内容上移、头像压到背景图主体；放大头像后继续加大 padding-top 到 96rpx，
-   把身份块压回删标题前的纵向位置（≈ 状态栏下 96rpx），彻底避开背景图上方的主体。
-   顶部 clearance 仍由本行 padding-top 承担。 */
-.p-id { display: flex; align-items: center; gap: 28rpx; padding: 96rpx 36rpx 0; }
+   2026-10-12 删标题后内容上移、头像压到背景图主体；放大头像后 padding-top 加到 96rpx 避让。
+   后用户要求头像行上移减白、但「累计三连」(.p-stats) 保持原位不动 ⇒ 本行 padding-top 收回到 64rpx
+   （减掉 32rpx），差值由 .p-stats 的 margin-top 加 32rpx 补偿，使 stats 屏幕位置不变、只头像行上移。
+   顶部 clearance 仍由本行 padding-top 承担，值可在 36~96 间按真机微调（低于 36rpx 会重触发重叠）。 */
+.p-id { display: flex; align-items: center; gap: 28rpx; padding: 64rpx 36rpx 0; }
 .p-avatar {
   position: relative;
   flex: 0 0 auto; width: 128rpx; height: 128rpx; border-radius: 50%;
@@ -83,9 +84,11 @@
 .p-id-ar { flex: 0 0 auto; width: 28rpx; height: 28rpx; }
 .p-sub { margin-top: 8rpx; font-size: var(--fs-label); color: var(--text-sub); }
 
-/* 累计三连：浮在背景图上，与下方卡片同宽（左右 36rpx） */
+/* 累计三连：浮在背景图上，与下方卡片同宽（左右 36rpx）。
+   2026-10-12 头像行上移减白时（.p-id padding-top 96→64，减 32rpx），为保持本块屏幕位置不动，
+   margin-top 由 30rpx 增到 62rpx 作补偿 ⇒ 头像行上移、本块不跟移（屏幕位置与 96rpx 版完全一致）。 */
 .p-stats {
-  display: flex; margin: 30rpx 36rpx 0; padding: 26rpx 0;
+  display: flex; margin: 62rpx 36rpx 0; padding: 26rpx 0;
   background: var(--card); border: 1rpx solid var(--line);
   border-radius: var(--r-l); box-shadow: var(--shadow-card);
 }
