@@ -39,15 +39,7 @@
    挪进 flex 容器；food-scan 就是这么出事故的，见该页 .status-spacer 注释）。 */
 .p-sb { width: 100%; flex: 0 0 auto; }
 
-/* 顶部大标题：装饰性「我的」（2026-10-12 接 navRowStyle 钉齐胶囊、同日撤回归手调摆位）。
-   状态栏占位由 .p-sb 负责，这里只放字形本体 + 顶部留白（padding-top 撑开、避开状态栏）。 */
-.p-title {
-  padding: 18rpx 36rpx 0;
-  font-size: 60rpx; font-weight: 800; line-height: 1.15;
-  color: var(--text); letter-spacing: -0.5rpx;
-}
-
-/* 头像行：头像 + 昵称/副标题 */
+/* 头像行：头像 + 昵称/副标题（profile 顶部不再放装饰性「我的」标题，身份行即头部） */
 .p-id { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 36rpx 0; }
 .p-avatar {
   position: relative;

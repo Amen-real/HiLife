@@ -18,10 +18,6 @@
       <!-- 状态栏占位：navigationStyle=custom 后顶部交还 WebView，需手动补状态栏高度 -->
       <view class="p-sb" style="{{statusBarStyle}}"></view>
 
-      <!-- 顶部大标题：装饰性「我的」（2026-10-12 接过 navRowStyle 钉齐胶囊、同日撤回归手调摆位）。
-           状态栏占位由上方 .p-sb 负责，这里只放字形本体，顶部留白靠 .p-title 的 padding-top 撑开。 -->
-      <view class="p-title">我的</view>
-
       <view class="p-id">
         <!-- 未登录时头像圈本身就是登录入口（右上角加号角标提示可点），已登录则为「换头像」。
              注意：WXML 的 bindtap 不支持 Mustache 动态取事件名，故统一走 onIdTap 在 JS 内分支。 -->
