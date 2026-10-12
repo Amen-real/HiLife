@@ -18,12 +18,9 @@
       <!-- 状态栏占位：navigationStyle=custom 后顶部交还 WebView，需手动补状态栏高度 -->
       <view class="p-sb" style="{{statusBarStyle}}"></view>
 
-      <!-- 顶部大标题行：行高由 navRowStyle 注入（= 导航带，按微信胶囊实测算）⇒
-           「我的」与胶囊同心。此前手调 padding 摆位，实测偏胶囊中线 ~4px（2026-10-12 修）。
-           内层 .p-title 仍是字形本体，flex 居中由本行 align-items:center 负责。 -->
-      <view class="p-nav" style="{{navRowStyle}}">
-        <view class="p-title">我的</view>
-      </view>
+      <!-- 顶部大标题：装饰性「我的」（2026-10-12 接过 navRowStyle 钉齐胶囊、同日撤回归手调摆位）。
+           状态栏占位由上方 .p-sb 负责，这里只放字形本体，顶部留白靠 .p-title 的 padding-top 撑开。 -->
+      <view class="p-title">我的</view>
 
       <view class="p-id">
         <!-- 未登录时头像圈本身就是登录入口（右上角加号角标提示可点），已登录则为「换头像」。

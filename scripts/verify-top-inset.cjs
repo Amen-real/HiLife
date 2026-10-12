@@ -33,10 +33,10 @@
 // **与纵向位置无关**。所以解法是横向让位，且内缩量必须实测（胶囊宽度随机型变化）。
 // 全仓现状：只有 food-scan 一页把控件放进了这一格（取景态闪光灯 / 结果态「完成」/
 // 历史态「清空」），三处都必须接上 utils/navMetrics.js。
-// 2026-10-12 补：home 品牌行 / profile 大标题行没有靠右控件，但同样落在胶囊纵向带里，
-// 已按同一套接上 navRowStyle —— 理由是**纵向同心**（[H]），不是横向让位（[G]）。
-// 「没有右侧控件」不构成不接的理由：那正是 2026-10-12 之前的样子（手调 rpx 摆位，
-// 品牌名 / 「我的」分别偏胶囊中线 ~8px / ~4px）。
+// 2026-10-12 补：home 品牌行没有靠右控件，但同样落在胶囊纵向带里、按同一套接上 navRowStyle
+// —— 理由是**纵向同心**（[H]），不是横向让位（[G]）。profile 大标题行同日接过又撤掉
+// （钉齐只换来 ~4px 位移、收益不抵 wrapper 复杂度，回归为手调摆位），故本段不列 profile。
+// 「没有右侧控件」不构成不接的理由：那正是 2026-10-12 之前的样子（手调 rpx 摆位、品牌名偏 ~8px）。
 //
 // ── [H] 的由来（同日，用户第二轮真机报障） ──────────────────────────────
 // 「取景页的返回/闪光灯、结果页的返回/完成没有**对齐**微信自带胶囊」。
@@ -268,18 +268,16 @@ has(withWx({ getWindowInfo: () => ({ windowWidth: 390, statusBarHeight: 47 }), g
   'G6b overlayRowStyle 必须自带 top（覆盖层脱离文档流，没有 top 就会贴在屏幕最顶端、压进状态栏）');
 
 {
-  /* 五处顶部行都接上了样式串。⚠️ 这里刻意**逐个列名 + 逐行核对绑定名**，而不是
+  /* 顶部行都接上了样式串。⚠️ 这里刻意**逐个列名 + 逐行核对绑定名**，而不是
      「页面上出现过 navRowStyle 就算过」—— 后者会让「只接了一处」或「覆盖层错挂了流式串」
-     这类漏网写法照样绿灯。五处分三页、形态还分两类：流式行 vs 绝对定位覆盖层。
-     2026-10-12 起 home 品牌行 / profile 大标题行也纳入：它们没有靠右控件，
-     接线的理由是**纵向同心**（[H]），不是横向让位（[G]）—— 别因为「没有右侧控件」
-     就把它们漏掉，那正是 2026-10-12 之前的样子（手调 rpx 摆位，偏胶囊中线 4~8px）。 */
+     这类漏网写法照样绿灯。现有四处分两页、形态还分两类：流式行 vs 绝对定位覆盖层。
+     home 品牌行（纵向同心 [H]）2026-10-12 接入；profile 大标题行同日接入后又撤掉
+     （钉齐只换 ~4px 位移，回归手调摆位），故此处不列 profile。 */
   const SITES = [
     ['food-scan', 'cam-top', 'camRowStyle', '取景态覆盖层（绝对定位，必须自带 top）'],
     ['food-scan', 'h-nav', 'navRowStyle', '识别历史「清空」（靠右）'],
     ['food-scan', 'r-nav', 'navRowStyle', '识别结果「完成」（靠右）'],
-    ['home', 'hero-top', 'navRowStyle', '首页品牌名（装饰性大标题，纵向同心）'],
-    ['profile', 'p-nav', 'navRowStyle', '「我的」大标题（装饰性大标题，纵向同心）']
+    ['home', 'hero-top', 'navRowStyle', '首页品牌名（装饰性大标题，纵向同心）']
   ];
   const missing = [];
   for (const [page, cls, bind, why] of SITES) {
@@ -288,9 +286,9 @@ has(withWx({ getWindowInfo: () => ({ windowWidth: 390, statusBarHeight: 47 }), g
     if (!tag) { missing.push(page + ' .' + cls + '（源码里找不到这个元素 ⇒ 结构变了，本段失去对象）'); continue; }
     if (!new RegExp('style="\\{\\{' + bind + '\\}\\}"').test(tag)) missing.push(page + ' .' + cls + ' 应挂 {{' + bind + '}} — ' + why);
   }
-  eq(missing.length, 0, 'G7 五处顶部行都要挂对应的样式串（覆盖层挂 camRowStyle，流式行挂 navRowStyle）'
+  eq(missing.length, 0, 'G7 四处顶部行都要挂对应的样式串（覆盖层挂 camRowStyle，流式行挂 navRowStyle）'
     + (missing.length ? ' → 缺 ' + missing.join(' ; ') : ''));
-  truthy(SITES.length >= 5, 'G8 本段盯住了 ' + SITES.length + ' 处（少一处说明清单被改小了）');
+  truthy(SITES.length >= 4, 'G8 本段盯住了 ' + SITES.length + ' 处（少一处说明清单被改小了）');
 }
 
 {
@@ -376,7 +374,7 @@ console.log('[H] 顶部导航带高必须按胶囊实测算（行中心 == 胶�
 
   const ROW_SITES = [
     ['food-scan', 'cam-top'], ['food-scan', 'h-nav'], ['food-scan', 'r-nav'],
-    ['home', 'hero-top'], ['profile', 'p-nav']
+    ['home', 'hero-top']
   ];
   const badBox = [], badPad = [], badCenter = [];
   for (const [page, cls] of ROW_SITES) {
@@ -386,11 +384,11 @@ console.log('[H] 顶部导航带高必须按胶囊实测算（行中心 == 胶�
     if (!verticalPaddingIsZero(body)) badPad.push(page + ' .' + cls);
     if (!/align-items\s*:\s*center/.test(body)) badCenter.push(page + ' .' + cls);
   }
-  eq(badBox.length, 0, 'H11 五处顶部行都必须 box-sizing:border-box —— 否则行内 height 是内容盒高，加 padding 后总高 ≠ 导航带，纵向对齐悄悄失效'
+  eq(badBox.length, 0, 'H11 四处顶部行都必须 box-sizing:border-box —— 否则行内 height 是内容盒高，加 padding 后总高 ≠ 导航带，纵向对齐悄悄失效'
     + (badBox.length ? ' → 缺 ' + badBox.join(', ') : ''));
-  eq(badPad.length, 0, 'H12 五处顶部行的竖向 padding 必须为 0 —— 内容居中靠 align-items:center，留 padding 会把内容挤偏'
+  eq(badPad.length, 0, 'H12 四处顶部行的竖向 padding 必须为 0 —— 内容居中靠 align-items:center，留 padding 会把内容挤偏'
     + (badPad.length ? ' → 非零 ' + badPad.join(', ') : ''));
-  eq(badCenter.length, 0, 'H13 五处顶部行都必须 align-items:center —— 行高算了但内容不居中，行中心依然≠胶囊中心（2026-10-12 补：home/profile 接入时才发现这条没守）'
+  eq(badCenter.length, 0, 'H13 四处顶部行都必须 align-items:center —— 行高算了但内容不居中，行中心依然≠胶囊中心（2026-10-12 补：home 接入时才发现这条没守，profile 同日接入又撤）'
     + (badCenter.length ? ' → 缺 ' + badCenter.join(', ') : ''));
 }
 
@@ -451,7 +449,7 @@ console.log('[D] stub wx 跑真实 onLoad，确认占位块拿到的是真实状
        102 = 屏宽390 − 胶囊左缘296 + 呼吸间隙8
         44 = 导航带 2×(胶囊上沿53 − 状态栏47) + 胶囊高32
      若页面只是摆设，这里多半是 ''（初始值）或兜底值。 */
-  for (const [page, hook, cls] of [['home', 'onShow', 'hero-top'], ['profile', 'onShow', 'p-nav']]) {
+  for (const [page, hook, cls] of [['home', 'onShow', 'hero-top']]) {
     let cfg2 = null;
     global.Page = (c) => { cfg2 = c; };
     try { require(path.join(ROOT, 'pages', page, page + '.js')); }

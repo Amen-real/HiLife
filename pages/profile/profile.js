@@ -143,9 +143,6 @@ Page({
     bgFailed: false,
     // 状态栏占位高度（navigationStyle=custom 后手动注入）
     statusBarStyle: 'height: 0px',
-    // 顶部大标题行的行高 + 右侧内缩（按微信胶囊实测算，见 utils/navMetrics.js）。
-    // 60rpx 的「我的」是装饰性标题，但同样要与胶囊同心 —— 手调 rpx 跟不上随机型变的胶囊。
-    navRowStyle: '',
     // 账户主卡：称号 + 累计三连（days 训练天数 / streak 连续天数 / sessions 总训练次数）
     heroTitle: '新手上路',
     totals: { days: 0, streak: 0, sessions: 0, month: 0, week: 0, weekTarget: 3, dur: '0m' },
@@ -190,11 +187,9 @@ Page({
     // （状态栏压在 Hero 底图上：浅色主题是浅底图 → 黑字；深色主题是黑底图 → 白字）
     // （状态栏高度与胶囊度量统一走 navMetrics 单源，别在这里再写一份 fallback）
     this.setData({
-      statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px',
-      // 标题行行高 = 导航带 = 2×(胶囊上沿 − 状态栏) + 胶囊高 ⇒ 行中心 == 胶囊中心。
-      // 历史坑（2026-10-12 量化）：原为 `padding: 18rpx 36rpx 0` 手调摆位，
-      // 390×47 机型上「我的」中线偏胶囊中线 ~4px。改法与 food-scan 三处、home 品牌行同一套。
-      navRowStyle: navMetrics.topRowStyle()
+      // 状态栏占位：navigationStyle=custom 后顶部交还 WebView，由 .p-sb 消费此高度。
+      // （「我的」大标题的纵向摆位不接 navRowStyle，2026-10-12 接胶囊钉齐后又撤回归手调 padding。）
+      statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px'
     });
     wx.setNavigationBarColor({
       frontColor: themeCls === 'theme-dark' ? '#ffffff' : '#000000',
