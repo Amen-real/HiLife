@@ -39,11 +39,13 @@
    挪进 flex 容器；food-scan 就是这么出事故的，见该页 .status-spacer 注释）。 */
 .p-sb { width: 100%; flex: 0 0 auto; }
 
-/* 头像行：头像 + 昵称/副标题（profile 顶部不再放装饰性「我的」标题，身份行即头部） */
-.p-id { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 36rpx 0; }
+/* 头像行：头像 + 昵称/副标题（profile 顶部不再放装饰性「我的」标题，身份行即头部）。
+   2026-10-12 删标题后内容整体上移、头像压到背景图主体上 ⇒ 放大头像 + 整体下沉，
+   让身份块更有分量、并避开背景图上方的主体（顶部 clearance 改由本行 padding-top 撑）。 */
+.p-id { display: flex; align-items: center; gap: 28rpx; padding: 36rpx 36rpx 0; }
 .p-avatar {
   position: relative;
-  flex: 0 0 auto; width: 112rpx; height: 112rpx; border-radius: 50%;
+  flex: 0 0 auto; width: 128rpx; height: 128rpx; border-radius: 50%;
   /* 不裁切：未登录时右上角要挂一枚加号角标，overflow:hidden 会把它切掉。
      圆形外观改由 .p-avatar-img / .p-avatar-txt 各自 border-radius 保证，视觉与裁切前完全一致。 */
   overflow: visible; background: var(--card);
@@ -51,9 +53,9 @@
   box-shadow: 0 0 0 6rpx rgba(200, 255, 0, .55);
 }
 .p-avatar:active { opacity: .85; }
-.p-avatar-img { width: 112rpx; height: 112rpx; display: block; border-radius: 50%; }
+.p-avatar-img { width: 128rpx; height: 128rpx; display: block; border-radius: 50%; }
 .p-avatar-txt {
-  width: 112rpx; height: 112rpx; border-radius: 50%;
+  width: 128rpx; height: 128rpx; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--primary-tint); color: var(--primary-text);
   font-size: var(--fs-display); font-weight: 800;
@@ -61,18 +63,18 @@
 /* 未登录角标：亮绿实底 + 墨色加号（字形颜色在文末 dark 块显式拉回） */
 .p-avatar-add {
   position: absolute; right: -4rpx; bottom: -4rpx;
-  width: 44rpx; height: 44rpx; border-radius: 50%;
+  width: 48rpx; height: 48rpx; border-radius: 50%;
   background: var(--primary); border: 4rpx solid var(--card);
   display: flex; align-items: center; justify-content: center;
 }
-.p-avatar-add-i { width: 22rpx; height: 22rpx; }
+.p-avatar-add-i { width: 24rpx; height: 24rpx; }
 .p-id-meta { flex: 1; min-width: 0; }
 .p-nick-row { display: flex; align-items: center; gap: 12rpx; }
 /* 受控 input：实时回显由 onNicknameInput 负责，宽度靠 flex 撑，不设固定 width 以免光标跳动 */
 .p-nick {
-  flex: 1; min-width: 0; height: 52rpx; padding: 0; border: none;
+  flex: 1; min-width: 0; height: 56rpx; padding: 0; border: none;
   background: transparent; color: var(--text);
-  font-size: 38rpx; font-weight: 800; line-height: 52rpx;
+  font-size: 40rpx; font-weight: 800; line-height: 56rpx;
 }
 .p-pen { flex: 0 0 auto; width: 28rpx; height: 28rpx; }
 /* 未登录时昵称位换成「点击登录」文本（不是 input）：沿用 .p-nick 的字号/字重，只换颜色以示可点 */
