@@ -125,7 +125,7 @@ prisma/       schema + migrations + seed
 
 ### P0 —— 1.0 前就该做（低成本、直接补短板）
 
-#### P0-0 ⚠️ 对照过程中发现 HiLife 自身一个真实缺陷（已逐行验证，非推测）
+#### P0-0 ⚠️ 对照过程中发现 HiLife 自身一个真实缺陷（已逐行验证，非推测）—— ✅ 已修（2026-10-12）
 
 **位置**：`utils/store.js:60`，`getWeightStats(rangeDays)`。
 
@@ -153,15 +153,28 @@ const ds = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()
 但 HiLife 是单设备 App、**主体口径本来就对**（`utils/dateRange.js:8` 明确「按本地时区解析/格式化，避开 UTC 偏移导致的跨天」；
 全仓 `toISOString` 仅此一处）⇒ **不该照搬它的 UTC 方案，该修的是这一处混用**。
 
-**修法（1 行，把读取侧也改成本地，复用日期单源）**：
+**修法（已落地，且比原计划的 1 行更彻底 —— store.js 从此不再自己碰 Date）**：
 
 ```js
-const fromStr = dateRange.fmtDate(from);   // 与写入侧同源，禁第二份日期格式化实现
+const dateRange = require('./dateRange.js');                                    // 顶部引入单源
+// …
+const fromStr = dateRange.shiftDaysISO(dateRange.todayStr(), -(rangeDays - 1)); // 纯日期串算术
+filtered = list.filter(r => r.date >= fromStr);
 ```
 
-`utils/dateRange.js` 的 `fmtDate` 已是全仓日期口径单源，此处直接复用即可；建议顺带加一条守卫断言
-「`getWeightStats` 的窗口边界串与 `dateRange.fmtDate` 一致」，并把钟点拨到 UTC+8 的 03:00 真跑一次
-（这正是 GymCoach 用"四个设备/时刻档案"钉不变量、而不是比一个数值的原因）。
+原计划是 `dateRange.fmtDate(from)`（保留 `new Date()` 的毫秒减法）；实际实现改用
+`shiftDaysISO(todayStr(), …)` 走**纯字符串日期算术**，连 `new Date()` 都不出现在函数体内 ——
+毫秒减法在跨夏令时的时区上会差一小时，字符串算术没有这个面。`utils/dateRange.js` 是全仓日期口径单源，此处直接复用。
+
+**守卫（已落地）**：`scripts/verify-profile.cjs` 新增 `[D]` 段，用**假钟**驱动【真实 `utils/store.js`】：
+把全局 `Date` 固定到本地 03:00（UTC+8 下这正落在旧缺陷触发的 00:00–08:00 窗口内），
+播种「边界前一天 / 边界当天 / 今天」三笔记录，断言窗口**恰好**只含后两笔（D1–D5）；
+另配 D6 静态禁词（函数体内不许再出现 UTC 序列化）—— 因为假钟的判别力依赖宿主时区，
+在西时区/UTC 的机器上旧写法碰巧也对，这条禁词让回归在任何机器上都能红。
+
+验证方式不是"跑一遍看绿"，而是**先把 `store.js` 改回缺陷版确认尺子能看见被测物**：
+缺陷版下 D1/D2/D3/D4b/D5/D6b/D6c 共 7 条精确变红（D1 报出窗口多吞 `2026-10-05` 一整天），
+还原后 128/0 通过，全量 18 个守卫 0 失败。
 
 > 这不是从 GymCoach 抄来的功能，而是**读它的 issue 历史时反查出来的自家缺陷** —— 也是这次对照最直接的产出。
 
@@ -238,7 +251,7 @@ const fromStr = dateRange.fmtDate(from);   // 与写入侧同源，禁第二份�
 | 有氧（心率/解耦/FIT 导入） | TCX/GPX/FIT 导入 + 有氧解耦 | **不建议跟**：工程量巨大，且会新增「选中的文件」隐私面与解析风险 |
 | 多语言 | next-intl，en/fr/ru | 1.0 后；备案与合规语境都是中文，优先级低 |
 | MCP 连接器 | 外部 AI 读写训练数据 + capability index + 审计撤销 | 小程序内跑不了 MCP server。等价物是**版本化带 schema 的导出格式**，1.0 后再议。⚠️ 用户数据离开设备必须单独授权 |
-| 时区口径 | issue #160 后 `isoWeekKey` 全程 UTC getter | ⚠️ **已核实，HiLife 不该照搬**：单设备 App 的本地时区就是用户时区，`dateRange.js` 用本地 getter 是对的。但反查出 **`store.js:60` 一处真实的 UTC/本地混用缺陷**，见 P0-0 |
+| 时区口径 | issue #160 后 `isoWeekKey` 全程 UTC getter | ⚠️ **已核实，HiLife 不该照搬**：单设备 App 的本地时区就是用户时区，`dateRange.js` 用本地 getter 是对的。但反查出 **`store.js:60` 一处真实的 UTC/本地混用缺陷**，见 P0-0（**已修 + 假钟守卫**） |
 | AI 计划生成 | 一句话 → JSON program，Zod 校验 + 预览可编辑 | HiLife 已有 `todayPlan.resolveTodayPlan()` 单源；若要加 AI 生成，**必须复用该单源，禁第二份实现** |
 
 ---
@@ -256,10 +269,10 @@ const fromStr = dateRange.fmtDate(from);   // 与写入侧同源，禁第二份�
 
 | 阶段 | 内容 | 前置 |
 | --- | --- | --- |
-| **Now（1.0 前，随备案等待期）** | **P0-0 时区缺陷（1 行，独立于一切）** → P0-1 e1RM 单源 → P0-2 双进阶 + reason → P0-3 "AI 看到什么"卡 → P0-4 复制为文本 | 无（都是纯函数/展示层） |
+| **Now（1.0 前，随备案等待期）** | ~~P0-0 时区缺陷~~ ✅ 已修 → P0-1 e1RM 单源 → P0-2 双进阶 + reason → P0-3 "AI 看到什么"卡 → P0-4 复制为文本 | 无（都是纯函数/展示层） |
 | **Next（1.0 后 v1.1）** | P1-1 停训回归校准、P1-2 容量带 + 肌肉热力图、P1-3 可打印训练单 | P1-2 依赖 P0-1 |
 | **Later（v1.2+）** | P1-4 就绪度、P1-5 存储拆键、身体测量、进步照片 | P1-5 需先做导出/导入往返验证 |
-| **并行必修** | ① **P0-0 时区缺陷** ② ICP 备案（全链路唯一阻塞） | — |
+| **并行必修** | ① ICP 备案（全链路唯一阻塞；P0-0 时区缺陷已修） ② B7 隐私政策三处口径待拍板 | — |
 
 ---
 
@@ -267,4 +280,4 @@ const fromStr = dateRange.fmtDate(from);   // 与写入侧同源，禁第二份�
 
 GymCoach 值得抄的不是它的技术栈，而是三件事：**① 领域逻辑全部拆成无 IO 纯函数 + 同名测试共置；② 把"为什么"（reason / MEV-MRV / 就绪度阈值）全部写成具名常数并展示给用户；③ AI 只吃紧凑结构化 payload，且把"AI 看到了什么"原样展示给用户。** 对 HiLife 而言，第 ②③ 条正好补上它最缺的"训练量化 + 可解释性"，而第 ① 条它已经做到了。
 
-**第四条，也是这次最意外的收获**：读竞品不要只读 README 和 feature list —— **它的 issue / CHANGELOG 里藏着它踩过的坑**。GymCoach 的 issue #160（本地时区偏移，三次 review 才揪出）让我反查出 HiLife 自己 `store.js:60` 一处真实的 UTC/本地混用缺陷（P0-0）。看别人怎么修 bug，比看别人做了什么功能更值钱。
+**第四条，也是这次最意外的收获**：读竞品不要只读 README 和 feature list —— **它的 issue / CHANGELOG 里藏着它踩过的坑**。GymCoach 的 issue #160（本地时区偏移，三次 review 才揪出）让我反查出 HiLife 自己 `store.js:60` 一处真实的 UTC/本地混用缺陷（P0-0，**已修，并用假钟守卫钉住**）。看别人怎么修 bug，比看别人做了什么功能更值钱。

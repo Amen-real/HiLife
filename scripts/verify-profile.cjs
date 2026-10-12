@@ -1,8 +1,9 @@
 // scripts/verify-profile.cjs —— 「我的」页 + 连续天数口径 回归守卫（node 直跑，无 wx 环境）
 //
-// 覆盖三块：
+// 覆盖四块：
 //   [A] dateRange.streakFromDates 边界（首页「连续打卡」与本页「连续训练天数」共用的唯一回溯实现）
 //   [B] profile.js refresh() 派生数据（训练天数/连续天数/总次数/本月/本周/时长/容量 + 最近一场卡片）
+//   [D] store.getWeightStats 的时区口径（假钟驱动真实 store，UTC/本地混用回归必须变红）
 //   [C] 静态闭环：wxml 类名 ↔ wxss/icons、行内 style 禁 Mustache、wxml 字段 ↔ js data
 //       以及反馈渠道（隐私政策「六、联系我们」的邮箱）的跨文件闭环（原先盯的是「联系开发者」客服入口）
 //
@@ -206,6 +207,77 @@ GD.activePlanId = '';
 GD.selectedActions = [];
 GD.trainingLogs = [];
 ctx.refresh();
+
+/* ══════════════ [D] store.getWeightStats 的时区口径（P0-0） ══════════════
+   历史缺陷（2026-10-12 修）：窗口边界曾用 UTC 序列化切串，而写入侧 weight-record.js
+   用的是本地 getter ⇒ UTC+8 在本地 00:00–08:00 会落回前一天，「近 N 天」多吞一天
+   更旧记录，days / first / change 全偏。修法已收敛到 dateRange 单源。
+   本条用「假钟」驱动【真实 utils/store.js】复现那个时段：时钟固定到本地 03:00，
+   边界记录必须刚好被排除/纳入，差一天即回归。
+   ⚠️ 判别力依赖宿主时区：只有 UTC 以东（offset>0）旧写法才会暴露，西时区/UTC 上
+      旧写法碰巧也对 ⇒ 另配 D6 静态禁词兜底，与宿主时区无关。 */
+console.log('[D] store.getWeightStats 时区口径');
+const store = require(path.join(ROOT, 'utils/store.js'));
+
+const RealDate = Date;
+const FIXED_MS = (() => {
+  const m = new RealDate(); m.setHours(0, 0, 0, 0);      // 本地今天 00:00
+  return m.getTime() + 3 * 3600000;                       // +3h ⇒ 本地 03:00
+})();
+class FakeDate extends RealDate {
+  constructor(...args) { if (args.length === 0) super(FIXED_MS); else super(...args); }
+  static now() { return FIXED_MS; }
+}
+// 只在该段内替换全局 Date；store.js / dateRange.js 都是运行时查全局 Date，故能真的驱动到
+const withFakeClock = (fn) => {
+  global.Date = FakeDate;
+  try { return fn(); } finally { global.Date = RealDate; }
+};
+
+const SAVED_W = GD.weightRecords;
+const RANGE = 7;
+let statsD = null, fromD = '', midD = '';
+withFakeClock(() => {
+  fromD = dateRange.shiftDaysISO(dateRange.todayStr(), -(RANGE - 1));   // 期望边界（本地口径）
+  midD = dateRange.shiftDaysISO(fromD, 1);
+  GD.weightRecords = [
+    { date: dateRange.shiftDaysISO(fromD, -1), weight: 80.0 },          // 早一天 → 必须排除
+    { date: fromD, weight: 75.0 },                                      // 正好边界 → 必须纳入
+    { date: midD, weight: 74.0 },
+    { date: dateRange.todayStr(), weight: 70.0 }
+  ];
+  statsD = store.getWeightStats(RANGE);
+});
+GD.weightRecords = SAVED_W;
+
+eq(statsD.list.map(r => r.date).join(','), [fromD, midD, dateRange.todayStr()].join(','),
+  'D1 假钟本地 03:00：近 ' + RANGE + ' 天只含边界当天及以后（旧 UTC 写法会多吞 '
+  + dateRange.shiftDaysISO(fromD, -1) + ' 一整天）');
+eq(statsD.days, 3, 'D2 days = 3（不含被多吞的那一天）');
+eq(statsD.max, '75.0', 'D3 max 取窗口内最大');
+eq(statsD.min, '70.0', 'D3b min 取窗口内最小');
+eq(statsD.latest, '70.0', 'D4 latest 取窗口内最后一条');
+eq(statsD.change, '-5.0', 'D4b change = latest − first（70.0 − 75.0）');
+eq(statsD.down, true, 'D4c down = true（下降）');
+
+// rangeDays=1 ⇒ 窗口只剩今天（旧写法在东八区凌晨同样会连昨天一起吞）
+withFakeClock(() => {
+  GD.weightRecords = [
+    { date: dateRange.shiftDaysISO(dateRange.todayStr(), -1), weight: 71.0 },
+    { date: dateRange.todayStr(), weight: 70.0 }
+  ];
+  statsD = store.getWeightStats(1);
+});
+GD.weightRecords = SAVED_W;
+eq(statsD.days, 1, 'D5 rangeDays=1 ⇒ 只剩今天（不含昨天）');
+
+/* D6 静态禁词：getWeightStats 函数体内不许再出现 UTC 序列化。
+   取不到函数体要让本条失效可见（否则改名/重排后它会静默变成永真） */
+const storeSrc = fs.readFileSync(path.join(ROOT, 'utils/store.js'), 'utf8');
+const fnBody = (storeSrc.match(/getWeightStats\(rangeDays\)\s*\{[\s\S]*?\n  \},/) || [''])[0];
+truthy(fnBody.length > 0, 'D6a 取到了 getWeightStats 函数体（取不到则 D6b/D6c 失效，必须显式失败）');
+truthy(!/toISOString/.test(fnBody), 'D6b 函数体内无 UTC 序列化（日期串只走 dateRange 单源）');
+truthy(/dateRange\.shiftDaysISO\(/.test(fnBody), 'D6c 边界串由 dateRange.shiftDaysISO 产出');
 
 /* ══════════════ [C] 静态闭环 ══════════════ */
 console.log('[C] 静态闭环');

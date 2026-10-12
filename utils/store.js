@@ -3,6 +3,8 @@
 
 // 模板计划轮转/排序的纯逻辑（零依赖小模块，直接 require 无启动开销）
 const planRotation = require('./planRotation.js');
+// 日期串唯一真源：本文件所有「日期 ↔ 字符串」一律走它，不再自己碰 Date 的序列化
+const dateRange = require('./dateRange.js');
 
 function app() {
   return getApp();
@@ -55,9 +57,12 @@ const store = {
     if (!list.length) return { list: [], max: null, min: null, days: 0, latest: null, change: null };
     let filtered = list;
     if (rangeDays) {
-      const today = new Date();
-      const from = new Date(today.getTime() - (rangeDays - 1) * 86400000);
-      const fromStr = from.toISOString().slice(0, 10);
+      // 窗口边界 = 本地时区的「rangeDays-1 天前」日期串，与写入侧 weight-record.js 的
+      // 本地 getter 同口径（dateRange.js 的定案：日期串按本地时区解析/格式化）。
+      // ★ 历史缺陷（2026-10-12 修，P0-0）：这里曾用 UTC 序列化切窗口，UTC+8 在本地
+      //   00:00–08:00 会落回前一天 ⇒「近 N 天」多吞一天更旧记录，days/first/change 全偏。
+      //   日期加减与格式化只走 dateRange 单源，别在这里重新实现一遍。
+      const fromStr = dateRange.shiftDaysISO(dateRange.todayStr(), -(rangeDays - 1));
       filtered = list.filter(r => r.date >= fromStr);
     }
     const weights = filtered.map(r => r.weight);
