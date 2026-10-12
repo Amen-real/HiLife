@@ -39,8 +39,20 @@
    挪进 flex 容器；food-scan 就是这么出事故的，见该页 .status-spacer 注释）。 */
 .p-sb { width: 100%; flex: 0 0 auto; }
 
+/* 顶部大标题行：行高由 navRowStyle 注入（= 导航带，按微信胶囊实测算，见 utils/navMetrics.js）。
+   44px 只是注入前的兜底典型值。两条硬约束少一条就白算：
+     · box-sizing: border-box —— 否则行内 height 是内容盒高，加 padding 后总高 ≠ 导航带；
+     · 竖向 padding 必须为 0 —— 内容居中靠 align-items:center，留 padding 会把「我的」挤偏。
+   历史坑（2026-10-12）：原为 `padding: 18rpx 36rpx 0` 手调摆位，偏胶囊中线 ~4px。
+   字形本体在下层 .p-title（60rpx 设计稿字号不动），本行只负责把它送进胶囊那条中线。 */
+.p-nav {
+  display: flex; flex-direction: row; align-items: center;
+  flex: 0 0 auto;
+  height: 44px; box-sizing: border-box;
+  padding: 0 36rpx;
+}
+
 .p-title {
-  padding: 18rpx 36rpx 0;
   font-size: 60rpx; font-weight: 800; line-height: 1.15;
   color: var(--text); letter-spacing: -0.5rpx;
 }

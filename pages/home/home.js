@@ -6,6 +6,8 @@ const media = require('../../utils/media.js');
 const nutrition = require('../../utils/nutrition.js');
 const todayPlan = require('../../utils/todayPlan.js');
 const dateRange = require('../../utils/dateRange.js');
+// 顶部安全区唯一真源（状态栏高度 + 微信胶囊度量）：首页品牌行与胶囊同心的行高从这里算
+const navMetrics = require('../../utils/navMetrics.js');
 // 「今日未训练提醒」的口径真源：本页只负责展示与关闭，判据/文案一律读它（勿在此另写一套）
 const reminder = require('../../utils/reminder.js');
 
@@ -44,6 +46,9 @@ Page({
     bgUrl: BG_LOCAL,
     // 状态栏占位高度（自定义导航栏后手动注入）
     statusBarStyle: 'height: 0px',
+    // 顶部品牌行的行高 + 右侧内缩（按微信胶囊实测算，见 utils/navMetrics.js）。
+    // 装饰性标题也要接：行中心必须 == 胶囊中心，手调 rpx 永远跟不上随机型变的胶囊。
+    navRowStyle: '',
     checkin: { done: 0, total: 3, pct: 0 },
     fitnessDays: 0,
     streak: 0,
@@ -76,9 +81,14 @@ Page({
     this.setData({ bgUrl: themeCls === 'theme-dark' ? BG_LOCAL_DARK : BG_LOCAL });
 
     // 自定义导航栏：手动补状态栏高度占位 + 切换状态栏文字/背景色
-    const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
-    const sbh = info.statusBarHeight || 20;
-    this.setData({ statusBarStyle: 'height: ' + sbh + 'px' });
+    // （状态栏高度与胶囊度量统一走 navMetrics 单源，别在这里再写一份 fallback）
+    this.setData({
+      statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px',
+      // 品牌行行高 = 导航带 = 2×(胶囊上沿 − 状态栏) + 胶囊高 ⇒ 行中心 == 胶囊中心。
+      // 历史坑（2026-10-12 量化）：原为手调 `padding: 14rpx 38rpx 4rpx` 摆位，
+      // 390×47 机型上品牌名中线偏胶囊中线 ~8px。改法与 food-scan 三处同一套。
+      navRowStyle: navMetrics.topRowStyle()
+    });
     wx.setNavigationBarColor({
       frontColor: themeCls === 'theme-dark' ? '#ffffff' : '#000000',
       backgroundColor: themeCls === 'theme-dark' ? '#0A0A0A' : '#F7F7F5'

@@ -7,7 +7,10 @@
 //       要么调用前过 privacy.ensure() 门禁，要么在该调用自己给出 fail 降级。
 //       （只用字符串数 chooseMedia 是不够的：新增一处 wx.getLocation 就漏了。）
 //   [C] 单源：requirePrivacyAuthorize / getPrivacySetting 只准出现在 utils/privacy.js
-//   [D] 隐私政策页的声明 ⊇ 全仓实际用到的隐私接口（接口 → 官方「信息类型」声明式映射）
+//   [D] 隐私政策页的声明 ⊇ 全仓实际用到的隐私接口（接口 → 官方「信息类型」声明式映射；
+//       need 只准写官方全名，写简称会被别的类型名喂饱 ⇒ 假绿，2026-10-12 修）
+//       另盯 <input type="nickname">（非 JS 接口，[B] 扫不到）：页内必须如实写昵称/头像的来处，
+//       且不许出现「微信登录」（本小程序无 wx.login，B7 旧假声明已重写）
 //   [E] 隐私政策页的第三方披露 ↔ 服务端真实的模型出口（vision_llm.py 的默认域名）
 //       出口是第三方，政策就必须写「第三方」；出口换回自托管，政策就不许再写「第三方大模型」。
 //       —— B7-3（2026-09-28）：旧文案把识别能力归给「微信云开发提供」，而云开发根本不提供
@@ -214,7 +217,7 @@ function runEnsure(stub, label) {
   // 注意 saveImageToPhotosAlbum / setClipboardData 也在列 ——
   // 「保存到相册」「复制路径」看起来人畜无害，拒绝授权时同样会失败。
   const PRIV = [
-    'chooseMedia', 'chooseImage', 'chooseVideo',
+    'chooseMedia', 'chooseImage', 'chooseVideo', 'chooseMessageFile',
     'getLocation', 'chooseLocation', 'chooseAddress', 'chooseInvoiceTitle', 'chooseInvoice',
     'getWeRunData', 'startRecord', 'getRecorderManager', 'joinVoIPChat',
     'saveImageToPhotosAlbum', 'saveVideoToPhotosAlbum',
@@ -337,12 +340,23 @@ function runEnsure(stub, label) {
   // 官方《用户隐私保护指引》里的「信息类型」名称。用了哪个接口，页内就必须出现对应类型名。
   // 刻意写成声明式映射：将来新增隐私接口时在这里补一行 —— 忘了同步隐私政策，这条守卫就按红。
   // （B7-2 就是这么来的：用了「相册（仅写入）」与「剪贴板」却没声明，用户看不到，审核也会问。）
+  //
+  // ⚠️ `need` 必须写**官方信息类型全名**，不许写简称 —— 2026-10-12 修掉一条假绿：
+  //    chooseMedia 原先配 `need: '相册'`，而页内「相册（仅写入）权限」这七个字里就含「相册」
+  //    ⇒ 那一行**永远命中**，等于没查（把 chooseMedia 的声明整条删掉也不会红）。
+  //    官方类型名之间互不为子串，所以只有全名才具备判别力。
   const DECLARE_RULES = [
     { api: 'saveImageToPhotosAlbum', need: '相册（仅写入）', why: '保存训练分享卡到相册' },
+    { api: 'saveVideoToPhotosAlbum', need: '相册（仅写入）', why: '保存视频到相册' },
     { api: 'setClipboardData', need: '剪贴板', why: '导出时复制备份文件路径' },
     { api: 'getClipboardData', need: '剪贴板', why: '读取剪贴板' },
-    { api: 'chooseMedia', need: '相册', why: '拍照/选图识别、换头像' },
-    { api: 'chooseImage', need: '相册', why: '选图' },
+    { api: 'chooseMedia', need: '选中的照片或视频信息', why: '拍照/选图识别、换头像' },
+    { api: 'chooseImage', need: '选中的照片或视频信息', why: '选图' },
+    { api: 'chooseVideo', need: '选中的照片或视频信息', why: '选视频' },
+    { api: 'chooseMessageFile', need: '选中的文件', why: '导入备份文件（换机恢复）' },
+    // takePhoto 是 <camera> 组件 + createCameraContext 的 JS 侧；<camera> 本身不是 JS 调用，
+    // [B] 段扫不到它，但后台要勾的「摄像头」与它是同一件事，故借这个接口盯声明。
+    { api: 'takePhoto', need: '摄像头', why: '取景页实时拍摄餐食照片' },
     { api: 'getLocation', need: '位置', why: '地理位置' }
   ];
 
@@ -362,9 +376,14 @@ function runEnsure(stub, label) {
   eq(undeclared.length, 0, 'D1 用到的隐私接口在隐私政策里都有对应声明' + (undeclared.length
     ? ' → 缺：' + undeclared.map(r => r.api + ' 须声明「' + r.need + '」（用途：' + r.why + '）').join('；') : ''));
 
-  // 尺子自检：把已声明的类型名从文本里抠掉，规则必须立刻报红（否则「全绿」可能只是规则空转）
-  eq(misses(privPage.replace(/相册（仅写入）/g, '').replace(/剪贴板/g, '')).length >= 2, true,
-    'D2 抠掉「相册（仅写入）」「剪贴板」后规则报红（证明尺子盯着这几个词）');
+  // 尺子自检：把**所有在用**的类型名从正文里抠掉，规则必须一条不漏地全报红。
+  // （旧写法只抠「相册（仅写入）」「剪贴板」两个词、断言 >=2 —— 规则表一扩，那个阈值就悄悄失真，
+  //   故改成逐条精确比对：抠干净后 misses 数必须正好等于在用规则数。）
+  const NEEDS_IN_USE = DECLARE_RULES.filter(r => usedApis.has(r.api)).map(r => r.need);
+  let stripped = privPage;
+  NEEDS_IN_USE.forEach(n => { stripped = stripped.split(n).join(''); });
+  eq(misses(stripped).length, NEEDS_IN_USE.length,
+    'D2 抠掉全部在用类型名后逐条报红（' + NEEDS_IN_USE.length + ' 条：' + NEEDS_IN_USE.join(' / ') + '）');
 
   // 反向：实际没用的接口不该在页里瞎声明（空承诺的另一种形态）
   ['getLocation', 'getWeRunData', 'startRecord'].forEach((api) => {
@@ -385,6 +404,22 @@ function runEnsure(stub, label) {
   // 尺子自检：喂 B7-2 时的旧窄声明（只写「导出」），必须被报出缺 2 项
   eq(clipMisses('· 剪贴板：仅在你导出数据、需要复制备份文件路径时写入一次，不会读取你的剪贴板内容。').length, 2,
     'D4b 尺子自检：旧的窄声明（只说导出）→ 报出缺「备案」「邮箱」2 项');
+
+  /* D5 <input type="nickname"> 是官方「用户信息（微信昵称、头像）」的采集点。
+     它不是 JS 接口 ⇒ [B] 段与 usedApis 都扫不到，只能单独盯（否则后台勾了、页内没写）。
+     B7（2026-10-12 重写）：旧文案「登录信息：若你使用微信登录，获取昵称与头像」**两半皆假** ——
+     全仓无 wx.login / getUserProfile（profile.js 的 wechatLogin() 只生成本地匿名 local_uid），
+     头像也不是微信头像，而是用户从相册/相机自选的图。页内必须如实写清来处，
+     且不许再出现「微信登录」这个说法（本小程序没有这个能力，写了就是空承诺）。
+     ⚠️ privPage 已剥 wxml 注释：解释旧文案错在哪的注释会原样引用「微信登录」，不剥就会误报。 */
+  const profileWxml = fs.readFileSync(path.join(ROOT, 'pages/profile/profile.wxml'), 'utf8');
+  const hasNickInput = /type="nickname"/.test(profileWxml);
+  truthy(hasNickInput, 'D5a profile.wxml 仍有昵称输入框（它不在位时 D5b-D5d 失去约束，须显式更新本条）');
+  if (hasNickInput) {
+    truthy(/昵称/.test(privPage), 'D5b 页内声明了昵称的收集与用途');
+    truthy(/头像/.test(privPage), 'D5c 页内声明了头像的收集与用途');
+    hasNot(privPage, '微信登录', 'D5d 不许再写「微信登录」（无 wx.login、头像也非微信头像 —— 旧假声明已重写）');
+  }
 
   /* ═══════════ [E] 第三方披露 ↔ 服务端真实出口 ═══════════ */
   console.log('[E] 第三方披露 ↔ 服务端模型出口（说了没有 / 有了没说，两种都算错）');

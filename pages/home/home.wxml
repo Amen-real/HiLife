@@ -9,8 +9,10 @@
     <!-- 状态栏占位：自定义导航栏后顶部交还 WebView，需手动补状态栏高度 -->
     <view class="status-bar-spacer" style="{{statusBarStyle}}"></view>
 
-    <!-- 顶部品牌标题：浮在背景图上（自定义导航栏已关掉原生标题） -->
-    <view class="hero-top">
+    <!-- 顶部品牌标题：浮在背景图上（自定义导航栏已关掉原生标题）。
+         ⚠️ navRowStyle 见 utils/navMetrics.js：本行行高＝导航带 ⇒ 品牌名与微信胶囊同心；
+         此前手调 padding 摆位，实测偏胶囊中线 ~8px（2026-10-12 修）。 -->
+    <view class="hero-top" style="{{navRowStyle}}">
       <view class="brand-name">衡砺健身记录</view>
     </view>
 

@@ -25,7 +25,17 @@
    但仍显式钉死：占位一旦被压没，顶部就成了状态栏下面的死区。
    同页 food-scan 的 .status-spacer 就是被 flex 压成 ~0 才出的事故（2026-09-29）。 */
 .status-bar-spacer { width: 100%; flex: 0 0 auto; }
-.hero-top { padding: 14rpx 38rpx 4rpx; }
+/* 顶部品牌行：行高由 navRowStyle 注入（= 导航带，按微信胶囊实测算，见 utils/navMetrics.js）。
+   44px 只是注入前的兜底典型值，不是真值。两条硬约束少一条就白算：
+     · box-sizing: border-box —— 否则行内 height 是内容盒高，加 padding 后总高 ≠ 导航带；
+     · 竖向 padding 必须为 0 —— 内容居中靠 align-items:center，留 padding 会把品牌名挤偏。
+   历史坑（2026-10-12）：原为 `padding: 14rpx 38rpx 4rpx` 手调摆位，品牌名中线偏胶囊中线 ~8px。 */
+.hero-top {
+  display: flex; flex-direction: row; align-items: center;
+  flex: 0 0 auto;
+  height: 44px; box-sizing: border-box;
+  padding: 0 38rpx;
+}
 .brand-name {
   font-size: 34rpx;
   font-weight: 800;

@@ -12,6 +12,8 @@ const auth = require('../../utils/auth.js');
 // 文案里的时间阈值也取自它，避免「改了逻辑忘了改文案」两处漂移。
 const privacy = require('../../utils/privacy.js');
 const reminder = require('../../utils/reminder.js');
+// 顶部安全区唯一真源（状态栏高度 + 微信胶囊度量）：Hero 大标题与胶囊同心的行高从这里算
+const navMetrics = require('../../utils/navMetrics.js');
 
 // Hero 背景图：明暗两张都随包发布在 static/（packOptions.ignore 为空，static 不参与忽略）。
 // 两张严格同几何尺寸（852×560 → 750rpx 宽时折算 493rpx），切主题只换图不换高度，Hero 不跳版。
@@ -141,6 +143,9 @@ Page({
     bgFailed: false,
     // 状态栏占位高度（navigationStyle=custom 后手动注入）
     statusBarStyle: 'height: 0px',
+    // 顶部大标题行的行高 + 右侧内缩（按微信胶囊实测算，见 utils/navMetrics.js）。
+    // 60rpx 的「我的」是装饰性标题，但同样要与胶囊同心 —— 手调 rpx 跟不上随机型变的胶囊。
+    navRowStyle: '',
     // 账户主卡：称号 + 累计三连（days 训练天数 / streak 连续天数 / sessions 总训练次数）
     heroTitle: '新手上路',
     totals: { days: 0, streak: 0, sessions: 0, month: 0, week: 0, weekTarget: 3, dur: '0m' },
@@ -183,8 +188,14 @@ Page({
     }
     // 自定义导航栏：手动补状态栏高度占位 + 状态栏文字随主题
     // （状态栏压在 Hero 底图上：浅色主题是浅底图 → 黑字；深色主题是黑底图 → 白字）
-    const info = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
-    this.setData({ statusBarStyle: 'height: ' + (info.statusBarHeight || 20) + 'px' });
+    // （状态栏高度与胶囊度量统一走 navMetrics 单源，别在这里再写一份 fallback）
+    this.setData({
+      statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px',
+      // 标题行行高 = 导航带 = 2×(胶囊上沿 − 状态栏) + 胶囊高 ⇒ 行中心 == 胶囊中心。
+      // 历史坑（2026-10-12 量化）：原为 `padding: 18rpx 36rpx 0` 手调摆位，
+      // 390×47 机型上「我的」中线偏胶囊中线 ~4px。改法与 food-scan 三处、home 品牌行同一套。
+      navRowStyle: navMetrics.topRowStyle()
+    });
     wx.setNavigationBarColor({
       frontColor: themeCls === 'theme-dark' ? '#ffffff' : '#000000',
       backgroundColor: themeCls === 'theme-dark' ? '#0A0A0A' : '#F7F7F5'
@@ -676,7 +687,13 @@ Page({
           fail: () => { wx.hideLoading(); wx.showToast({ title: '读取失败', icon: 'none' }); }
         });
       },
-      fail: () => {}
+      fail: (e) => {
+        // 用户主动取消不打扰；权限被拒/异常必须给一句人话 ——
+        // wx.chooseMessageFile 是「选中的文件」隐私接口，拒绝授权时走的就是这条，
+        // 静默失败 = 「点了没反应」（与 copyEmail / copyIcp 同一类坑，见 privacy.wxml 的声明）。
+        if (e && /cancel/i.test(e.errMsg || '')) return;
+        wx.showToast({ title: '未能选择文件', icon: 'none' });
+      }
     });
   },
 
