@@ -40,9 +40,10 @@
 .p-sb { width: 100%; flex: 0 0 auto; }
 
 /* 头像行：头像 + 昵称/副标题（profile 顶部不再放装饰性「我的」标题，身份行即头部）。
-   2026-10-12 删标题后内容整体上移、头像压到背景图主体上 ⇒ 放大头像 + 整体下沉，
-   让身份块更有分量、并避开背景图上方的主体（顶部 clearance 改由本行 padding-top 撑）。 */
-.p-id { display: flex; align-items: center; gap: 28rpx; padding: 36rpx 36rpx 0; }
+   2026-10-12 删标题后内容上移、头像压到背景图主体；放大头像后继续加大 padding-top 到 96rpx，
+   把身份块压回删标题前的纵向位置（≈ 状态栏下 96rpx），彻底避开背景图上方的主体。
+   顶部 clearance 仍由本行 padding-top 承担。 */
+.p-id { display: flex; align-items: center; gap: 28rpx; padding: 96rpx 36rpx 0; }
 .p-avatar {
   position: relative;
   flex: 0 0 auto; width: 128rpx; height: 128rpx; border-radius: 50%;
