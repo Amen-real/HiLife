@@ -90,11 +90,12 @@
 /* 累计三连：浮在背景图上，与下方卡片同宽（左右 36rpx）。
    2026-10-12 头像行上移减白时（.p-id padding-top 96→64，减 32rpx），为保持本块屏幕位置不动，
    margin-top 由 30rpx 增到 62rpx 作补偿 ⇒ 头像行上移、本块不跟移。
-   后用户要求缩小头像行与本块间距，曾试 margin-top 62→40rpx，但背景图主体（人物举哑铃手臂）
-   延伸至右下侧较低位置，stats 上移后压到主体；退回 62rpx 保持主体可见。若仍想缩间距，
-   应改裁切/渐隐层让主体抬高或底部变淡，而不是继续压低本块。 */
+   曾试 margin-top 62→40rpx 缩间距，但背景图主体（人物举哑铃手臂）延伸至右下侧较低位置，
+   stats 上移后压到主体，退回 62rpx。后用户要求「上移一点但不遮挡主体」⇒ 收到 54rpx：
+   头像行放大后头像底≈310rpx，本块顶 = 310+54 = 364rpx，稳落主体下边界(~350–372rpx)之下，
+   既上移贴近头像行、又不压主体。若还嫌高/还压，回退 62rpx，或改裁切/渐隐层抬高主体。 */
 .p-stats {
-  display: flex; margin: 62rpx 36rpx 0; padding: 26rpx 0;
+  display: flex; margin: 54rpx 36rpx 0; padding: 26rpx 0;
   background: var(--card); border: 1rpx solid var(--line);
   border-radius: var(--r-l); box-shadow: var(--shadow-card);
 }
