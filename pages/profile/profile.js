@@ -188,7 +188,6 @@ Page({
     // （状态栏高度与胶囊度量统一走 navMetrics 单源，别在这里再写一份 fallback）
     this.setData({
       // 状态栏占位：navigationStyle=custom 后顶部交还 WebView，由 .p-sb 消费此高度。
-      // （「我的」大标题的纵向摆位不接 navRowStyle，2026-10-12 接胶囊钉齐后又撤回归手调 padding。）
       statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px'
     });
     wx.setNavigationBarColor({
