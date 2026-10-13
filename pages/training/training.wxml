@@ -42,6 +42,26 @@
     </view>
   </scroll-view>
 
+  <!-- ============== 器械筛选（与上方分类【叠加】） ==============
+       为什么要这一行：动作库原本只有「身体部位」一个筛选维度，但 equip 是真实存在
+       且信息量很大的一维 —— 实测「自重」有 304 条（23.5%，比哑铃还多），却完全不可见，
+       用户搜得到、看不见入口。这一行把它暴露出来。
+       ⚠️ 与分类是 AND：选「哑铃」+「胸部」= 只看哑铃练胸。
+       ⚠️ 切换器械不清空分类（为了组合），但会清空搜索词。 -->
+  <scroll-view wx:if="{{mode==='lib'}}" class="equip-bar" scroll-x enable-flex>
+    <view
+      wx:for="{{equips}}"
+      wx:key="*this"
+      class="eq {{activeEquip === item ? 'active' : ''}}"
+      data-equip="{{item}}"
+      bindtap="switchEquip"
+      hover-class="op-press"
+    >
+      <text class="eq-name">{{item}}</text>
+      <text class="eq-count" wx:if="{{item !== '全部' && equipCounts[item]}}">{{equipCounts[item]}}</text>
+    </view>
+  </scroll-view>
+
   <!-- ============== EXERCISE LIST（竖向卡片） ============== -->
   <view class="section">
     <view

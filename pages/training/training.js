@@ -20,6 +20,29 @@ const CATEGORY_EMOJI = {
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 器械维度（equip）
+//
+// 为什么需要它（2026-10-13）：动作库一直只有【身体部位】一个筛选维度，但
+// equip 是真实存在且信息量很大的一维 —— 实测 1295 条动作里：
+//   自重 304(23.5%) · 哑铃 293 · 其他 219 · 绳索 157 · 杠铃 156 ·
+//   器械 48 · 壶铃 41 · 瑞士球 28 · 雪橇 15 · 药球 13 · 泡沫轴 10 · 战绳 9 ·
+//   有氧器械 1 · 轮胎 1
+// **「自重」是最大的一类（304条，比哑铃还多），却完全不可见** —— 用户搜得到、看不见入口。
+//
+// 为什么不是「把自重加进分类行」：分类是【身体部位】（胸/背/肩/腿/手臂/核心），
+// 器械是另一个维度；混进同一行会让两种语义打架，且自重动作横跨全部 6 个分类
+// （腿部 83 / 核心 91 / 背部 59 / 胸部 36 / 手臂 33 / 肩膀 2），无处安放。
+// ⇒ 独立成第二行，且**与分类叠加**（器械=哑铃 + 分类=胸部 → 只看哑铃练胸）。
+//
+// 为什么尾部合并：14 个器械里 6 个只有 1~15 条，全铺开筛选条会长到 15 项没法用。
+// ⇒ 只把 ≥ EQUIP_MIN_COUNT 的独立成项，其余归入「其他器械」（实测共 49 条）。
+// ⚠️ 阈值不是拍脑袋：28 条（瑞士球）以下全并入，合并后仍有 49 条，够用户用。
+// ⚠️ 数量是**实测统计**，改动动作库后必须重跑 guard（见 verify-training-equip-filter）。
+const EQUIP_MIN_COUNT = 28;
+// 兜底桶名；不在此列的器械一律归它
+const EQUIP_OTHER = '其他器械';
+
 Page({
   data: {
     // 'theme-light' | 'theme-dark'，由「我的 → 深色主题」开关控制，onShow 同步
@@ -28,6 +51,10 @@ Page({
     categories: ['全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心', '我的动作'],
     catIcons: { '全部': 'all', '胸部': 'chest', '背部': 'muscleback', '肩膀': 'shoulder', '腿部': 'leg', '手臂': 'arm', '核心': 'core', '我的动作': 'myaction' },
     activeCat: '全部',
+    // 器械筛选：equips 由 buildEquips() 依实测分布生成，activeEquip='全部' 表示不限
+    equips: [],
+    equipCounts: {},
+    activeEquip: '全部',
     keyword: '',
     list: [],
     selectedIds: {},
@@ -58,8 +85,11 @@ Page({
       this.getTabBar().setData({ selected: 1, theme: themeCls });
     }
     this.syncState();
-    this.refresh();
     this.computeCounts();
+    this.computeEquips();   // 器械条随 onShow 重算（动作库可能已变）
+    // ⚠️ 顺序：refresh 必须在 computeEquips【之后】—— refresh 要读 activeEquip 做叠加过滤，
+    //   而 computeEquips 可能把已失效的 activeEquip 回落成「全部」。先算后刷才不会用旧值过滤。
+    this.refresh();
     this.loadSelList();
   },
 
@@ -73,6 +103,41 @@ Page({
       favoriteIds: fav,
       selectedCount: store.get().selectedActions.length
     });
+  },
+
+  // 器械桶：把 < EQUIP_MIN_COUNT 的零散器械合并进 EQUIP_OTHER，其余独立成项。
+  // ⚠️ 只统计**内置动作库**（含自建动作），但自建动作 equip 恒为空（创建表单只填 part），
+  //   所以它们天然不落进任何器械桶 —— 见 refresh() 里的处理说明。
+  equipBuckets() {
+    const lib = exercises.library;
+    const raw = {};
+    Object.keys(lib).forEach(k => {
+      if (!Array.isArray(lib[k])) return;
+      lib[k].forEach(a => {
+        const e = a.equip || '';
+        if (!e) return;
+        raw[e] = (raw[e] || 0) + 1;
+      });
+    });
+    const main = Object.keys(raw).filter(e => raw[e] >= EQUIP_MIN_COUNT).sort((a, b) => raw[b] - raw[a]);
+    const rest = Object.keys(raw).filter(e => raw[e] < EQUIP_MIN_COUNT);
+    const names = main.slice();
+    if (rest.length) names.push(EQUIP_OTHER);
+    const counts = {};
+    names.forEach(n => { counts[n] = (n === EQUIP_OTHER) ? rest.reduce((s, e) => s + raw[e], 0) : raw[n]; });
+    return { names, counts, rest };
+  },
+
+  // 动作 a 是否属于当前选中的器械桶
+  matchesEquip(a) {
+    const pick = this.data.activeEquip;
+    if (pick === '全部') return true;
+    if (pick === EQUIP_OTHER) {
+      const rest = this._equipRest || {};
+      const e = a.equip || '';
+      return !!e && rest.indexOf(e) >= 0;
+    }
+    return (a.equip || '') === pick;
   },
 
   refresh() {
@@ -105,6 +170,15 @@ Page({
       video: media(a.video || ''),
       emoji: a.emoji || CATEGORY_EMOJI[a.category] || '🏋️'
     }));
+
+    // 器械维度叠加（在搜索之前，两者是 AND 关系）
+    // ⚠️ 自建动作 equip 恒为空（创建表单只有 part），所以选中任一器械时它们会被过滤掉。
+    //   这是**有意行为**：器械筛选回答的是「用这类器械的动作有哪些」，而自建动作
+    //   没有器械信息，拿它冒充任何一类都是编造。想找自建动作请切回「我的动作」分类。
+    if (this.data.activeEquip !== '全部') {
+      list = list.filter(a => this.matchesEquip(a));
+    }
+
     const kw = this.data.keyword.trim().toLowerCase();
     if (kw) {
       list = list.filter(a =>
@@ -135,8 +209,29 @@ Page({
     this.setData({ catCounts: map });
   },
 
+  // 器械条的数据：名称顺序 + 各桶数量（供 UI 显示条数）。
+  // ⚠️ 数量统计的是**内置动作库**；自建动作 equip 为空，不计入任何桶（见 refresh 注释）。
+  //   若 activeEquip 已不在新列表里（例如动作库更新后某器械被删），回落到「全部」——
+  //   否则用户会停在一个永远为空的筛选上，且没有任何办法察觉。
+  computeEquips() {
+    const { names, counts, rest } = this.equipBuckets();
+    this._equipRest = rest;
+    const patch = { equips: ['全部'].concat(names), equipCounts: counts };
+    if (this.data.activeEquip !== '全部' && names.indexOf(this.data.activeEquip) < 0) {
+      patch.activeEquip = '全部';
+    }
+    this.setData(patch);
+  },
+
   switchCat(e) {
     this.setData({ activeCat: e.currentTarget.dataset.cat, keyword: '' }, () => this.refresh());
+  },
+
+  // 器械筛选条：与分类【叠加】（AND），切换不清空分类 —— 目的是「哑铃 × 胸部」这类组合。
+  // ⚠️ 切换器械**要**清空关键词：用户刚搜的词可能只对上一个器械留着，留着会让新筛选「看起来是空的」，
+  //   而这不是用户能理解的因果。与分类栏行为一致（switchCat 也清 keyword）。
+  switchEquip(e) {
+    this.setData({ activeEquip: e.currentTarget.dataset.equip, keyword: '' }, () => this.refresh());
   },
 
   // 动作库 / 收藏 切换

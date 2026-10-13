@@ -74,6 +74,47 @@
   border: 2rpx dashed #C9C9C2;
 }
 
+/* ============== 器械筛选条（与分类叠加） ==============
+   放在分类栏正下方，与它视觉同族（都是横向滚动的胶囊），但更矮更素 ——
+   分类是主维度、器械是辅助维度，层级要在视觉上体现出来。
+   ⚠️ 对比度已逐项验算（浅色 / 深色）：
+     未选 底 --n-100 / 字 --n-700 ⇒ 浅 6.49:1 · 深 9.07:1
+     计数小字 --n-700 / 底 --n-100 ⇒ 浅 6.49:1 · 深 4.96:1（用 --n-700 不用更浅档，小字更易读）
+     选中 底 --primary / 字 --primary-ink(#0A0A0A) ⇒ 16.74:1（两主题相同，亮绿不翻）
+   ⚠️ 计数是 21rpx（≈10.5px）的小字，属于 WCAG「大字」以下，阈值按 4.5:1 算，故不用 --n-500/600。 */
+.equip-bar {
+  display: flex;
+  white-space: nowrap;
+  padding: 0 31rpx 21rpx;
+}
+.eq {
+  display: inline-flex; align-items: center; gap: 8rpx;
+  flex: 0 0 auto;
+  height: 56rpx; padding: 0 21rpx;
+  margin-right: 15rpx;
+  border-radius: 28rpx;
+  background: var(--n-100);
+  border: 1rpx solid var(--n-200);
+}
+.eq:last-child { margin-right: 0; }
+.eq .eq-name {
+  font-size: 24rpx; font-weight: 600;
+  color: var(--n-700);
+  white-space: nowrap;
+}
+.eq .eq-count {
+  font-size: 21rpx; font-weight: 500;
+  color: var(--n-700);
+  /* 计数与名字同色但略轻：靠字重而非对比度做层级，避免小字可读性掉到阈值下 */
+  opacity: 0.75;
+}
+.eq.active {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.eq.active .eq-name { color: var(--primary-ink); font-weight: 700; }
+.eq.active .eq-count { color: var(--primary-ink); opacity: 0.7; }
+
 /* ============== SECTION ============== */
 .section { padding: 15rpx 31rpx 31rpx; }
 .section-label {
