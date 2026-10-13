@@ -2,6 +2,27 @@
 // 不变量已验证（scan-exercises-invariants.cjs）：
 //   image === imageLocal（100%）、video = '/videos/' + image 文件名（100%）、id 全唯一
 //
+// ★★★ 重跑本脚本前必读（2026-10-13 补，契约全文见 utils/exercises.js 头部 / utils/README.md 第四节）
+// 本脚本会把每个动作的**内容哈希**写进媒体路径：
+//     image = /images/{id}-{hash}.jpg
+//     video = /videos/{id}-{hash}.gif
+// ⇒ **动作内容一变，hash 就变，两条路径就都变了。**
+//   而历史训练记录是按**动作 id** 引用动作的 —— 于是「重跑生成链」可能让
+//   老记录里的动作图与演示 GIF 指向失效地址。这是最容易在真机上才暴露的一类事故。
+//
+// 三条硬规矩：
+//   ① **id 永不复用**：本脚本按原顺序透传 id，不会重排。但若有人改了上游顺序、
+//      或用新列表覆盖，编号一旦复用，历史记录就会指向别的动作 —— 删除走 tombstone。
+//   ② **顺序必须稳定**：utils/exercises.js 的分类与条目顺序是对外契约的一部分
+//      （verify-exercises-compact 按【位置】逐位比对，顺序变了会红）。不要用
+//      Set / Object 遍历顺序或带随机性的排序来重建 library。
+//   ③ **验证顺序不能反**：
+//        node scripts/verify-exercises-compact.cjs      ← 先验证（与固定指纹比）
+//        node scripts/gen-exercises-fingerprint.cjs    ← 数据确实要改时才更新指纹
+//        node scripts/verify-exercises-compact.cjs      ← 再验证
+//      ⚠️ 先更新指纹再验证，等于把尺子改成跟被测物一样长。
+// 生成后必须跑 verify-exercises-compact.cjs 再提交。
+//
 // 行式编码：[id, hash, nameEn, nameZh, equipIdx, targetIdx, stepIdx[]]
 //   equipIdx / targetIdx 查 _E / _T 字典；stepIdx[] 查 _S 句子字典（2026-09-16 新增）
 // 解码还原全部 9 个字段，对外 API（module.exports = { library }）不变。
@@ -9,7 +30,6 @@
 // 为什么 steps 要单独做字典：实测 steps 占 _R 段 82.0%（462KB / 551KB 文件），
 // 而 7538 条步骤里有 4070 条唯一（去重率 46%）—— 内联时同一句「收紧腹肌…」被
 // 重复写了几十遍。改字典 + 索引后实测省 145KB。这是纯重编码，零信息损失。
-// ⚠️ 生成后必须跑 verify-exercises-compact.cjs（与 git HEAD 逐字段深比较）再提交。
 const fs = require('fs');
 const path = require('path');
 

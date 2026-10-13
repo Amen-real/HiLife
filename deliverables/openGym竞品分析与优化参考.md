@@ -269,13 +269,12 @@ README 的原话（要点）：**「加一个 provider = 这里一个文件 + `c
 | 优先级 | 动作 | 实测状态 |
 | --- | --- | --- |
 | P2-1 | `utils/onerm.js` 纯函数（1RM 估算） | ⬜ 实测**全仓无任何 1RM 实现**（`grep -i '1RM\|onerm\|Epley\|Brzycki'` 零命中）。⚠️ 价值低于原估：openGym 有它是因为它的用户群练力量举，HiLife 主体是**热量 + 记录 + 拍照识别**，1RM 对「减脂增肌」用户是弱需求 ⇒ **建议降为不做**，除非你要做力量举垂类 |
-| P2-2 | `utils/README.md`（纪律就近：禁第二份实现 / 日期禁 UTC / 小字 `--n-700`） | ⬜ 未做（实测无此文件）。⚠️ HiLife 没有 `catalogue/` 目录（动作库是压缩进 `utils/exercises.js` 的），所以原提案里「catalogue 一份 + utils 一份」应**合并为一份** |
-| P2-3 | 动作 id 契约注释成文 | ⬜ 未做。详见已更正的 P3-1 |
+| P2-2 | `utils/README.md`（纪律就近） | ✅ **已完成**：15 条唯一真源一览表（含实测断言数）+ 纯度分层 + 三条最常见越界 + 已知刻意的两处不同。数字全部实测核对，非凭记忆 |
+| P3-1 | 动作 id 契约成文 | ✅ **已完成，且不止成文**：契约写在 README / `exercises.js` / `gen-exercises-compact.cjs` **三处**（生成器侧也要写，否则改生成器的人看不到），并新增 `verify-exercise-id-contract.cjs` **34 断言**把契约变成可执行。⭐ **「成文」只是第一步 —— 注释会被跳过，必须有守卫真的盯住** |
+| ~~P2-1~~ | ~~`utils/onerm.js`~~ | ⛔ **建议砍掉**（openGym 有它因用户群练力量举；HiLife 主体是热量+记录+拍照识别，1RM 对「减脂增肌」是弱需求） |
 
-### P3（原 P1-2，已降级）
-| 优先级 | 动作 | 说明 |
-| --- | --- | --- |
-| P3-1 | 补「id 永久编号 / hash 变更须显式 review」注释 | ⚠️ **守卫已存在且比原提案更完备**（`verify-exercises-compact` 10 字段 × 1295 动作按位置比对，实测 PASS）。**只需补注释，10 分钟。** |
+### P3（原 P1-2，已降级后仍完成）
+⚠️ 原判断「全仓无守卫」是**错的**（拿「文件名里没有 catalogue」当「能力不存在」＝守则③）。实际 `verify-exercises-compact` + `scan-exercises-invariants` + `check-storage-coverage` 四项早已覆盖。现已**额外**补上「契约成文 + 契约守卫」。
 
 ### ⚠️ 明确不做（复核后新增一条）
 | 项 | 理由 |
@@ -286,7 +285,8 @@ README 的原话（要点）：**「加一个 provider = 这里一个文件 + `c
 `utils/exercises.js` 已 220KB、`bodymap-data.js` 61KB、`muscleStatus.js` 11KB，**当前余量 422 KB**。⇒ 新增只能是**纯函数 + 守卫脚本**；基线快照与映射表一律落 `scripts/`（该 folder 与 `.cjs` 后缀均已在 `packOptions.ignore`），**不得进主包**。
 
 ### 一句话排序
-**P0-3 / P1-1 / P1-3 全部完成** → 剩余：P2-2 `utils/README.md`（纪律就近）+ P3-1 动作 id 契约注释成文；**1RM 建议直接砍掉**。
+##✅ 清单全部完成（P0-1/0-2/0-3 · P1-1/1-3 · P2-2 · P3-1），唯一被砍的是 1RM（建议不做）。
+> 落地过程本身产出了 6 条长期纪律与 3 条环境坑，全部写进 `.workbuddy/memory/`（参考卷 R11–R15）。
 
 ## 附：素材与抓取说明
 
