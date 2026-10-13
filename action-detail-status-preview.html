@@ -116,23 +116,57 @@
     </div>
   </div>
 
-  <!-- 4 深色 · detrained + 空态 -->
+  <!-- 4 深色 · detrained -->
   <div class="frame dark">
-    <div class="bar"><span>深色 · detrained / 空态</span><span>19 天前 / 无记录</span></div>
+    <div class="bar"><span>深色 · detrained</span><span>20 天前练过胸</span></div>
     <div class="phone">
       <div class="ctx-h">主要肌肉</div>
       <div class="fake-bm"><div><span>Front</span></div><div><span>Back</span></div></div>
       <div class="row-head"><span class="h">当前状态</span><span class="more">近 21 天</span></div>
-      <div class="status-sum">5 块肌群里有 5 块久未刺激</div>
+      <div class="status-sum">3 块肌群里有 3 块久未刺激</div>
       <div class="status-chips">
-        <span class="st-chip st-detrained">股四头肌 · 久未刺激</span>
-        <span class="st-chip st-detrained">臀大肌 · 久未刺激</span>
-        <span class="st-chip st-detrained">内收肌 · 久未刺激</span>
+        <span class="st-chip st-detrained">胸大肌 · 久未刺激</span>
+        <span class="st-chip st-detrained">三角肌 · 久未刺激</span>
+        <span class="st-chip st-detrained">肱三头肌 · 久未刺激</span>
       </div>
       <div class="status-hint">很久没练了，可以练回来</div>
-      <div class="verdict" style="margin-top:14px; border-top:1px dashed var(--n-200); border-radius:0; padding-top:10px;">
-        <b>空态（无任何训练记录）</b>：芯片区不出现，只显示「最近还没练过相关肌群 / 从一次训练开始，这里会显示恢复状态」——<b>不编造状态</b>。
+    </div>
+  </div>
+
+  <!-- 5 trained（中间态） -->
+  <div class="frame">
+    <div class="bar"><span>浅色 · trained</span><span>3 天前RPE9</span></div>
+    <div class="phone">
+      <div class="ctx-h">主要肌肉</div>
+      <div class="fake-bm"><div><span>Front</span></div><div><span>Back</span></div></div>
+      <div class="row-head"><span class="h">当前状态</span><span class="more">近 21 天</span></div>
+      <div class="status-sum">3 块肌群都已恢复</div>
+      <div class="status-chips">
+        <span class="st-chip st-trained">胸大肌 · 可再练</span>
+        <span class="st-chip st-trained">三角肌 · 可再练</span>
+        <span class="st-chip st-trained">肱三头肌 · 可再练</span>
       </div>
+      <div class="status-hint">已恢复到可再上强度</div>
+    </div>
+  </div>
+
+  <!-- 6 空态：两种（2026-10-13 修的真缺陷） -->
+  <div class="frame">
+    <div class="bar"><span>浅色 · 两种空态</span><span>芯片区都不出现</span></div>
+    <div class="phone">
+      <div class="ctx-h">主要肌肉</div>
+      <div class="fake-bm"><div><span>Front</span></div><div><span>Back</span></div></div>
+      <div class="row-head"><span class="h">当前状态</span><span class="more">近 21 天</span></div>
+
+      <div class="status-sum">最近还没练过相关肌群</div>
+      <div class="status-hint" style="margin-top:4px;">从一次训练开始，这里会显示恢复状态</div>
+      <div class="verdict"><b>空态 A</b> · 全库 21 天内一条训练都没有 —— 说「从一次训练开始」是<b>实话</b>。</div>
+
+      <div class="status-sum" style="margin-top:16px;">这个动作涉及的肌群最近没练过</div>
+      <div class="status-hint" style="margin-top:4px;">练过之后这里会显示恢复状态</div>
+      <div class="verdict"><b>空态 B</b> · 用户今天刚练完腿，只是没练过背。
+        第一版这里也写「从一次训练开始」→ <b>那是假话</b>，会被读成「我的记录没保存上」。
+        现在只限定范围、不评价整体训练。</div>
     </div>
   </div>
 

@@ -540,9 +540,35 @@ console.log('\n[F] action-detail 接线与渲染');
   // F4 无日志 → 不得编造状态（空芯片 + 明确文案），这是「文案只写实现得了的事」
   {
     const c = mkCtx([], bench2);
-    eq('F4 无训练记录 → 芯片为空（不编造）', c.data.statusChips.length, 0);
+    eq('F4 全库无任何训练记录 → 芯片为空（不编造）', c.data.statusChips.length, 0);
     isTrue('F4b 摘要说明「还没练过」', /还没练过/.test(c.data.statusSummary));
     isTrue('F4c 仍给出下一步提示而不是空白', !!c.data.statusHint);
+    isTrue('F4d 全库空白时可以说「从一次训练开始」（用户确实没练过）',
+      /从一次训练开始/.test(c.data.statusHint));
+  }
+
+  // F4e ★ 空态必须分两种（2026-10-13 修的真缺陷）
+  //   第一版只有一句「最近还没练过相关肌群 / 从一次训练开始，这里会显示恢复状态」，
+  //   于是「用户今天刚练完腿、又打开一个背部动作」时会说「从一次训练开始」——
+  //   **这是假话**（他练过了），会被读成「我的记录没保存上」。
+  //   ⇒ 用户练过别的部位时，必须说「这个动作涉及的肌群最近没练过」（只限定范围，
+  //     不评价整体训练）；只有全库真的空白才允许说「从一次训练开始」。
+  {
+    // 练了腿（与看背无关）→ 走第二种空态
+    const legLog = mkLog(0, LIB['腿部'][0], 9);
+    const c2 = mkCtx([legLog], bench2);
+    eq('F4e 练过别的部位、但该动作肌群无状态 → 芯片仍为空', c2.data.statusChips.length, 0);
+    isTrue('F4f 此时不得说「从一次训练开始」（用户明明练过）',
+      !/从一次训练开始/.test(c2.data.statusHint));
+    isTrue('F4g 此时须限定范围地说「这个动作涉及的肌群最近没练过」',
+      /这个动作涉及的肌群最近没练过/.test(c2.data.statusSummary));
+    // 反向自检：两句话必须不同，否则分支形同虚设
+    const c3 = mkCtx([], bench2);
+    isTrue('F4h 反向自检：两种空态的文案确实不同（证明 F4f/F4g 不是恒真）',
+      c3.data.statusHint !== c2.data.statusHint && c3.data.statusSummary !== c2.data.statusSummary);
+    // 该判定必须来自 all.size 而非另造计数器
+    const rawCode = read('pages/action-detail/action-detail.js');
+    isTrue('F4i 判定依据是 all.size（禁另造计数器）', /all\.size\s*>\s*0/.test(rawCode));
   }
   // F5 摘要分支：混合态下 fatigued 优先
   {
