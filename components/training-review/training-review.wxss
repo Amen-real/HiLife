@@ -342,6 +342,39 @@
 .sg-apply.dis { background: var(--n-200); color: var(--n-400); }
 .sg-tip { font-size: 20rpx; font-weight: 500; color: var(--n-400); }
 
+/* ===== 练完之后的肌群状态（回放，B② 口径） =====
+   ⚠️ 三态色**不重定义**，直接消费 app.wxss 的根 token（--st-fatigued / trained / detrained
+     的 bg + ink）。本组件被 list 与 review 两页共用、且组件样式有作用域，
+     自己写死色值会导致「一换宿主就穿帮」—— 根 token 是唯一真源，两套主题都已验算对比度。
+   ⚠️ trained 是亮绿底 + #0A0A0A，**不随主题翻转**（与 .m-tag.primary 同规则）。 */
+.af-card {
+  background: var(--card);
+  border: 1rpx solid var(--n-200);
+  border-radius: var(--r-l);
+  padding: 24rpx 28rpx;
+  margin-bottom: 32rpx;
+}
+.af-sum {
+  font-size: 27rpx; font-weight: 600;
+  color: var(--n-800);
+  margin-bottom: 18rpx;
+}
+.af-chips { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.af-chip {
+  display: inline-flex; align-items: center;
+  height: 52rpx; padding: 0 22rpx;
+  border-radius: var(--r-pill);
+  font-size: 23rpx; font-weight: 600;
+}
+.af-fatigued  { background: var(--st-fatigued-bg);   color: var(--st-fatigued-ink); }
+.af-trained   { background: var(--st-trained-bg);    color: var(--st-trained-ink); font-weight: 800; }
+.af-detrained { background: var(--st-detrained-bg);  color: var(--st-detrained-ink); }
+.af-hint {
+  font-size: 22rpx;
+  color: var(--n-600);
+  margin-top: 18rpx;
+}
+
 .bottom-gap { height: 40rpx; }
 
 /* ===== 关键动作：标题行入口 + 选择弹层（自动前 3 ↔ 自选） ===== */

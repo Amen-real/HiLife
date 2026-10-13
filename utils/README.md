@@ -18,7 +18,8 @@
 | 每日热量与营养素 | `nutrition.js`（`GOALS` + `normalizeGoal`） | advice / home | `verify-goal-vocab` |
 | 今日训练计划 | `todayPlan.js`（`resolveTodayPlan`） | home / profile | `verify-today-plan` |
 | 训练统计 / verdict / 建议回填 | `trainingStats.js` | review / list | `verify-training-review` |
-| 肌群疲劳三态 | `muscleStatus.js`（`muscleStatusOf`） | action-detail | `verify-muscle-status`(131) |
+| 肌群疲劳三态 | `muscleStatus.js`（`muscleStatusOf`） | action-detail | `verify-muscle-status`(137) |
+| **「练完之后」回放**（`now` = 该场次结束时刻） | `sessionAfter.js`（`afterStateOf`） | training-review（list / review 两页共用） | `verify-session-after`(67) |
 | target → 图集 slug 映射 | `bodymap.js` 的 `SLUG` | action-detail / shareCard / muscleStatus | `verify-muscle-status[C]` |
 | 顶部安全区 / 胶囊避让 | `navMetrics.js` | 全部自定义导航页 | `verify-top-inset`(54) |
 | 隐私授权门禁 | `privacy.js`（`privacy.ensure`） | 三处选图 | `verify-privacy-auth`(70) |
@@ -37,7 +38,7 @@
 ## 二、纯度分层
 
 - **纯函数**（不 require wx / store / app，可被 node 直接单测）：
-  `dateRange` · `muscleStatus` · `todayPlan` · `trainingStats` · `nutrition` · `planRotation` · `bodymap` · `metrics` · `foodkb`
+  `dateRange` · `muscleStatus` · `sessionAfter` · `todayPlan` · `trainingStats` · `nutrition` · `planRotation` · `bodymap` · `metrics` · `foodkb`
 - **有状态 / 依赖宿主**：`store`（读写 `getApp().globalData`）· `theme` · `auth` · `privacy` · `media` · `reminder` · `workoutSession`（**仅内存，不落盘**）
 
 ⇒ 新增逻辑前先问：**它需要宿主吗？** 不需要就写成纯函数，永远能进守卫、永远不被真机依赖绑住。

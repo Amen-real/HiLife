@@ -13,6 +13,8 @@ const dateRange = require('../../utils/dateRange.js');
 const stats = require('../../utils/trainingStats.js');
 // 分享卡：内容模型 + 版式 + 绘制都在 utils/shareCard.js（纯函数，守卫可在 node 里断言）
 const shareCard = require('../../utils/shareCard.js');
+// 「这场练完之后」的肌群状态回放：now 钉在该场次结束时刻（口径见该文件顶部三条）
+const sessionAfter = require('../../utils/sessionAfter.js');
 
 // 低于这个场次不画趋势图：1 根柱不是趋势，只会让人觉得「这页没用」
 const TREND_MIN_LOGS = 2;
@@ -60,6 +62,8 @@ Component({
     // 下次训练建议（可回填计划）：全部文本字段必须是字符串/数字，不得塞对象
     suggest: [],
     hasSuggest: false,
+    // 「练完之后」肌群状态回放（B②口径）：now = 该场次结束时刻，**不是此刻**
+    afterChips: [], afterSummary: '', afterHint: '', hasAfter: false,
     canApply: false,
 
     // ===== 进步趋势 =====
@@ -114,7 +118,8 @@ Component({
           perAction: [], feelings: [], keyActions: [], weeks: [],
           records: [], recordsSummary: '', trendReady: false, trendNeed: 0,
           pickOptions: [], kaSheet: false, kaTabSafe: false, kaCustom: false, kaPickedCount: 0,
-          suggest: [], hasSuggest: false, canApply: false
+          suggest: [], hasSuggest: false, canApply: false,
+          afterChips: [], afterSummary: '', afterHint: '', hasAfter: false   // 防切场次时残留上一场的状态
         });
         this._tryAutoShare();
         return;
@@ -202,6 +207,13 @@ Component({
       // 下次训练建议：基线 = 计划目标 > 历史；纯逻辑在 trainingStats（组件只组装）
       const suggest = stats.nextSessionSuggestion(actions, logs, idx, store.getActivePlan());
 
+      // 「练完之后」的肌群状态回放（B②口径）：now 钉在该场次结束时刻，而不是此刻。
+      // ⚠️ 这里**必须**用 afterStateOf 而不是 muscleStatusOf(logs, Date.now())——
+      //   本页可以切到任意历史场次，若用「此刻」当基准，用户看 3 天前那场时会
+      //   看到之后几天练的肌群混进来（「我昨天练的腿出现在三天前的复盘里」）。
+      //   口径全文见 utils/sessionAfter.js 顶部三条。
+      const after = sessionAfter.afterStateOf(logs, log);
+
       this.setData({
         selIdx: idx,
         sessionDate: dateRange.fmtDateSlash(log.date),
@@ -216,7 +228,12 @@ Component({
         feelings,
         suggest,
         hasSuggest: suggest.length > 0,
-        canApply: suggest.some(s => s.actionable)
+        canApply: suggest.some(s => s.actionable),
+        // 肌群状态回放（空/ 过旧 / 无基准时不渲染，禁显示占位文案）
+        afterChips: after.chips,
+        afterSummary: after.summary,
+        afterHint: after.hint,
+        hasAfter: !after.empty
       });
     },
 

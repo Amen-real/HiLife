@@ -74,6 +74,22 @@
             </view>
           </view>
 
+          <!-- 练完之后的肌群状态回放（B② 口径）
+               ⚠️ 时间基准 = **该场次的结束时刻**，不是此刻。本页可以切到任意历史场次，
+                  若用「此刻」当基准，用户看 3 天前那场时会看到之后几天练的肌群混进来。
+               ⚠️ hasAfter 为false 时（无可点亮肌群 / 记录过旧 / 基准缺失）整块不渲染，
+                  不显示任何占位文案 —— 缺数据就说缺数据，不编造。 -->
+          <block wx:if="{{hasAfter}}">
+            <view class="section-title">练完之后的肌群状态</view>
+            <view class="af-card">
+              <view class="af-sum">{{afterSummary}}</view>
+              <view class="af-chips">
+                <text class="af-chip af-{{item.state}}" wx:for="{{afterChips}}" wx:key="slug">{{item.name}} · {{item.label}}</text>
+              </view>
+              <view class="af-hint">{{afterHint}}</view>
+            </view>
+          </block>
+
           <!-- 下次训练建议：可一键回填计划（基线 = 计划目标 > 历史） -->
           <block wx:if="{{hasSuggest}}">
             <view class="section-title">下次训练建议</view>
