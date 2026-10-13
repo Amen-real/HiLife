@@ -10,6 +10,13 @@
 # 识别引擎：LLM（需环境变量 LLM_API_KEY，见 vision_llm.py）优先 → CalorieScan 真实模型。
 # 两者都不可用时**明确报错**（503 / task.status=error），不再回退 mock ——
 # 静默返回假热量会让用户把示例数据当成自己那餐记录，见 analyzer.py 顶部说明。
+#
+# VISION_MODE=fixture：**显式开关**下启用固定夹具（见 fixture.py）。
+#   存在的意义：让「拍照 → 识别 → 纠错 → 入库 → 复盘」整条回路在
+#   不调大模型（花钱、慢）的前提下也能跑通，供 CI 与离线演示使用。
+#   ⚠️ 它**只可能优先于真实引擎，绝不可能兜底**：真实引擎不可用时照旧抛
+#     EngineNotReady。fixture 抢兜底位 = 把「服务坏了」变成「返回假热量」。
+#   ⚠️ 默认关闭。开关名拼错（如 'Fixture'）一律视为未启用 ⇒ 照旧走真实链路。
 import base64
 import threading
 import uuid
@@ -18,6 +25,7 @@ from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 import analyzer
+import fixture
 
 try:
     import vision_llm
@@ -50,7 +58,11 @@ def _remember(task_id: str, value: dict):
 
 def _run_task(task_id: str, data: bytes, filename: str):
     try:
-        if vision_llm is not None and vision_llm.llm_ready():
+        # ⚠️ 判定顺序 = 「显式开关 > 真实引擎」。fixture 只可能排在真实引擎**之前**，
+        #   永远不可能出现在 except / else 里 —— 这条是 fixture.py 铁律 1 的落点。
+        if fixture.fixture_enabled():
+            result = fixture.analyze(data, filename)
+        elif vision_llm is not None and vision_llm.llm_ready():
             result = vision_llm.analyze_bytes(data, filename)
         else:
             result = analyzer.analyze(data, filename)  # CalorieScan 真实模型（无 mock 兜底）
@@ -77,6 +89,11 @@ def _decode_b64_image(s: str) -> bytes:
 @app.get("/health")
 def health():
     """健康检查。/ready=false 时 reason 里是「该配哪一项」的人话，可直接拿去排查。"""
+    # 夹具开启时如实上报，绝不让「跑的是假数据」这件事只能靠翻日志发现。
+    fx = fixture.describe()
+    if fx["fixture"]:
+        out = {"status": "ok", "fixture": True, "ready": True, "mode": fx["mode"], "warning": fx["warning"]}
+        return out
     llm_on = bool(vision_llm is not None and vision_llm.llm_ready())
     model_on = analyzer.is_ready()
     out = {
@@ -84,6 +101,7 @@ def health():
         "llm": llm_on,
         "model_loaded": model_on,
         "ready": llm_on or model_on,
+        "fixture": False,
     }
     if not out["ready"]:
         out["reason"] = analyzer.not_ready_reason()
@@ -94,6 +112,8 @@ def health():
 async def analyze(image: UploadFile = File(...)):
     data = await image.read()
     try:
+        if fixture.fixture_enabled():
+            return fixture.analyze(data, image.filename or "image.jpg")
         return analyzer.analyze(data, image.filename or "image.jpg")
     except analyzer.EngineNotReady as e:
         # 引擎不可用是**服务端配置问题**，不是用户输入问题 → 503 而不是 400，

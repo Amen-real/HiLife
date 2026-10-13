@@ -263,7 +263,7 @@ README 的原话（要点）：**「加一个 provider = 这里一个文件 + `c
 | --- | --- | --- | --- |
 | P1-1 | `dateRange` 边界断言 | ✅ **已完成**：`scripts/verify-date-range-boundary.cjs`，**74 断言**（六节：round-trip+本地午夜 / 闰年含400 规则 / 月末年末含不存在日期 / streak跨闰日 / weekRange 跨年周 / 单源静态扫）。**实现一条没改**。⚠️ 变异测试暴露两类「测不出来」：**同解实现**（手写 `Date.UTC` 与现实现结果完全一致 ⇒ 必须靠形态断言）与**防御代码**（死循环上限正常路径到不了）。详见参考卷 R13 | — |
 | P1-2 | 「性质型守卫 + 必须配变异测试」写进守卫通则 | ✅ 已完成（2026-10-13，通则①已补「最优做法 = 变异测试」） | — |
-| P1-3 | `server/app.py` 增 `VISION_MODE='fixture'`（显式开关、**禁兜底**） | ⬜ 未做。⚠️ 实测 `grep MEDIA_MODE` 命中的是 **`utils/media.js`（前端媒体模式）**，与识别后端无关 —— 后端无任何模式开关 | 小 |
+| P1-3 | fixture 模式（显式开关、**禁兜底**） | ✅ **已完成**：`server/fixture.py` + `VISION_MODE=fixture`（默认关）；判定顺序 = **显式开关 > LLM > 真实模型**；`/health` 如实上报 `fixture:true`。守卫 `verify-vision-fixture.cjs` **56 断言**，变异测试 5 个全被抓住（含「抢兜底位」「except 回退」两个最危险的）。⚠️ 关键设计：**`mock` 恒 False + 独立 `fixture` 标记** —— 客户端「凡 mock:true 一律拒绝」的防线是对的、不许为 fixture 放宽。详见参考卷 R14 | — |
 
 ### P2（3 项，可批量后一次做）
 | 优先级 | 动作 | 实测状态 |
@@ -286,7 +286,7 @@ README 的原话（要点）：**「加一个 provider = 这里一个文件 + `c
 `utils/exercises.js` 已 220KB、`bodymap-data.js` 61KB、`muscleStatus.js` 11KB，**当前余量 422 KB**。⇒ 新增只能是**纯函数 + 守卫脚本**；基线快照与映射表一律落 `scripts/`（该 folder 与 `.cjs` 后缀均已在 `packOptions.ignore`），**不得进主包**。
 
 ### 一句话排序
-**页面已接完（P0-3 ✅）→ 闰年/月末边界已补（P1-1 ✅，74 断言）→ 下一步 fixture 模式（P1-3）→ 剩下的按批次。1RM 建议直接砍掉。**
+**P0-3 / P1-1 / P1-3 全部完成** → 剩余：P2-2 `utils/README.md`（纪律就近）+ P3-1 动作 id 契约注释成文；**1RM 建议直接砍掉**。
 
 ## 附：素材与抓取说明
 
