@@ -42,7 +42,16 @@ const SPOTS = [
   { file: 'components/training-review/training-review.wxss', sel: '.verdict', paper: 'var(--card)', darkFrom: 'pages/list/list.wxss', note: '结论条（组件 × list 宿主）' },
   { file: 'components/training-review/training-review.wxss', sel: '.verdict', paper: 'var(--card)', darkFrom: 'pages/review/review.wxss', note: '结论条（组件 × review 宿主）' },
   { file: 'components/training-review/training-review.wxss', sel: '.ka-pick', paper: 'var(--card)', darkFrom: 'pages/list/list.wxss', note: '关键动作选择（组件 × list 宿主）' },
-  { file: 'components/training-review/training-review.wxss', sel: '.ka-pick', paper: 'var(--card)', darkFrom: 'pages/review/review.wxss', note: '关键动作选择（组件 × review 宿主）' }
+  { file: 'components/training-review/training-review.wxss', sel: '.ka-pick', paper: 'var(--card)', darkFrom: 'pages/review/review.wxss', note: '关键动作选择（组件 × review 宿主）' },
+  // —— 肌群三态色（2026-10-13 新增）——
+  // ⚠️ 为什么必须显式列进来：自动扫描（scanDarkGaps）的候选条件是「同时设了底色与字色」，
+  //   这三条确实满足；但**门禁的报告与判定走的是下面这张 SPOTS 白名单**，
+  //   没列的点不会被打印、也不计入 OK/失败总数 —— 即「扫到了但没人看」。
+  //   实测数据：浅色 fatigued 6.00 / trained 16.74 / detrained 7.98；
+  //             深色 fatigued 8.33 / detrained 6.42；trained 是亮绿底 + 墨字（主题无关，禁止翻转）。
+  { file: 'pages/action-detail/action-detail.wxss', sel: '.st-fatigued', paper: 'var(--card)', note: '肌群三态·还有疲劳：浅橙底 + 深棕字，--st-* 必须成对翻' },
+  { file: 'pages/action-detail/action-detail.wxss', sel: '.st-trained', paper: 'var(--card)', note: '肌群三态·可再练：亮绿底 + #0A0A0A，主题无关，禁止翻转' },
+  { file: 'pages/action-detail/action-detail.wxss', sel: '.st-detrained', paper: 'var(--card)', note: '肌群三态·久未刺激：浅蓝底 + 深蓝字，--st-* 必须成对翻' }
 ];
 
 function ruleIn(css, sel) {

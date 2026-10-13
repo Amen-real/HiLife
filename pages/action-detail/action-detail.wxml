@@ -59,6 +59,27 @@
     </view>
   </view>
 
+  <!-- ============== 肌群当前状态（数据来自 utils/muscleStatus.js 唯一真源） ==============
+       ⚠️ 为什么用文字芯片而不是给解剖图上三色：
+         ① 人体图相邻肌群边界细、底色是浅灰(#E2E6EA)，实测任意两个「有色」态之间的
+            对比度只有 1.06~1.34，远低于 WCAG 1.4.11 对图形元素的 3:1 —— 这是载体限制，
+            不是调色能解决的；
+         ② 图上仍按原样高亮「本动作练哪里」，三态信息由下面的芯片承载，
+            文字色/底色已逐对验算过（浅深两套主题均 ≥4.5:1，见 verify-muscle-status）。
+         ⚠️ chips 为空 = 21 天内这些肌群没练过，此时不编造状态（不显示任何芯片）。
+  -->
+  <view class="section" wx:if="{{hasStatus}}">
+    <view class="row-head">
+      <view class="h2">当前状态</view>
+      <text class="more">近 21 天</text>
+    </view>
+    <view class="status-sum">{{statusSummary}}</view>
+    <view class="status-chips" wx:if="{{statusChips.length}}">
+      <text class="st-chip st-{{item.state}}" wx:for="{{statusChips}}" wx:key="slug">{{item.name}} · {{item.label}}</text>
+    </view>
+    <view class="status-hint">{{statusHint}}</view>
+  </view>
+
   <!-- ============== 历史记录 ============== -->
   <view class="section">
     <view class="row-head">

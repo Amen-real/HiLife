@@ -372,11 +372,29 @@ function bodyPaths(side, slugSet, opts) {
   const data = side === 'back' ? D.BACK : D.FRONT;
   const outline = side === 'back' ? D.OUTLINE_BACK : D.OUTLINE_FRONT;
 
+  // 可选逐肌群配色回调：opts.colorOf(slug, active) → { fill, stroke } | null。
+  // 不传时行为与从前完全一致（命中=on / 未命中=base），故既有消费方零影响。
+  //
+  // 为什么需要它（2026-10-13）：原实现的高亮色是**全局二值** —— 命中集合一律 on、
+  // 未命中一律 base，无法表达「同一张图上三块肌群分别是疲劳 / 可练 / 停训」。
+  // 另开一条「画三遍」的路走不通：drawBody 每次都 clearRect，后一遍会擦掉前一遍；
+  // 而绕开 drawBody 直接对 canvas 动手，就等于让消费侧复制一份绘制逻辑
+  // （解剖图只有一份实现是硬约束）。
+  // 所以把「每块肌群用什么色」变成纯函数里的一次回调调用 —— 仍留在「纯数据」层，
+  // 守卫仍能在 node 里穷举断言。
+  const colorOf = typeof o.colorOf === 'function' ? o.colorOf : null;
+  const pick = (slug, active) => {
+    if (colorOf) {
+      const c = colorOf(slug, active);
+      if (c) return { fill: c.fill, stroke: (c.stroke === undefined || c.stroke === null) ? c.fill : c.stroke };
+    }
+    return { fill: active ? o.on : o.base, stroke: active ? o.onStroke : o.baseStroke };
+  };
+
   const parts = [];
   for (const part of data) {
     const active = !!(slugSet && slugSet.has(part.slug));
-    const fill = active ? o.on : o.base;
-    const stroke = active ? o.onStroke : o.baseStroke;
+    const { fill, stroke } = pick(part.slug, active);
     const sides = []
       .concat(part.path.common || [])
       .concat(part.path.left || [])

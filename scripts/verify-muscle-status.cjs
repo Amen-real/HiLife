@@ -38,6 +38,14 @@ const isTrue = (label, v) => (v ? ok(label) : bad(label + '  got=' + JSON.string
 const dateRange = require(path.join(ROOT, 'utils', 'dateRange.js'));
 const bodymap = require(path.join(ROOT, 'utils', 'bodymap.js'));
 const MS = require(path.join(ROOT, 'utils', 'muscleStatus.js'));
+let PAGE2 = null;   // action-detail 页面对象（[F] 节捕获）
+// [D]/[F] 共用的全局数据源（提到文件顶层：[F] 节要复用，原先只在 [D] 的块级作用域里）
+const GD = {
+  userInfo: { loggedIn: true, nickname: 'x', avatar: '' },
+  profile: { fitnessDays: 0, weeklyTarget: 3 },
+  selectedActions: [], trainingPlans: [], activePlanId: '',
+  weightRecords: [], trainingLogs: [], meals: [], favorites: [], customActions: [], keyActionPicks: []
+};
 
 /* ══════════════ 确定性 LCG（不用三方库） ══════════════ */
 // 固定种子 ⇒ 每次跑同一批历史。**不能用 Math.random()**：那会让「今天红了」无法复现，
@@ -390,12 +398,6 @@ console.log('\n[C] 与 bodymap 的映射一致性');
 /* ══════════════ [D] 假钟驱动真实 store ══════════════ */
 console.log('\n[D] 与真实 store / 落库数据契约兼容');
 {
-  const GD = {
-    userInfo: { loggedIn: true, nickname: 'x', avatar: '' },
-    profile: { fitnessDays: 0, weeklyTarget: 3 },
-    selectedActions: [], trainingPlans: [], activePlanId: '',
-    weightRecords: [], trainingLogs: [], meals: [], favorites: [], customActions: [], keyActionPicks: []
-  };
   const STORAGE = {};
   global.getApp = () => ({ globalData: GD, persist() { } });
   global.wx = {
@@ -465,6 +467,185 @@ console.log('\n[D] 与真实 store / 落库数据契约兼容');
   eq('E2b 正确实现：未来数据在基准 now 下为空表', MS.muscleStatusOf([fut], BASE).size, 0);
   eq('E2c 错误实现（先过滤）恰好与正确实现一致 —— 这就是第一版断言失效的原因',
     buggy2([fut], BASE).size, MS.muscleStatusOf([fut], BASE).size);
+}
+
+/* ══════════════ [F] 页面接线（action-detail「当前状态」区块） ══════════════ */
+// ⚠️ 为什么必须加这一节：P0-1 只交付了纯函数，页面零消费 ⇒ 78 条断言全绿而用户看不到任何东西。
+//   这一节把「接上了」变成可核验的事实，并盯住「页面不许自己算」这条单源红线。
+console.log('\n[F] action-detail 接线与渲染');
+{
+  const LIB2 = LIB;
+  const bench2 = LIB2['胸部'][0];
+  const squat2 = LIB2['腿部'][0];
+  const iso = (daysAgo) => {
+    const d = dateRange.parseISO(dateRange.todayStr());
+    return dateRange.fmtDate(dateRange.toDate(dateRange.shiftDaysISO(dateRange.fmtDate(d), -daysAgo)));
+  };
+  const mkCtx = (logs, act) => {
+    GD.trainingLogs = logs;
+    GD.currentAction = act;
+    delete require.cache[require.resolve(path.join(ROOT, 'pages/action-detail/action-detail.js'))];
+    global.Page = (o) => { PAGE2 = o; };
+    require(path.join(ROOT, 'pages/action-detail/action-detail.js'));
+    const ctx = Object.assign({}, PAGE2, {
+      data: JSON.parse(JSON.stringify(PAGE2.data)),
+      setData(o) { Object.assign(this.data, o); },
+      getTabBar: () => null
+    });
+    ctx.onLoad();
+    return ctx;
+  };
+
+  // ⚠️⚠️ createdAt 必须相对【真实的今天】算，不能沿用本脚本其他小节用的 BASE(2026-06-01)。
+  //   原因：action-detail 调的是 muscleStatusOf(logs, Date.now())，真实 now 是「今天」；
+  //   而 BASE 是 2026-06-01 的固定时刻 —— 两者今天已相差 134 天，造出来的记录**全部落在
+  //   RETENTION_DAYS(21) 窗外** ⇒ 状态表为空 ⇒ 芯片为空。
+  //   这类错断言的特征很典型：**测试全红但被测代码没错，是数据用错了基准**。
+  //   （第一版 F 节就是这么错的：混用了两节不同的时间基准。）
+  const NOW = Date.now();
+  const mkLog = (daysAgo, e, rpe) => ({
+    date: iso(daysAgo),
+    createdAt: NOW - daysAgo * DAY,
+    actions: [{ id: e.id, category: e.category, equip: e.equip, name: e.nameZh, sets: 3, setsDetail: [{ reps: 10, weight: 40, rpe }] }]
+  });
+
+  // F1 三天前高强度练胸 → 该动作相关肌群应全部 fatigued
+  {
+    // ⚠️ 用【当天】而不是 3 天前：RPE9 的强度 0.9，3 天后衰减到 ≈0.32 < FATIGUED_AT(0.35)
+    //   ⇒ 会判成 trained。测「fatigued」必须用 0 天（或 1 天内）。第一版这里写成 3 天前，
+    //   与 F3 的数据撞车，导致两条断言互相矛盾 —— 改数据前先想清楚每条在测什么。
+    const c = mkCtx([mkLog(0, bench2, 9)], bench2);
+    isTrue('F1 页面已捕获', !!PAGE2);
+    eq('F1 hasStatus = true', c.data.hasStatus, true);
+    isTrue('F1b 产出三态芯片', c.data.statusChips.length > 0);
+    isTrue('F1c 当天高强度 → 芯片全部为 fatigued', c.data.statusChips.every(x => x.state === 'fatigued'));
+    isTrue('F1d 摘要含「还没恢复」', /还没恢复/.test(c.data.statusSummary));
+    isTrue('F1e 每条芯片带中文名与短标签', c.data.statusChips.every(x => x.name && x.label));
+  }
+  // F2 十九天前练腿 → detrained（这是最容易写错的一档）
+  {
+    const c = mkCtx([mkLog(19, squat2, 6)], squat2);
+    isTrue('F2 十九天前 → 芯片全为 detrained', c.data.statusChips.every(x => x.state === 'detrained'));
+    isTrue('F2b 摘要含「久未刺激」', /久未刺激/.test(c.data.statusSummary));
+  }
+  // F3 五天前中低强度 → trained（中间态）
+  {
+    // ⚠️ 用 RPE9 而不是 RPE6：RPE6 的强度只有 0.3，恒 < FATIGUED_AT(0.35)，
+    //   无论几天前都判不出 fatigued —— 那样这条断言测的是「阈值」而不是「中间态」。
+    //   RPE9 = 0.9，3 天后 0.9×0.354≈0.32 < 0.35 且 daysSince<14 ⇒ 稳定落在 trained。
+    const c = mkCtx([mkLog(3, squat2, 9)], squat2);
+    isTrue('F3 三天前高强度 → trained（中间态不为空）', c.data.statusChips.every(x => x.state === 'trained'));
+    isTrue('F3b 摘要含「已恢复」', /已恢复/.test(c.data.statusSummary));
+  }
+  // F4 无日志 → 不得编造状态（空芯片 + 明确文案），这是「文案只写实现得了的事」
+  {
+    const c = mkCtx([], bench2);
+    eq('F4 无训练记录 → 芯片为空（不编造）', c.data.statusChips.length, 0);
+    isTrue('F4b 摘要说明「还没练过」', /还没练过/.test(c.data.statusSummary));
+    isTrue('F4c 仍给出下一步提示而不是空白', !!c.data.statusHint);
+  }
+  // F5 摘要分支：混合态下 fatigued 优先
+  {
+    const c = mkCtx([mkLog(0, bench2, 9), mkLog(19, squat2, 6)], bench2);
+    const fatiguedCount = c.data.statusChips.filter(x => x.state === 'fatigued').length;
+    isTrue('F5 混合日志下取当前动作相关肌群', c.data.statusChips.length > 0 && fatiguedCount === c.data.statusChips.length);
+    // 摘要句形如「N 块肌群里有 M 块还没恢复」；N 必须等于芯片数（不虚报）
+    isTrue('F5b 摘要计数与芯片数一致（不虚报）',
+      new RegExp('^' + c.data.statusChips.length + ' 块肌群里有 ' + fatiguedCount + ' 块').test(c.data.statusSummary));
+  }
+  // F5c 无状态时必须跳过（防「编造状态」）——
+  // ⚠️ 第一版缺这条，变异测试把 `if (!st) return;` 删掉后 124 条断言**全绿**，
+  //   因为「没练过的肌群」会照样被 chip 出去 —— 那正是「编造模型给不出的结论」。
+  {
+    const c = mkCtx([], bench2);
+    eq('F5c 空芯片：绝不把「没练过」包装成某个状态', c.data.statusChips.length, 0);
+    isTrue('F5d 空芯片时摘要必须明说「还没练过」', /还没练过/.test(c.data.statusSummary));
+    // 反向自检：造一条「有状态」的数据，芯片数必须 > 0 —— 否则 F5c 恒真、等于没断言
+    const c2 = mkCtx([mkLog(0, bench2, 9)], bench2);
+    isTrue('F5e 反向自检：有状态的数据必须产出芯片（证明 F5c 不是恒真的摆设）',
+      c2.data.statusChips.length > 0);
+  }
+
+  // F5f 页面必须能扛住「模型返回空/缺字段」
+  // ⚠️ 变异测试的意外收获：删掉 `if (!st) return;` 后，变异体不是「断言红」而是**整个守卫崩掉**
+  //   （读 st.cn 空指针 ⇒ uncaught ⇒ 脚本非 0 退出，后续小节一条都没跑）。
+  //   这比断言红更危险 —— 红会告诉你哪条坏了，崩只会告诉你「有问题」。
+  //   故显式加一条：把 buildStatus 跑在一个「模型给回空对象」的假实现上，页面不许抛。
+  {
+    const GD2 = JSON.parse(JSON.stringify(GD));
+    delete require.cache[require.resolve(path.join(ROOT, 'pages/action-detail/action-detail.js'))];
+    global.Page = (o) => { PAGE2 = o; };
+    // 先把真实模块原样加载，拿到它的依赖句柄
+    require(path.join(ROOT, 'pages/action-detail/action-detail.js'));
+    const saved = PAGE2;
+    // 直接用真实数据构造 ctx，手工喂一个「全空」的状态表给 buildStatus 的等价路径：
+    // 复用真实 buildStatus，但先把 trainingLogs 设成能产出空表的形态（模型确实可能返回空表）
+    GD.currentAction = bench2;
+    GD.trainingLogs = [];
+    const ctx = Object.assign({}, saved, {
+      data: JSON.parse(JSON.stringify(saved.data)),
+      setData(o) { Object.assign(this.data, o); },
+      getTabBar: () => null
+    });
+    let threw = null;
+    try { ctx.buildStatus(new Set(['chest', 'deltoids', 'triceps'])); } catch (e) { threw = e; }
+    isTrue('F5f 模型返回空表时页面不抛异常（否则守卫会被吞、后续断言全不跑）', threw === null);
+    eq('F5g 空表 → 零芯片', ctx.data.statusChips.length, 0);
+    GD.trainingLogs = GD2.trainingLogs;
+  }
+
+  // F6 单源红线：页面禁自己算疲劳/复制阈值
+  {
+    const raw = read('pages/action-detail/action-detail.js');
+    const strip = (x) => x.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+    const code = strip(raw);
+    isTrue('F6a 页面 require 了 muscleStatus.js', code.indexOf("require('../../utils/muscleStatus.js')") >= 0);
+    isTrue('F6b 页面调了唯一入口 muscleStatusOf', /muscleStatusOf\(/.test(code));
+    // 禁复制阈值（模型真源里的常量名）
+    ['FATIGUED_AT', 'DETRAINED_AT', 'DETRAIN_DAYS', 'HALF_LIFE_DAYS', 'RETENTION_DAYS']
+      .forEach(k => isTrue('F6c 页面未复制阈值 ' + k, code.indexOf(k) < 0));
+    // 禁自算衰减/疲劳
+    isTrue('F6d 页面禁自算指数衰减', code.indexOf('Math.exp') < 0 && code.indexOf('Math.pow') < 0);
+    // 禁自己判三态（直接写字面量比较）
+    isTrue('F6e 页面禁硬编码三态判定比较（< / >= 阈值）', !/fatigue\s*(<|>|<=|>=)/.test(code));
+    // ⚠️ 变异测试逃逸过一次：注入体写的是 `this._ = 0.35`（常量名一个都没出现），
+    //   只查常量名根本抓不住。阈值就是「0.xx 小数字面量」⇒ 直接盯这个形态。
+    //   白名单：0.5（协同肌群折扣，属页面侧展示决策不是阈值）与 1e-12 之类浮点容差。
+    const decimals = (code.match(/(?<![\w.])0\.\d+/g) || [])
+      .filter(x => x !== '0.5');
+    eq('F6e2 页面禁出现任何「0.xx」小数（阈值只准在模型里定义）', decimals, []);
+    // 反向自检：这些词确实只应出现在模型里
+    isTrue('F6f 阈值常量确实存在于模型（证明上一批断言不是空转）', MS.FATIGUED_AT > 0);
+    isTrue('F6g 反向自检：小数自检必须对「含阈值」的样本变红（否则 F6e2 是摆设）',
+      /(?<![\w.])0\.\d+/.test('const x = 0.35;'));
+  }
+  // F7 模板接线：wxml 必须真用上了，且类名与 wxss 对齐
+  {
+    const wxml = read('pages/action-detail/action-detail.wxml');
+    const wxss = read('pages/action-detail/action-detail.wxss');
+    const strip2 = (x) => x.replace(/<!--[\s\S]*?-->/g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+    const w = strip2(wxml);
+    const strip = (x) => x.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');   // wxss 只剥行注释
+    ['statusSummary', 'statusHint', 'statusChips', 'hasStatus'].forEach(f =>
+      isTrue('F7 wxml 绑定了 ' + f, w.indexOf('{{' + f) >= 0));
+    isTrue('F7b wxml 用了 wx:for 遍历 chips', /wx:for="\{\{statusChips\}\}"/.test(w));
+    ['status-sum', 'status-chips', 'status-hint', 'st-chip'].forEach(c =>
+      isTrue('F7c wxss 定义了 .' + c, wxss.indexOf('.' + c) >= 0));
+    // 三态类名必须齐全且只由数据驱动（禁在 wxml 里写死某个态）
+    ['st-fatigued', 'st-trained', 'st-detrained'].forEach(c =>
+      isTrue('F7d wxss 定义了 .' + c, wxss.indexOf('.' + c) >= 0));
+    isTrue('F7e 三态类名由 item.state 驱动（wxml 未写死具体态）',
+      /st-\{\{item\.state\}\}/.test(w) && w.indexOf('st-fatigued') < 0);
+    // 语义 token 必须在根 app.wxss（单源），页面只消费变量
+    const app = read('app.wxss');
+    ['--st-fatigued-bg', '--st-fatigued-ink', '--st-trained-bg', '--st-trained-ink', '--st-detrained-bg', '--st-detrained-ink']
+      .forEach(t => isTrue('F8 app.wxss 定义了根 token ' + t, app.indexOf(t) >= 0));
+    isTrue('F8b 页面 wxss 不就地写三态色值（禁第二份实现）',
+      !/#[0-9A-Fa-f]{6}/.test(strip(wxss).split('当前状态（三态文字芯片）')[1] || ''));
+    // 深色侧必须成对翻转
+    const darkBlock = wxss.slice(wxss.indexOf('.page.theme-dark'));
+    isTrue('F9 深色侧翻了两组三态 token', /--st-fatigued-bg:[^;]*#/.test(darkBlock) && /--st-detrained-bg:[^;]*#/.test(darkBlock));
+  }
 }
 
 console.log('\n────────────────────────────────');

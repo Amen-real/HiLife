@@ -3,7 +3,17 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const { media, resolveUrl } = require('../../utils/media.js');
 const { collectSlugs, buildMuscles, targetCn, drawBody } = require('../../utils/bodymap.js');
+const { muscleStatusOf } = require('../../utils/muscleStatus.js');
 const theme = require('../../utils/theme.js');
+
+// 三态的中文名与一句话解释。
+// ⚠️ 「文案只写实现得了的事」：这里每一句都必须能从 muscleStatusOf 的返回值直接推出来，
+//   不能写「建议休息」这种模型给不出的结论 —— 模型只给疲劳值与三态，解释权在文案。
+const STATE_META = {
+  fatigued: { label: '还有疲劳', hint: '刚练过，恢复中' },
+  trained: { label: '可再练', hint: '已恢复到可再上强度' },
+  detrained: { label: '久未刺激', hint: '很久没练了，可以练回来' }
+};
 
 Page({
   data: {
@@ -14,6 +24,11 @@ Page({
     tags: [],
     steps: [],
     muscles: { front: [], back: [] },
+    // 肌群当前状态（来自 muscleStatus.js 唯一真源；本页只渲染不计算）
+    statusChips: [],
+    statusSummary: '',
+    statusHint: '',
+    hasStatus: false,
     history: [],
     showVideoOverlay: false
   },
@@ -44,6 +59,7 @@ Page({
       steps,
       muscles: buildMuscles(act)
     });
+    this.buildStatus(slugSet);
     this.buildHistory(act.id);
   },
 
@@ -67,6 +83,45 @@ Page({
     };
     draw('bodyFront', 'front');
     draw('bodyBack', 'back');
+  },
+
+  // 本动作涉及肌群的「当前疲劳状态」。
+  //
+  // ⚠️ 本页只做两件事：把 slugSet 交给 muscleStatus.js 算、把结果转成可渲染的字段。
+  //   **禁在本页重算疲劳、禁复制阈值、禁自己判断三态** —— 那是 utils/muscleStatus.js 的
+  //   单源职责，改一份必然漂移（2026-10-13 已因此立过守卫 [B]）。
+  //
+  // ⚠️ 状态里可能混进「该动作没练到、但被协同肌群牵连」的情况：模型按实际受累肌群累加，
+  //   所以协同肌群也可能显示有疲劳 —— 这在语义上是对的（它确实参与过），措辞已按三态中性表述。
+  buildStatus(slugSet) {
+    const logs = (store.get().trainingLogs) || [];
+    const all = muscleStatusOf(logs, Date.now());
+    const chips = [];
+    let fatigued = 0, detrained = 0;
+    slugSet.forEach(slug => {
+      const st = all.get(slug);
+      if (!st) return;                        // 21 天内没练过 ⇒ 不给状态（不编造）
+      if (st.state === 'fatigued') fatigued++;
+      if (st.state === 'detrained') detrained++;
+      const meta = STATE_META[st.state] || STATE_META.trained;
+      chips.push({ slug, name: st.cn, state: st.state, label: meta.label });
+    });
+    // 摘要句：只描述数据本身，不给建议（模型没有「该不该练」的判断能力）
+    let summary = '', hint = '';
+    if (!chips.length) {
+      summary = '最近还没练过相关肌群';
+      hint = '从一次训练开始，这里会显示恢复状态';
+    } else if (fatigued) {
+      summary = chips.length + ' 块肌群里有 ' + fatigued + ' 块还没恢复';
+      hint = STATE_META.fatigued.hint;
+    } else if (detrained) {
+      summary = chips.length + ' 块肌群里有 ' + detrained + ' 块久未刺激';
+      hint = STATE_META.detrained.hint;
+    } else {
+      summary = chips.length + ' 块肌群都已恢复';
+      hint = STATE_META.trained.hint;
+    }
+    this.setData({ statusChips: chips, statusSummary: summary, statusHint: hint, hasStatus: true });
   },
 
   // 从训练日志中提取该动作的最近 5 次记录（日期倒序）

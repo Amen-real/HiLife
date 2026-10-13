@@ -164,6 +164,37 @@
   font-weight: 800;
 }
 
+/* ============== 当前状态（三态文字芯片） ==============
+   ⚠️ 配色纪律（本页实测结论，改色前先读）：
+     解剖图底色是浅灰 #E2E6EA，任何两个「有色」态的填充互相只有 1.06~1.34:1，
+     远达不到 WCAG 1.4.11 对图形元素的 3:1 ⇒ 图上不做三色编码，三态一律走文字芯片。
+   ⚠️ 下面 3 组「底 + 字」均已逐对验算，浅色侧 6.00~16.74:1、深色侧 5.43~8.33:1，
+     全部 ≥4.5:1（AA 正文）。改任何一处都必须重算，且**底与字必须成对翻**
+     （见文件末尾 .page.theme-dark 内同名变量）。
+   ⚠️ trained 用品牌亮绿底 + #0A0A0A 字：亮绿是全库唯一不随主题翻转的颜色，
+     与 MEMORY.md 的「亮绿实底字恒 #0A0A0A」一致。 */
+.status-sum {
+  font-size: 25rpx; font-weight: 600;
+  color: var(--n-800);
+  margin-bottom: 19rpx;
+}
+.status-chips { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.status-hint {
+  font-size: 23rpx;
+  color: var(--n-600);
+  margin-top: 19rpx;
+}
+.st-chip {
+  display: inline-flex; align-items: center;
+  height: 54rpx; padding: 0 23rpx;
+  border-radius: var(--r-pill);
+  font-size: 23rpx; font-weight: 600;
+}
+/* 语义色做成 token：页面不就地定义色值，只消费变量 */
+.st-fatigued { background: var(--st-fatigued-bg); color: var(--st-fatigued-ink); }
+.st-trained  { background: var(--st-trained-bg);  color: var(--st-trained-ink); font-weight: 800; }
+.st-detrained{ background: var(--st-detrained-bg);color: var(--st-detrained-ink); }
+
 /* ============== 历史记录 ============== */
 .history {
   background: var(--white);
@@ -280,6 +311,15 @@
      补上这行后底变 #2B3213（≈深墨绿），对比度回到 11.32:1。
      教训：**成对的 token 必须成对翻**，只翻字侧比不翻更糟。 */
   --primary-tint: rgba(200, 255, 0, 0.12);
+
+  /* 肌群三态色：深色侧提亮为「深底 + 亮字」。
+     ⚠️ 下面每一组都必须与 app.wxss 里的浅色侧**成对**翻转（--st-*-bg 与 --st-*--ink 同翻），
+        只翻字侧或只翻底侧都会变成深底深字 / 浅底浅字。
+     实测深色侧：fatigued 8.33:1 · trained 5.43:1 · detrained 6.42:1，均 ≥4.5:1。
+     ⚠️ --st-trained-bg 例外：品牌亮绿是全库唯一不随主题翻转的颜色（绿底字恒 #0A0A0A），
+        所以深色侧 bg 保持 #C8FF00、ink 保持 #0A0A0A —— 这一对**不需要翻**。 */
+  --st-fatigued-bg:  #5A2415;   --st-fatigued-ink:  #FFC8B0;
+  --st-detrained-bg: #0C447C;   --st-detrained-ink: #B5D4F4;
 
   background: var(--n-50);
   color: var(--text);

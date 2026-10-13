@@ -256,23 +256,7 @@ README 的原话（要点）：**「加一个 provider = 这里一个文件 + `c
 | --- | --- | --- |
 | P0-1 | `utils/muscleStatus.js` 纯函数 | ✅ `b6e4e36`，10998B / 主包 +11KB |
 | P0-2 | 性质型守卫 + 变异测试 | ✅ 同上，`verify-muscle-status.cjs` 78 断言；通则①已补「变异测试」写法 |
-
-### ⭐ 复核后新增的 P0（原清单没有，但它比所有剩余项都重要）
-| 优先级 | 动作 | 为什么排最前 |
-| --- | --- | --- |
-| **P0-3** | **把 `muscleStatus` 接到至少一个页面**（训练记录页 `list` 或复盘 `review`） | ⚠️ 实测 `grep -rn muscleStatus pages/ components/` = **零命中** ⇒ 刚交付的是一个**无消费方的纯函数**。它有 78 断言护着，但**用户看不到任何变化**。纯函数是地基，不是功能；地基好了不接，三个月后就是死代码。**这是唯一一项「不做就等于没做」的。** |
-
-接法约束（已从既有单源推出，不必重新决策）：
-- 落点优先 `pages/list`（训练记录，已有解剖图消费路径可循）或 `pages/action-detail`（已有 `drawBody` 调用）；
-- **配色真源在 `app.wxss`**，禁页面就地定义；
-- 只渲染不计算：`page.js` 调 `muscleStatusOf(store.get().trainingLogs, Date.now())`，三态映射到三色；
-- ⚠️⚠️ **实测到一个真实约束（动手前必读）**：`bodyPaths(side, slugSet, opts)` 的高亮色是**全局二值**——`BODY_COLORS = { on: '#C8FF00', onStroke: '#7CB800', base: '#E2E6EA', … }`，命中集合的 slug 全用 `on`，未命中全用 `base`。**它无法直接表达「三态三色」。**
-  ⇒ 三条可行接法，**推荐第 1 条**：
-  1. **不改 `bodymap`**：按状态**分 3 次调用** `bodyPaths`/`drawBody`（每次传该态的 slugSet + 对应 `opts.on/onStroke`），叠加绘制；或先画底、再按态覆盖；
-  2. 给 `bodyPaths` 加一个 `colorsOf: (slug) => ({fill, stroke})` 回调（**改的是纯函数、可被 78 断言覆盖**，比改 canvas 安全）；
-  3. 页面侧另起一个 canvas 叠层（最差，复杂度高）。
-  ⚠️ 无论哪条，**三色都必须两套主题都验对比度**（亮绿 `#C8FF00` 已是不随主题翻转的固定色，压深底合法；但「停训」色若用中灰，深色主题下极易隐形）——守卫 `verify-dark-theme` + `verify-icon-contrast` 盯着。
-- 深色主题走 `theme.sync()` + `.page.theme-dark` 三件套，三色必须两套都验对比度（守卫 `verify-dark-theme`）。
+| **P0-3** | **接入页面** | ✅ 已落`pages/action-detail`「当前状态」区块；守卫 78 → **131 断言**（新增 [F] 接线节）。⚠️ **落地时推翻了原接法**：解剖图上禁做多色编码（两两对比仅 1.06~1.34:1，是载体限制），改走文字芯片；`bodyPaths` 加 `colorOf` 回调而非叠加绘制（`drawBody` 每次 `clearRect`） |
 
 ### P1（3 项，均为「纪律补齐」而非新功能）
 | 优先级 | 动作 | 实测状态 | 成本 |
@@ -302,7 +286,7 @@ README 的原话（要点）：**「加一个 provider = 这里一个文件 + `c
 `utils/exercises.js` 已 220KB、`bodymap-data.js` 61KB、`muscleStatus.js` 11KB，**当前余量 422 KB**。⇒ 新增只能是**纯函数 + 守卫脚本**；基线快照与映射表一律落 `scripts/`（该 folder 与 `.cjs` 后缀均已在 `packOptions.ignore`），**不得进主包**。
 
 ### 一句话排序
-**先接页面（P0-3，否则 P0-1 白做）→ 再补闰年/月末断言（P1-1，唯一真实日期盲区）→ fixture 模式（P1-3）→ 剩下的按批次。1RM 建议直接砍掉。**
+**页面已接完（P0-3 ✅）→ 下一步补闰年/月末断言（P1-1，唯一真实日期盲区）→ fixture 模式（P1-3）→ 剩下的按批次。1RM 建议直接砍掉。**
 
 ## 附：素材与抓取说明
 

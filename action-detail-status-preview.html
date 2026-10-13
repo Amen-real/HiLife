@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>action-detail「当前状态」视觉稿 · 2026-10-13</title>
+<style>
+  :root{
+    --primary:#C8FF00; --primary-ink:#0A0A0A;
+    --n-50:#F7F7F5; --n-100:#FFFFFF; --n-200:rgba(0,0,0,.08);
+    --n-600:rgba(0,0,0,.55); --n-700:rgba(0,0,0,.68); --n-800:rgba(0,0,0,.80); --n-900:#0A0A0A;
+    --card:#FFFFFF;
+    --st-fatigued-bg:#FBEBE4; --st-fatigued-ink:#993C1D;
+    --st-trained-bg:#C8FF00;   --st-trained-ink:#0A0A0A;
+    --st-detrained-bg:#DBE9F8; --st-detrained-ink:#0C447C;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  .dark{
+    --n-50:#0A0A0A; --n-100:#161616; --n-200:rgba(255,255,255,.10);
+    --n-600:rgba(255,255,255,.55); --n-700:rgba(255,255,255,.75); --n-800:rgba(255,255,255,.88); --n-900:#FFFFFF;
+    --card:#161616;
+    --st-fatigued-bg:#5A2415; --st-fatigued-ink:#FFC8B0;
+    --st-detrained-bg:#0C447C; --st-detrained-ink:#B5D4F4;
+    --shadow:none;
+    background:#0A0A0A; color:#fff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"PingFang SC",-apple-system,sans-serif; background:#E8E8E4; padding:24px;}
+  h2{font-size:15px; font-weight:600; margin:0 0 4px;}
+  .note{font-size:12px; color:#666; margin:0 0 14px;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; max-width:1180px;}
+  .frame{background:var(--n-50); border-radius:16px; overflow:hidden; border:1px solid rgba(0,0,0,.08);}
+  .frame .bar{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; font-size:11px; color:var(--n-600); border-bottom:1px solid var(--n-200);}
+  .phone{padding:14px;}
+  /* 只画本次新增区块的上下文 */
+  .ctx-h{font-size:13px; font-weight:700; color:var(--n-900); margin-bottom:10px;}
+  .ctx-sub{font-size:11px; color:var(--n-600); margin:-6px 0 12px;}
+  .fake-bm{display:flex; gap:10px; margin-bottom:14px;}
+  .fake-bm div{flex:1; height:96px; background:#E2E6EA; border-radius:10px; position:relative; display:flex; align-items:flex-end; justify-content:center; padding-bottom:6px;}
+  .fake-bm span{font-size:10px; color:#5F5E5A;}
+  /* ===== 本次新增：当前状态 ===== */
+  .row-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px;}
+  .row-head .h{font-size:13px; font-weight:700; color:var(--n-900);}
+  .row-head .more{font-size:11px; color:var(--n-600);}
+  .status-sum{font-size:12.5px; font-weight:600; color:var(--n-800); margin-bottom:10px;}
+  .status-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .st-chip{display:inline-flex; align-items:center; height:26px; padding:0 11px; border-radius:999px; font-size:12px; font-weight:600;}
+  .st-fatigued{background:var(--st-fatigued-bg); color:var(--st-fatigued-ink);}
+  .st-trained{background:var(--st-trained-bg); color:var(--st-trained-ink); font-weight:800;}
+  .st-detrained{background:var(--st-detrained-bg); color:var(--st-detrained-ink);}
+  .status-hint{font-size:11.5px; color:var(--n-600); margin-top:10px;}
+  .verdict{margin-top:12px; background:var(--card); border:1px solid var(--n-200); border-radius:10px; padding:9px 11px; font-size:11.5px; color:var(--n-700); line-height:1.6;}
+  .verdict b{color:var(--n-900);}
+  .cap{margin-top:16px; font-size:11.5px; line-height:1.7; color:#444; background:#fff; border-radius:10px; padding:12px 14px;}
+  .cap code{background:#F0F0EC; padding:1px 5px; border-radius:4px; font-size:11px;}
+  .ok{color:#3B6D11; font-weight:600;}
+</style>
+</head>
+<body>
+
+<h2>action-detail ·「当前状态」视觉稿</h2>
+<p class="note">新增区块的浅色 / 深色双态 × 三种数据态，共 4 帧。配色已逐对验算对比度（浅色 6.00 / 16.74 / 7.98，深色 8.33 / 16.74 / 6.42，全部 ≥4.5:1 AA）。</p>
+
+<div class="grid">
+
+  <!-- 1 浅色 · fatigued -->
+  <div class="frame">
+    <div class="bar"><span>浅色 · fatigued</span><span>当天高强度 RPE9</span></div>
+    <div class="phone">
+      <div class="ctx-h">主要肌肉</div>
+      <div class="fake-bm"><div><span>Front</span></div><div><span>Back</span></div></div>
+      <div class="row-head"><span class="h">当前状态</span><span class="more">近 21 天</span></div>
+      <div class="status-sum">3 块肌群里有 3 块还没恢复</div>
+      <div class="status-chips">
+        <span class="st-chip st-fatigued">胸大肌 · 还有疲劳</span>
+        <span class="st-chip st-fatigued">三角肌 · 还有疲劳</span>
+        <span class="st-chip st-fatigued">肱三头肌 · 还有疲劳</span>
+      </div>
+      <div class="status-hint">刚练过，恢复中</div>
+    </div>
+  </div>
+
+  <!-- 2 浅色 · trained -->
+  <div class="frame">
+    <div class="bar"><span>浅色 · trained</span><span>3 天前 RPE9</span></div>
+    <div class="phone">
+      <div class="ctx-h">主要肌肉</div>
+      <div class="fake-bm"><div><span>Front</span></div><div><span>Back</span></div></div>
+      <div class="row-head"><span class="h">当前状态</span><span class="more">近 21 天</span></div>
+      <div class="status-sum">5 块肌群都已恢复</div>
+      <div class="status-chips">
+        <span class="st-chip st-trained">股四头肌 · 可再练</span>
+        <span class="st-chip st-trained">臀大肌 · 可再练</span>
+        <span class="st-chip st-trained">内收肌 · 可再练</span>
+        <span class="st-chip st-trained">腘绳肌 · 可再练</span>
+        <span class="st-chip st-trained">小腿肌群 · 可再练</span>
+      </div>
+      <div class="status-hint">已恢复到可再上强度</div>
+    </div>
+  </div>
+
+  <!-- 3 深色 · fatigued -->
+  <div class="frame dark">
+    <div class="bar"><span>深色 · fatigued</span><span>当天高强度 RPE9</span></div>
+    <div class="phone">
+      <div class="ctx-h">主要肌肉</div>
+      <div class="fake-bm"><div><span>Front</span></div><div><span>Back</span></div></div>
+      <div class="row-head"><span class="h">当前状态</span><span class="more">近 21 天</span></div>
+      <div class="status-sum">3 块肌群里有 3 块还没恢复</div>
+      <div class="status-chips">
+        <span class="st-chip st-fatigued">胸大肌 · 还有疲劳</span>
+        <span class="st-chip st-fatigued">三角肌 · 还有疲劳</span>
+        <span class="st-chip st-fatigued">肱三头肌 · 还有疲劳</span>
+      </div>
+      <div class="status-hint">刚练过，恢复中</div>
+    </div>
+  </div>
+
+  <!-- 4 深色 · detrained + 空态 -->
+  <div class="frame dark">
+    <div class="bar"><span>深色 · detrained / 空态</span><span>19 天前 / 无记录</span></div>
+    <div class="phone">
+      <div class="ctx-h">主要肌肉</div>
+      <div class="fake-bm"><div><span>Front</span></div><div><span>Back</span></div></div>
+      <div class="row-head"><span class="h">当前状态</span><span class="more">近 21 天</span></div>
+      <div class="status-sum">5 块肌群里有 5 块久未刺激</div>
+      <div class="status-chips">
+        <span class="st-chip st-detrained">股四头肌 · 久未刺激</span>
+        <span class="st-chip st-detrained">臀大肌 · 久未刺激</span>
+        <span class="st-chip st-detrained">内收肌 · 久未刺激</span>
+      </div>
+      <div class="status-hint">很久没练了，可以练回来</div>
+      <div class="verdict" style="margin-top:14px; border-top:1px dashed var(--n-200); border-radius:0; padding-top:10px;">
+        <b>空态（无任何训练记录）</b>：芯片区不出现，只显示「最近还没练过相关肌群 / 从一次训练开始，这里会显示恢复状态」——<b>不编造状态</b>。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="cap" style="max-width:1180px;">
+  <b>两处关键取舍（都是实测逼出来的，不是拍脑袋）</b><br>
+  ① <b>解剖图上不做三色编码</b>：图集底色固定浅灰 <code>#E2E6EA</code>、肌群边界细，实测任意两个「有色」态两两对比只有 <b>1.06~1.34:1</b>，远低于 WCAG 1.4.11 对图形元素要求的 3:1。根因是这些色明度接近 ⇒ <b>载体限制，调色解决不了</b>。所以图上保持单色高亮，三态全部交给文字芯片。<br>
+  ② <b><code>trained</code> 用品牌亮绿底 + <code>#0A0A0A</code> 字且禁止翻转</b>：亮绿是全库唯一不随主题翻转的颜色，与既有 <code>.m-tag.primary</code>、<code>.btn-primary</code> 同规则。<br>
+  ③ 三态色做成 <b><code>app.wxss</code> 根 token 的成对 <code>bg</code>/<code>ink</code></b>，页面只消费变量；深色侧成对提亮，只翻一侧比不翻更糟。
+</div>
+
+</body>
+</html>
