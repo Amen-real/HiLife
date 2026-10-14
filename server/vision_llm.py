@@ -186,12 +186,17 @@ def _payload_for(model: str, b64: str, ext: str) -> dict:
             }
         ],
     }
-    # glm-4.6 / glm-5 系列是混合思考模型：思考模式更准但显著更慢（食物识别不需要深思，
-    # PROMPT 已内置估算方法论）。默认关思考保住 50s 预算；要更高精度可改成
-    # {"type": "enabled"}，改完先真机看耗时是否撞 REQ_TIMEOUT。
-    # ⚠️ 只对智谱 GLM 4.6+/5 系列注入：切回百炼/其它供应商或老模型（如 glm-4v-flash）
-    # 时带上这个未知字段会被 400。
-    if model.startswith("glm-4.6") or model.startswith("glm-5"):
+    # 思考参数按模型家族分治（2026-10-14 真机实测 glm-5.3-flashx 400 错误码 1210 的教训）：
+    # · glm-4.6 系列：混合思考，可关 —— disabled 保住 50s 预算（食物识别不需要深思，
+    #   PROMPT 已内置估算方法论）。
+    # · glm-5.3 系列：**始终思考，disabled 会被 400 拒绝**（错误码 1210「该模型始终思考，
+    #   不支持关闭思考」）。官方迁移口径 = enabled + reasoning_effort 低档，这里选
+    #   "low"（轻量推理）：识别是单轮图片→JSON，max 档只会烧 token 和时间。
+    # ⚠️ 其它模型（glm-4v-flash、百炼等）一律不注入：老模型/他厂带未知字段会被 400。
+    if model.startswith("glm-5"):
+        payload["thinking"] = {"type": "enabled"}
+        payload["reasoning_effort"] = "low"
+    elif model.startswith("glm-4.6"):
         payload["thinking"] = {"type": "disabled"}
     return payload
 
