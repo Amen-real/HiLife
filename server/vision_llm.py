@@ -7,6 +7,8 @@
 #   LLM_BASE_URL  默认智谱 https://open.bigmodel.cn/api/paas/v4
 #                 备选：阿里云百炼 https://dashscope.aliyuncs.com/compatible-mode/v1
 #   LLM_MODEL     默认 glm-4.6v-flash（智谱，永久免费，视觉推理强于 4v-flash）
+#   LLM_FALLBACK_MODEL  默认 glm-5.3-flashx（智谱，付费额度）。主模型 429 重试耗尽后
+#                 自动用它完成本次识别；设为空字符串可禁用故障转移。
 #
 # ⚠️ 供应商选择史（2026-10-14）——百炼的 VL 模型下线太频繁，别把鸡蛋放一个篮子：
 #   · qwen-vl-plus / qwen-vl-max   2026-07-13 下线（公告 #118344 前身波次）
@@ -15,7 +17,10 @@
 #                                  加 "enable_thinking": false，否则可能撞 50s 超时）
 #   · 智谱 glm-4v-flash 永久免费但感知/推理较弱 → 用户实测「营养估不准」后，
 #     2026-10-14 升级为 **glm-4.6v-flash**（同平台同免费档，视觉推理更强）。
-#     免费档并发 1-2，高峰偶发 429（客户端按 VISION_QUOTA 提示重试即可）。
+#     免费档并发 1-2，高峰 429 是**持续性**的（限流窗口常超重试总时长 6s），
+#     光靠同模型退避重试救不回来 → 2026-10-14 增加模型级故障转移：
+#     主模型重试耗尽仍 429 ⇒ 自动换 LLM_FALLBACK_MODEL（glm-5.3-flashx，
+#     走付费 tokens 池、并发限流宽松得多）完成本次识别，用户无感。
 #     想再省延迟可退回 glm-4v-flash：改 LLM_MODEL 即可，不用重新发版。
 #
 # 返回结构与 analyzer.analyze 保持一致：
@@ -30,9 +35,14 @@ import requests
 
 DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
 DEFAULT_MODEL = "glm-4.6v-flash"
+# 故障转移模型：主模型（免费档）高峰持续 429 时兜底。付费 tokens 池限流宽松。
+# 置空（LLM_FALLBACK_MODEL=""）可禁用。换供应商时记得同步改，别跨平台混用同一把 key。
+DEFAULT_FALLBACK_MODEL = "glm-5.3-flashx"
 
 # 上游 429 限流（免费档高峰常态，智谱错误码 1305）自动重试：次数与退避秒数。
 # 退避 2s/4s；429 是快速失败不占生成时间，最坏 2+4=6s 附加，远小于 REQ_TIMEOUT 余量。
+# ⚠️ 真机实测：高峰限流窗口常**超过** 6s，同模型重试救不回来 ⇒ 真正的解法是
+# 模型级故障转移（DEFAULT_FALLBACK_MODEL，见 analyze_bytes），重试只是第一道缓冲。
 RETRY_ON_429 = 2
 RETRY_BACKOFF_SEC = 2
 
@@ -137,8 +147,10 @@ def provider_info():
 
     「改了代码默认值但线上没变化」九成是环境里残留了旧的 LLM_MODEL/LLM_BASE_URL
     （环境变量 > 代码默认值）。把这两件事都亮出来，排查就不用靠猜。"""
+    fallback = (os.environ.get("LLM_FALLBACK_MODEL", DEFAULT_FALLBACK_MODEL) or "").strip()
     return {
         "model": os.environ.get("LLM_MODEL") or DEFAULT_MODEL,
+        "fallback": fallback or None,
         "base": (os.environ.get("LLM_BASE_URL") or DEFAULT_BASE_URL).rstrip("/"),
         "overridden": {
             "model": bool(os.environ.get("LLM_MODEL")),
@@ -160,16 +172,8 @@ def _extract_json(text: str):
     return json.loads(txt)
 
 
-def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
-    key = os.environ.get("LLM_API_KEY")
-    base = (os.environ.get("LLM_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
-    model = os.environ.get("LLM_MODEL") or DEFAULT_MODEL
-
-    ext = (filename.rsplit(".", 1)[-1] if "." in filename else "jpeg").lower()
-    if ext not in ("jpg", "jpeg", "png", "webp"):
-        ext = "jpeg"
-    b64 = base64.b64encode(data).decode("ascii")
-
+def _payload_for(model: str, b64: str, ext: str) -> dict:
+    """按模型组装 chat.completions payload（故障转移要逐模型重建，model 在 payload 里）。"""
     payload = {
         "model": model,
         "messages": [
@@ -182,24 +186,29 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
             }
         ],
     }
-
-    # glm-4.6v 系列是混合思考模型：思考模式更准但显著更慢（食物识别不需要深思，
+    # glm-4.6 / glm-5 系列是混合思考模型：思考模式更准但显著更慢（食物识别不需要深思，
     # PROMPT 已内置估算方法论）。默认关思考保住 50s 预算；要更高精度可改成
     # {"type": "enabled"}，改完先真机看耗时是否撞 REQ_TIMEOUT。
-    # ⚠️ 只对 glm-4.6 系列注入：切回百炼/其它供应商时带上这个未知字段会被 400。
-    if model.startswith("glm-4.6"):
+    # ⚠️ 只对智谱 GLM 4.6+/5 系列注入：切回百炼/其它供应商或老模型（如 glm-4v-flash）
+    # 时带上这个未知字段会被 400。
+    if model.startswith("glm-4.6") or model.startswith("glm-5"):
         payload["thinking"] = {"type": "disabled"}
+    return payload
 
-    # 网络层：超时与连不上要分开报 —— 超时是「再试可能就好」，连不上是「上游/出网有问题」。
-    # 429（免费档高峰限流，智谱错误码 1305「访问量过大」）是快速失败，在 REQ_TIMEOUT
-    # 预算内自动退避重试 —— 限流窗口通常几秒就过，重试 2 次基本都能挤进去，
-    # 用户就不用对着「稍后再试」干瞪眼。仅重试 429：其它状态码重试没有意义。
-    last_429_text = ""
+
+def _post_with_429_retry(url: str, key: str, payload: dict):
+    """单模型请求 + 429 退避重试（429 是快速失败不占生成时间）。
+
+    网络层：超时与连不上要分开报 —— 超时是「再试可能就好」，连不上是「上游/出网有问题」。
+    仅重试 429（免费档高峰限流，智谱错误码 1305「访问量过大」）：其它状态码重试没有意义。
+    注意：**超时不在重试范围**——一次 50s 超时已吃掉客户端 70s 窗口的大半，再重试
+    只会让用户等到超时弹窗，拿不到任何结果。
+    """
     resp = None
     for attempt in range(RETRY_ON_429 + 1):
         try:
             resp = requests.post(
-                base + "/chat/completions",
+                url,
                 headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
                 json=payload,
                 timeout=REQ_TIMEOUT,
@@ -209,12 +218,42 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
         except requests.exceptions.RequestException as e:
             raise LLMError("连接上游模型服务失败：%r" % (e,), code="VISION_UPSTREAM")
         if resp.status_code != 429 or attempt >= RETRY_ON_429:
-            break
-        last_429_text = (resp.text or "")[:200]
+            return resp
         wait = RETRY_BACKOFF_SEC * (attempt + 1)
-        print("[vision_llm] 上游 429 限流，%.0fs 后第 %d/%d 次重试：%s"
-              % (wait, attempt + 1, RETRY_ON_429, last_429_text))
+        print("[vision_llm] 模型 %s 上游 429 限流，%.0fs 后第 %d/%d 次重试：%s"
+              % (payload.get("model"), wait, attempt + 1, RETRY_ON_429, (resp.text or "")[:200]))
         time.sleep(wait)
+    return resp
+
+
+def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
+    key = os.environ.get("LLM_API_KEY")
+    base = (os.environ.get("LLM_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
+    primary = os.environ.get("LLM_MODEL") or DEFAULT_MODEL
+    fallback = (os.environ.get("LLM_FALLBACK_MODEL", DEFAULT_FALLBACK_MODEL) or "").strip()
+
+    ext = (filename.rsplit(".", 1)[-1] if "." in filename else "jpeg").lower()
+    if ext not in ("jpg", "jpeg", "png", "webp"):
+        ext = "jpeg"
+    b64 = base64.b64encode(data).decode("ascii")
+
+    # 模型链：主模型（免费档）→ 备用模型（付费档，仅当主模型重试耗尽仍 429）。
+    # 只对 429 故障转移：401/403 换模型也救不了（同一把 key）、400 是模型配置问题、
+    # 超时已吃掉大半时间预算——这三种继续换模型只会白等。
+    chain = [primary]
+    if fallback and fallback != primary:
+        chain.append(fallback)
+
+    url = base + "/chat/completions"
+    resp = None
+    model = primary
+    for idx, model in enumerate(chain):
+        resp = _post_with_429_retry(url, key, _payload_for(model, b64, ext))
+        if resp.status_code == 429 and idx < len(chain) - 1:
+            print("[vision_llm] 主模型 %s 重试 %d 次后仍 429，改用备用模型 %s"
+                  % (primary, RETRY_ON_429, chain[idx + 1]))
+            continue
+        break
 
     # 不 raise_for_status()：**要把状态码分门别类**，而不是笼统一个 4xx。
     # 上游原文只进日志/运维 message，绝不弹给用户（见 LLMError 的约定）。
