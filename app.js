@@ -64,7 +64,9 @@ App({
     //   已改为「异步任务」：POST /task/submit 秒回 taskId → 每 2s GET /task/{id} 轮询（约 90s 上限）。
     //   云托管 hilife-vision 需部署 server/ 最新代码，并在服务设置配环境变量：
     //   LLM_API_KEY（**必填**：配了走大模型；不配则识别明确报 503，**不再回退 mock** ——
-    //   见 server/analyzer.py 顶部）、LLM_MODEL（默认 qwen-vl-plus）、LLM_BASE_URL（默认百炼）。
+    //   见 server/analyzer.py 顶部）。当前默认：LLM_BASE_URL=智谱、LLM_MODEL=glm-4.6v-flash
+    //   （2026-10-14 起；百炼 VL 模型已连续下线，见 server/vision_llm.py 头部）。
+    //   ⚠️ 改 server/ 代码后**必须重新部署云托管版本才生效**——本地提交 ≠ 线上更新。
     // false: 走普通 wx.uploadFile 到 visionBackendUrl（局域网 vision-server，开发联调用）。
     useCallContainer: true,
     // 云托管所在「云开发环境 ID」（云托管是云开发的能力，与上方云存储同环境）
