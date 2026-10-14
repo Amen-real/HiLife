@@ -24,11 +24,17 @@ import base64
 import json
 import os
 import re
+import time
 
 import requests
 
 DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
 DEFAULT_MODEL = "glm-4.6v-flash"
+
+# 上游 429 限流（免费档高峰常态，智谱错误码 1305）自动重试：次数与退避秒数。
+# 退避 2s/4s；429 是快速失败不占生成时间，最坏 2+4=6s 附加，远小于 REQ_TIMEOUT 余量。
+RETRY_ON_429 = 2
+RETRY_BACKOFF_SEC = 2
 
 # 单次上游请求超时（秒）。**必须小于客户端的轮询总窗口**，否则服务端还在算、
 # 客户端已经弹「识别超时」了 —— 用户拿到的是超时，而不是「到底为什么慢」。
@@ -184,18 +190,31 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
     if model.startswith("glm-4.6"):
         payload["thinking"] = {"type": "disabled"}
 
-    # 网络层：超时与连不上要分开报 —— 超时是「再试可能就好」，连不上是「上游/出网有问题」
-    try:
-        resp = requests.post(
-            base + "/chat/completions",
-            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
-            json=payload,
-            timeout=REQ_TIMEOUT,
-        )
-    except requests.exceptions.Timeout:
-        raise LLMError("上游模型响应超时（> %ds）。" % REQ_TIMEOUT, code="VISION_TIMEOUT")
-    except requests.exceptions.RequestException as e:
-        raise LLMError("连接上游模型服务失败：%r" % (e,), code="VISION_UPSTREAM")
+    # 网络层：超时与连不上要分开报 —— 超时是「再试可能就好」，连不上是「上游/出网有问题」。
+    # 429（免费档高峰限流，智谱错误码 1305「访问量过大」）是快速失败，在 REQ_TIMEOUT
+    # 预算内自动退避重试 —— 限流窗口通常几秒就过，重试 2 次基本都能挤进去，
+    # 用户就不用对着「稍后再试」干瞪眼。仅重试 429：其它状态码重试没有意义。
+    last_429_text = ""
+    resp = None
+    for attempt in range(RETRY_ON_429 + 1):
+        try:
+            resp = requests.post(
+                base + "/chat/completions",
+                headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+                json=payload,
+                timeout=REQ_TIMEOUT,
+            )
+        except requests.exceptions.Timeout:
+            raise LLMError("上游模型响应超时（> %ds）。" % REQ_TIMEOUT, code="VISION_TIMEOUT")
+        except requests.exceptions.RequestException as e:
+            raise LLMError("连接上游模型服务失败：%r" % (e,), code="VISION_UPSTREAM")
+        if resp.status_code != 429 or attempt >= RETRY_ON_429:
+            break
+        last_429_text = (resp.text or "")[:200]
+        wait = RETRY_BACKOFF_SEC * (attempt + 1)
+        print("[vision_llm] 上游 429 限流，%.0fs 后第 %d/%d 次重试：%s"
+              % (wait, attempt + 1, RETRY_ON_429, last_429_text))
+        time.sleep(wait)
 
     # 不 raise_for_status()：**要把状态码分门别类**，而不是笼统一个 4xx。
     # 上游原文只进日志/运维 message，绝不弹给用户（见 LLMError 的约定）。
