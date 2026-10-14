@@ -174,7 +174,7 @@
         <text class="opt-arrow">›</text>
       </view>
       <view class="sheet-opt" bindtap="chooseAdd" data-way="manual" hover-class="opt-hover" role="button" aria-label="手动输入">
-        <view class="opt-ico"><view class="ico ico-food-bowl ico--ink" style="width:40rpx;height:40rpx"></view></view>
+        <view class="opt-ico"><view class="ico ico-foodbowl ico--ink" style="width:40rpx;height:40rpx"></view></view>
         <view class="opt-main">
           <view class="opt-name">手动输入</view>
           <view class="opt-desc">填写食物、份量、营养数据</view>
