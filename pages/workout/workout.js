@@ -1218,6 +1218,10 @@ Page({
     if (!auth.requireLogin()) return;
     this.setData({ showFinishCard: false });
     this._finished = true;
+    // 整场总时长（墙上时间，与训练页顶部计时同源）：必须在 clear() 之前取——
+    // clear 后会话已清零，getElapsed() 恒为 0。落库后数据页/复盘页的「时长」
+    // 经 trainingStats.durationSecOfLog 优先消费它，没逐组计时的场次不再严重偏小。
+    const sessionSec = workoutSession.getElapsed();
     workoutSession.clear();   // 训练完成，清除全局会话（隐藏悬浮计时窗）
     const logActions = actions.map(a => ({
       // 关键：带上动作身份字段，否则复盘「滚动/基准」无法跨场次可靠匹配同动作（同名不同器械、自建动作重名会串）
@@ -1244,6 +1248,7 @@ Page({
     store.saveTrainingLog({
       date: todayStr(),
       actions: logActions,
+      durationSec: sessionSec,
       planId: plan ? plan.id : '',
       programId: plan ? (plan.programId || '') : ''
     });

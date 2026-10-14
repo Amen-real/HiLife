@@ -206,6 +206,29 @@ assert(modals.length >= 1, '未登录 → 弹出登录引导');
 GD.userInfo.loggedIn = true;
 PAGE.closeFinishCard();
 
+/* ══════════════ [C2] 整场总时长落库 ══════════════ */
+// 数据页「训练时长」= 本次训练总时长：saveWorkout 必须把 workoutSession.getElapsed()
+// （训练页顶部计时的同一口径）落进 log.durationSec，且必须在 clear() **之前**取——
+// clear 后 getElapsed() 恒为 0，这个顺序错了表现是「时长永远 0」，静默不报错。
+console.log('\n[C2] 整场总时长：durationSec 落库（数据页时长真源）');
+const workoutSession = require(path.join(ROOT, 'utils', 'workoutSession.js'));
+const statsMod = require(path.join(ROOT, 'utils', 'trainingStats.js'));
+workoutSession.save({ signature: 'x', actions: [], planName: '', expandedId: '', elapsed: 3754, running: false, startTs: null });
+PAGE.data.stats = FULL_STATS;
+PAGE.finishWorkout();
+PAGE.finishOnly();
+runLastTimer();
+const savedLast = GD.trainingLogs[0];   // store 按 date+createdAt 倒序 → 头部才是刚保存那场
+assert(!!savedLast, '完成训练 → 落库一条日志（C2）');
+assert(Number(savedLast.durationSec) === 3754,
+  'log.durationSec = 会话 elapsed（实际 ' + savedLast.durationSec + '）——取自 clear() 之前');
+assert(statsMod.durationSecOfLog(savedLast) === 3754,
+  'durationSecOfLog 优先消费 durationSec（数据页/复盘/分享卡同一把尺）');
+// 旧日志（无 durationSec）→ 退回逐组累加，不因为新字段引入而断历史口径
+const legacyLog = { actions: [{ setsDetail: [{ trainSec: 60, restSec: 30 }, { trainSec: 45, restSec: 0 }] }] };
+assert(statsMod.durationSecOfLog(legacyLog) === 135, '旧日志退回 Σ(trainSec+restSec) = 135');
+workoutSession.clear();
+
 /* ══════════════ [D] 复盘页接线 ══════════════ */
 console.log('\n[D] 复盘页 share=1 → 组件一次性自动开分享卡');
 const RJ = read('pages/review/review.js');

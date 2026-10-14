@@ -305,7 +305,8 @@ Page({
     const logs = g.trainingLogs || [];
 
     /* ===== ① Hero 累计三连 + 训练维度小计 ===== */
-    // 时长口径 = Σ(trainSec + restSec)，与数据页 totalFullSec、复盘页 durationSecOfLog 一致
+    // 时长口径：整场总时长优先（durationSec，与训练页计时同源），旧日志退回逐组累加——
+    // 单一真源 stats.durationSecOfLog，勿在此重写累加（数据页/复盘页/分享卡同一把尺）
     // 容量口径 = Σ(重量 × 次数)，与复盘页 loadOfLog 一致
     let totalSec = 0;
     let totalVol = 0;
@@ -324,12 +325,12 @@ Page({
         if (l.date.slice(0, 7) === monthPrefix) monthCount++;
         if (dateRange.inRange(l.date, wr.monStr, wr.sunStr)) weekCount++;
       }
+      totalSec += stats.durationSecOfLog(l);
       (l.actions || []).forEach(a => {
         const sets = (a.setsDetail && a.setsDetail.length)
           ? a.setsDetail
           : (Array.isArray(a.sets) ? a.sets : []);
         sets.forEach(s => {
-          totalSec += (Number(s.trainSec) || 0) + (Number(s.restSec) || 0);
           totalVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
         });
       });

@@ -327,6 +327,9 @@ const store = {
       sid: 't' + Date.now().toString(36) + Math.floor(Math.random() * 1000),
       date: log.date,
       createdAt: Date.now(),
+      // 整场总时长（秒，墙上时间）：workout 页保存时传入；0 = 未知（旧数据/异常），
+      // 展示侧 durationSecOfLog 会退回逐组累加。落库后不可再改口径——历史记录按它回放。
+      durationSec: Number(log.durationSec) || 0,
       planId: log.planId || '',
       programId: log.programId || '',
       actions: log.actions || []

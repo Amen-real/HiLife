@@ -55,10 +55,16 @@ function loadOfLog(log) {
   return ((log && log.actions) || []).reduce((s, a) => s + loadOfAction(a), 0);
 }
 
-// 整场时长 = Σ(训练秒 + 组间休息秒)，与数据页 totalFullSec 口径一致
+// 整场时长口径（三档优先级）：
+//   ① log.durationSec —— workout 保存时落库的整场墙上时间（与训练页顶部计时同源），
+//      **优先消费**。它覆盖逐组计时覆盖不到的部分（动作间换器械、看手机、没点计时器的组），
+//      用户在数据页看到的「本次训练总时长」应该就是训练页计时器走过的那个数。
+//   ② log.durationMin —— 更早的预留字段（分钟），兼容潜在旧数据。
+//   ③ Σ(训练秒 + 组间休息秒) —— 旧日志无总时长字段时退回逐组累加（会偏小，属已知上限）。
 function durationSecOfLog(log) {
   if (!log) return 0;
-  if (log.durationMin) return num(log.durationMin) * 60;   // 预留：将来若落库总时长字段则优先
+  if (num(log.durationSec) > 0) return Math.round(num(log.durationSec));
+  if (num(log.durationMin) > 0) return Math.round(num(log.durationMin) * 60);
   let sec = 0;
   (log.actions || []).forEach(a => setsOf(a).forEach(s => { sec += num(s.trainSec) + num(s.restSec); }));
   return Math.max(0, Math.round(sec));
