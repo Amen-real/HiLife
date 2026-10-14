@@ -6,15 +6,17 @@
 #                 未配置则识别明确报 503（**无 mock 兜底**，见 analyzer.py 顶部说明）
 #   LLM_BASE_URL  默认智谱 https://open.bigmodel.cn/api/paas/v4
 #                 备选：阿里云百炼 https://dashscope.aliyuncs.com/compatible-mode/v1
-#   LLM_MODEL     默认 glm-4v-flash（智谱，**永久免费**）
+#   LLM_MODEL     默认 glm-4.6v-flash（智谱，永久免费，视觉推理强于 4v-flash）
 #
 # ⚠️ 供应商选择史（2026-10-14）——百炼的 VL 模型下线太频繁，别把鸡蛋放一个篮子：
 #   · qwen-vl-plus / qwen-vl-max   2026-07-13 下线（公告 #118344 前身波次）
 #   · qwen3-vl-flash               2026-10-10 下线（官方替代 qwen3.6-flash，1.2/7.2 元，
 #                                  ⚠️ 混合思考模型 thinking 默认开，接它必须在 payload
 #                                  加 "enable_thinking": false，否则可能撞 50s 超时）
-#   · 智谱 glm-4v-flash 永久免费、OpenAI 兼容、国内直连，免费档并发 1-2（高峰偶发 429，
-#     客户端按 VISION_QUOTA 提示重试即可）——单人使用完全够，故设为默认。
+#   · 智谱 glm-4v-flash 永久免费但感知/推理较弱 → 用户实测「营养估不准」后，
+#     2026-10-14 升级为 **glm-4.6v-flash**（同平台同免费档，视觉推理更强）。
+#     免费档并发 1-2，高峰偶发 429（客户端按 VISION_QUOTA 提示重试即可）。
+#     想再省延迟可退回 glm-4v-flash：改 LLM_MODEL 即可，不用重新发版。
 #
 # 返回结构与 analyzer.analyze 保持一致：
 #   { name, items:[{name, weight_g, calories}], total_weight_g, total_calories, confidence, mock, provider }
@@ -26,7 +28,7 @@ import re
 import requests
 
 DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
-DEFAULT_MODEL = "glm-4v-flash"
+DEFAULT_MODEL = "glm-4.6v-flash"
 
 # 单次上游请求超时（秒）。**必须小于客户端的轮询总窗口**，否则服务端还在算、
 # 客户端已经弹「识别超时」了 —— 用户拿到的是超时，而不是「到底为什么慢」。
@@ -159,6 +161,13 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
             }
         ],
     }
+
+    # glm-4.6v 系列是混合思考模型：思考模式更准但显著更慢（食物识别不需要深思，
+    # PROMPT 已内置估算方法论）。默认关思考保住 50s 预算；要更高精度可改成
+    # {"type": "enabled"}，改完先真机看耗时是否撞 REQ_TIMEOUT。
+    # ⚠️ 只对 glm-4.6 系列注入：切回百炼/其它供应商时带上这个未知字段会被 400。
+    if model.startswith("glm-4.6"):
+        payload["thinking"] = {"type": "disabled"}
 
     # 网络层：超时与连不上要分开报 —— 超时是「再试可能就好」，连不上是「上游/出网有问题」
     try:
