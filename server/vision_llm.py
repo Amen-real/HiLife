@@ -34,17 +34,52 @@ DEFAULT_MODEL = "glm-4v-flash"
 REQ_TIMEOUT = 50
 
 PROMPT = (
-    "你是食物营养分析助手。识别图片中的全部食物，只输出一个 JSON 对象，"
-    "不要输出 markdown 代码块或其它文字。结构："
+    "你是食物营养分析助手。先在心里按以下步骤推演，最终只输出一个 JSON 对象，"
+    "不要输出 markdown 代码块或任何解释文字："
+    "①识别菜名与主要食材（调料忽略）；"
+    "②借助图中参照物（碗、盘、筷子、手机）和常见餐具容量估算每种食材的克数；"
+    "③按中国食物成分表中该食材的常见每100克营养值，估算蛋白质、碳水、脂肪克数；"
+    "④热量用 4+4+9 千卡系数由营养素算出（热量必须与营养素一致，不许另拍一个数）；"
+    "⑤用常识校验总量（如一碗米饭约200g/230kcal、一份番茄炒蛋约350-500kcal），明显离谱就修正。"
+    "输出结构："
     '{"name":"菜名","items":[{"name":"食材名","weight_g":克数,"calories":该食材热量kcal}],'
     '"total_weight_g":总克数,"total_calories":总热量kcal,'
     '"protein":总蛋白质g,"carb":总碳水化合物g,"fat":总脂肪g,'
-    '"confidence":0到1的置信度}。'
+    '"confidence":置信度}。'
     # 限量是**为了速度**：输出 token 数直接决定生成耗时，放任模型列十几个调料会让
     # 一次识别多等十几秒（用户感知就是「识别很慢」）。4 项足够覆盖一餐的主要热量来源。
     "items 最多列 4 项（只列主要食材，调料可忽略）。"
-    "克数、热量与三大营养素为估算值，取整数；confidence 为 0-1 小数。"
+    "克数、热量与三大营养素为估算值，取整数；confidence 为 0-1 小数："
+    "参照物充足且是常见菜给 0.7-0.95，混合菜/酱料多/看不清分量给 0.3-0.6。"
 )
+
+def _reconcile_nutrition(d):
+    """营养素 × Atwater 系数（4/4/9）对 total_calories 做交叉校验（纯函数，可单测）。
+
+    模型常见毛病：宏量营养素和总热量各说各话——营养素像「成分表检索」的结果，
+    热量却是拍脑袋的整数。两层校验，优先级：宏量推算 > 逐项加和 > 模型原值：
+      ① protein/carb/fat 齐全时：atwater = p×4 + c×4 + f×9；
+      ② 否则退回 Σ(逐项 calories)；
+      ③ 与 total_calories 偏差 >30%（或原值 ≤0）→ 以校验值为准，并把 confidence
+        打 8 折（下限 0.3）——告诉下游「这个数是修出来的，没那么有把握」。
+    只在拿到更可信的数时才改写，不引入新的不准。"""
+    def _f(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return 0.0
+
+    atwater = _f(d.get("protein")) * 4 + _f(d.get("carb")) * 4 + _f(d.get("fat")) * 9
+    items_sum = sum(_f(it.get("calories")) for it in (d.get("items") or []))
+    ref = atwater if atwater > 40 else (items_sum if items_sum > 40 else 0)
+    total = _f(d.get("total_calories"))
+    if ref > 0 and (total <= 0 or abs(total - ref) / ref > 0.30):
+        d["total_calories"] = int(round(ref))
+        try:
+            d["confidence"] = round(max(0.3, float(d.get("confidence")) * 0.8), 2)
+        except (TypeError, ValueError):
+            d["confidence"] = 0.5
+    return d
 
 
 class LLMError(RuntimeError):
@@ -159,6 +194,9 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
 
     if not isinstance(d, dict):
         raise LLMError("模型返回的不是 JSON 对象。", code="VISION_FAILED")
+
+    # 模型给了数 ≠ 数可信：热量与营养素交叉校验（见 _reconcile_nutrition）
+    d = _reconcile_nutrition(d)
 
     items = []
     for it in (d.get("items") or []):
