@@ -4,6 +4,21 @@
 
 - `app.py`：FastAPI 服务。`POST /analyze`（multipart 图片字段名 `image`，同步）；`POST /task/submit` + `GET /task/{id}`（云托管 `callContainer` 用的异步链路，避开 15s 硬超时）；`GET /health` 健康检查。
 - `vision_llm.py`：**多模态大模型识别（生产推荐）** —— 只需环境变量 `LLM_API_KEY`，无需 GPU、无需模型权重。
+  当前默认接**智谱 `glm-4v-flash`**（永久免费，OpenAI 兼容）。注册：https://open.bigmodel.cn →
+  手机号注册 → 「API keys」创建密钥。只配 `LLM_API_KEY` 即可（BASE_URL/MODEL 已是智谱默认值）：
+
+  ```bash
+  export LLM_API_KEY=你的智谱key
+  # 可省略（已是默认）：LLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+  # 可省略（已是默认）：LLM_MODEL=glm-4v-flash
+  ```
+
+  免费档并发 1-2，高峰偶发 429 → 客户端按「稍后再试」提示（VISION_QUOTA），不影响功能。
+  备选供应商（改 LLM_BASE_URL / LLM_MODEL 两个环境变量即可切换，无需改代码）：
+  - 阿里云百炼 `https://dashscope.aliyuncs.com/compatible-mode/v1`：
+    ⚠️ 其 VL 模型下线频繁（qwen-vl-plus 2026-07 下线、qwen3-vl-flash 2026-10-10 下线），
+    启用前先到模型广场确认在售；当前替代 `qwen3.6-flash` 为混合思考模型，
+    **必须**在 `vision_llm.py` 的 payload 加 `"enable_thinking": false`，否则易撞 50s 超时。
 - `analyzer.py`：自托管 CalorieScan 推理封装。需 `CALORIESCAN_REAL=1` + `CALORIESCAN_REPO` 指向已克隆仓库。
 
 > ⚠️ **两条路都没配好时不再回退 mock**（2026-09-28 起）：`/analyze` 返回 **503**、异步任务 `status=error`，并带 `{code, message}` —— `code` 供小程序翻成用户文案（`utils/foodvision.js` 的 `userMessage()`），`message` 供运维排查。

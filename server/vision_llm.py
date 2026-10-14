@@ -2,13 +2,19 @@
 # 多模态大模型食物识别（OpenAI 兼容 chat.completions + image_url）
 #
 # 环境变量（云托管控制台 → 服务设置 → 环境变量 配置）：
-#   LLM_API_KEY   必填。阿里云百炼 / 其它 OpenAI 兼容服务的 API Key；
+#   LLM_API_KEY   必填。智谱开放平台 / 阿里云百炼等 OpenAI 兼容服务的 API Key；
 #                 未配置则识别明确报 503（**无 mock 兜底**，见 analyzer.py 顶部说明）
-#   LLM_BASE_URL  默认 https://dashscope.aliyuncs.com/compatible-mode/v1 （阿里云百炼 Qwen-VL）
-#   LLM_MODEL     默认 qwen-vl-plus（可换 qwen-vl-flash / qwen-vl-max / MiMo 兼容模型）
-#                 ⚠️ 延迟对比：plus 稳但慢，flash 明显更快。识别一餐食物属于「延迟比
-#                 极致精度更重要」的场景，用户抱怨「识别太慢」时先把这一项换成 qwen-vl-flash
-#                 —— 改环境变量即可，**不用重新发版**。
+#   LLM_BASE_URL  默认智谱 https://open.bigmodel.cn/api/paas/v4
+#                 备选：阿里云百炼 https://dashscope.aliyuncs.com/compatible-mode/v1
+#   LLM_MODEL     默认 glm-4v-flash（智谱，**永久免费**）
+#
+# ⚠️ 供应商选择史（2026-10-14）——百炼的 VL 模型下线太频繁，别把鸡蛋放一个篮子：
+#   · qwen-vl-plus / qwen-vl-max   2026-07-13 下线（公告 #118344 前身波次）
+#   · qwen3-vl-flash               2026-10-10 下线（官方替代 qwen3.6-flash，1.2/7.2 元，
+#                                  ⚠️ 混合思考模型 thinking 默认开，接它必须在 payload
+#                                  加 "enable_thinking": false，否则可能撞 50s 超时）
+#   · 智谱 glm-4v-flash 永久免费、OpenAI 兼容、国内直连，免费档并发 1-2（高峰偶发 429，
+#     客户端按 VISION_QUOTA 提示重试即可）——单人使用完全够，故设为默认。
 #
 # 返回结构与 analyzer.analyze 保持一致：
 #   { name, items:[{name, weight_g, calories}], total_weight_g, total_calories, confidence, mock, provider }
@@ -19,8 +25,8 @@ import re
 
 import requests
 
-DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-DEFAULT_MODEL = "qwen-vl-plus"
+DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
+DEFAULT_MODEL = "glm-4v-flash"
 
 # 单次上游请求超时（秒）。**必须小于客户端的轮询总窗口**，否则服务端还在算、
 # 客户端已经弹「识别超时」了 —— 用户拿到的是超时，而不是「到底为什么慢」。
