@@ -103,6 +103,9 @@ def health():
         "ready": llm_on or model_on,
         "fixture": False,
     }
+    # 当前生效的供应商/模型 + 是否被环境变量覆盖——「改了默认值没生效」一眼可见
+    if vision_llm is not None:
+        out["llm_provider"] = vision_llm.provider_info()
     if not out["ready"]:
         out["reason"] = analyzer.not_ready_reason()
     return out

@@ -126,6 +126,21 @@ def llm_ready() -> bool:
     return bool(os.environ.get("LLM_API_KEY"))
 
 
+def provider_info():
+    """/health 观测用：如实上报当前**生效**的供应商与模型，及是否被环境变量覆盖。
+
+    「改了代码默认值但线上没变化」九成是环境里残留了旧的 LLM_MODEL/LLM_BASE_URL
+    （环境变量 > 代码默认值）。把这两件事都亮出来，排查就不用靠猜。"""
+    return {
+        "model": os.environ.get("LLM_MODEL") or DEFAULT_MODEL,
+        "base": (os.environ.get("LLM_BASE_URL") or DEFAULT_BASE_URL).rstrip("/"),
+        "overridden": {
+            "model": bool(os.environ.get("LLM_MODEL")),
+            "base_url": bool(os.environ.get("LLM_BASE_URL")),
+        },
+    }
+
+
 def _extract_json(text: str):
     """从模型回复中剥离 ```json 围栏 / 前后杂讯，解析出 JSON 对象。"""
     txt = (text or "").strip()
