@@ -293,7 +293,9 @@
 
 /* 媒体署名 */
 .attribution {
-  padding: 28rpx 36rpx calc(40rpx + env(safe-area-inset-bottom));
+  /* ⚠️ 这里不再带底部安全区：备案号（.icp）启用后排在它后面，
+     安全区 padding 由页脚真正最后一块（.icp）接管——否则安全区会变成两块之间的间距。 */
+  padding: 28rpx 36rpx 0;
   text-align: center; font-size: var(--fs-caption); color: var(--text-weak); line-height: 1.6;
 }
 .attribution text { display: block; }
@@ -304,7 +306,8 @@
    --text-weak(#A0A0A0) 压在 --n-50 上只有 ≈2.3:1，看着像「有内容」其实读不清。
    这是合规展示项，读不清等于没展示。 */
 .icp {
-  padding: 0 36rpx 24rpx;
+  /* 页脚真正最后一块：底部安全区在这里接管（上方 .attribution 已让出） */
+  padding: 0 36rpx calc(24rpx + env(safe-area-inset-bottom));
   text-align: center; font-size: var(--fs-caption); color: var(--n-700); line-height: 1.6;
 }
 .icp text { display: block; }
