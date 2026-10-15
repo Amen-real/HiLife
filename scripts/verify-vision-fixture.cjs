@@ -109,8 +109,12 @@ console.log('\n[A] 静态：fixture 只能排在真实引擎之前');
   const grab = (src, name) => {
     const i = src.indexOf('def ' + name + '(');
     if (i < 0) return '';
-    // 以下一个顶层 def / @app 为界
+    // 以下一个顶层 def / @app 为界。⚠️ 必须含 '\n@app.'：async def 不匹配 '\ndef '，
+    // 2026-10-15 起任务限额代码落在 /task/submit（async def）里且引用 fixture，
+    // 不按装饰器截断会把它的函数体误并进 /analyze（A11 误报）。
     let j = src.indexOf('\ndef ', i + 1);
+    const k = src.indexOf('\n@app.', i + 1);
+    if (k >= 0 && (j < 0 || k < j)) j = k;
     if (j < 0) j = src.length;
     return src.slice(i, j);
   };
@@ -152,8 +156,9 @@ console.log('\n[A] 静态：fixture 只能排在真实引擎之前');
 
   // 全局反查：app.py 里 fixture 只应出现在这三类位置
   const fxLines = appCode.split('\n').filter(l => /fixture\./.test(l) && !/^\s*#/.test(l));
-  isTrue('A12 app.py 中 fixture 调用点数量可控（<=6：health/fx + 3 处判定与调用）',
-    fxLines.length > 0 && fxLines.length <= 6);
+  isTrue('A12 app.py 中 fixture 调用点数量可控（<=7：health/fx + 4 处判定与调用，'
+    + '2026-10-15 新增 /task/submit 限额豁免判定）',
+    fxLines.length > 0 && fxLines.length <= 7);
 }
 
 /* ══════════════ [B] 行为：真跑 python ══════════════ */

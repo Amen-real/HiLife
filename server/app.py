@@ -18,8 +18,10 @@
 #     EngineNotReady。fixture 抢兜底位 = 把「服务坏了」变成「返回假热量」。
 #   ⚠️ 默认关闭。开关名拼错（如 'Fixture'）一律视为未启用 ⇒ 照旧走真实链路。
 import base64
+import os
 import threading
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -86,6 +88,48 @@ def _decode_b64_image(s: str) -> bytes:
     return base64.b64decode(s)
 
 
+# ---------- 每日识别限额（内存态，前提同 TASKS：单实例） ----------
+# ⚠️ 2026-10-15 用户需求：每个用户每天最多 5 次识别。只在**异步提交路径**计次 ——
+#    那是唯一会真实调用 LLM（花钱）的路径；同步 /analyze 不走 LLM，不占额度。
+# key = X-WX-OPENID（小程序经 callContainer 调用时微信网关自动注入，天然按用户隔离）；
+# 拿不到 openid（本地/联调直连）退回客户端 IP。
+# 日期口径必须用**北京时间**：容器默认 UTC，用 UTC 日期算「每天」会在早八点才重置。
+# ⚠️ 环境变量名不许带 VISION_ 前缀——那是跨端错误码的命名约定（守卫会反查登记表）。
+# 内存态 ⇒ 实例重启计数清零。反滥用够用，别把它当计费系统；将来上云 DB 再升级。
+DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT") or 5)
+QUOTA = {}   # key -> {"date": "YYYY-MM-DD", "count": n}
+
+def _bj_today() -> str:
+    return datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")
+
+def _quota_key(request: Request) -> str:
+    openid = request.headers.get("x-wx-openid")
+    if openid:
+        return "openid:" + openid
+    client = getattr(request, "client", None)
+    return "ip:" + (client.host if client and client.host else "anon")
+
+def _quota_consume(request: Request):
+    """消费一次额度；超限抛 429 + VISION_LIMIT（客户端 USER_TEXT 有对应人话）。
+    每次成功受理的提交都计次（含上游失败的尝试）——识别是花钱动作，按「次」口径最直白。
+    任务丢失后的自动重提会再计一次：实例重启属罕见情况，为此加穿透机制不值得。"""
+    key = _quota_key(request)
+    today = _bj_today()
+    rec = QUOTA.get(key)
+    if not rec or rec["date"] != today:
+        rec = {"date": today, "count": 0}
+        QUOTA[key] = rec
+        if len(QUOTA) > 5000:   # 惰性清理跨日旧账，防 dict 无界增长
+            for k in [k for k, v in QUOTA.items() if v["date"] != today]:
+                QUOTA.pop(k, None)
+    if rec["count"] >= DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail={
+            "code": "VISION_LIMIT",
+            "message": "daily recognition limit reached (%d/day), key=%s" % (DAILY_LIMIT, key),
+        })
+    rec["count"] += 1
+
+
 @app.get("/health")
 def health():
     """健康检查。/ready=false 时 reason 里是「该配哪一项」的人话，可直接拿去排查。"""
@@ -146,6 +190,11 @@ async def task_submit(request: Request, image: UploadFile = File(None)):
 
     if not data:
         return {"status": "error", "message": "empty image"}
+
+    # 每日限额：fixture（CI/离线演示，不花钱）不占额度；真实识别才计次。
+    # 放在图片校验之后：空图/坏包不消耗用户额度。
+    if not fixture.fixture_enabled():
+        _quota_consume(request)
 
     task_id = uuid.uuid4().hex
     _remember(task_id, {"status": "processing"})

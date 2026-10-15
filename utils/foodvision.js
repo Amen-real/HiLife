@@ -63,6 +63,8 @@ const USER_TEXT = {
   VISION_TIMEOUT: '识别用时过长，请检查网络后重试，或手动填写热量。',
   // ③ 任务在服务端丢失（实例重启/缩容）——客户端会自动重提一次，走到这里说明重提也没成
   VISION_TASK_LOST: '识别服务繁忙，请再试一次，或手动填写热量。',
+  // ③b 当日识别次数用完（服务端 429 + VISION_LIMIT）：重试无意义，等明天或手动填
+  VISION_LIMIT: '今日 5 次识别已用完，明天再来，或手动填写热量。',
   // ④ 引擎跑了但这次没成：可能是照片或网络 → 引导重拍
   VISION_FAILED: '没能认出这道菜，换一张更清晰的照片再试试。'
 };
@@ -91,7 +93,8 @@ const RETRYABLE = {
   VISION_NOT_READY: false,  // 服务端没启用引擎：用户做什么都没用
   VISION_AUTH: false,       // 密钥失效：用户做什么都没用
   VISION_MODEL: false,      // 模型名错/未开通：用户做什么都没用
-  VISION_QUOTA: false       // 限流或额度用尽：重试只会更糟
+  VISION_QUOTA: false,      // 限流或额度用尽：重试只会更糟
+  VISION_LIMIT: false       // 当日识别次数用完：明天再来，重试无意义
 };
 
 function isRetryable(err) {
