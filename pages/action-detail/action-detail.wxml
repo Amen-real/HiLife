@@ -13,9 +13,9 @@
 
   <!-- ============== HERO ============== -->
   <view class="hero" bindtap="onHeroTap" role="img" aria-label="动作演示">
-    <!-- 双层渲染：底层同图 aspectFill+blur 铺满 16:9（无黑边），上层 aspectFit 完整不变形。
-         方源(180×180)装 16:9 框，「铺满且不裁不变形」数学上不可能，模糊铺底是视频类 App 的标准解。 -->
-    <image wx:if="{{heroSrc}}" class="hero-bg" src="{{heroSrc}}" mode="aspectFill" aria-hidden="true" />
+    <!-- 单层 aspectFit 即可「直接铺满」：数据集 GIF 背景为恒定纯白(12 帧四角实测 255,255,255)，
+         Hero 底也用恒定纯白 ⇒ 留边与图底融为一体，无黑边、无模糊、无变形、人物完整。
+         ⚠️ 不能用 var(--white)（深色主题翻成 #161616 会重新露出留边）。 -->
     <image wx:if="{{heroSrc}}" class="hero-img" src="{{heroSrc}}" mode="aspectFit" lazy-load />
     <view wx:else class="hero-emoji">{{act.emoji}}</view>
     <view wx:if="{{heroSrc}}" class="play" aria-hidden="true"><view class="ico ico-play ico--ink" style="width:40rpx;height:40rpx"></view></view>

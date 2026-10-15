@@ -37,23 +37,16 @@
   position: relative;
   border-radius: var(--r-l);
   overflow: hidden;
-  background: #1A1A1A;
+  /* 恒定纯白，与 GIF 恒定白底融为一体（aspectFit 留边不可见 = 视觉满幅）。
+     ⚠️ 字面色：--white 深色主题会翻转，重新露出留边；配 --line 同值的恒定描边 + 6% 阴影
+     让白卡在 --n-50 页底与深色主题下都有边界。 */
+  background: #FFFFFF;
+  border: 1rpx solid #E8E8E4;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
   aspect-ratio: 16 / 9;
   cursor: pointer;
 }
-/* 底层氛围底：同图放大铺满 + 高斯模糊，消除方源在 16:9 框里的黑边。
-   scale(1.18) 盖住 blur 在四边产生的透明软边（否则露出一圈暗晕）。 */
-.hero-bg {
-  position: absolute; left: 0; top: 0;
-  width: 100%; height: 100%;
-  filter: blur(14px);
-  transform: scale(1.18);
-}
-.hero-img {
-  position: absolute; left: 0; top: 0;
-  width: 100%; height: 100%;
-  display: block;
-}
+.hero-img { width: 100%; height: 100%; display: block; }
 .hero-emoji {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -66,7 +59,8 @@
   background: var(--white);
   display: grid; place-items: center;
   box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.35);
-  border: 4rpx solid rgba(255,255,255,0.85);
+  /* hero 恒白卡后白圆需边界：白描边(为深底设计)换恒定浅灰线 */
+  border: 1rpx solid #E8E8E4;
 }
 .hero .badge {
   position: absolute; left: 23rpx; bottom: 23rpx;
@@ -75,7 +69,7 @@
   background: rgba(10,10,10,0.7);
   /* 深色下 --white 会翻成 #161616（它是「卡面」token），压在这块恒定深色遮罩上只有 1.05:1。
      这枚徽章永远叠在动作演示图 + 深色 scrim 上，与主题无关，故用字面白。
-     2026-10-15 起 hero 底层是亮色模糊铺底 ⇒ scrim 0.6 加深到 0.7（白字压白底 ≈6.4:1）。 */
+     2026-10-15 起 hero 是恒白卡 ⇒ scrim 0.7（白字压白底 ≈6.4:1）。 */
   color: #FFFFFF;
   font-family: var(--f-en);
   font-size: 21rpx; font-weight: 700; letter-spacing: 0.04em;
