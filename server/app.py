@@ -57,11 +57,16 @@ app.add_middleware(
 TASKS = {}        # task_id -> {"status": processing|done|error, ...result}
 TASK_ORDER = []   # 插入顺序，用于淘汰旧任务
 
+# 共享内存态的并发锁：识别跑在池线程、提交跑在事件循环线程，
+# TASKS/TASK_ORDER 的 append+淘汰 与 QUOTA 的读-改-写都需要互斥（GIL 不保证复合操作原子）。
+_STATE_LOCK = threading.Lock()
+
 def _remember(task_id: str, value: dict):
-    TASKS[task_id] = value
-    TASK_ORDER.append(task_id)
-    while len(TASK_ORDER) > 200:
-        TASKS.pop(TASK_ORDER.pop(0), None)
+    with _STATE_LOCK:
+        TASKS[task_id] = value
+        TASK_ORDER.append(task_id)
+        while len(TASK_ORDER) > 200:
+            TASKS.pop(TASK_ORDER.pop(0), None)
 
 def _run_task(task_id: str, data: bytes, filename: str):
     try:
@@ -93,6 +98,16 @@ def _decode_b64_image(s: str) -> bytes:
     return base64.b64decode(s)
 
 
+# ---------- 识别并发上限（池 + 在途队列） ----------
+# LLM 是花钱且慢的动作：并发槽 2（防上游限流放大）、在途上限 8（防队列无界堆积）。
+# 超出的提交立刻 503，宁可让用户稍后再来，也不让实例被拖垮连累所有在途任务。
+from concurrent.futures import ThreadPoolExecutor
+
+_VISION_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="vision")
+_INFLIGHT = 0
+_MAX_INFLIGHT = 8
+
+
 # ---------- 每日识别限额（内存态，前提同 TASKS：单实例） ----------
 # ⚠️ 2026-10-15 用户需求：每个用户每天最多 5 次识别。只在**异步提交路径**计次 ——
 #    那是唯一会真实调用 LLM（花钱）的路径；同步 /analyze 不走 LLM，不占额度。
@@ -120,20 +135,21 @@ def _quota_consume(request: Request):
     任务丢失后的自动重提会再计一次：实例重启属罕见情况，为此加穿透机制不值得。"""
     key = _quota_key(request)
     today = _bj_today()
-    rec = QUOTA.get(key)
-    if not rec or rec["date"] != today:
-        rec = {"date": today, "count": 0}
-        QUOTA[key] = rec
-        if len(QUOTA) > 5000:   # 惰性清理跨日旧账，防 dict 无界增长
-            for k in [k for k, v in QUOTA.items() if v["date"] != today]:
-                QUOTA.pop(k, None)
-    if rec["count"] >= DAILY_LIMIT:
-        # detail 只带 code：key（openid/IP）是内部口径，不回显给调用方
-        raise HTTPException(status_code=429, detail={
-            "code": "VISION_LIMIT",
-            "message": "daily recognition limit reached (%d/day)" % DAILY_LIMIT,
-        })
-    rec["count"] += 1
+    with _STATE_LOCK:
+        rec = QUOTA.get(key)
+        if not rec or rec["date"] != today:
+            rec = {"date": today, "count": 0}
+            QUOTA[key] = rec
+            if len(QUOTA) > 5000:   # 惰性清理跨日旧账，防 dict 无界增长
+                for k in [k for k, v in QUOTA.items() if v["date"] != today]:
+                    QUOTA.pop(k, None)
+        if rec["count"] >= DAILY_LIMIT:
+            # detail 只带 code：key（openid/IP）是内部口径，不回显给调用方
+            raise HTTPException(status_code=429, detail={
+                "code": "VISION_LIMIT",
+                "message": "daily recognition limit reached (%d/day)" % DAILY_LIMIT,
+            })
+        rec["count"] += 1
 
 
 @app.get("/health")
@@ -216,6 +232,19 @@ async def task_submit(request: Request, image: UploadFile = File(None)):
         return {"status": "error", "message": "empty image"}
     _reject_oversize(data)
 
+    # 并发上限：单实例只给 LLM 两个并发槽 + 在途队列 8。
+    # 之前是「每次提交起裸线程」——公网可达时攻击者瞬间堆起成百上千个各带 50s 超时的
+    # 线程就能打崩实例。满了直接 503（code=VISION_UPSTREAM，客户端文案/重试档已登记），
+    # **放在限额之前**：没接住的任务不扣用户次数。
+    global _INFLIGHT
+    with _STATE_LOCK:
+        if _INFLIGHT >= _MAX_INFLIGHT:
+            raise HTTPException(status_code=503, detail={
+                "code": "VISION_UPSTREAM",
+                "message": "server busy, try again later",
+            })
+        _INFLIGHT += 1
+
     # 每日限额：fixture（CI/离线演示，不花钱）不占额度；真实识别才计次。
     # 放在图片校验之后：空图/坏包不消耗用户额度。
     if not fixture.fixture_enabled():
@@ -223,7 +252,16 @@ async def task_submit(request: Request, image: UploadFile = File(None)):
 
     task_id = uuid.uuid4().hex
     _remember(task_id, {"status": "processing"})
-    threading.Thread(target=_run_task, args=(task_id, data, filename), daemon=True).start()
+
+    def _run_guarded():
+        global _INFLIGHT
+        try:
+            _run_task(task_id, data, filename)
+        finally:
+            with _STATE_LOCK:
+                _INFLIGHT -= 1
+
+    _VISION_POOL.submit(_run_guarded)
     return {"taskId": task_id, "status": "processing"}
 
 
