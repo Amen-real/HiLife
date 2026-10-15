@@ -31,7 +31,7 @@ function bgOf(themeCls) { return themeCls === 'theme-dark' ? BG_DARK : BG_LIGHT;
 // 为什么不做成可点击外跳：小程序 web-view 要求把目标域名配成「业务域名」，而业务域名必须上传
 //    校验文件证明域名归属 ⇒ beian.miit.gov.cn 不是我们的域名，配不了。故走通行做法：
 //    点击 → 复制工信部查询地址 + 弹一句提示。
-const ICP_NO = '';
+const ICP_NO = '湘ICP备2026046448';
 
 // 用户数据字段（导出/导入/清除只作用于这些，设备运行配置如 visionBackendUrl 等不纳入）
 const DATA_KEYS = [
