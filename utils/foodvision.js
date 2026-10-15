@@ -123,13 +123,14 @@ function compressToBase64(tempFilePath) {
 //   1) POST /task/submit（JSON base64，压缩图 <100K）→ 立即返回 {taskId}
 //   2) GET  /task/{id} 轮询 → {status: processing|done|error, result}
 //
-// ── 轮询节奏（2026-09-29 改）──
-// 原先固定 2s 一轮、30 轮：模型 4s 出结果也要等到第 3 轮（≈6s），平均白等 1s、最坏 2s，
-// 用户感知的「慢」有一大截出在这里。改为**首轮 0.6s、每轮 +0.7s、2s 封顶**，
-// 常见耗时（3~8s）能省下 1~2s；同时把上限从「30 次」改成**总时长窗口**更直观。
-const POLL_FIRST_MS = 600;
-const POLL_STEP_MS = 700;
-const POLL_MAX_MS = 2000;
+// ── 轮询节奏（2026-09-29 改，2026-10-15 收紧）──
+// 原先固定 2s 一轮、30 轮：模型 4s 出结果也要等到第 3 轮（≈6s），平均白等 1s、最坏 2s。
+// 改为首轮 0.6s、每轮 +0.7s、2s 封顶后，2026-10-15 再收紧到 **首轮 0.4s、每轮 +0.5s、
+// 1.5s 封顶**：glm-5.3-flash 常见耗时 3~6s，每轮多花一次 callContainer 往返（开销极小），
+// 换取结果就绪后平均少等 ~1s。上限仍由总时长窗口兜底。
+const POLL_FIRST_MS = 400;
+const POLL_STEP_MS = 500;
+const POLL_MAX_MS = 1500;
 // 总窗口**必须大于**服务端单次上游超时（server/vision_llm.py 的 REQ_TIMEOUT = 50s），
 // 否则服务端还在算、客户端已经弹「识别超时」，用户永远拿不到「到底为什么慢」的那个 code。
 const POLL_DEADLINE_MS = 70000;
@@ -189,7 +190,7 @@ function submitTask(cfg, b64) {
   });
 }
 
-// 轮询任务结果：首轮 0.6s、每轮 +0.7s、2s 封顶，总窗口 70s。
+// 轮询任务结果：首轮 0.4s、每轮 +0.5s、1.5s 封顶，总窗口 70s。
 function pollTask(cfg, taskId) {
   return new Promise((resolve, reject) => {
     const startedAt = Date.now();
