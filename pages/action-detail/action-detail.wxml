@@ -18,7 +18,7 @@
          ⚠️ 不能用 var(--white)（深色主题翻成 #161616 会重新露出留边）。 -->
     <image wx:if="{{heroSrc}}" class="hero-img" src="{{heroSrc}}" mode="aspectFit" lazy-load />
     <view wx:else class="hero-emoji">{{act.emoji}}</view>
-    <view wx:if="{{heroSrc}}" class="play" aria-hidden="true"><view class="ico ico-play ico--ink" style="width:40rpx;height:40rpx"></view></view>
+    <!-- 播放按钮已撤（2026-10-15 用户要求）：点击整块 Hero 即开大图（onHeroTap → 遮罩层） -->
     <view wx:if="{{heroSrc}}" class="badge"><view class="dot"></view><text>{{heroBadge}}</text></view>
   </view>
 

@@ -52,16 +52,6 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 200rpx;
 }
-.hero .play {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  width: 123rpx; height: 123rpx; border-radius: 50%;
-  background: var(--white);
-  display: grid; place-items: center;
-  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.35);
-  /* hero 恒白卡后白圆需边界：白描边(为深底设计)换恒定浅灰线 */
-  border: 1rpx solid #E8E8E4;
-}
 .hero .badge {
   position: absolute; left: 23rpx; bottom: 23rpx;
   display: inline-flex; align-items: center; gap: 12rpx;
