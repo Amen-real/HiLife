@@ -66,14 +66,28 @@
 }
 
 /* —— ① 欢迎 —— */
-.logo-img {
-  width: 320rpx; height: 320rpx;
-  margin-bottom: 40rpx;
+.logo-ico {
+  width: 168rpx; height: 168rpx;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 48rpx;   /* 超级椭圆感圆角方 */
+  background: linear-gradient(135deg, #D6FF4D 0%, #C8FF00 48%, #A8E000 100%);
+  box-shadow: 0 14rpx 48rpx rgba(200, 255, 0, 0.42), inset 0 2rpx 0 rgba(255, 255, 255, 0.55);
 }
-/* 深色页底下黑磁贴会融底：一圈弱白描边勾出轮廓（圆角随 squircle 约 23%） */
-.page.theme-dark .logo-img {
-  border-radius: 23%;
-  box-shadow: 0 0 0 1rpx rgba(255, 255, 255, 0.12);
+.logo-glyph { width: 84rpx; height: 84rpx; background-color: #0A0A0A; }   /* 绿底恒墨色，与主题无关 */
+
+.h1 {
+  margin-top: 36rpx;
+  display: flex; align-items: center; gap: 18rpx;
+  font-size: 56rpx; font-weight: 900; letter-spacing: -0.02em;
+  color: var(--n-900);
+}
+/* 标题霓虹斜杠：品牌绿渐变小竖条，加一点速度感 */
+.h1-bar {
+  width: 12rpx; height: 44rpx; flex: none;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #D6FF4D, #A8E000);
+  transform: skewX(-14deg);
+  box-shadow: 0 0 16rpx rgba(200, 255, 0, 0.55);
 }
 .sub {
   font-size: 29rpx; color: var(--n-600); line-height: 1.7;

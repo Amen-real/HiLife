@@ -15,8 +15,8 @@
     <!-- ① 欢迎 -->
     <swiper-item>
       <view class="slide">
-        <!-- 小程序 Logo（static 随包发布；透明底黑磁贴，图内已含品牌名） -->
-        <image class="logo-img" src="/static/onboarding-logo.png" mode="aspectFit" aria-label="衡砺健身记录" />
+        <view class="logo"><view class="logo-ico"><view class="ico ico-dumbbell logo-glyph"></view></view></view>
+        <view class="h1"><view class="h1-bar"></view><text>衡砺健身记录</text></view>
         <view class="sub">拍一张照，算出一餐热量；\n练每一次，都留下痕迹。</view>
       </view>
     </swiper-item>
