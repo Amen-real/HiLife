@@ -415,6 +415,8 @@ console.log('[D] stub wx 跑真实 onLoad，确认占位块拿到的是真实状
     setStorageSync: (k, v) => { storage[k] = v; },
     showModal: () => {}, showToast: () => {}, openSetting: () => {},
     navigateBack: () => {}, switchTab: () => {}, setClipboardData: () => {},
+    // 2026-10-15 起首页 onShow 末尾有首启引导跳转（onboardingDone 标记检测）→ stub 须备齐
+    navigateTo: () => {},
     setNavigationBarColor: () => {}, getSystemInfoSync: () => ({ statusBarHeight: 47 })
   };
   let cfg = null;
