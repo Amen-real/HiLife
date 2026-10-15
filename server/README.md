@@ -25,6 +25,11 @@
     ⚠️ 其 VL 模型下线频繁（qwen-vl-plus 2026-07 下线、qwen3-vl-flash 2026-10-10 下线），
     启用前先到模型广场确认在售；当前替代 `qwen3.6-flash` 为混合思考模型，
     **必须**在 `vision_llm.py` 的 payload 加 `"enable_thinking": false`，否则易撞 50s 超时。
+- `food_db.py`：**精编食物成分表（~170 项常见食物，每 100g 热量/蛋白/碳水/脂肪）+ 模糊匹配**。
+  模型报的食材名命中成分表 ⇒ 按克数精确重算该项热量（替换模型的营养值记忆）；
+  不命中 ⇒ 保留模型原值。只治「查营养」环节，克数估计仍是模型的活。
+  匹配三级从严：精确/别名 → 包含（先表名⊆食材名，防「番茄」误撞「番茄炒蛋」）→
+  difflib 相似度 ≥0.85。零额外 token、不影响速度。数值为公开营养数据库近似值，估算校准用。
 - `analyzer.py`：自托管 CalorieScan 推理封装。需 `CALORIESCAN_REAL=1` + `CALORIESCAN_REPO` 指向已克隆仓库。
 
 > ⚠️ **两条路都没配好时不再回退 mock**（2026-09-28 起）：`/analyze` 返回 **503**、异步任务 `status=error`，并带 `{code, message}` —— `code` 供小程序翻成用户文案（`utils/foodvision.js` 的 `userMessage()`），`message` 供运维排查。

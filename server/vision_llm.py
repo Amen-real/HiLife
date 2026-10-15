@@ -33,6 +33,8 @@ import time
 
 import requests
 
+import food_db
+
 DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
 DEFAULT_MODEL = "glm-5.3-flash"
 # 故障转移模型：主模型 429 重试耗尽时兜底（同为付费 tokens 池，限流宽松）。
@@ -282,6 +284,21 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
 
     if not isinstance(d, dict):
         raise LLMError("模型返回的不是 JSON 对象。", code="VISION_FAILED")
+
+    # 成分表校准（必须在 _reconcile_nutrition 之前：让 Σitems 交叉校验用上真表数值）。
+    # 只改「查营养」这一环——克数估计是模型的活，匹配不上保留原值，宁缺毋错。
+    _matched = 0
+    for it in (d.get("items") or []):
+        try:
+            w = int(float(it.get("weight_g") or 0))
+        except (TypeError, ValueError):
+            continue
+        entry = food_db.match_food(it.get("name"))
+        if entry and w > 0:
+            it["calories"] = int(round(entry["kcal"] * w / 100.0))
+            _matched += 1
+    if _matched:
+        print("[vision_llm] 成分表校准：%d/%d 项命中" % (_matched, len(d.get("items") or [])))
 
     # 模型给了数 ≠ 数可信：热量与营养素交叉校验（见 _reconcile_nutrition）
     d = _reconcile_nutrition(d)
