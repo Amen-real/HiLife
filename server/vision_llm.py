@@ -6,22 +6,22 @@
 #                 未配置则识别明确报 503（**无 mock 兜底**，见 analyzer.py 顶部说明）
 #   LLM_BASE_URL  默认智谱 https://open.bigmodel.cn/api/paas/v4
 #                 备选：阿里云百炼 https://dashscope.aliyuncs.com/compatible-mode/v1
-#   LLM_MODEL     默认 glm-4.6v-flash（智谱，永久免费，视觉推理强于 4v-flash）
-#   LLM_FALLBACK_MODEL  默认 glm-5.3-flashx（智谱，付费额度）。主模型 429 重试耗尽后
+#   LLM_MODEL     默认 glm-5.3-flash（智谱，多模态，始终思考型）
+#   LLM_FALLBACK_MODEL  默认 glm-5.3-flashx。主模型 429 重试耗尽后
 #                 自动用它完成本次识别；设为空字符串可禁用故障转移。
 #
-# ⚠️ 供应商选择史（2026-10-14）——百炼的 VL 模型下线太频繁，别把鸡蛋放一个篮子：
+# ⚠️ 供应商/模型选择史——百炼的 VL 模型下线太频繁，别把鸡蛋放一个篮子：
 #   · qwen-vl-plus / qwen-vl-max   2026-07-13 下线（公告 #118344 前身波次）
 #   · qwen3-vl-flash               2026-10-10 下线（官方替代 qwen3.6-flash，1.2/7.2 元，
 #                                  ⚠️ 混合思考模型 thinking 默认开，接它必须在 payload
 #                                  加 "enable_thinking": false，否则可能撞 50s 超时）
-#   · 智谱 glm-4v-flash 永久免费但感知/推理较弱 → 用户实测「营养估不准」后，
-#     2026-10-14 升级为 **glm-4.6v-flash**（同平台同免费档，视觉推理更强）。
-#     免费档并发 1-2，高峰 429 是**持续性**的（限流窗口常超重试总时长 6s），
-#     光靠同模型退避重试救不回来 → 2026-10-14 增加模型级故障转移：
-#     主模型重试耗尽仍 429 ⇒ 自动换 LLM_FALLBACK_MODEL（glm-5.3-flashx，
-#     走付费 tokens 池、并发限流宽松得多）完成本次识别，用户无感。
-#     想再省延迟可退回 glm-4v-flash：改 LLM_MODEL 即可，不用重新发版。
+#   · 智谱 glm-4v-flash → glm-4.6v-flash（2026-10-14）：免费档并发 1-2，
+#     高峰 429 是**持续性**的（限流窗口常超重试总时长 6s），同模型退避救不回来。
+#   · 2026-10-15：用户在 glm-5.3-flash 有 15M 推理 tokens（付费池、限流宽松），
+#     **弃用 glm-4.6 系列**，主模型切 glm-5.3-flash、备用 glm-5.3-flashx（3M tokens）。
+#     glm-5.3 系列始终思考：payload 注入 thinking:{type:enabled} + reasoning_effort:"low"
+#     （见 _payload_for；disabled 会被 400 拒绝，错误码 1210）。
+#     想省 token 可退回 glm-4.6v-flash（免费）：改 LLM_MODEL 即可，不用重新发版。
 #
 # 返回结构与 analyzer.analyze 保持一致：
 #   { name, items:[{name, weight_g, calories}], total_weight_g, total_calories, confidence, mock, provider }
@@ -34,8 +34,8 @@ import time
 import requests
 
 DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
-DEFAULT_MODEL = "glm-4.6v-flash"
-# 故障转移模型：主模型（免费档）高峰持续 429 时兜底。付费 tokens 池限流宽松。
+DEFAULT_MODEL = "glm-5.3-flash"
+# 故障转移模型：主模型 429 重试耗尽时兜底（同为付费 tokens 池，限流宽松）。
 # 置空（LLM_FALLBACK_MODEL=""）可禁用。换供应商时记得同步改，别跨平台混用同一把 key。
 DEFAULT_FALLBACK_MODEL = "glm-5.3-flashx"
 
@@ -242,7 +242,7 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
         ext = "jpeg"
     b64 = base64.b64encode(data).decode("ascii")
 
-    # 模型链：主模型（免费档）→ 备用模型（付费档，仅当主模型重试耗尽仍 429）。
+    # 模型链：主模型 → 备用模型（仅当主模型重试耗尽仍 429）。
     # 只对 429 故障转移：401/403 换模型也救不了（同一把 key）、400 是模型配置问题、
     # 超时已吃掉大半时间预算——这三种继续换模型只会白等。
     chain = [primary]
