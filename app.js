@@ -115,9 +115,22 @@ App({
     //    否则官方窗不弹、隐私接口直接失败。
   },
 
-  // 统一持久化
+  // 统一持久化。
+  // ⚠️ 单键 1MB 上限：全量 globalData 落一个键，trainingLogs/meals 只增不减，
+  //   重度使用迟早触顶 —— setStorageSync 超限会**同步 throw**，不接住就会把
+  //   「完成训练 / 记体重」这类调用方动作整个打断，且之后每次写都失败、用户毫无感知。
+  //   这里接住 + 节流提示一次（引导导出备份）；根治（trainingLogs 分键/归档）另行排期。
   persist() {
-    wx.setStorageSync('uu_fitness_state', this.globalData);
+    try {
+      wx.setStorageSync('uu_fitness_state', this.globalData);
+      this._persistWarned = false;
+    } catch (e) {
+      console.error('[persist] 本地写入失败（大概率单键 1MB 上限）：', e);
+      if (!this._persistWarned) {
+        this._persistWarned = true;
+        wx.showToast({ title: '本机存储已满，最新数据可能没保存，请尽快到「我的」页导出备份', icon: 'none', duration: 3000 });
+      }
+    }
   }
 });
 

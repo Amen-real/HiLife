@@ -338,7 +338,7 @@ Page({
         const w = Number(s.weight) || 0, r = Number(s.reps) || 0;
         const vol = w * r;
         aTotalVol += vol; totalVol += vol;
-        if (s.done) { doneSets++; doneVol += vol; }
+        if (s.done) { doneSets++; doneVol += vol; aDoneVol += vol; }
         else { aDone = false; if (firstUndone < 0) firstUndone = i; }
         s.current = (a.id === expandedId && firstUndone === i);
         // 休息时长展示为 MM:SS（WXML 不支持函数调用，必须在 JS 预格式化）

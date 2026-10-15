@@ -65,6 +65,9 @@ const store = {
       const fromStr = dateRange.shiftDaysISO(dateRange.todayStr(), -(rangeDays - 1));
       filtered = list.filter(r => r.date >= fromStr);
     }
+    // ⚠️ 有历史记录但**全部落在窗口外**（如最后一条在 40 天前、选「近 7 天」）时
+    //   filtered 为空 —— 不拦住的话 Math.max(...[]) = -Infinity、filtered[-1] 直接 TypeError。
+    if (!filtered.length) return { list: [], max: null, min: null, days: 0, latest: null, change: null };
     const weights = filtered.map(r => r.weight);
     const max = Math.max(...weights);
     const min = Math.min(...weights);

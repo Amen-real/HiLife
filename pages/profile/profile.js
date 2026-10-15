@@ -666,7 +666,18 @@ Page({
                 return;
               }
               const g = getApp().globalData;
-              DATA_KEYS.forEach(k => { if (data[k] !== undefined) g[k] = data[k]; });
+              // 结构校验：只验 _app 不够 —— 截断/手改的备份文件可能把数组键写成
+              // 字符串、把对象键写成 null，直接灌入会让 home/advice 等页 refresh 全崩。
+              // 逐键比对「与现有默认值同型」，不同型的整键丢弃（宁少导入不多崩）。
+              DATA_KEYS.forEach(k => {
+                if (data[k] === undefined) return;
+                const cur = g[k];
+                const ok =
+                  Array.isArray(cur) ? Array.isArray(data[k]) :
+                  (cur && typeof cur === 'object') ? !!(data[k] && typeof data[k] === 'object' && !Array.isArray(data[k])) :
+                  typeof data[k] === typeof cur;
+                if (ok) g[k] = data[k];
+              });
               g.reminderOn = !!g.reminderOn;
               getApp().persist();
               this.refresh();
@@ -717,6 +728,9 @@ Page({
         wx.removeStorageSync('local_uid');
         wx.removeStorageSync('uu_fitness_backup');
         wx.removeStorageSync('onboardingDone');   // 清除 = 回到首次打开：下次进首页重新弹首启引导
+        // 识别纠错库（含历史修正值）：属用户数据衍生，不清的话旧修正会套到清空后的新记录上。
+        // metrics（埋点计数）/ app_theme / hh_*（震动、悬浮球位置）是旁路统计与设备偏好，刻意保留。
+        wx.removeStorageSync('uu_fitness_foodkb');
         this.refresh();
         wx.showToast({ title: '已清除', icon: 'success' });
       }

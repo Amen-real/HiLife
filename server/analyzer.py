@@ -143,5 +143,6 @@ def analyze(image_bytes: bytes, filename: str = "image.jpg"):
         raise
     except Exception as e:  # noqa: BLE001
         print("[CalorieScan] 推理异常：", repr(e))
-        # 不再「回退 mock」：把失败如实报出去，让用户看到原因，而不是看到一份假热量
-        raise EngineNotReady("模型推理出错（%s）。" % e, code="VISION_FAILED")
+        # 不再「回退 mock」：把失败如实报出去，让用户看到原因，而不是看到一份假热量。
+        # 异常原文只进日志：message 会经 app.py 回到客户端，不外泄内部细节。
+        raise EngineNotReady("模型推理出错（详情见服务端日志）。", code="VISION_FAILED")

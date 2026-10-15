@@ -264,10 +264,13 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
         break
 
     # 不 raise_for_status()：**要把状态码分门别类**，而不是笼统一个 4xx。
-    # 上游原文只进日志/运维 message，绝不弹给用户（见 LLMError 的约定）。
+    # ⚠️ 上游原文**只进服务端日志**，绝不放进 LLMError message —— 那条 message 会经
+    #   app.py 存进 TASKS 并随 /task/{id} 回到客户端（可被抓包），原文里可能带
+    #   供应商账户/配额/endpoint 信息。运维细节在 print 里，够排查了。
     if resp.status_code >= 400:
+        print("[vision_llm] 上游 %d 原文：%s" % (resp.status_code, (resp.text or "")[:500]))
         raise LLMError(
-            "上游模型返回 %d：%s" % (resp.status_code, (resp.text or "")[:200]),
+            "上游模型返回 %d（详情见服务端日志）。" % resp.status_code,
             code=_code_for_http(resp.status_code),
         )
 

@@ -68,12 +68,29 @@ Page({
 
   save() {
     if (!auth.requireLogin()) return;
+    // 数值区间校验：与 onboarding._num 同口径（6-100 / 100-250 / 25-300）。
+    // 之前这里裸 Number 入库：999 岁 / 5cm / NaN 都能进档案，产出垃圾 BMI 与热量推荐。
+    const num = (v, lo, hi, label) => {
+      if (v === '' || v == null) return null;
+      const n = Number(v);
+      if (!isFinite(n) || n < lo || n > hi) {
+        wx.showToast({ title: label + '需在 ' + lo + '-' + hi + ' 之间', icon: 'none' });
+        throw new Error(label);
+      }
+      return n;
+    };
+    let age, height, targetWeight;
+    try {
+      age = num(this.data.age, 6, 100, '年龄');
+      height = num(this.data.height, 100, 250, '身高');
+      targetWeight = num(this.data.targetWeight, 25, 300, '目标体重');
+    } catch (e) { return; }   // toast 已弹，留在本页让用户改
     store.updateProfile({
       gender: this.data.gender,
       goal: this.data.goal,
-      targetWeight: this.data.targetWeight ? Number(this.data.targetWeight) : null,
-      height: this.data.height ? Number(this.data.height) : null,
-      age: this.data.age ? Number(this.data.age) : null,
+      targetWeight: targetWeight,
+      height: height,
+      age: age,
       // 空/非法输入回落到默认 3（1–14 由 clampWeekTarget 收口）
       weeklyTarget: stats.clampWeekTarget(this.data.weeklyTarget),
       activityLevel: ACTIVITY_KEYS[this.data.activityIndex]

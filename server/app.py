@@ -36,6 +36,11 @@ except Exception:  # pragma: no cover
 
 app = FastAPI(title="HiLife Food Vision", version="2.0.0")
 
+# 图片大小上限：小程序端已压缩到 100K 以内（callContainer 100K 请求体限制），
+# 10MB 是宽裕的防滥用线 —— 没有它，恶意/异常的超大请求体会被全量读进内存打爆单实例
+# （Starlette 默认不限 body 大小；重启还会连锁清空 TASKS/QUOTA）。
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
 # 允许跨域：本地开发/小程序调用需开启；生产可收紧为具体域名
 app.add_middleware(
     CORSMiddleware,
@@ -123,9 +128,10 @@ def _quota_consume(request: Request):
             for k in [k for k, v in QUOTA.items() if v["date"] != today]:
                 QUOTA.pop(k, None)
     if rec["count"] >= DAILY_LIMIT:
+        # detail 只带 code：key（openid/IP）是内部口径，不回显给调用方
         raise HTTPException(status_code=429, detail={
             "code": "VISION_LIMIT",
-            "message": "daily recognition limit reached (%d/day), key=%s" % (DAILY_LIMIT, key),
+            "message": "daily recognition limit reached (%d/day)" % DAILY_LIMIT,
         })
     rec["count"] += 1
 
@@ -158,6 +164,7 @@ def health():
 @app.post("/analyze")
 async def analyze(image: UploadFile = File(...)):
     data = await image.read()
+    _reject_oversize(data)
     try:
         if fixture.fixture_enabled():
             return fixture.analyze(data, image.filename or "image.jpg")
@@ -168,9 +175,26 @@ async def analyze(image: UploadFile = File(...)):
         raise HTTPException(status_code=503, detail={"code": e.code, "message": str(e)})
 
 
+def _reject_oversize(data: bytes):
+    """超大图片直接 413（code = VISION_IMAGE_TOO_LARGE，客户端 USER_TEXT 有对应文案）。
+    必须在读入后、进引擎/限额**之前**拦：不占用户额度，也不让垃圾字节白花钱。"""
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail={
+            "code": "VISION_IMAGE_TOO_LARGE",
+            "message": "image exceeds %d bytes" % MAX_IMAGE_BYTES,
+        })
+
+
 @app.post("/task/submit")
 async def task_submit(request: Request, image: UploadFile = File(None)):
     """异步提交：立即返回 {taskId}，识别在后台线程执行。"""
+    # Content-Length 预检：在读入 / json 解析**之前**拒绝超大请求体（防内存打爆）
+    cl = (request.headers.get("content-length") or "")
+    if cl.isdigit() and int(cl) > MAX_IMAGE_BYTES * 2:   # base64 有 1.33x 放大，放宽到 2 倍
+        raise HTTPException(status_code=413, detail={
+            "code": "VISION_IMAGE_TOO_LARGE",
+            "message": "request body too large",
+        })
     ct = (request.headers.get("content-type") or "").lower()
     if "application/json" in ct:
         try:
@@ -190,6 +214,7 @@ async def task_submit(request: Request, image: UploadFile = File(None)):
 
     if not data:
         return {"status": "error", "message": "empty image"}
+    _reject_oversize(data)
 
     # 每日限额：fixture（CI/离线演示，不花钱）不占额度；真实识别才计次。
     # 放在图片校验之后：空图/坏包不消耗用户额度。
