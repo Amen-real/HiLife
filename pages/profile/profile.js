@@ -716,6 +716,7 @@ Page({
         getApp().persist();
         wx.removeStorageSync('local_uid');
         wx.removeStorageSync('uu_fitness_backup');
+        wx.removeStorageSync('onboardingDone');   // 清除 = 回到首次打开：下次进首页重新弹首启引导
         this.refresh();
         wx.showToast({ title: '已清除', icon: 'success' });
       }
