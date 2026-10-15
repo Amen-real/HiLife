@@ -98,6 +98,15 @@ Page({
       this.getTabBar().setData({ selected: 0, theme: themeCls });
     }
     this.refresh();
+
+    // 首启引导：本地无 onboardingDone 标记（存版本号，改版可升版本重显）→ 进欢迎页。
+    // ⚠️ _obNavigated 会话内防重入：用户从引导页「系统返回」不落标记，
+    //    没有这道闸，回到首页 onShow 会立刻再跳一次 = 返回死循环。
+    //    返回过一次本次冷启动不再打扰，下次冷启动才重新引导。
+    if (!wx.getStorageSync('onboardingDone') && !this._obNavigated) {
+      this._obNavigated = true;
+      wx.navigateTo({ url: '/pages/onboarding/onboarding' });
+    }
   },
 
   // 背景图加载失败兜底：本地 static/ 异常时回退云端 cloud://（每次进入只兜底一次，防循环）

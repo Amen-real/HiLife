@@ -5,6 +5,9 @@
 
 const PROFILE_URL = '/pages/profile/profile';
 
+// 本地登录要落 store（login 写 globalData + persist），requireLogin 的跳转目标也在页面层。
+const store = require('./store.js');
+
 // appInstance 可选：页面/逻辑层里 getApp() 可靠，可省略；
 // 但 App.onLaunch 阶段 getApp() 不可靠（微信官方明确警告「不要在 App() 内使用 getApp()」），
 // 必须由调用方把已初始化好的 app 实例（this）传进来，否则会误判为未登录而弹窗。
@@ -31,20 +34,19 @@ function requireLogin() {
   return false;
 }
 
-// 开程序时一次性提示（可关闭），引导登录；已登录则不弹
-// 必须由 onLaunch 把 this 作为 appInstance 传入，避免 getApp() 在启动期返回 undefined 而误弹
-function promptLoginOnLaunch(appInstance) {
-  if (isLoggedIn(appInstance)) return;
-  wx.showModal({
-    title: '欢迎使用 衡砺健身记录',
-    content: '登录后你的训练、饮食与健康数据将保存在本机，支持随时查看与回放。',
-    confirmText: '去登录',
-    cancelText: '先逛逛',
-    confirmColor: '#07C160',
-    success: (res) => {
-      if (res.confirm) wx.switchTab({ url: PROFILE_URL });
-    }
-  });
+// 本地登录：不调用 wx.login / 云函数，生成本地匿名标识作为登录态
+// 同一设备复用稳定 local_uid（不关联真实微信身份，数据仅存本机）。
+// 单源（2026-10-15 抽取）：此前 uid 生成内联在 profile.wechatLogin，
+// 首启引导页也要落登录态 ⇒ 抽到这里共用，杜绝第二份生成逻辑漂移。
+function ensureLocalLogin() {
+  if (isLoggedIn()) return true;
+  let uid = wx.getStorageSync('local_uid');
+  if (!uid) {
+    uid = 'local_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    wx.setStorageSync('local_uid', uid);
+  }
+  store.login(uid);
+  return true;
 }
 
-module.exports = { isLoggedIn, requireLogin, promptLoginOnLaunch };
+module.exports = { isLoggedIn, requireLogin, ensureLocalLogin };

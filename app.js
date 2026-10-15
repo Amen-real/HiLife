@@ -1,5 +1,4 @@
 // app.js
-const auth = require('./utils/auth.js');
 const store = require('./utils/store.js');
 
 App({
@@ -64,8 +63,8 @@ App({
     //   已改为「异步任务」：POST /task/submit 秒回 taskId → 每 2s GET /task/{id} 轮询（约 90s 上限）。
     //   云托管 hilife-vision 需部署 server/ 最新代码，并在服务设置配环境变量：
     //   LLM_API_KEY（**必填**：配了走大模型；不配则识别明确报 503，**不再回退 mock** ——
-    //   见 server/analyzer.py 顶部）。当前默认：LLM_BASE_URL=智谱、LLM_MODEL=glm-4.6v-flash
-    //   （2026-10-14 起；百炼 VL 模型已连续下线，见 server/vision_llm.py 头部）。
+    //   见 server/analyzer.py 顶部）。当前默认：LLM_BASE_URL=智谱、LLM_MODEL=glm-5.3-flash
+    //   （2026-10-15 起，备用 glm-5.3-flashx；百炼 VL 已下线、4.6v 免费档高峰 429，见 server/vision_llm.py 头部）。
     //   ⚠️ 改 server/ 代码后**必须重新部署云托管版本才生效**——本地提交 ≠ 线上更新。
     // false: 走普通 wx.uploadFile 到 visionBackendUrl（局域网 vision-server，开发联调用）。
     useCallContainer: true,
@@ -102,9 +101,9 @@ App({
       this.persist();
     }
 
-    // 开程序提示登录：未登录时弹一次性引导（「我的」页可随时登录）
-    // 关键：onLaunch 内 getApp() 不可靠，必须把已恢复登录态的 this 传入，否则已登录用户也会被误弹
-    auth.promptLoginOnLaunch(this);
+    // 开程序提示登录：**已下线**（2026-10-15）——被首启引导页 pages/onboarding 取代：
+    // 首页 onShow 检测 onboardingDone 标记进 4 屏欢迎页，权限预告 + 隐私承诺 + 选填资料
+    // 一次讲清；资料保存时经 auth.ensureLocalLogin() 静默完成本地匿名登录。
 
     // 隐私授权（基础库 2.32.3+）：**故意不在这里提前请求**。
     // 微信会在「首次真正调用隐私接口时」自动弹官方授权窗 —— 那一刻用户正点着

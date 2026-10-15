@@ -15,7 +15,8 @@
     "pages/cycle/cycle",
     "pages/review/review",
     "pages/favorites/favorites",
-    "pages/privacy/privacy"
+    "pages/privacy/privacy",
+    "pages/onboarding/onboarding"
   ],
   "window": {
     "navigationBarBackgroundColor": "#F7F7F5",

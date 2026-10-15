@@ -467,14 +467,10 @@ Page({
 
   // 本地登录：不调用 wx.login / 云函数，生成本地匿名标识作为登录态
   // 同一设备复用稳定 local_uid（不关联真实微信身份，数据仅存本机）
+  // uid 生成已抽到 auth.ensureLocalLogin 单源（首启引导页共用），此处只保留交互反馈
   wechatLogin() {
     if (this.data.loggedIn) return;
-    let localUid = wx.getStorageSync('local_uid');
-    if (!localUid) {
-      localUid = 'local_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      wx.setStorageSync('local_uid', localUid);
-    }
-    store.login(localUid);
+    auth.ensureLocalLogin();
     wx.showToast({ title: '登录成功', icon: 'success' });
     this.refresh();
   },

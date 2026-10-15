@@ -1,0 +1,93 @@
+<!-- pages/onboarding/onboarding.wxml —— 首启引导：4 屏轮播，右上角跳过常驻 -->
+<view class="page {{theme}}">
+  <view class="skip" bindtap="onSkip" aria-label="跳过引导">跳过</view>
+
+  <swiper class="sw" current="{{current}}" bindchange="onSwiper">
+    <!-- ① 欢迎 -->
+    <swiper-item>
+      <view class="slide">
+        <view class="logo">💪</view>
+        <view class="h1">衡砺健身记录</view>
+        <view class="sub">拍一张照，算出一餐热量；\n练每一次，都留下痕迹。</view>
+      </view>
+    </swiper-item>
+
+    <!-- ② 核心功能 -->
+    <swiper-item>
+      <view class="slide">
+        <view class="h2">三件事，都在这</view>
+        <view class="feat">
+          <view class="feat-i">📷</view>
+          <view class="feat-b"><view class="feat-t">拍照识热量</view><view class="feat-d">AI 识别餐食，估算热量与营养，自动记入饮食</view></view>
+        </view>
+        <view class="feat">
+          <view class="feat-i">🏋️</view>
+          <view class="feat-b"><view class="feat-t">动作库与计划</view><view class="feat-d">1300+ 动作演示，训练模板一键开练</view></view>
+        </view>
+        <view class="feat">
+          <view class="feat-i">⚖️</view>
+          <view class="feat-b"><view class="feat-t">体重与复盘</view><view class="feat-d">体重曲线、训练历史与每场复盘</view></view>
+        </view>
+      </view>
+    </swiper-item>
+
+    <!-- ③ 权限与隐私 -->
+    <swiper-item>
+      <view class="slide">
+        <view class="h2">开始前，说清楚两件事</view>
+        <view class="perm">
+          <view class="perm-t">📷 相机权限</view>
+          <view class="perm-d">第一次用「拍照识别」时会向你申请——只用于拍摄餐食照片，不会后台调用。</view>
+        </view>
+        <view class="perm">
+          <view class="perm-t">📁 相册权限</view>
+          <view class="perm-d">仅在你主动从相册选图时使用，我们不浏览你的相册。</view>
+        </view>
+        <view class="pv">继续使用即表示同意<text class="pv-link" catchtap="goPrivacy">《隐私政策》</text>。数据只保存在你的手机里，可随时导出或清除。</view>
+      </view>
+    </swiper-item>
+
+    <!-- ④ 选填资料：解锁热量推荐 -->
+    <swiper-item>
+      <view class="slide">
+        <view class="h2">完善资料，解锁热量推荐</view>
+        <view class="h3">选填，约 30 秒；以后可在「我的」页修改</view>
+
+        <view class="frow">
+          <view class="fl">性别</view>
+          <view class="chips">
+            <view class="chip {{gender === '男' ? 'on' : ''}}" bindtap="pickGender" data-v="男">男</view>
+            <view class="chip {{gender === '女' ? 'on' : ''}}" bindtap="pickGender" data-v="女">女</view>
+          </view>
+        </view>
+        <view class="frow">
+          <view class="fl">年龄</view>
+          <input class="fin" type="number" value="{{age}}" bindinput="onAge" placeholder="如 25" placeholder-class="ph" />
+        </view>
+        <view class="frow">
+          <view class="fl">身高 cm</view>
+          <input class="fin" type="digit" value="{{height}}" bindinput="onHeight" placeholder="如 175" placeholder-class="ph" />
+        </view>
+        <view class="frow">
+          <view class="fl">目标</view>
+          <view class="chips">
+            <view class="chip {{goal === item ? 'on' : ''}}" wx:for="{{goals}}" wx:key="*this" bindtap="pickGoal" data-v="{{item}}">{{item}}</view>
+          </view>
+        </view>
+        <view class="frow">
+          <view class="fl">目标体重 kg</view>
+          <input class="fin" type="digit" value="{{targetWeight}}" bindinput="onTargetWeight" placeholder="选填，如 65" placeholder-class="ph" />
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <view class="bar">
+    <view class="dots">
+      <view class="dot {{current === index ? 'on' : ''}}" wx:for="{{[0, 1, 2, 3]}}" wx:key="*this" wx:for-item="index"></view>
+    </view>
+    <view class="cta" bindtap="onNext" aria-label="{{current < 3 ? '下一步' : '开始使用'}}">
+      {{current < 3 ? '下一步' : '开始使用'}}
+    </view>
+  </view>
+</view>

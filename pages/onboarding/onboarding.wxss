@@ -1,0 +1,141 @@
+/* pages/onboarding/onboarding.wxss —— 首启引导（对齐 HiLiLife 设计系统：荧光绿 + 暖白） */
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--n-50);
+  overflow: hidden;
+}
+
+/* 跳过：右上角全程常驻（强迫看完是流失点） */
+.skip {
+  position: fixed;
+  top: 20rpx; right: 31rpx;
+  z-index: 10;
+  padding: 10rpx 24rpx;
+  font-size: 25rpx;
+  color: var(--n-600);
+  background: var(--white);
+  border: 1rpx solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.sw { flex: 1 1 auto; min-height: 0; }
+
+.slide {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 62rpx;
+  box-sizing: border-box;
+}
+
+/* ① 欢迎 */
+.logo { font-size: 140rpx; line-height: 1.2; }
+.h1 {
+  font-size: 52rpx; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--n-900); margin-top: 23rpx;
+}
+.sub {
+  font-size: 29rpx; color: var(--n-600); line-height: 1.7;
+  margin-top: 19rpx; white-space: pre-line;
+}
+
+/* ②③ 通用标题 */
+.h2 {
+  font-size: 42rpx; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--n-900); margin-bottom: 35rpx;
+}
+.h3 { font-size: 23rpx; color: var(--n-500); margin: -23rpx 0 27rpx; }
+
+/* ② 功能行 */
+.feat {
+  display: flex; align-items: center; gap: 23rpx;
+  background: var(--white);
+  border: 1rpx solid var(--line);
+  border-radius: var(--r-m);
+  padding: 27rpx;
+  margin-bottom: 19rpx;
+}
+.feat-i { font-size: 52rpx; line-height: 1; }
+.feat-t { font-size: 29rpx; font-weight: 700; color: var(--n-900); }
+.feat-d { font-size: 23rpx; color: var(--n-500); margin-top: 6rpx; line-height: 1.5; }
+
+/* ③ 权限预告 */
+.perm {
+  background: var(--white);
+  border: 1rpx solid var(--line);
+  border-radius: var(--r-m);
+  padding: 23rpx 27rpx;
+  margin-bottom: 19rpx;
+}
+.perm-t { font-size: 27rpx; font-weight: 700; color: var(--n-900); }
+.perm-d { font-size: 23rpx; color: var(--n-600); line-height: 1.6; margin-top: 8rpx; }
+.pv { font-size: 23rpx; color: var(--n-500); line-height: 1.7; margin-top: 12rpx; }
+/* @contrast-ok: 深色下 .pv-link 是 --primary-text 翻转后的亮绿 #C8FF00，
+   压 .page 深底 #0A0A0A ≈ 12:1；静态推算因 swiper 嵌套找不到页面底色而误用 #FFFFFF。 */
+.pv-link { color: var(--primary-text); font-weight: 700; }
+
+/* ④ 表单行 */
+.frow {
+  display: flex; align-items: center;
+  background: var(--white);
+  border: 1rpx solid var(--line);
+  border-radius: var(--r-m);
+  padding: 19rpx 27rpx;
+  margin-bottom: 15rpx;
+}
+.fl { width: 200rpx; flex: none; font-size: 25rpx; color: var(--n-600); }
+.fin { flex: 1 1 auto; font-size: 27rpx; color: var(--n-900); }
+.ph { color: var(--n-400); }
+.chips { display: flex; gap: 12rpx; flex-wrap: wrap; }
+.chip {
+  padding: 8rpx 27rpx;
+  border-radius: var(--r-pill);
+  font-size: 23rpx; font-weight: 600;
+  color: var(--n-700);   /* 小字一律 --n-700：--n-600 压 --n-100 仅 4.38:1 压线不过 */
+  background: var(--n-100);
+}
+.chip.on {
+  background: var(--primary);
+  color: #0A0A0A;   /* 亮绿底字恒 #0A0A0A（对比度铁律） */
+  font-weight: 800;
+}
+
+/* 底部：进度点 + CTA */
+.bar {
+  flex: 0 0 auto;
+  padding: 23rpx 62rpx calc(31rpx + env(safe-area-inset-bottom));
+}
+.dots { display: flex; justify-content: center; gap: 12rpx; margin-bottom: 23rpx; }
+.dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--n-200); }
+.dot.on { background: var(--n-900); }
+.cta {
+  height: 96rpx;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary);
+  color: #0A0A0A;   /* 亮绿底字恒 #0A0A0A（--primary-text 是「白底绿字」档，压亮绿底对比不足） */
+  font-size: 31rpx; font-weight: 800;
+  border-radius: var(--r-m);
+}
+
+/* —— 深色主题：成对翻转（与各页 .page.theme-dark 同规矩）——
+   亮绿 #C8FF00 是全库唯一不随主题翻转的颜色，CTA/chip.on 绿底黑字两态通用。 */
+.page.theme-dark {
+  --n-50:  #0A0A0A;
+  --n-100: #1E1E1E;
+  --n-200: rgba(255, 255, 255, 0.10);
+  --n-400: rgba(255, 255, 255, 0.30);
+  --n-500: rgba(255, 255, 255, 0.42);
+  --n-600: rgba(255, 255, 255, 0.55);
+  --n-700: rgba(255, 255, 255, 0.75);
+  --n-900: #FFFFFF;
+
+  --line:  rgba(255, 255, 255, 0.10);
+  --white: #161616;
+
+  --primary-text: #C8FF00;   /* 深色下绿字提亮为亮绿（浅色侧 #4C7300 压深底仅 2.85:1） */
+
+  background: var(--n-50);
+}
