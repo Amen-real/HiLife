@@ -1,26 +1,60 @@
-/* pages/onboarding/onboarding.wxss —— 首启引导（对齐 HiLiLife 设计系统：荧光绿 + 暖白） */
+/* pages/onboarding/onboarding.wxss —— 首启引导（运动健康风：荧光绿渐变 + 玻璃卡 + 轻量运动线条） */
 .page {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--n-50);
   overflow: hidden;
+  /* 浅绿渐变底：顶部带一点品牌绿气息，向下融入暖白 */
+  background: linear-gradient(180deg, #F0FAD9 0%, #F7F7F5 46%, #F7F7F5 100%);
+
+  /* 本页主题 token（深色块成对翻转） */
+  --card:    rgba(255, 255, 255, 0.82);   /* 玻璃卡底 */
+  --card-br: rgba(255, 255, 255, 0.65);   /* 玻璃卡高光描边 */
+  --ob-ico:  #0A0A0A;                     /* 图标墨色（浅色 tint 圆底上） */
 }
 
-/* 跳过：右上角全程常驻（强迫看完是流失点） */
+/* —— 装饰层：赛道弧线 + 速度线（低透明度，纯装饰） —— */
+.deco {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+.deco-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2rpx solid rgba(168, 224, 0, 0.28);
+}
+.dr1 { width: 640rpx; height: 640rpx; top: -200rpx; right: -180rpx; }
+.dr2 { width: 900rpx; height: 900rpx; bottom: -340rpx; left: -280rpx; border-color: rgba(168, 224, 0, 0.18); }
+.deco-bar {
+  position: absolute;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, rgba(200, 255, 0, 0) 0%, rgba(168, 224, 0, 0.45) 100%);
+  transform: rotate(-18deg);
+}
+.db1 { width: 220rpx; top: 18%;  right: 60rpx; }
+.db2 { width: 150rpx; top: 24%;  right: 240rpx; opacity: 0.7; }
+.db3 { width: 180rpx; top: 62%;  left: 48rpx; opacity: 0.5; transform: rotate(-18deg) scaleX(-1); }
+
+/* 跳过：右上角全程常驻（强迫看完是流失点），玻璃胶囊 */
 .skip {
   position: fixed;
   top: 20rpx; right: 31rpx;
   z-index: 10;
-  padding: 10rpx 24rpx;
+  padding: 10rpx 26rpx;
   font-size: 25rpx;
-  color: var(--n-600);
-  background: var(--white);
-  border: 1rpx solid var(--line);
+  color: var(--n-700);   /* 小字一律 --n-700 */
+  background: var(--card);
+  border: 1rpx solid var(--card-br);
   border-radius: var(--r-pill);
+  transition: transform 0.18s ease;
 }
+.skip-press { transform: scale(0.92); opacity: 0.8; }
 
-.sw { flex: 1 1 auto; min-height: 0; }
+.sw { flex: 1 1 auto; min-height: 0; position: relative; z-index: 1; }
 
 .slide {
   height: 100%;
@@ -31,61 +65,89 @@
   box-sizing: border-box;
 }
 
-/* ① 欢迎 */
-.logo { font-size: 140rpx; line-height: 1.2; }
+/* —— ① 欢迎 —— */
+.logo-ico {
+  width: 168rpx; height: 168rpx;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 48rpx;   /* 超级椭圆感圆角方 */
+  background: linear-gradient(135deg, #D6FF4D 0%, #C8FF00 48%, #A8E000 100%);
+  box-shadow: 0 14rpx 48rpx rgba(200, 255, 0, 0.42), inset 0 2rpx 0 rgba(255, 255, 255, 0.55);
+}
+.logo-glyph { width: 84rpx; height: 84rpx; background-color: #0A0A0A; }   /* 绿底恒墨色，与主题无关 */
+
 .h1 {
-  font-size: 52rpx; font-weight: 800; letter-spacing: -0.02em;
-  color: var(--n-900); margin-top: 23rpx;
+  margin-top: 36rpx;
+  display: flex; align-items: center; gap: 18rpx;
+  font-size: 56rpx; font-weight: 900; letter-spacing: -0.02em;
+  color: var(--n-900);
+}
+/* 标题霓虹斜杠：品牌绿渐变小竖条，加一点速度感 */
+.h1-bar {
+  width: 12rpx; height: 44rpx; flex: none;
+  border-radius: 999rpx;
+  background: linear-gradient(180deg, #D6FF4D, #A8E000);
+  transform: skewX(-14deg);
+  box-shadow: 0 0 16rpx rgba(200, 255, 0, 0.55);
 }
 .sub {
   font-size: 29rpx; color: var(--n-600); line-height: 1.7;
   margin-top: 19rpx; white-space: pre-line;
 }
 
-/* ②③ 通用标题 */
+/* —— ②③ 通用标题 —— */
 .h2 {
-  font-size: 42rpx; font-weight: 800; letter-spacing: -0.01em;
+  font-size: 42rpx; font-weight: 900; letter-spacing: -0.01em;
   color: var(--n-900); margin-bottom: 35rpx;
 }
 .h3 { font-size: 23rpx; color: var(--n-500); margin: -23rpx 0 27rpx; }
 
+/* —— 玻璃卡（② 功能行 / ③ 权限预告 / ④ 表单行共用质感） —— */
+.feat, .perm, .frow {
+  background: var(--card);
+  border: 1rpx solid var(--card-br);
+  border-radius: 28rpx;
+  box-shadow: 0 8rpx 32rpx rgba(30, 60, 5, 0.06);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+}
+
 /* ② 功能行 */
 .feat {
   display: flex; align-items: center; gap: 23rpx;
-  background: var(--white);
-  border: 1rpx solid var(--line);
-  border-radius: var(--r-m);
   padding: 27rpx;
   margin-bottom: 19rpx;
 }
-.feat-i { font-size: 52rpx; line-height: 1; }
+.feat-ic {
+  width: 76rpx; height: 76rpx; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 24rpx;
+  background: rgba(200, 255, 0, 0.16);
+}
+.feat-glyph { width: 36rpx; height: 36rpx; background-color: var(--ob-ico); }
 .feat-t { font-size: 29rpx; font-weight: 700; color: var(--n-900); }
 .feat-d { font-size: 23rpx; color: var(--n-500); margin-top: 6rpx; line-height: 1.5; }
 
 /* ③ 权限预告 */
-.perm {
-  background: var(--white);
-  border: 1rpx solid var(--line);
-  border-radius: var(--r-m);
-  padding: 23rpx 27rpx;
-  margin-bottom: 19rpx;
+.perm { padding: 23rpx 27rpx; margin-bottom: 19rpx; }
+.perm-t {
+  display: flex; align-items: center; gap: 14rpx;
+  font-size: 27rpx; font-weight: 700; color: var(--n-900);
 }
-.perm-t { font-size: 27rpx; font-weight: 700; color: var(--n-900); }
-.perm-d { font-size: 23rpx; color: var(--n-600); line-height: 1.6; margin-top: 8rpx; }
+.perm-ic {
+  width: 52rpx; height: 52rpx; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 16rpx;
+  background: rgba(200, 255, 0, 0.16);
+}
+.perm-glyph { width: 26rpx; height: 26rpx; background-color: var(--ob-ico); }
+.perm-d { font-size: 23rpx; color: var(--n-600); line-height: 1.6; margin-top: 12rpx; }
 .pv { font-size: 23rpx; color: var(--n-500); line-height: 1.7; margin-top: 12rpx; }
 /* @contrast-ok: 深色下 .pv-link 是 --primary-text 翻转后的亮绿 #C8FF00，
    压 .page 深底 #0A0A0A ≈ 12:1；静态推算因 swiper 嵌套找不到页面底色而误用 #FFFFFF。 */
 .pv-link { color: var(--primary-text); font-weight: 700; }
 
 /* ④ 表单行 */
-.frow {
-  display: flex; align-items: center;
-  background: var(--white);
-  border: 1rpx solid var(--line);
-  border-radius: var(--r-m);
-  padding: 19rpx 27rpx;
-  margin-bottom: 15rpx;
-}
+.frow { padding: 19rpx 27rpx; margin-bottom: 15rpx; }
 .fl { width: 200rpx; flex: none; font-size: 25rpx; color: var(--n-600); }
 .fin { flex: 1 1 auto; font-size: 27rpx; color: var(--n-900); }
 .ph { color: var(--n-400); }
@@ -96,32 +158,48 @@
   font-size: 23rpx; font-weight: 600;
   color: var(--n-700);   /* 小字一律 --n-700：--n-600 压 --n-100 仅 4.38:1 压线不过 */
   background: var(--n-100);
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 .chip.on {
-  background: var(--primary);
+  background: linear-gradient(135deg, #D6FF4D, #C8FF00);
   color: #0A0A0A;   /* 亮绿底字恒 #0A0A0A（对比度铁律） */
   font-weight: 800;
+  box-shadow: 0 4rpx 16rpx rgba(200, 255, 0, 0.35);
 }
 
-/* 底部：进度点 + CTA */
+/* —— 底部：进度点 + CTA —— */
 .bar {
   flex: 0 0 auto;
   padding: 23rpx 62rpx calc(31rpx + env(safe-area-inset-bottom));
+  position: relative; z-index: 1;
 }
 .dots { display: flex; justify-content: center; gap: 12rpx; margin-bottom: 23rpx; }
-.dot { width: 12rpx; height: 12rpx; border-radius: 50%; background: var(--n-200); }
-.dot.on { background: var(--n-900); }
+.dot {
+  width: 12rpx; height: 12rpx; border-radius: 999rpx;
+  background: var(--n-200);
+  transition: width 0.25s ease, background 0.25s ease;   /* active 拉长成胶囊 */
+}
+.dot.on { width: 40rpx; background: var(--n-900); }
+
 .cta {
   height: 96rpx;
   display: flex; align-items: center; justify-content: center;
-  background: var(--primary);
+  border-radius: 48rpx;   /* 全胶囊，更有弹性和力量感 */
+  background-color: var(--primary);   /* 渐变兜底实底（静态检查器据此识别品牌亮底） */
+  background-image: linear-gradient(135deg, #D6FF4D 0%, #C8FF00 46%, #A8E000 100%);
   color: #0A0A0A;   /* 亮绿底字恒 #0A0A0A（--primary-text 是「白底绿字」档，压亮绿底对比不足） */
-  font-size: 31rpx; font-weight: 800;
-  border-radius: var(--r-m);
+  font-size: 31rpx; font-weight: 900; letter-spacing: 0.08em;
+  box-shadow: 0 12rpx 40rpx rgba(200, 255, 0, 0.38), inset 0 2rpx 0 rgba(255, 255, 255, 0.6);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+/* 按压态：微缩 + 收光，弹起来的「点击感」 */
+.cta-press {
+  transform: scale(0.96);
+  box-shadow: 0 6rpx 20rpx rgba(200, 255, 0, 0.28), inset 0 2rpx 0 rgba(255, 255, 255, 0.6);
 }
 
 /* —— 深色主题：成对翻转（与各页 .page.theme-dark 同规矩）——
-   亮绿 #C8FF00 是全库唯一不随主题翻转的颜色，CTA/chip.on 绿底黑字两态通用。 */
+   亮绿 #C8FF00 是全库唯一不随主题翻转的颜色，CTA/chip.on/logo 绿底黑字两态通用。 */
 .page.theme-dark {
   --n-50:  #0A0A0A;
   --n-100: #1E1E1E;
@@ -137,5 +215,9 @@
 
   --primary-text: #C8FF00;   /* 深色下绿字提亮为亮绿（浅色侧 #4C7300 压深底仅 2.85:1） */
 
-  background: var(--n-50);
+  --card:    rgba(30, 30, 30, 0.72);
+  --card-br: rgba(255, 255, 255, 0.10);
+  --ob-ico:  #C8FF00;        /* 深色 tint 圆底上的图标提亮为亮绿 */
+
+  background: linear-gradient(180deg, #10230A 0%, #0A0A0A 46%, #0A0A0A 100%);
 }
