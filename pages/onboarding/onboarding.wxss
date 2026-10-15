@@ -39,11 +39,20 @@
 .db2 { width: 150rpx; top: 24%;  right: 240rpx; opacity: 0.7; }
 .db3 { width: 180rpx; top: 62%;  left: 48rpx; opacity: 0.5; transform: rotate(-18deg) scaleX(-1); }
 
-/* 跳过：右上角全程常驻（强迫看完是流失点），玻璃胶囊 */
-.skip {
+/* 状态栏占位块：钉死不可压缩（定高 flex 里默认 shrink:1 会被压成 0，顶栏就会钻进状态栏） */
+.sb-ph { flex: 0 0 auto; }
+
+/* 跳过行：自定义导航后与系统胶囊同一纵向带 —— top/行高/右侧让位全部由 navMetrics 注入（横向让位① + 纵向同心④） */
+.skip-row {
   position: fixed;
-  top: 20rpx; right: 31rpx;
+  left: 0; right: 0;
   z-index: 10;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  box-sizing: border-box;   /* 行高是 border-box 高，竖向 padding 必须归零 */
+}
+.skip {
   padding: 10rpx 26rpx;
   font-size: 25rpx;
   color: var(--n-700);   /* 小字一律 --n-700 */

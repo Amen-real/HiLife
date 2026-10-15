@@ -1,5 +1,8 @@
 <!-- pages/onboarding/onboarding.wxml —— 首启引导：4 屏轮播，右上角跳过常驻 -->
 <view class="page {{theme}}">
+  <!-- 状态栏占位块：自定义导航后页面顶到屏幕最上沿，先撑出状态栏高度（onLoad 实测回填） -->
+  <view class="sb-ph" style="{{statusBarStyle}}"></view>
+
   <!-- 装饰层：赛道弧线 + 速度线（纯装饰，无事件、无内容） -->
   <view class="deco" aria-hidden="true">
     <view class="deco-ring dr1"></view>
@@ -9,7 +12,9 @@
     <view class="deco-bar db3"></view>
   </view>
 
-  <view class="skip" hover-class="skip-press" bindtap="onSkip" aria-label="跳过引导">跳过</view>
+  <view class="skip-row" style="{{navRowStyle}}">
+    <view class="skip" hover-class="skip-press" bindtap="onSkip" aria-label="跳过引导">跳过</view>
+  </view>
 
   <swiper class="sw" current="{{current}}" bindchange="onSwiper">
     <!-- ① 欢迎 -->

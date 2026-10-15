@@ -7,6 +7,7 @@ const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const theme = require('../../utils/theme.js');
 const nutrition = require('../../utils/nutrition.js');
+const navMetrics = require('../../utils/navMetrics.js');
 
 const OB_VERSION = 'v1';
 const GOALS = nutrition.GOALS;
@@ -14,6 +15,8 @@ const GOALS = nutrition.GOALS;
 Page({
   data: {
     theme: 'theme-light',
+    navRowStyle: '',
+    statusBarStyle: 'height: 0px',   // 首帧占位 0，onLoad 实测状态栏高度回填（全仓同款范式）
     current: 0,
     total: 4,
     // 第 4 屏表单（选填）：字段与 pages/settings 完全同构
@@ -23,6 +26,14 @@ Page({
     goal: GOALS[0],
     targetWeight: '',
     goals: GOALS
+  },
+
+  onLoad() {
+    // 自定义导航后「跳过」落在系统胶囊纵向带：横向让位 + 纵向同心（navMetrics 单源）
+    this.setData({
+      navRowStyle: navMetrics.overlayRowStyle(),
+      statusBarStyle: 'height: ' + navMetrics.statusBarHeight() + 'px'
+    });
   },
 
   onShow() {
