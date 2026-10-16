@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>衡砺小程序公众号推文_排版_摸鱼绿(moyu-green) · 公众号排版预览</title>
+<style>
+  body{margin:0;background:#eef0f2;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;-webkit-text-size-adjust:100%;}
+  .gzh-toolbar{position:fixed;top:0;left:0;right:0;height:54px;background:#ffffff;box-shadow:0 1px 10px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:99;}
+  .gzh-hint{font-size:13px;color:#6b7280;line-height:1.4;}
+  .gzh-hint b{color:#111827;}
+  .gzh-copy{background:#059669;color:#fff;border:0;border-radius:9px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(5,150,105,.28);white-space:nowrap;transition:transform .08s,background .15s;}
+  .gzh-copy:hover{background:#047857;}
+  .gzh-copy:active{transform:translateY(1px);}
+  .gzh-toast{position:fixed;top:66px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:11px 20px;border-radius:10px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:88vw;text-align:center;}
+  .gzh-toast.show{opacity:1;}
+  .gzh-stage{max-width:700px;margin:78px auto 64px;padding:0 8px;}
+  @media(max-width:520px){.gzh-hint{max-width:150px;}}
+</style>
+</head>
+<body>
+<div class="gzh-toolbar">
+  <span class="gzh-hint">👇 下方是排版效果 · 点右侧 <b>复制</b> 直接粘到公众号</span>
+  <button class="gzh-copy" id="gzhCopyBtn" onclick="gzhCopy()">📋 复制到公众号</button>
+</div>
+<div class="gzh-toast" id="gzhToast"></div>
+<div class="gzh-stage">
+  <div id="gzh-content">
+<section style="max-width:677px;margin:0 auto;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;color:#374151;line-height:1.75;letter-spacing:0.5px;overflow-x:hidden;">
+
+<!-- 1. 封面（无图版） -->
+<section style="margin:0 0 32px;background:#fff;border:1.5px solid rgba(5,150,105,0.15);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);width:100%;">
+  <section style="padding:32px 28px 28px;">
+    <section style="display:flex;align-items:center;gap:8px;margin-bottom:28px;">
+      <span style="width:6px;height:6px;background:#059669;border-radius:50%;"><span leaf=""><br></span></span>
+      <span style="font-size:11px;font-weight:700;letter-spacing:3px;color:#059669;"><span leaf="">MINI PROGRAM · 独立开发</span></span>
+      <section style="flex:1;height:1px;overflow:hidden;background:linear-gradient(to right,rgba(5,150,105,0.12),transparent);"><span leaf=""><br></span></section>
+      <span style="font-size:10px;color:#D1D5DB;font-weight:600;"><span leaf="">2026.10</span></span>
+    </section>
+    <section>
+      <p style="font-size:15px;color:#D1D5DB;margin:0 0 6px;text-decoration:line-through;letter-spacing:0.5px;">
+        <span leaf="">健身 App 一打开全是会员弹窗？</span>
+      </p>
+      <p style="font-size:24px;font-weight:900;color:#111827;margin:0;line-height:1.05;letter-spacing:-2px;">
+        <span leaf="">拍张照，热量</span>
+        <span style="color:#059669;"><span leaf="">自动算</span></span>
+      </p>
+      <p style="font-size:24px;font-weight:900;color:#059669;margin:0 0 16px;line-height:1.05;letter-spacing:-2px;">
+        <span leaf="">健身记录，本该这么轻</span>
+      </p>
+      <section style="width:48px;height:3px;background:linear-gradient(to right,#059669,#34D399);border-radius:2px;margin-bottom:12px;">
+        <span leaf=""><br></span>
+      </section>
+      <p style="font-size:13px;color:#9CA3AF;margin:0;line-height:1.7;letter-spacing:0.5px;">
+        <span leaf="">AI 识别 · 1300+ 动作库 · 数据只存本机</span>
+      </p>
+    </section>
+  </section>
+  <section style="background:linear-gradient(135deg,#059669,#10B981);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;">
+    <p style="font-size:12px;color:rgba(255,255,255,0.9);margin:0;font-weight:600;letter-spacing:0.5px;">
+      <span leaf="">衡砺健身记录 · 微信小程序</span>
+    </p>
+    <section style="display:flex;gap:4px;">
+      <span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:3px;font-size:8px;color:#fff;font-weight:600;"><span leaf="">无广告</span></span>
+      <span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:3px;font-size:8px;color:#fff;font-weight:600;"><span leaf="">免注册</span></span>
+    </section>
+  </section>
+</section>
+
+<!-- 2. 目录 -->
+<section style="margin:0 20px 32px;">
+  <section style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <p style="font-size:10px;color:#9CA3AF;margin:0;text-transform:uppercase;letter-spacing:2px;font-weight:600;">
+      <span leaf="">📦 3 Parts + Conclusion</span>
+    </p>
+    <p style="font-size:10px;color:#9CA3AF;margin:0;">
+      <span leaf="">👉 滑动</span>
+    </p>
+  </section>
+  <section style="overflow-x:scroll;-webkit-overflow-scrolling:touch;white-space:nowrap;padding-bottom:8px;">
+    <section style="display:inline-block;white-space:normal;vertical-align:top;width:110px;background:linear-gradient(135deg,#059669,#10B981);border-radius:12px;padding:12px;margin-right:8px;">
+      <p style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px;margin:0 0 5px;">
+        <span leaf="">PART 01</span>
+      </p>
+      <p style="font-size:13px;font-weight:800;color:#fff;margin:0 0 3px;">
+        <span leaf="">拍照识热量</span>
+      </p>
+      <p style="font-size:10px;color:rgba(255,255,255,0.7);margin:0;">
+        <span leaf="">对准餐盘就行</span>
+      </p>
+    </section>
+    <section style="display:inline-block;white-space:normal;vertical-align:top;width:110px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;margin-right:8px;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <p style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1px;margin:0 0 5px;">
+        <span leaf="">PART 02</span>
+      </p>
+      <p style="font-size:13px;font-weight:800;color:#111827;margin:0 0 3px;">
+        <span leaf="">动作库与训练</span>
+      </p>
+      <p style="font-size:10px;color:#9CA3AF;margin:0;">
+        <span leaf="">1300+ 动作演示</span>
+      </p>
+    </section>
+    <section style="display:inline-block;white-space:normal;vertical-align:top;width:110px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;margin-right:8px;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <p style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1px;margin:0 0 5px;">
+        <span leaf="">PART 03</span>
+      </p>
+      <p style="font-size:13px;font-weight:800;color:#111827;margin:0 0 3px;">
+        <span leaf="">复盘与隐私</span>
+      </p>
+      <p style="font-size:10px;color:#9CA3AF;margin:0;">
+        <span leaf="">练完看得见</span>
+      </p>
+    </section>
+    <section style="display:inline-block;white-space:normal;vertical-align:top;width:110px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <p style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1px;margin:0 0 5px;">
+        <span leaf="">PART ///</span>
+      </p>
+      <p style="font-size:13px;font-weight:800;color:#111827;margin:0 0 3px;">
+        <span leaf="">写在最后</span>
+      </p>
+      <p style="font-size:10px;color:#9CA3AF;margin:0;">
+        <span leaf="">来用用看</span>
+      </p>
+    </section>
+  </section>
+</section>
+
+<!-- 3. 开头引言 -->
+<section style="margin:0 20px 24px;">
+  <section style="background:#FFF;border:1px dashed #BBF7D0;border-radius:8px;padding:14px 16px;text-align:center;">
+    <p style="font-size:12px;color:#9CA3AF;margin:0 0 6px;line-height:1.5;">
+      <span leaf="">写在开头</span>
+    </p>
+    <p style="margin:0;line-height:1.6;">
+      <span style="font-size:15px;color:#059669;font-weight:bold;border-bottom:3px solid #FDE68A;padding-bottom:2px;"><span leaf="">最好的记录工具，是让你把力气留给训练，而不是留给填表。</span></span>
+    </p>
+  </section>
+</section>
+
+<!-- 4. 前言 -->
+<section style="margin:0 20px 8px;">
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">大家好，我是 {{作者名}}。过去几个月，我把自己的健身小程序——</span><strong style="color:#059669;"><span leaf="">衡砺健身记录</span></strong><span leaf="">——打磨到了 1.0，今天写篇文章介绍它能干什么、为什么长这样。</span>
+  </p>
+  <p style="margin-bottom:24px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">它只解决三件事：</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">吃进去多少、练了什么、身体什么状态</span></span><span leaf="">。没有会员、没有广告、不用注册账号，在微信里搜「衡砺健身记录」就能打开用。</span>
+  </p>
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/01.jpg" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 首页：今天练什么、吃了多少、体重变化，一屏看完</span>
+  </p>
+</section>
+
+<!-- 5. PART 01 拍照识热量 -->
+<section style="margin-top:16px;margin-bottom:32px;padding:0 20px;">
+  <section style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+    <section style="text-align:center;flex-shrink:0;">
+      <p style="margin:0;font-size:28px;font-weight:900;color:#059669;line-height:1;letter-spacing:-2px;">
+        <span leaf="">01</span>
+      </p>
+      <p style="margin:0;font-size:8px;font-weight:700;color:#D1D5DB;letter-spacing:2px;">
+        <span leaf="">PART</span>
+      </p>
+    </section>
+    <span style="width:1px;height:36px;background:#E5E7EB;flex-shrink:0;"><span leaf=""><br></span></span>
+    <section>
+      <p style="margin:0 0 1px;font-size:17px;font-weight:900;color:#111827;letter-spacing:0.3px;">
+        <span leaf="">拍照识热量</span>
+      </p>
+      <p style="margin:0;font-size:11px;font-weight:600;color:#9CA3AF;letter-spacing:1.5px;">
+        <span leaf="">PHOTO · AI VISION</span>
+      </p>
+    </section>
+  </section>
+
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">记饮食最大的门槛，是「在食物库里搜半天」。衡砺的做法简单粗暴：</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">对着餐盘拍一张</span></span><span leaf="">，AI 识别出菜品，给出热量与营养估算，你确认一下就能入账。</span>
+  </p>
+
+  <section style="background:#F9FAFB;padding:16px;border-radius:12px;border:1px solid #F3F4F6;margin-bottom:24px;">
+    <section style="display:flex;align-items:stretch;justify-content:center;gap:6px;">
+      <section style="flex:1;text-align:center;padding:10px 8px;background:linear-gradient(135deg,#059669,#10B981);border-radius:8px;">
+        <p style="font-size:13px;font-weight:800;color:#fff;margin:0 0 3px;">
+          <span leaf="">拍一张</span>
+        </p>
+        <p style="font-size:10px;color:rgba(255,255,255,0.8);margin:0;line-height:1.5;">
+          <span leaf="">相机对准食物</span>
+        </p>
+      </section>
+      <section style="display:flex;align-items:center;color:#D1D5DB;font-size:14px;padding:0 4px;">
+        <span leaf="">→</span>
+      </section>
+      <section style="flex:1;text-align:center;padding:10px 8px;background:#fff;border:1px solid #E5E7EB;border-radius:8px;">
+        <p style="font-size:13px;font-weight:800;color:#111827;margin:0 0 3px;">
+          <span leaf="">AI 识别</span>
+        </p>
+        <p style="font-size:10px;color:#9CA3AF;margin:0;line-height:1.5;">
+          <span leaf="">菜品与热量估算</span>
+        </p>
+      </section>
+      <section style="display:flex;align-items:center;color:#D1D5DB;font-size:14px;padding:0 4px;">
+        <span leaf="">→</span>
+      </section>
+      <section style="flex:1;text-align:center;padding:10px 8px;background:#fff;border:1px solid #A7F3D0;border-radius:8px;">
+        <p style="font-size:13px;font-weight:800;color:#059669;margin:0 0 3px;">
+          <span leaf="">一键记录</span>
+        </p>
+        <p style="font-size:10px;color:#9CA3AF;margin:0;line-height:1.5;">
+          <span leaf="">确认后即可入账</span>
+        </p>
+      </section>
+    </section>
+    <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:12px 0 0;letter-spacing:0.5px;">
+      <span leaf="">识别结果支持手动微调后再记录</span>
+    </p>
+  </section>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/02.jpg" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 拍照识别：对准食物拍一张，AI 给出菜品与热量估算，数值还可手动微调</span>
+  </p>
+
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">除了记，还能「算」：按你录入的身高、体重、年龄算出每日消耗，再按</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">增肌、减脂、塑形</span></span><span leaf="">目标自动调整，每天该吃多少，心里有数。</span>
+  </p>
+
+  <section style="padding:6px 0 4px;margin-bottom:16px;">
+    <p style="margin-bottom:6px;font-size:12px;font-weight:700;color:#9CA3AF;letter-spacing:1px;">
+      <span style="color:#059669;"><span leaf="">✦ 小提示</span></span>
+    </p>
+    <p style="font-size:13px;color:#374151;margin:0;line-height:1.7;">
+      <span leaf="">拍照时让整盘食物都在画面里、光线充足，识别会更准。</span>
+    </p>
+  </section>
+</section>
+
+<!-- 6. PART 02 动作库与训练 -->
+<section style="margin-top:48px;margin-bottom:32px;padding:0 20px;">
+  <section style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+    <section style="text-align:center;flex-shrink:0;">
+      <p style="margin:0;font-size:28px;font-weight:900;color:#059669;line-height:1;letter-spacing:-2px;">
+        <span leaf="">02</span>
+      </p>
+      <p style="margin:0;font-size:8px;font-weight:700;color:#D1D5DB;letter-spacing:2px;">
+        <span leaf="">PART</span>
+      </p>
+    </section>
+    <span style="width:1px;height:36px;background:#E5E7EB;flex-shrink:0;"><span leaf=""><br></span></span>
+    <section>
+      <p style="margin:0 0 1px;font-size:17px;font-weight:900;color:#111827;letter-spacing:0.3px;">
+        <span leaf="">1300+ 动作库与训练记录</span>
+      </p>
+      <p style="margin:0;font-size:11px;font-weight:600;color:#9CA3AF;letter-spacing:1.5px;">
+        <span leaf="">TRAIN · EXERCISE LIBRARY</span>
+      </p>
+    </section>
+  </section>
+
+  <section style="margin-bottom:28px;">
+    <section style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="display:inline-block;background:#111827;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;"><span leaf="">TOOL 1</span></span>
+      <h4 style="font-size:15px;font-weight:800;color:#111827;margin:0;">
+        <span leaf="">动作库</span>
+      </h4>
+    </section>
+    <p style="font-size:14px;margin:0 0 16px;color:#4B5563;line-height:1.9;text-align:justify;">
+      <span leaf="">收录了</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">1300+ 个常见训练动作</span></span><span leaf="">，每个都配演示图、分步要点与目标肌群标注，按部位筛选，练哪儿点哪儿。</span>
+    </p>
+  </section>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/11.png" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 动作详情：演示动图＋分步要点，照着做就不会错</span>
+  </p>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/12.png" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 目标肌群高亮标注，还能看到这块肌肉现在的恢复状态</span>
+  </p>
+
+  <section style="margin-bottom:28px;">
+    <section style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="display:inline-block;background:#111827;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;"><span leaf="">TOOL 2</span></span>
+      <h4 style="font-size:15px;font-weight:800;color:#111827;margin:0;">
+        <span leaf="">逐组训练记录</span>
+      </h4>
+    </section>
+    <p style="font-size:14px;margin:0 0 16px;color:#4B5563;line-height:1.9;text-align:justify;">
+      <span leaf="">训练中每组记录次数、重量，还有 </span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">RPE 主观强度（1～10）</span></span><span leaf="">——练得轻松还是力竭，记下来，下一周的计划才有依据。</span>
+    </p>
+  </section>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/05.jpg" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 训练中：整份计划逐个动作往下打勾，点开即记</span>
+  </p>
+
+  <section style="margin-bottom:28px;">
+    <section style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="display:inline-block;background:#111827;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;"><span leaf="">TOOL 3</span></span>
+      <h4 style="font-size:15px;font-weight:800;color:#111827;margin:0;">
+        <span leaf="">今日训练计划</span>
+      </h4>
+    </section>
+    <p style="font-size:14px;margin:0 0 16px;color:#4B5563;line-height:1.9;text-align:justify;">
+      <span leaf="">定好每周练几次，计划页</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">常驻显示今天该练什么</span></span><span leaf="">，打开小程序直接开练，不用临时想动作。</span>
+    </p>
+  </section>
+</section>
+
+<!-- 7. PART 03 复盘与隐私 -->
+<section style="margin-top:48px;margin-bottom:32px;padding:0 20px;">
+  <section style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+    <section style="text-align:center;flex-shrink:0;">
+      <p style="margin:0;font-size:28px;font-weight:900;color:#059669;line-height:1;letter-spacing:-2px;">
+        <span leaf="">03</span>
+      </p>
+      <p style="margin:0;font-size:8px;font-weight:700;color:#D1D5DB;letter-spacing:2px;">
+        <span leaf="">PART</span>
+      </p>
+    </section>
+    <span style="width:1px;height:36px;background:#E5E7EB;flex-shrink:0;"><span leaf=""><br></span></span>
+    <section>
+      <p style="margin:0 0 1px;font-size:17px;font-weight:900;color:#111827;letter-spacing:0.3px;">
+        <span leaf="">复盘与隐私</span>
+      </p>
+      <p style="margin:0;font-size:11px;font-weight:600;color:#9CA3AF;letter-spacing:1.5px;">
+        <span leaf="">REVIEW · YOUR DATA, YOUR PHONE</span>
+      </p>
+    </section>
+  </section>
+
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">练完自动生成复盘：这次练了哪些动作、容量多少，以及</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">目标肌群现在什么状态</span></span><span leaf="">——可练、刚练过还是还有疲劳，基于近三周的训练记录估算，切到任意一场历史训练都能回看当时的状态。</span>
+  </p>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/07.jpg" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 训练复盘：对比上一场，连「下次可以加重多少」都替你想好</span>
+  </p>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/13.png" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 一键生成的荧光绿分享卡，发好友发朋友圈都拿得出手</span>
+  </p>
+
+  <section style="margin:0 20px 24px;">
+    <section style="background:#FFF;border:1px dashed #BBF7D0;border-radius:8px;padding:14px 16px;text-align:center;">
+      <p style="margin:0;line-height:1.6;">
+        <span style="font-size:15px;color:#059669;font-weight:bold;border-bottom:3px solid #FDE68A;padding-bottom:2px;"><span leaf="">练得怎么样，数据替你说话。</span></span>
+      </p>
+    </section>
+  </section>
+
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">还有一条设计底线：</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">所有记录只存在你自己的手机里</span></span><span leaf="">。不做云端同步、没有账号体系，体重趋势、训练历史都在本机；支持一键导出备份，想清空也随时可以。</span>
+  </p>
+
+  <section style="background:#F0FDF4;padding:12px 16px;border-radius:8px;border:1px solid #BBF7D0;margin-bottom:20px;">
+    <p style="font-size:13px;color:#374151;margin:0;line-height:1.7;text-align:justify;">
+      <span leaf="">隐私口径一句话：拍照只在识别时使用，识别完即处理完毕；个人数据不上服务器，换手机前导出一份备份文件即可迁移。</span>
+    </p>
+  </section>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:8px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/08.jpg" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+  <p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+    <span leaf="">— 进步趋势：个人纪录与近 6 周训练量，坚持是看得见的</span>
+  </p>
+</section>
+
+<!-- 8. 写在最后 -->
+<section style="margin-top:48px;margin-bottom:32px;padding:0 20px;">
+  <section style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+    <section style="text-align:center;flex-shrink:0;">
+      <p style="margin:0;font-size:28px;font-weight:900;color:#059669;line-height:1;letter-spacing:-2px;">
+        <span leaf="">///</span>
+      </p>
+      <p style="margin:0;font-size:8px;font-weight:700;color:#D1D5DB;letter-spacing:2px;">
+        <span leaf="">LAST</span>
+      </p>
+    </section>
+    <span style="width:1px;height:36px;background:#E5E7EB;flex-shrink:0;"><span leaf=""><br></span></span>
+    <section>
+      <p style="margin:0 0 1px;font-size:17px;font-weight:900;color:#111827;letter-spacing:0.3px;">
+        <span leaf="">写在最后</span>
+      </p>
+      <p style="margin:0;font-size:11px;font-weight:600;color:#9CA3AF;letter-spacing:1.5px;">
+        <span leaf="">TRY IT NOW</span>
+      </p>
+    </section>
+  </section>
+
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">在微信里搜索「</span><strong style="color:#059669;"><span leaf="">衡砺健身记录</span></strong><span leaf="">」，或者长按识别下方二维码，直接开练。</span>
+  </p>
+
+  <section style="background:#FFF;border-radius:12px;padding:6px;border:1px solid #E5E7EB;box-shadow:0 4px 12px -2px rgba(0,0,0,0.08);margin-bottom:24px;">
+    <section style="margin:0;border-radius:8px;overflow:hidden;">
+      <span leaf=""><img src="file:///C:/Users/Admin/Desktop/shenhe/扫码_搜索联合传播样式-标准色版.png" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
+    </section>
+  </section>
+
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">用下来有任何想吐槽或想要的功能，欢迎留言——独立开发，</span><span style="border-bottom:2px solid #A7F3D0;font-weight:600;"><span leaf="">反馈就是最快的迭代</span></span><span leaf="">。</span>
+  </p>
+</section>
+
+<!-- 9. 签名段落 -->
+<section style="margin:0 20px 16px;">
+  <p style="margin-bottom:16px;font-size:14px;line-height:1.9;text-align:justify;">
+    <span leaf="">我是 {{作者名}}，衡砺健身记录的开发者，热衷于把健身工具做得更轻更干净。</span>
+  </p>
+</section>
+
+<!-- 10. 互动三连 -->
+<section style="background:radial-gradient(circle at center,#F9FAFB 0%,#FFFFFF 100%);border:1px solid #E5E7EB;border-radius:16px;padding:32px 20px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.03);margin:0 0 24px;">
+  <p style="font-size:13px;font-weight:bold;color:#111827;margin-bottom:20px;line-height:1.6;">
+    <span leaf="">既然看到这里了，如果觉得有用，随手点个赞、在看、转发三连吧。</span>
+  </p>
+  <section style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;">
+    <section style="text-align:center;cursor:pointer;color:#4B5563;">
+      <section style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;background:#fff;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,0.05);border:1px solid #F3F4F6;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+      </section>
+      <span style="font-size:10px;font-weight:600;"><span leaf="">点赞</span></span>
+    </section>
+    <section style="text-align:center;cursor:pointer;color:#4B5563;">
+      <section style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;background:#fff;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,0.05);border:1px solid #F3F4F6;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"></circle><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path></svg>
+      </section>
+      <span style="font-size:10px;font-weight:600;"><span leaf="">在看</span></span>
+    </section>
+    <section style="text-align:center;cursor:pointer;color:#059669;">
+      <section style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;background:#ECFDF5;border-radius:12px;box-shadow:0 2px 4px rgba(5,150,105,0.15);border:1px solid #A7F3D0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-4a8 8 0 0 1 8-8h8"></path><polyline points="16 2 20 6 16 10"></polyline></svg>
+      </section>
+      <span style="font-size:10px;font-weight:600;"><span leaf="">转发</span></span>
+    </section>
+  </section>
+  <p style="font-size:10px;color:#9CA3AF;letter-spacing:1px;margin:0;">
+    <span leaf="">THANKS FOR READING</span>
+  </p>
+</section>
+
+</section>
+  </div>
+</div>
+<script>
+  function gzhShowToast(msg){
+    var t=document.getElementById('gzhToast');
+    t.textContent=msg;t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer=setTimeout(function(){t.classList.remove('show');},2800);
+  }
+  function gzhCopy(){
+    var el=document.getElementById('gzh-content');
+    // 选中渲染后的富文本节点并复制（等价于手动 Ctrl+A / Ctrl+C，保留全部样式）
+    var range=document.createRange();
+    range.selectNodeContents(el);
+    var sel=window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    var ok=false;
+    try{ok=document.execCommand('copy');}catch(e){ok=false;}
+    sel.removeAllRanges();
+    var btn=document.getElementById('gzhCopyBtn');
+    if(ok){
+      gzhShowToast('✅ 已复制！去公众号编辑器按 Ctrl/⌘+V 粘贴即可');
+      var old=btn.textContent;btn.textContent='✅ 已复制';
+      setTimeout(function(){btn.textContent=old;},2200);
+    }else{
+      gzhShowToast('⚠ 自动复制失败，请手动全选(Ctrl/⌘+A)再复制(Ctrl/⌘+C)');
+    }
+  }
+</script>
+</body>
+</html>
