@@ -129,6 +129,10 @@ Page({
     this.setData({ camRowStyle: navMetrics.overlayRowStyle() });
     this.setData({ history: this.loadHistory() });
     this.syncKb();
+    // 预热识别服务：云托管缩容后第一次请求要拉起实例（10s+，callContainer 15s 就会掐死）。
+    // 在 onLoad 就打一次 /health（fire-and-forget），冷启动消耗在用户取景/拍照期间烧掉，
+    // 真正 submit 时实例已热 —— 这是「第一次识别必失败/必慢」的主要解药。
+    try { vision.warmUp(); } catch (e) {}
   },
 
   onShow() {

@@ -141,7 +141,10 @@ const POLL_MAX_MS = 1500;
 // 否则服务端还在算、客户端已经弹「识别超时」，用户永远拿不到「到底为什么慢」的那个 code。
 const POLL_DEADLINE_MS = 70000;
 const POLL_MAX_TRIES = 60;        // 兜底，防止轮询间隔被 stub 成 0 时死循环
-const SUBMIT_RETRY_MS = 800;      // 提交失败后的重试间隔
+// 提交失败的重试退避：冷启动时第一枪往往在「实例拉起中」直接超时（callContainer 15s 硬上限），
+// 0.8s 后的第二枪很可能实例还没热 → 给三次机会、间隔递增（0.8s / 3s），可覆盖约 35s 内完成的冷启动。
+// 实例已热时重试是秒回的，多一枪的代价可忽略。
+const SUBMIT_RETRY_DELAYS_MS = [800, 3000];
 
 function analyzeByCallContainer(tempFilePath, cfg) {
   return compressToBase64(tempFilePath).then((b64) => runTask(cfg, b64, true));
@@ -163,8 +166,8 @@ function analyzeByCallContainer(tempFilePath, cfg) {
   }
 }
 
-// 提交识别任务。网络层失败**重试 1 次**：云托管冷启动时第一枪很容易直接超时，
-// 而第二枪几乎立刻就好 —— 不重试的话用户看到「识别失败」，实际上根本没跑起来。
+// 提交识别任务。网络层失败按 SUBMIT_RETRY_DELAYS_MS 退避重试：云托管冷启动时第一枪
+// 很容易直接超时，而重试枪几乎立刻就好 —— 不重试的话用户看到「识别失败」，实际上根本没跑起来。
 function submitTask(cfg, b64) {
   return new Promise((resolve, reject) => {
     if (typeof wx.cloud === 'undefined' || !wx.cloud.callContainer) {
@@ -187,7 +190,10 @@ function submitTask(cfg, b64) {
           reject(visionError('VISION_FAILED', (d && d.message) || '提交识别任务失败'));
         },
         fail: (err) => {
-          if (attempt === 0) { setTimeout(() => once(1), SUBMIT_RETRY_MS); return; }
+          if (attempt < SUBMIT_RETRY_DELAYS_MS.length) {
+            setTimeout(() => once(attempt + 1), SUBMIT_RETRY_DELAYS_MS[attempt]);
+            return;
+          }
           reject(err);
         }
       });
@@ -313,4 +319,22 @@ function analyzeImage(tempFilePath) {
 // 守卫 scripts/verify-vision-result.cjs [E4] 要逐个 code 反查「有没有表过态」，
 // 只有拿到真表才能验「漏登记」，光验 isRetryable() 的返回值验不出来
 // （undefined 会被 !! 收成 false，漏登记和「明确不可重试」在返回值上长得一模一样）。
-module.exports = { analyzeImage, getCfg, userMessage, visionError, isRetryable, RETRYABLE };
+// 预热：进识别页时就打一次 /health，把云托管缩容后的冷启动消耗在用户取景/拍照期间。
+// 纯 fire-and-forget：失败静默 —— 预热没成只说明实例还没起，真正 submit 的三枪退避会兜住，
+// warmUp 标志复位，下次进页再试。
+let _warmed = false;
+function warmUp() {
+  const cfg = getCfg();
+  if (_warmed || !cfg.useCC || !cfg.env) return;
+  if (typeof wx.cloud === 'undefined' || !wx.cloud.callContainer) return;
+  _warmed = true;
+  wx.cloud.callContainer({
+    config: { env: cfg.env },
+    path: '/health',
+    method: 'GET',
+    header: { 'X-WX-SERVICE': cfg.service },
+    fail: () => { _warmed = false; }   // 预热没成，下次进页再来一次
+  });
+}
+
+module.exports = { analyzeImage, getCfg, userMessage, visionError, isRetryable, RETRYABLE, warmUp };
