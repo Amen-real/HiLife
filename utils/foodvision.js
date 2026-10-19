@@ -144,7 +144,7 @@ const POLL_MAX_TRIES = 60;        // 兜底，防止轮询间隔被 stub 成 0 �
 // 提交失败的重试退避：冷启动时第一枪往往在「实例拉起中」直接超时（callContainer 15s 硬上限），
 // 0.8s 后的第二枪很可能实例还没热 → 给三次机会、间隔递增（0.8s / 3s），可覆盖约 35s 内完成的冷启动。
 // 实例已热时重试是秒回的，多一枪的代价可忽略。
-const SUBMIT_RETRY_DELAYS_MS = [800, 3000];
+const SUBMIT_RETRY_MS_LIST = [800, 3000];
 
 function analyzeByCallContainer(tempFilePath, cfg) {
   return compressToBase64(tempFilePath).then((b64) => runTask(cfg, b64, true));
@@ -166,7 +166,7 @@ function analyzeByCallContainer(tempFilePath, cfg) {
   }
 }
 
-// 提交识别任务。网络层失败按 SUBMIT_RETRY_DELAYS_MS 退避重试：云托管冷启动时第一枪
+// 提交识别任务。网络层失败按 SUBMIT_RETRY_MS_LIST 退避重试：云托管冷启动时第一枪
 // 很容易直接超时，而重试枪几乎立刻就好 —— 不重试的话用户看到「识别失败」，实际上根本没跑起来。
 function submitTask(cfg, b64) {
   return new Promise((resolve, reject) => {
@@ -190,8 +190,8 @@ function submitTask(cfg, b64) {
           reject(visionError('VISION_FAILED', (d && d.message) || '提交识别任务失败'));
         },
         fail: (err) => {
-          if (attempt < SUBMIT_RETRY_DELAYS_MS.length) {
-            setTimeout(() => once(attempt + 1), SUBMIT_RETRY_DELAYS_MS[attempt]);
+          if (attempt < SUBMIT_RETRY_MS_LIST.length) {
+            setTimeout(() => once(attempt + 1), SUBMIT_RETRY_MS_LIST[attempt]);
             return;
           }
           reject(err);
