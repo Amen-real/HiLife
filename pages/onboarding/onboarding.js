@@ -19,6 +19,7 @@ Page({
     statusBarStyle: 'height: 0px',   // 首帧占位 0，onLoad 实测状态栏高度回填（全仓同款范式）
     current: 0,
     total: 4,
+    agreed: false,   // 审核合规：协议必须用户自主勾选（2026-10-19 驳回原因 1）
     // 第 4 屏表单（选填）：字段与 pages/settings 完全同构
     gender: '男',
     age: '',
@@ -50,6 +51,20 @@ Page({
     wx.navigateTo({ url: '/pages/privacy/privacy' });
   },
 
+  // 审核合规（2026-10-19 驳回原因 1）：协议必须由用户自主勾选同意。
+  // agree-row 整行可点（勾选目标 44px 级热区）；catchtap 阻断冒泡防止点链接误触发勾选。
+  toggleAgree() {
+    this.setData({ agreed: !this.data.agreed });
+  },
+
+  // 同意门禁：没勾选就回第三屏并提示。开始使用与跳过都拦 —— 「跳过资料」不等于跳过同意。
+  _requireAgreed() {
+    if (this.data.agreed) return true;
+    wx.showToast({ title: '请先阅读并勾选同意《隐私政策》', icon: 'none' });
+    this.setData({ current: 2 });   // 第三屏 = 权限与隐私
+    return false;
+  },
+
   onAge(e) { this.setData({ age: e.detail.value }); },
   onHeight(e) { this.setData({ height: e.detail.value }); },
   onTargetWeight(e) { this.setData({ targetWeight: e.detail.value }); },
@@ -60,11 +75,13 @@ Page({
     if (this.data.current < this.data.total - 1) {
       this.setData({ current: this.data.current + 1 });
     } else {
+      if (!this._requireAgreed()) return;
       this.finish(true);
     }
   },
 
   onSkip() {
+    if (!this._requireAgreed()) return;
     this.finish(false);
   },
 

@@ -155,6 +155,18 @@
    压 .page 深底 #0A0A0A ≈ 12:1；静态推算因 swiper 嵌套找不到页面底色而误用 #FFFFFF。 */
 .pv-link { color: var(--primary-text); font-weight: 700; }
 
+/* 协议勾选行（审核合规）：默认不勾，用户自主同意。
+   勾选框选中态 = 品牌亮绿底 + 墨色勾（--primary 上字恒 #0A0A0A 的铁律）。 */
+.agree-row { display: flex; align-items: center; gap: 14rpx; margin-top: 24rpx; padding: 14rpx 0; }
+.agree-box {
+  width: 40rpx; height: 40rpx; flex: none;
+  border: 2rpx solid var(--n-400); border-radius: 10rpx;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26rpx; font-weight: 900; color: #0A0A0A; line-height: 1;
+}
+.agree-box.on { background: var(--primary); border-color: var(--primary); }
+.agree-text { font-size: 24rpx; color: var(--n-600); line-height: 1.6; }
+
 /* ④ 表单行 */
 .frow { padding: 19rpx 27rpx; margin-bottom: 15rpx; }
 .fl { width: 200rpx; flex: none; font-size: 25rpx; color: var(--n-600); }

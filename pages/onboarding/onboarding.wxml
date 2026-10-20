@@ -57,7 +57,13 @@
           <view class="perm-t"><view class="perm-ic"><view class="ico ico-album perm-glyph"></view></view><text>相册权限</text></view>
           <view class="perm-d">仅在你主动从相册选图时使用，我们不浏览你的相册。</view>
         </view>
-        <view class="pv">继续使用即表示同意<text class="pv-link" catchtap="goPrivacy">《隐私政策》</text>。数据只保存在你的手机里，可随时导出或清除。</view>
+        <!-- 审核合规：协议必须由用户自主勾选，不得「继续使用即表示同意」（2026-10-19 驳回原因 1）。
+             默认不勾选；未勾选时开始使用/跳过都会被门禁拦回本屏。 -->
+        <view class="agree-row" bindtap="toggleAgree">
+          <view class="agree-box {{agreed ? 'on' : ''}}">{{agreed ? '✓' : ''}}</view>
+          <view class="agree-text">我已阅读并同意<text class="pv-link" catchtap="goPrivacy">《隐私政策》</text></view>
+        </view>
+        <view class="pv">数据只保存在你的手机里，可随时导出或清除。</view>
       </view>
     </swiper-item>
 
