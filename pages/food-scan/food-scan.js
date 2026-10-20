@@ -425,9 +425,15 @@ Page({
     try { return wx.getStorageSync(HISTORY_KEY) || []; } catch (e) { return []; }
   },
   pushHistory(p) {
+    // items 一并留档（纯文字/数字，符合本存储「仅文字/数字字段」约定）：
+    // 历史回看才能看到当时的食物明细；老条目没有该字段 → 回看时空明细（兼容）。
     const item = {
       ts: Date.now(), name: p.name, kcal: p.kcal, weight: p.weight,
-      protein: p.protein, carb: p.carb, fat: p.fat, conf: p.confText
+      protein: p.protein, carb: p.carb, fat: p.fat, conf: p.confText,
+      items: (p.items || []).map(it => ({
+        name: it.name, weight: it.weight, kcal: it.kcal,
+        protein: it.protein, carb: it.carb, fat: it.fat
+      }))
     };
     const list = [item].concat(this.data.history).slice(0, 20);
     try { wx.setStorageSync(HISTORY_KEY, list); } catch (e) {}
@@ -449,10 +455,11 @@ Page({
 
   // 点历史项 → 以结果态查看。**只读**，这是有意为之：
   // ① 历史是「模型当时说了什么」的流水，改它既改不动已经落库的饮食记录，也纠正不了未来识别；
-  // ② 历史项没有原始 items，无从计算签名 —— 若允许编辑，learn() 会拿**上一条识别的签名**
-  //    去写库，直接把知识库指向错误的东西。
+  // ② 历史项保留的是展示快照（pushHistory），没有知识库签名所需的原始返回 ——
+  //    若允许编辑，learn() 会拿**上一条识别的签名**去写库，直接把知识库指向错误的东西。
   // 因此这里清空 `_raw` 并置 `canEdit:false`：编辑入口连提示一起不显示，
   // 不做「诚实的残废入口」（点了没反应比没有入口更糟）。
+  // items 明细（2026-10-20 起）随历史落档，回看可见；更早的老条目无该字段 → 空明细。
   onPickHistory(e) {
     const idx = Number(e.currentTarget.dataset.idx);
     const it = this.data.history[idx];
@@ -466,7 +473,10 @@ Page({
       carb: it.carb == null ? null : it.carb,
       fat: it.fat == null ? null : it.fat,
       confText: it.conf || '—',
-      items: [],
+      items: (it.items || []).map(x => ({
+        name: x.name, weight: x.weight, kcal: x.kcal,
+        protein: x.protein, carb: x.carb, fat: x.fat
+      })),
       img: '',
       canEdit: false,
       edited: false,
@@ -500,6 +510,13 @@ Page({
     const note = '拍照估算' + (p.weight ? ' ' + p.weight + 'g' : '')
       + (p.edited ? '（已修正）' : '')
       + (p.reused ? '（套用本地修正值）' : '');
+    // 分项明细随餐落库（紧凑形 name/weight_g/calories）：饮食记录页按餐分组展示。
+    // 展示形 weight 是 '260g'/'—' 字符串，这里还原成数字；热量和克数都缺的项没有展示价值，过滤。
+    const items = (p.items || []).map(it => ({
+      name: it.name,
+      weight_g: parseInt(it.weight, 10) || null,
+      calories: it.kcal == null ? null : it.kcal
+    })).filter(it => it.calories != null || it.weight_g != null);
     store.addMeal({
       type: type,
       name: p.name,
@@ -507,7 +524,8 @@ Page({
       protein: Math.round(p.protein || 0),
       carb: Math.round(p.carb || 0),
       fat: Math.round(p.fat || 0),
-      note: note
+      note: note,
+      items: items
     });
     wx.showToast({ title: '已记录到' + type, icon: 'success' });
     setTimeout(() => {

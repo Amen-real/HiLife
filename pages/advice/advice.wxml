@@ -143,6 +143,10 @@
             <view class="mi-name">{{m.name}}</view>
             <view class="mi-portion">{{m.portion}}份</view>
             <view class="mi-macros">{{m.calories}}kcal · 蛋白质{{m.protein}}g · 碳水{{m.carb}}g · 脂肪{{m.fat}}g</view>
+            <!-- 拍照识别的分项明细：每行 = 食材 · 克数 · 热量（手动录入无此行） -->
+            <view class="mi-items" wx:if="{{m.itemLines.length}}">
+              <view class="mi-item-line" wx:for="{{m.itemLines}}" wx:for-item="line" wx:key="*this">{{line}}</view>
+            </view>
           </view>
           <view class="mi-actions">
             <view class="mi-edit" bindtap="editMeal" data-id="{{m.id}}"

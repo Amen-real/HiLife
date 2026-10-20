@@ -363,6 +363,17 @@
   font-size: 22rpx; color: var(--n-500);
   font-variant-numeric: tabular-nums; line-height: 1.4;
 }
+/* 拍照识别的分项明细（食材 · 克数 · 热量）：比总宏量行再退一档，
+   小字用 --n-700（--text-weak 是对比度门禁盲区，禁用） */
+.mi-items {
+  margin-top: 4rpx; padding-left: 16rpx;
+  border-left: 4rpx solid var(--line);
+  display: flex; flex-direction: column; gap: 2rpx;
+}
+.mi-item-line {
+  font-size: 22rpx; color: var(--n-700);
+  font-variant-numeric: tabular-nums; line-height: 1.5;
+}
 .mi-actions {
   flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 8rpx;
   align-self: center;

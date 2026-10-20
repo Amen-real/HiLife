@@ -232,7 +232,14 @@ Page({
           calories: Number(m.calories) || 0,
           protein: Number(m.protein) || 0,
           carb: Number(m.carb) || 0,
-          fat: Number(m.fat) || 0
+          fat: Number(m.fat) || 0,
+          // 拍照识别的分项明细（名称 · 克数 · 热量），手动添加的记录无此字段 → 空列表不显示
+          itemLines: (m.items || []).map(fi => {
+            const seg = [String(fi.name || '食物')];
+            if (fi.weight_g != null) seg.push(fi.weight_g + 'g');
+            if (fi.calories != null) seg.push(fi.calories + 'kcal');
+            return seg.join(' · ');
+          })
         }));
       const total = list.reduce((s, m) => s + m.calories, 0);
       return Object.assign({}, d, { meals: list, total });
