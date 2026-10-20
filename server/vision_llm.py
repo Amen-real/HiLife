@@ -24,7 +24,9 @@
 #     想省 token 可退回 glm-4.6v-flash（免费）：改 LLM_MODEL 即可，不用重新发版。
 #
 # 返回结构与 analyzer.analyze 保持一致：
-#   { name, items:[{name, weight_g, calories}], total_weight_g, total_calories, confidence, mock, provider }
+#   { name, items:[{name, weight_g, calories, protein?, carb?, fat?}], total_weight_g, total_calories, confidence, mock, provider }
+#   items 分项宏量（protein/carb/fat，1 位小数）：成分表命中 ⇒ 真表精确重算；
+#   未命中 ⇒ 模型输出（prompt 要求），模型也没给就不带键（前端该行显示 —）。
 import base64
 import json
 import os
@@ -63,13 +65,18 @@ PROMPT = (
     "④热量用 4+4+9 千卡系数由营养素算出（热量必须与营养素一致，不许另拍一个数）；"
     "⑤用常识校验总量（如一碗米饭约200g/230kcal、一份番茄炒蛋约350-500kcal），明显离谱就修正。"
     "输出结构："
-    '{"name":"菜名","items":[{"name":"食材名","weight_g":克数,"calories":该食材热量kcal}],'
+    '{"name":"菜名","items":[{"name":"食材名","weight_g":克数,"calories":该食材热量kcal,'
+    '"protein":该食材蛋白质g,"carb":该食材碳水g,"fat":该食材脂肪g}],'
     '"total_weight_g":总克数,"total_calories":总热量kcal,'
     '"protein":总蛋白质g,"carb":总碳水化合物g,"fat":总脂肪g,'
     '"confidence":置信度}。'
     # 限量是**为了速度**：输出 token 数直接决定生成耗时，放任模型列十几个调料会让
     # 一次识别多等十几秒（用户感知就是「识别很慢」）。4 项足够覆盖一餐的主要热量来源。
-    "items 最多列 4 项（只列主要食材，调料可忽略）。"
+    "items 最多列 4 项（只列主要食材，调料可忽略）；"
+    "即使图中只有一种食物，items 也要列出该食材本身（如一碗米饭 → items 一项「米饭」），不许留空。"
+    # 分项宏量：用户核心感知就是「明细卡里有每个食材的蛋白质/碳水/脂肪」（约 +60~100
+    # 输出 token / +2~3s，在 50s 预算内）；成分表命中的项会被服务端真表数值覆盖，更准。
+    "items 每项都要给出蛋白质/碳水/脂肪克数。"
     "克数、热量与三大营养素为估算值，取整数；confidence 为 0-1 小数："
     "参照物充足且是常见菜给 0.7-0.95，混合菜/酱料多/看不清分量给 0.3-0.6。"
 )
@@ -290,6 +297,8 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
 
     # 成分表校准（必须在 _reconcile_nutrition 之前：让 Σitems 交叉校验用上真表数值）。
     # 只改「查营养」这一环——克数估计是模型的活，匹配不上保留原值，宁缺毋错。
+    # 命中时热量与分项宏量（p/c/f）一并按克数精确重算——明细卡的分项宏量
+    # 必须与分项热量同源，否则会出现「热量来自真表、宏量来自模型」的自相矛盾。
     _matched = 0
     for it in (d.get("items") or []):
         try:
@@ -299,6 +308,9 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
         entry = food_db.match_food(it.get("name"))
         if entry and w > 0:
             it["calories"] = int(round(entry["kcal"] * w / 100.0))
+            it["protein"] = round(entry["p"] * w / 100.0, 1)
+            it["carb"] = round(entry["c"] * w / 100.0, 1)
+            it["fat"] = round(entry["f"] * w / 100.0, 1)
             _matched += 1
     if _matched:
         print("[vision_llm] 成分表校准：%d/%d 项命中" % (_matched, len(d.get("items") or [])))
@@ -306,16 +318,32 @@ def analyze_bytes(data: bytes, filename: str = "image.jpg") -> dict:
     # 模型给了数 ≠ 数可信：热量与营养素交叉校验（见 _reconcile_nutrition）
     d = _reconcile_nutrition(d)
 
+    def _f1(v):
+        """分项宏量归一：可解析 → 1 位小数；缺失/不可解析 → None（输出时不带键）。"""
+        try:
+            return round(float(v), 1)
+        except (TypeError, ValueError):
+            return None
+
     items = []
     for it in (d.get("items") or []):
         try:
-            items.append({
+            one = {
                 "name": str(it.get("name") or "食物"),
                 "weight_g": int(float(it.get("weight_g") or 0)),
                 "calories": int(float(it.get("calories") or 0)),
-            })
+            }
         except (TypeError, ValueError):
             continue
+        # 分项宏量：三项齐全才输出（半缺不可信）。分项热量与分项宏量必须自洽——
+        # 模型给了宏量却没给（或给了 0）calories 时，用 Atwater 4/4/9 兜出，
+        # 避免明细卡出现「宏量齐全但热量为 0」的自相矛盾行。
+        p, c, f = _f1(it.get("protein")), _f1(it.get("carb")), _f1(it.get("fat"))
+        if p is not None and c is not None and f is not None:
+            one["protein"], one["carb"], one["fat"] = p, c, f
+            if one["calories"] <= 0:
+                one["calories"] = int(round(p * 4 + c * 4 + f * 9))
+        items.append(one)
 
     def _num(v, default=0):
         try:

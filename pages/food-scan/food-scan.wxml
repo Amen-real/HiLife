@@ -133,12 +133,23 @@
         </view>
       </view>
 
-      <!-- 包含食物 -->
+      <!-- 食物明细：每项 = 名称 + 克数（预估）+ 分项宏量，右侧分项热量大数字。
+           宏量行只在服务端给了分项宏量时显示（成分表未命中且模型未给 → 不出半缺行）。 -->
       <view class="r-card" wx:if="{{photo.items.length}}">
-        <view class="r-card-head"><text class="r-card-title">包含食物</text></view>
+        <view class="r-card-head">
+          <text class="r-card-title">食物明细</text>
+          <text class="r-unit">{{photo.items.length}} 项</text>
+        </view>
         <view class="r-food" wx:for="{{photo.items}}" wx:key="name">
-          <view class="r-food-name">{{item.name}}</view>
-          <view class="r-food-weight">{{item.weight}}</view>
+          <view class="r-food-main">
+            <view class="r-food-name">{{item.name}}</view>
+            <view class="r-food-sub">{{item.weight}} · 预估重量</view>
+            <view class="r-food-macro" wx:if="{{item.protein != null}}">蛋白质 {{item.protein}} · 碳水 {{item.carb}} · 脂肪 {{item.fat}} 克</view>
+          </view>
+          <view class="r-food-kcal">
+            <view class="r-food-kcal-num">{{item.kcal == null ? '—' : item.kcal}}</view>
+            <view class="r-food-kcal-unit">千卡</view>
+          </view>
         </view>
       </view>
 

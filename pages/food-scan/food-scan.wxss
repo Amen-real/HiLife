@@ -275,12 +275,20 @@
 .r-alert-t { display: block; font-size: 26rpx; font-weight: 700; color: var(--accent-ink); }
 .r-alert-s { display: block; margin-top: 8rpx; font-size: 24rpx; color: var(--accent-ink); text-decoration: underline; }
 
+/* 食物明细（参考食物识别结果稿）：每项一块 —— 名称 / 克数副行 / 分项宏量，右侧热量大数字。
+   小字一律 --n-700（--text-weak 是对比度门禁盲区，禁用）；数字列 tnum 对齐。 */
 .r-food {
-  display: flex; flex-direction: row; align-items: center; justify-content: space-between;
-  padding: 18rpx 0;
+  display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between;
+  padding: 20rpx 0;
 }
-.r-food-name { font-size: 28rpx; color: var(--n-700); }
-.r-food-weight { font-size: 28rpx; font-weight: 700; color: var(--n-900); font-feature-settings: "tnum"; }
+.r-food + .r-food { border-top: 1rpx solid var(--line); }
+.r-food-main { flex: 1; min-width: 0; }
+.r-food-name { font-size: 30rpx; font-weight: 700; color: var(--n-900); }
+.r-food-sub { font-size: 24rpx; color: var(--n-700); margin-top: 6rpx; }
+.r-food-macro { font-size: 24rpx; color: var(--n-700); margin-top: 6rpx; font-feature-settings: "tnum"; }
+.r-food-kcal { display: flex; flex-direction: column; align-items: flex-end; margin-left: 24rpx; flex-shrink: 0; }
+.r-food-kcal-num { font-size: 40rpx; font-weight: 700; color: var(--n-900); line-height: 1.2; font-feature-settings: "tnum"; }
+.r-food-kcal-unit { font-size: 22rpx; color: var(--n-700); margin-top: 4rpx; }
 
 .r-note { color: var(--text-weak); font-size: 22rpx; text-align: center; margin-top: 28rpx; }
 /* A3：知识库状态。不给它一个位置，「纠正被记住了」就是不可见的魔法。

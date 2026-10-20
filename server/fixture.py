@@ -44,9 +44,11 @@ def fixture_enabled() -> bool:
 # 固定夹具内容（单一菜品，字段与 analyzer 合约逐字对齐）。
 # 刻意选一个「热量与重量不成正比」的值：若有人拿它当回归基准，
 # 「先减重量再看热量」这种直觉错误会立刻暴露。
+# 分项宏量与分项热量 Atwater 自洽：10×4 + 30×4 + 11.1×9 = 259.9 ≈ 260。
 _FIXTURE_NAME = "示例餐"
 _FIXTURE_ITEMS = [
-    {"name": "示例餐", "weight_g": 200, "calories": 260},
+    {"name": "示例餐", "weight_g": 200, "calories": 260,
+     "protein": 10.0, "carb": 30.0, "fat": 11.1},
 ]
 _FIXTURE_TOTAL_WEIGHT_G = 200
 _FIXTURE_TOTAL_CALORIES = 260

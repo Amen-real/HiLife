@@ -262,9 +262,22 @@ Page({
       const conf = (raw.confidence != null && raw.confidence !== '') ? Number(raw.confidence) : null;
       const pct = conf != null ? (conf <= 1 ? Math.round(conf * 100) : Math.round(conf)) : null;
       const pctNorm = conf != null ? (conf <= 1 ? conf : conf / 100) : null;
+      // 分项热量/宏量服务端一直有下发（成分表命中时为真表精确值），此前只取
+      // name/weight 把它们丢了 —— 用户感知就是「没有分类计算，只有估算总数」。
+      // 宏量 0 是合法值（如鸡腿碳水 0g），判「非空可解析」而不是 >0；kcal 0 无意义，判 >0。
+      const _n1 = v => {
+        if (v == null || v === '') return null;
+        const n = Number(v);
+        return isNaN(n) || n < 0 ? null : Math.round(n * 10) / 10;
+      };
       const items = (raw.items || []).map(it => ({
         name: it.name || '食物',
-        weight: (it.weight_g != null && it.weight_g !== '') ? it.weight_g + 'g' : '—'
+        weight: (it.weight_g != null && it.weight_g !== '') ? it.weight_g + 'g' : '—',
+        kcal: (it.calories != null && it.calories !== '' && Number(it.calories) > 0)
+          ? Math.round(it.calories) : null,
+        protein: _n1(it.protein),
+        carb: _n1(it.carb),
+        fat: _n1(it.fat)
       }));
 
       // 签名用「模型的原始返回」算（见文件头 ①）
