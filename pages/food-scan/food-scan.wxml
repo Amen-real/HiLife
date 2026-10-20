@@ -46,7 +46,7 @@
        而慢速档文案里写着「可以返回后手动填写热量」，那就成了一句实现不了的承诺。 -->
   <view wx:elif="{{view === 'analyzing'}}" class="analyzing">
     <view class="an-ring"></view>
-    <view class="an-text">AI 识别中…</view>
+    <view class="an-text">识别中…</view>
     <view class="an-sub">{{anTip}}</view>
     <view class="an-sec" wx:if="{{anSec >= 3}}">已等待 {{anSec}} 秒</view>
     <view class="an-cancel" bindtap="cancelAnalyze">取消</view>
@@ -144,7 +144,7 @@
 
       <view class="r-note">⚠ 识别结果仅供参考，请以实际为准</view>
       <!-- 知识库状态：不给它一个位置，「纠正被记住了」这件事就是不可见的魔法 -->
-      <view class="r-kb" wx:if="{{kbSize}}">本地知识库已记 {{kbSize}} 条 · 本周省下 {{kbSaved}} 次 AI 识别</view>
+      <view class="r-kb" wx:if="{{kbSize}}">本地知识库已记 {{kbSize}} 条 · 本周省下 {{kbSaved}} 次拍照识别</view>
       <view class="r-bottom-gap"></view>
     </scroll-view>
 

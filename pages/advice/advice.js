@@ -1,7 +1,7 @@
 // pages/advice/advice.js —— 对齐 07-diet.html（HiLiLife 饮食建议）
 // 顶部可在「饮食建议 / 饮食记录」间切换；
 // 饮食建议页：按 早/中/晚/加餐/蔬果 5 类展示推荐食物（垂直卡片，含 cloud:// 真实图），点击 + 添加到对应餐别；
-// 饮食记录页：顶部 今日摄入 + 三大营养素 + 5 餐分组，每条记录支持 修改 / 删除；每餐下方「添加食物」可走 AI 识别拍照（内联）或手动输入。
+// 饮食记录页：顶部 今日摄入 + 三大营养素 + 5 餐分组，每条记录支持 修改 / 删除；每餐下方「添加食物」可走拍照识别（内联）或手动输入。
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const media = require('../../utils/media.js').media;
@@ -110,7 +110,7 @@ const FOOD_GROUPS = [
 const FOOD_MAP = {};
 FOOD_GROUPS.forEach(g => g.foods.forEach(f => { FOOD_MAP[f.id] = Object.assign({}, f, { type: g.key }); }));
 
-// 根据食物名猜测一个 emoji 缩略图（无真实图时更贴近预览视觉），AI 识别结果缩略用
+// 根据食物名猜测一个 emoji 缩略图（无真实图时更贴近预览视觉），拍照识别结果缩略用
 function emojiFor(name) {
   const n = name || '';
   if (/鸡|牛|羊|猪|肉|鱼|虾|蟹|蛋|腿|排/.test(n)) return '🍗';
@@ -513,7 +513,7 @@ Page({
   closeAdd() { this.setData({ showAddSheet: false }); },
   noop() {},
 
-  // 选择 AI 识别拍照 或 手动输入
+  // 选择 拍照识别 或 手动输入
   chooseAdd(e) {
     const way = e.currentTarget.dataset.way;
     this.setData({ showAddSheet: false });
@@ -555,7 +555,7 @@ Page({
     if (hit.carb != null) patch['form.carb'] = String(hit.carb);
     if (hit.fat != null) patch['form.fat'] = String(hit.fat);
     if (Object.keys(patch).length) this.setData(patch);
-    wx.showToast({ title: '已从本地记录带入，未消耗 AI 识别次数', icon: 'none' });
+    wx.showToast({ title: '已从本地记录带入，未消耗拍照识别次数', icon: 'none' });
   },
 
   closeManual() {
@@ -641,7 +641,7 @@ Page({
     wx.showToast({ title: '已保存', icon: 'success' });
   },
 
-  /* ---------- AI 识别拍照（内联，直接调用视觉识别） ---------- */
+  /* ---------- 拍照识别（内联，直接调用视觉识别） ---------- */
   // 打开相机/相册后直接识别，结果记录到当前餐别（addType），全程不离开本页
   // 先过隐私授权：拒绝后 wx.chooseMedia 只会静默失败（点了没反应），
   // 由 utils/privacy.js 统一给一句人话说明，并留一次重新授权的机会。

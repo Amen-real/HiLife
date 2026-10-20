@@ -32,7 +32,7 @@
         <view class="h2">三件事，都在这</view>
         <view class="feat">
           <view class="feat-ic"><view class="ico ico-camera feat-glyph"></view></view>
-          <view class="feat-b"><view class="feat-t">拍照识热量</view><view class="feat-d">AI 识别餐食，估算热量与营养，自动记入饮食</view></view>
+          <view class="feat-b"><view class="feat-t">拍照识热量</view><view class="feat-d">拍张照片，估算热量与营养，自动记入饮食</view></view>
         </view>
         <view class="feat">
           <view class="feat-ic"><view class="ico ico-dumbbell feat-glyph"></view></view>

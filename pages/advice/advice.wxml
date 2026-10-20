@@ -165,10 +165,10 @@
   <view wx:if="{{showAddSheet}}" class="mask" bindtap="closeAdd">
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">添加食物到「{{addType}}」</view>
-      <view class="sheet-opt" bindtap="chooseAdd" data-way="ai" hover-class="opt-hover" role="button" aria-label="AI识别拍照">
+      <view class="sheet-opt" bindtap="chooseAdd" data-way="ai" hover-class="opt-hover" role="button" aria-label="拍照识别">
         <view class="opt-ico"><view class="ico ico-camera ico--ink" style="width:40rpx;height:40rpx"></view></view>
         <view class="opt-main">
-          <view class="opt-name">AI 识别拍照</view>
+          <view class="opt-name">拍照识别</view>
           <view class="opt-desc">拍照识别并记录到「{{addType}}」</view>
         </view>
         <text class="opt-arrow">›</text>
@@ -242,18 +242,18 @@
     </view>
   </view>
 
-  <!-- ============ AI 识别中 ============ -->
+  <!-- ============ 识别中 ============ -->
   <view wx:if="{{recognizing}}" class="mask">
     <view class="rec-loading">
       <view class="spinner"></view>
-      <view class="rec-loading-txt">AI 识别中…</view>
+      <view class="rec-loading-txt">识别中…</view>
     </view>
   </view>
 
-  <!-- ============ AI 识别结果 ============ -->
+  <!-- ============ 识别结果 ============ -->
   <view wx:if="{{recResult}}" class="mask" bindtap="closeRec">
     <view class="sheet" catchtap="noop">
-      <view class="sheet-title">AI 识别结果 · {{addType}}</view>
+      <view class="sheet-title">识别结果 · {{addType}}</view>
 
       <view class="rec-total" wx:if="{{recResult.totalText}}">
         <text class="rt-k">本餐合计</text>
