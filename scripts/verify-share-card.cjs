@@ -105,6 +105,7 @@ const palFlat = {};
 STYLES.forEach(s => { palFlat[s] = palPaths(PALETTES[s]); });
 const getPal = (flat, key) => flat[key];
 
+(async () => {
 console.log('\n[A] \u5361\u7247\u914d\u8272 \u2014\u2014 canvas \u4e0d\u5728 CSS \u95e8\u7981\u8986\u76d6\u5185\uff0c\u4e24\u5957\u8c03\u8272\u677f\u9010\u4e2a\u8272\u5bf9\u9a8c AA');
 console.log('  \u00b7 \u8c03\u8272\u677f = ' + STYLES.join(' / ') + '\uff08\u5916\u89c2\u4e0d\u8ddf\u968f App \u4e3b\u9898\uff0c\u53ea\u770b\u7528\u6237\u663e\u5f0f\u9009\u7684\u6837\u5f0f\uff09');
 
@@ -495,7 +496,7 @@ console.log('\n[E] \u63a5\u7ebf \u2014\u2014 stub wx \u8dd1\u771f\u5b9e\u7ec4\u4
 function makeCtx() {
   const ctx = { calls: [], fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textAlign: '', textBaseline: '' };
   ['clearRect', 'fillRect', 'beginPath', 'closePath', 'moveTo', 'lineTo', 'arc', 'arcTo', 'fill', 'stroke',
-    'save', 'restore', 'translate', 'scale', 'bezierCurveTo', 'quadraticCurveTo'].forEach(n => {
+    'save', 'restore', 'translate', 'scale', 'bezierCurveTo', 'quadraticCurveTo', 'drawImage'].forEach(n => {
       ctx[n] = function () { ctx.calls.push({ n, a: Array.prototype.slice.call(arguments) }); };
     });
   ctx.fillText = function (s, x, y) {
@@ -503,7 +504,23 @@ function makeCtx() {
   };
   return ctx;
 }
-function makeCanvas() { const ctx = makeCtx(); return { width: 0, height: 0, _ctx: ctx, getContext: () => ctx }; }
+function makeCanvas() {
+  const ctx = makeCtx();
+  return {
+    width: 0, height: 0, _ctx: ctx, getContext: () => ctx,
+    // T2 小程序码 stub：loadMinicode 先赋 onload 再赋 src —— 这里同步触发 onload，
+    // 模拟「包内资源立即可用」；真机上 src 赋值后异步加载，链路同为 Promise.then。
+    createImage: () => ({
+      _src: '',
+      set src(v) { this._src = v; if (this.onload) this.onload(); },
+      get src() { return this._src; }
+    })
+  };
+}
+
+// T2：出图链路末段是 loadMinicode 的 Promise.then —— 任何「出图已完成」断言前
+// 都必须先让微任务跑完，否则断言看到的是绘制前状态（假红，不是真缺陷）。
+const flushP = () => new Promise(r => setTimeout(r, 0));
 
 const W = {
   toasts: [], modals: [], shareCalls: [], savedCalls: [], openSettingCalls: 0,
@@ -555,6 +572,7 @@ eq('E1 组件读到 4 场', I1.data.logsCount, DEMO.LOGS.length);
 
 W.reset();
 I1.openShareCard();
+await flushP();
 isTrue('E2 弹层已打开', I1.data.shareShow === true);
 isFalse('E2 生成完成后 busy 归位 false', I1.data.shareBusy);
 eq('E2 得到了临时图片路径', I1.data.shareImg, '/tmp/share-card.png');
@@ -582,19 +600,23 @@ W.reset();
 const before1 = shareCard.measure(I1._cardModel);
 I1.toggleShareOpt({ currentTarget: { dataset: { k: 'hide' } } });
 eq('E4 开关「隐藏训练内容」落到 data', I1.data.shareHide, true);
+await flushP();
 eq('E4 开关切换后**重新出图了**（真实能力，不是只存布尔值）', I1.data.shareImg, '/tmp/share-card.png');
 eq('E4 新的模型确实不带动作了', I1._cardModel.showActions, false);
 isTrue('E4 隐藏内容后卡片确实变矮（版式真的重排了）', shareCard.measure(I1._cardModel) < before1);
 I1.toggleShareOpt({ currentTarget: { dataset: { k: 'hide' } } });
 eq('E4 再切一次恢复', [I1.data.shareHide, I1._cardModel.showActions], [false, true]);
+await flushP(); // 消费本次 toggle 的渲染 then —— 不然它泄漏到后面区段，用旧 ctx 抢跑导出
 
 W.reset();
 I1.cycleShareStyle();
 eq('E5 换样式切到深色', [I1.data.shareStyle, I1.data.shareStyleName], ['dark', '\u6df1\u8272']);
 eq('E5 样式真的作用到模型（换调色板，不是换文案）', I1._cardModel.style, 'dark');
+await flushP();
 eq('E5 画布重画了一遍', W.node._ctx.calls.filter(c => c.n === 'fillText').length > 0, true);
 I1.cycleShareStyle();
 eq('E5 再切一圈回到浅色（STYLE_KEYS 是唯一真源）', I1.data.shareStyle, 'light');
+await flushP(); // 消费本次 cycle 的渲染 then（泄漏会在 E7 被一起消费 → toast 翻倍）
 
 // 画布节点拿不到 → 必须关弹层并提示，不能静默留一个「正在生成…」
 W.reset(); W.node = null;
@@ -606,8 +628,9 @@ eq('E6 拿不到画布节点 → 有提示', W.toasts.length, 1);
 // 导出失败 → 同样给反馈
 W.reset(); W.exportFail = true;
 const I3 = mkInst(); I3.rebuild(); I3.openShareCard();
+await flushP();
 isFalse('E7 导出失败 → 关闭弹层', I3.data.shareShow);
-eq('E7 导出失败 → 有提示', W.toasts.length, 1);
+console.log('  [dbg] E7 toasts =', JSON.stringify(W.toasts.map(t => t && t.title)));eq('E7 导出失败 → 有提示', W.toasts.length, 1);
 eq('E7 导出失败 → 不留下半成品图片', I3.data.shareImg, '');
 
 // 无日志 → 只提示，不开弹层
@@ -623,6 +646,7 @@ eq('E8 无场次 → 有提示', W.toasts.length, 1);
 W.reset();
 const I5 = mkInst(); I5.rebuild(); I5.openShareCard();
 W.toasts = [];
+await flushP();
 I5.shareShareCard();
 eq('E9 有分享接口 → 调用 showShareImageMenu', W.shareCalls.length, 1);
 eq('E9 传入的是生成的临时图路径', W.shareCalls[0].path, '/tmp/share-card.png');
@@ -634,6 +658,7 @@ const I6 = mkInst(); I6.rebuild(); I6.openShareCard();
 W.toasts = []; W.modals = [];
 const savedApi = W.showShareImageMenu;
 delete W.showShareImageMenu;               // 模拟低版本微信
+await flushP();
 I6.shareShareCard();
 eq('E10 无分享接口 → 弹说明而不是静默', W.modals.length, 1);
 isTrue('E10 说明里给出「保存到相册」这条真实路径', /\u76f8\u518c/.test(W.modals[0].confirmText + W.modals[0].content));
@@ -643,12 +668,14 @@ W.showShareImageMenu = savedApi;
 W.reset();
 const I7 = mkInst(); I7.rebuild(); I7.openShareCard();
 W.toasts = []; W.shareFail = { errMsg: 'showShareImageMenu:fail cancel' };
+await flushP();
 I7.shareShareCard();
 eq('E11 用户取消分享 → 不弹提示', W.toasts.length, 0);
 
 W.reset();
 const I8 = mkInst(); I8.rebuild(); I8.openShareCard();
 W.toasts = []; W.shareFail = { errMsg: 'showShareImageMenu:fail system error' };
+await flushP();
 I8.shareShareCard();
 eq('E11 分享真失败 → 给提示', W.toasts.length, 1);
 
@@ -679,6 +706,7 @@ isFalse('E12 不谎称「已分享到朋友圈」', /\u5df2\u5206\u4eab\u5230\u6
 W.reset();
 const I9 = mkInst(); I9.rebuild(); I9.openShareCard();
 W.toasts = []; W.saveFail = { errMsg: 'saveImageToPhotosAlbum:fail auth deny' };
+await flushP();
 I9.saveShareCard();
 eq('E13 权限被拒 → 弹设置引导', W.modals.length, 1);
 eq('E13 权限被拒 → 不误报成功', W.toasts.length, 0);
@@ -688,12 +716,14 @@ eq('E13 点「去设置」→ 调 openSetting', W.openSettingCalls, 1);
 W.reset();
 const I10 = mkInst(); I10.rebuild(); I10.openShareCard();
 W.toasts = []; W.saveFail = { errMsg: 'saveImageToPhotosAlbum:fail cancel' };
+await flushP();
 I10.saveShareCard();
 eq('E13 用户取消保存 → 静默', W.toasts.length + W.modals.length, 0);
 
 W.reset();
 const I11 = mkInst(); I11.rebuild(); I11.openShareCard();
 W.toasts = [];
+await flushP();
 I11.saveShareCard();
 eq('E13 保存成功 → 提示已保存', W.toasts.length, 1);
 isTrue('E13 保存的是同一张图', W.savedCalls[0].filePath === '/tmp/share-card.png');
@@ -713,8 +743,11 @@ W.reset();
 const I13 = mkInst(); I13.rebuild(); I13.openShareCard();
 I13.closeShare();
 eq('E15 关闭后状态全清', [I13.data.shareShow, I13.data.shareBusy, I13.data.shareImg], [false, false, '']);
-isTrue('E15 关闭后再打开仍能出图（wx:if 卸载后画布能重新挂载）',
-  (() => { W.reset(); I13.openShareCard(); return I13.data.shareImg === '/tmp/share-card.png'; })());
+await flushP();
+W.reset();
+I13.openShareCard();
+await flushP();
+isTrue('E15 关闭后再打开仍能出图（wx:if 卸载后画布能重新挂载）', I13.data.shareImg === '/tmp/share-card.png');
 
 /* ============ [F] 静态断言：口径不许被抄回调用方 ============ */
 console.log('\n[F] \u9759\u6001\u65ad\u8a00 \u2014\u2014 \u9632\u6b62\u53e3\u5f84\u88ab\u6284\u56de\u7b2c\u4e8c\u4efd');
@@ -916,9 +949,20 @@ isTrue('H8 校准：lw 判据能区分默认值与覆盖值', bf.parts[0].lw !==
 // 「版式/对比度/越界都能在 node 里穷举断言」这个前提就没了 —— 整套验收会降级成真机截图。
 console.log('\n[I] \u4e3b\u89c6\u89c9 \u2014\u2014 \u89e3\u5256\u56fe\u8d70\u7eaf\u8def\u5f84\uff0c\u5361\u7247\u91cc\u6ca1\u6709\u4efb\u4f55\u56fe\u7247\u8d44\u6e90');
 isTrue('I1 版式里有 body op（解剖图就是主视觉）', r1.L.ops.filter(o => o.t === 'body').length === 2);
-isFalse('I1 分享卡模块不引用任何图片/资源路径', /\.(png|jpe?g|webp|gif)\b/i.test(readCode(SC)));
-isFalse('I1 分享卡模块不用 canvas.createImage（异步图片会让版式不再是纯函数）', /createImage/.test(readCode(SC)));
-isFalse('I1 分享卡模块不引任何图片目录', /assets\//.test(readCode(SC)));
+/* T2 新口径：卡片主视觉仍是纯路径（解剖图零图片资源，[I] 组立组理由不变）。
+   唯一图片例外 = 小程序码（MINICODE_PATH，包内固定资源，drawImage 叠加）：
+   路径写死在常量、全源码只出现一次；createImage 只准在资源加载层 loadMinicode 出现一次。 */
+isTrue('I1 主视觉仍零图片：.png 全源码只出现一次且就是 MINICODE_PATH（小程序码唯一例外）',
+  (readCode(SC).match(/\.png\b/gi) || []).length === 1
+  && /MINICODE_PATH\s*=\s*'\/static\/minicode\.png'/.test(readCode(SC)));
+isTrue('I1 createImage 只出现一次且只在 loadMinicode（资源加载层，非版式）',
+  (readCode(SC).match(/createImage/g) || []).length === 1
+  && /function loadMinicode[\s\S]{0,300}createImage/.test(readCode(SC)));
+isFalse('I1 分享卡模块不引任何图片目录（assets/ 仍禁）', /assets\//.test(readCode(SC)));
+const SC_CODE = readCode(SC);
+const LAYOUT_BODY = SC_CODE.slice(SC_CODE.indexOf('function layout('), SC_CODE.indexOf('function draw('));
+isFalse('I1 版式 layout() 仍是同步纯函数（体内无 createImage/Promise/loadMinicode）',
+  /createImage|Promise|loadMinicode/.test(LAYOUT_BODY));
 isTrue('I1 解剖路径确实来自 bodymap（唯一一份几何，与动作详情页共用）',
   /bodymap\.bodyPaths/.test(readCode(SC)) && /bodymap\.drawShapes/.test(readCode(SC)));
 isFalse('I1 分享卡不用 drawBody（它会 clearRect 把已铺好的卡片擦掉）', /bodymap\.drawBody/.test(readCode(SC)));
@@ -982,6 +1026,7 @@ isFalse('J9 在复盘页打开 → 不预留', J_3.data.scTabSafe);
 global.getCurrentPages = () => { throw new Error('boom'); };      // 探测抛异常
 const J_4 = mkInst(); J_4.rebuild(); J_4.openShareCard();
 isFalse('J9 探测抛异常 → 兜底 false 而不是把弹层弄崩', J_4.data.scTabSafe);
+await flushP();
 isTrue('J9 探测失败也照常出图（弹层不因探测而残废）', !!J_4.data.shareImg);
 if (savedGCP) global.getCurrentPages = savedGCP; else delete global.getCurrentPages;
 
@@ -1040,7 +1085,99 @@ isTrue('J12 模型锚点：.sc-sheet 的 max-height 仍是 100vh - 96rpx', /calc
 isTrue('J12 校准：改掉 50vh 后 J12 判据会报错',
   !/height\s*:\s*50vh/.test(PREV.replace(/height\s*:\s*50vh/, 'height: 60vh')));
 
+/* ============ [K] T2 小程序码槽（方案 A，页脚右下角白底托底） ============
+   只叠图不改数据（禁重算口径不变），所以这里只验三件事：
+   ① 码槽几何：在卡内、与页脚文字（含 QR_GAP 静区）不相交；
+   ② 可扫性：白底托底恒为 #FFFFFF，不随 style 翻转（深色卡上扫不出 = 裂变功能为零）；
+   ③ 绘制契约：无码图时码槽整体不画（不留空框），有图才画托底 + drawImage。 */
+console.log('\n[K] T2 小程序码槽（方案 A）—— 几何 / 可扫性 / 绘制契约');
+
+const QR = { BOX: shareCard.QR_BOX, SIZE: shareCard.QR_SIZE, GAP: shareCard.QR_GAP };
+
+// 页脚文字矩形（含 QR_GAP 静区）是否与码槽相交 —— 判据抽成函数，K7 校准喂坏样本
+function qrFootOk(L, pal) {
+  const qr = L.ops.filter(o => o.qr && o.t === 'rect')[0];
+  if (!qr) return false;
+  // 码槽必须完整落在卡内（PAGE_PAD 之内）
+  if (qr.x < shareCard.PAGE_PAD || qr.x + qr.w > shareCard.CARD_W - shareCard.PAGE_PAD) return false;
+  if (qr.y + qr.h > L.h - shareCard.PAGE_PAD) return false;
+  const footOps = L.ops.filter(o => o.t === 'text' && o.y >= qr.y - 40);
+  return footOps.every(t => {
+    const w = shareCard.estWidth(t.s, t.size, t.weight);
+    const right = t.x + w;                                   // 页脚文字均为左对齐
+    return right <= qr.x - QR.GAP + 0.01;
+  });
+}
+
+STYLES.forEach(s => {
+  const mm = shareCard.buildModel({ log: DEMO.today, logsDesc: DEMO.LOGS, idx: 0, opts: { style: s } });
+  const L = shareCard.layout(mm);
+  isTrue('K1 ' + s + '：layout 产出码槽（rect + image 各一个，都带 qr 指纹）',
+    L.ops.filter(o => o.qr && o.t === 'rect').length === 1 && L.ops.filter(o => o.qr && o.t === 'image').length === 1);
+  isTrue('K2 ' + s + '：码槽完整落在卡内', qrFootOk(L, PALETTES[s]));
+  const qrRect = L.ops.filter(o => o.qr && o.t === 'rect')[0];
+  isTrue('K3 ' + s + '：托底恒为白底 #FFFFFF（不随 style 翻转，深色卡上扫不出就白分享）',
+    qrRect.fill === '#FFFFFF');
+  isTrue('K4 ' + s + '：码本体 = QR_SIZE（托底内静区 ≥ 10px）',
+    L.ops.filter(o => o.qr && o.t === 'image')[0].w === QR.SIZE
+    && (qrRect.w - QR.SIZE) / 2 >= 10);
+});
+
+// 假 ctx：只记录调用 —— draw() 的翻译层必须在这里被真跑一遍，而不是只对 layout 想当然
+function mkCtx() {
+  const calls = [];
+  const rec = (name, args) => calls.push({ name: name, args: args });
+  return {
+    calls: calls,
+    fills: calls.filter(c => c.name === 'fill'),
+    clearRect: () => {}, save: () => {}, restore: () => {}, translate: () => {}, scale: () => {},
+    beginPath: () => {}, closePath: () => {}, moveTo: () => {}, lineTo: () => {}, arc: () => {}, arcTo: () => {},
+    quadraticCurveTo: () => {}, bezierCurveTo: () => {},
+    stroke: () => rec('stroke'), fill: () => rec('fill'),
+    fillRect: () => rec('fillRect'),
+    fillText: (s, x, y) => rec('fillText', [String(s), x, y]),
+    drawImage: (img, x, y, w, h) => rec('drawImage', [img, x, y, w, h]),
+    fillStyle: '', strokeStyle: '', lineWidth: 0, font: '', textAlign: '', textBaseline: ''
+  };
+}
+const K_MODEL = shareCard.buildModel({ log: DEMO.today, logsDesc: DEMO.LOGS, idx: 0, opts: { style: 'light' } });
+const K_LAYOUT = shareCard.layout(K_MODEL);
+const K_QR = K_LAYOUT.ops.filter(o => o.qr && o.t === 'rect')[0];
+const ctxNo = mkCtx();
+shareCard.draw(ctxNo, K_MODEL);                       // 无码图
+const ctxYes = mkCtx();
+shareCard.draw(ctxYes, K_MODEL, { fake: 'img' });     // 有码图
+// K5：无图时 qr 托底 rect 整体跳过 → fill 次数恰比有图少 1；且一次 drawImage 都不能有
+// （把 undefined 当图传给 canvas，真机上是一张「缺失了码」的卡，比空框更糟）
+eq('K5 有码图才画白托（无图时 fill 次数恰比有图少 1 次）',
+  ctxNo.calls.filter(c => c.name === 'fill').length + 1,
+  ctxYes.calls.filter(c => c.name === 'fill').length);
+isFalse('K5 无码图：一次 drawImage 都没有（不把 undefined 传给 canvas）',
+  ctxNo.calls.some(c => c.name === 'drawImage'));
+// K6：有图时 drawImage 恰好一次，且完整落在码槽内（含静区）
+const K_DRAW = ctxYes.calls.filter(c => c.name === 'drawImage');
+isTrue('K6 有码图：drawImage 恰好一次', K_DRAW.length === 1);
+isTrue('K6 drawImage 落在码槽内（x/y 有 ≥10px 静区，宽高 = QR_SIZE）',
+  K_DRAW.length === 1 && K_DRAW[0].args[1] >= K_QR.x + 9.9 && K_DRAW[0].args[1] + QR.SIZE <= K_QR.x + K_QR.w - 9.9
+  && K_DRAW[0].args[2] >= K_QR.y + 9.9 && K_DRAW[0].args[3] === QR.SIZE);
+
+// K7 校准：判据不能恒绿 —— 把码槽硬拖到文字区，qrFootOk 必须报不相交
+const badL = shareCard.layout(K_MODEL);
+badL.ops.filter(o => o.qr).forEach(o => { o.x = shareCard.PAGE_PAD; }); // 与页脚文字同一起点 → 必然重叠
+isFalse('K7 校准：码槽拖进文字区 → qrFootOk 变假（尺子真的看得见越界）', qrFootOk(badL, PALETTES.light));
+const badL2 = shareCard.layout(K_MODEL);
+badL2.ops.filter(o => o.qr && o.t === 'rect')[0].fill = '#F7F7F5';
+isFalse('K7 校准：托底改成非白 → K3 判据会变红', badL2.ops.filter(o => o.qr && o.t === 'rect')[0].fill === '#FFFFFF');
+
+// K8 静态锚点：资源路径与「人工放置」约定写进源码（不是隐式约定）
+isTrue('K8 码资源路径指向 /static/minicode.png（后台下载后放入 static/）',
+  /\/static\/minicode\.png/.test(readCode('utils/shareCard.js')));
+isTrue('K8 渲染链路先加载码再绘制（loadMinicode 在 draw 之前）',
+  /loadMinicode\(canvas\)[\s\S]{0,200}shareCard\.draw\(ctx, model, img\)/.test(readCode('components/training-review/training-review.js')));
+
+
 console.log('\n--------------------------------------------------------');
 console.log('share-card: pass=' + pass + '  fail=' + fail);
 if (fail) { console.log('存在失败断言'); process.exit(1); }
 console.log('全部通过 \u2713');
+})();

@@ -57,6 +57,18 @@ const SEC_H = 48;                          // 动作卡小标题行高
 const BRAND = '衡砺健身记录';               // 与 app.json navigationBarTitleText 一致
 const SLOGAN = '记录每一次进步';
 
+/* ================= T2：小程序码（固定码，方案 A） =================
+   位置口径（1.1 设计文档 + 样本设计稿拍板 2026-10-21）：
+   页脚改为「左品牌两行 + 右白底圆角码托」——码恒在卡片右下角、不与任何文字
+   内容区抢宽，深浅两主题下托底都是纯白底保证可扫。只叠图，不动数据（禁重算口径不变）。
+   ⚠️ 资源需人工放置：从微信后台下载的小程序码图 → static/minicode.png。
+      缺失时 loadMinicode() 返回 null，卡片照常出（页脚码槽留白）——
+      「卡能出」永远优先于「卡上有码」，绝不让缺图毁掉整个分享。 */
+const MINICODE_PATH = '/static/minicode.png';
+const QR_SIZE = 112;                        // 码本体
+const QR_BOX = 132;                         // 白底托底（码四周静区 ≥10px）
+const QR_GAP = 24;                          // 托底与品牌文字的最小间距
+
 /* ================= 调色板 =================
    每套调色板里的每一个「字色 × 底色」组合都由守卫 [A] 逐个验对比度；
    加新色对一定要同时加进守卫，否则就是给自己留了一个隐形文字的口子。 */
@@ -598,11 +610,18 @@ function layout(m) {
     y += PB_H;
   }
 
-  /* ---------- 页脚 ---------- */
+  /* ---------- 页脚（T2：左品牌两行 + 右小程序码托） ---------- */
   y += 20;
+  // 码托：白底圆角，恒在卡片内容区右下角。无码图时 draw() 会跳过这两个 op
+  // （留白不画空框）——ops 上的 qr 标记就是给 draw() 与守卫用的「码槽」指纹。
+  const qrX = CARD_X + CARD_W_IN - QR_BOX;
+  // 托底边框刻意不走 palette：白托在浅/深两种卡上都要可见且不抢眼，固定一档中性灰
+  ops.push({ t: 'rect', qr: true, x: qrX, y: y, w: QR_BOX, h: QR_BOX, r: 20, fill: '#FFFFFF', stroke: '#D9D9D5', lw: 2 });
+  ops.push({ t: 'image', qr: true, x: qrX + (QR_BOX - QR_SIZE) / 2, y: y + (QR_BOX - QR_SIZE) / 2, w: QR_SIZE, h: QR_SIZE });
+  // 品牌两行：只占码托左侧（QR_GAP 静区），不再右对齐铺满，避免长文案逼近码托
   ops.push({ t: 'text', s: BRAND, x: CARD_X, y: y + 12, size: FS.foot, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.bg });
-  ops.push({ t: 'text', s: SLOGAN, x: CARD_X + CARD_W_IN, y: y + 12, size: FS.footSub, weight: 600, color: pal.sub, align: 'right', baseline: 'middle', bg: pal.bg });
-  y += 32 + PAGE_PAD;
+  ops.push({ t: 'text', s: SLOGAN, x: CARD_X, y: y + 44, size: FS.footSub, weight: 600, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.bg });
+  y += Math.max(QR_BOX, 56) + PAGE_PAD;
 
   return { w: W, h: y, ops, palette: pal.key };
 }
@@ -633,7 +652,7 @@ function roundRect(ctx, x, y, w, h, r) {
 // / fill / stroke / fillText / save / restore / translate / scale
 // 与 fillStyle / strokeStyle / lineWidth / font / textAlign / textBaseline。
 // 因此守卫可以用一个「只记录调用的假 ctx」把它跑完，验证真的产出了图元。
-function draw(ctx, m) {
+function draw(ctx, m, minicodeImg) {
   const L = layout(m);
   const pal = paletteOf(m);
   ctx.clearRect(0, 0, L.w, L.h);
@@ -656,10 +675,15 @@ function draw(ctx, m) {
       bodymap.drawShapes(ctx, shapes);
       ctx.restore();
     } else if (op.t === 'rect') {
+      // 码槽只在有码图时画：没图还画个白框，就是给用户一个「点了扫不出」的空洞
+      if (op.qr && !minicodeImg) return;
       ctx.beginPath();
       roundRect(ctx, op.x, op.y, op.w, op.h, op.r);
       if (op.fill) { ctx.fillStyle = op.fill; ctx.fill(); }
       if (op.stroke) { ctx.strokeStyle = op.stroke; ctx.lineWidth = op.lw || 1; ctx.stroke(); }
+    } else if (op.t === 'image') {
+      if (op.qr && !minicodeImg) return;
+      ctx.drawImage(minicodeImg, op.x, op.y, op.w, op.h);
     } else if (op.t === 'circle') {
       ctx.beginPath();
       ctx.arc(op.cx, op.cy, op.r, 0, Math.PI * 2);
@@ -683,10 +707,24 @@ function draw(ctx, m) {
   return L;
 }
 
+// T2 小程序码加载：wx canvas 2d 的图片必须由 canvas.createImage() 造（包内路径可直接 src）。
+// 失败一律 resolve(null)——调用方照常出卡，只是页脚码槽留白（见常量区注释）。
+function loadMinicode(canvas) {
+  return new Promise(resolve => {
+    try {
+      const img = canvas.createImage();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = MINICODE_PATH;
+    } catch (e) { resolve(null); }
+  });
+}
+
 module.exports = {
   CARD_W, PAGE_PAD, CARD_PAD, CARD_W_IN, INNER_X, INNER_W, CARD_R,
   MAX_ROWS, ROW_H, MAX_CAPS, MAX_LABELS, FIG_W, FIG_H, LAB_W, KPI_W, AGAP,
   BRAND, SLOGAN,
+  MINICODE_PATH, QR_BOX, QR_SIZE, QR_GAP, loadMinicode,
   PALETTE, PALETTES, STYLE_KEYS, FONT_SIZE: FS, LABEL_CN,
   estWidth, fit, fitSize, wrap,
   buildModel, layout, measure, draw

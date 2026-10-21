@@ -578,20 +578,30 @@ Component({
       q.select('#shareCanvas').fields({ node: true, size: true }).exec(res => {
         const canvas = res && res[0] && res[0].node;
         if (!canvas) { this._cardFail('画布初始化失败，请重试'); return; }
+        let ctx;
         try {
-          const ctx = canvas.getContext('2d');
+          ctx = canvas.getContext('2d');
           canvas.width = shareCard.CARD_W;
           canvas.height = shareCard.measure(model);
-          shareCard.draw(ctx, model);
         } catch (e) {
           this._cardFail('生成分享卡失败，请重试');
           return;
         }
-        wx.canvasToTempFilePath({
-          canvas,
-          success: r => this.setData({ shareBusy: false, shareImg: r.tempFilePath }),
-          fail: () => this._cardFail('导出图片失败，请重试')
-        }, this);
+        // T2 小程序码是异步资源（canvas.createImage）：先加载再绘制。
+        // 加载失败 → null → 卡片无码照出（页脚码槽留白），分享链路永不被缺图卡死。
+        shareCard.loadMinicode(canvas).then(img => {
+          try {
+            shareCard.draw(ctx, model, img);
+          } catch (e) {
+            this._cardFail('生成分享卡失败，请重试');
+            return;
+          }
+          wx.canvasToTempFilePath({
+            canvas,
+            success: r => this.setData({ shareBusy: false, shareImg: r.tempFilePath }),
+            fail: () => this._cardFail('导出图片失败，请重试')
+          }, this);
+        });
       });
     },
 

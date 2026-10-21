@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>1.1 · T2 分享卡带小程序码 · 样本设计稿</title>
+<style>
+  /* ============================================================
+     HiLife 1.1 T2「分享卡带小程序码」样本 —— 纯视觉稿，不改代码。
+     版式尺寸逐条取自 utils/shareCard.js 的常量（750px 宽 1:1 用 px）：
+       CARD_W=750 · PAGE_PAD=24 · CARD_PAD=32 · CARD_R=32 · 内容宽=638
+     调色板逐色取自 PALETTES.light / PALETTES.dark（含对比度铁律：
+     亮绿 #C8FF00 底上的字恒 #0A0A0A；次级字 #444，不用 #A0A0A0）。
+     小程序码为圆形放射状示意（实际由固定码图片 drawImage 叠加）。
+     ============================================================ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    padding: 40px 32px 80px; background: #EFEFEA;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    color: #0A0A0A;
+  }
+  .head { max-width: 1620px; margin: 0 auto 30px; }
+  .eyebrow {
+    display: inline-block; font-size: 12px; letter-spacing: 2px; font-weight: 700;
+    color: #4C7300; background: #F2FFD6; border: 1px solid #C8FF00; padding: 4px 10px; border-radius: 999px;
+  }
+  .head h1 { font-size: 26px; margin: 14px 0 8px; letter-spacing: -0.4px; }
+  .head p { font-size: 14px; line-height: 1.8; color: #444; max-width: 1100px; }
+  .head code { background: #fff; border: 1px solid #E1E1DC; border-radius: 4px; padding: 1px 5px; font-size: 13px; }
+
+  .sec { max-width: 1620px; margin: 0 auto 40px; }
+  .sec > h2 { font-size: 18px; margin-bottom: 6px; }
+  .sec > p.note { font-size: 13px; color: #707070; margin-bottom: 18px; line-height: 1.7; }
+  .row { display: flex; gap: 36px; flex-wrap: wrap; align-items: flex-start; }
+
+  .shot .cap { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .shot .cap .tag {
+    display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 600; vertical-align: 1px;
+    padding: 2px 8px; border-radius: 999px; background: #C8FF00; border: 1px solid #C8FF00; color: #0A0A0A;
+  }
+  .shot .cap .tag.plain { background: #fff; border-color: #D9D9D5; color: #707070; }
+  .shot .cap .sub { display: block; font-weight: 400; color: #707070; font-size: 12px; margin-top: 4px; line-height: 1.6; }
+
+  /* ---------- 卡片（750px 宽，按 0.62 缩放展示） ---------- */
+  .zoom { width: 465px; }
+  .zoom > .card { transform: scale(0.62); transform-origin: top left; margin-bottom: -320px; }
+  .card {
+    width: 750px; padding: 24px; font-feature-settings: "tnum";
+    background: #F7F7F5; border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.10);
+  }
+  .card .inner {
+    background: #FFFFFF; border: 2px solid #E8E8E4; border-radius: 32px; padding: 32px; color: #0A0A0A;
+  }
+  .card.dark { background: #0A0A0A; }
+  .card.dark .inner { background: #16181A; border-color: #2A2E33; color: #FFFFFF; }
+  .card.dark .sub, .card.dark .meta { color: #B4B8BD; }
+
+  /* 身份行 */
+  .id-row { display: flex; align-items: center; gap: 20px; }
+  .avatar {
+    width: 80px; height: 80px; border-radius: 50%; background: #C8FF00; color: #0A0A0A;
+    font-size: 40px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  }
+  .id-main { flex: 1; min-width: 0; }
+  .nickname { font-size: 32px; font-weight: 700; }
+  .verdict { font-size: 24px; font-weight: 600; margin-top: 4px; }
+  .streak {
+    text-align: right; font-size: 34px; font-weight: 800; color: #0A0A0A;
+    background: #F1F5E6; border-radius: 16px; padding: 10px 18px;
+  }
+  .card.dark .streak { background: #232A1C; color: #C8FF00; }
+  .streak small { display: block; font-size: 18px; font-weight: 600; color: #4C7300; }
+  .card.dark .streak small { color: #C8FF00; opacity: .75; }
+
+  /* 结论条 */
+  .verdict-bar {
+    margin-top: 24px; background: #F1F5E6; border-radius: 16px; padding: 18px 24px;
+    font-size: 26px; font-weight: 700; color: #0A0A0A; display: flex; align-items: center; gap: 12px;
+  }
+  .card.dark .verdict-bar { background: #23272B; color: #FFFFFF; }
+  .verdict-bar .up { color: #4C7300; }
+  .card.dark .verdict-bar .up { color: #C8FF00; }
+
+  /* 解剖图区（示意） */
+  .anat { display: flex; gap: 12px; margin-top: 28px; align-items: center; }
+  .anat .labcol { width: 62px; display: flex; flex-direction: column; gap: 10px; }
+  .anat .lab {
+    font-size: 19px; font-weight: 700; color: #0A0A0A; background: #F1F1EE;
+    border-radius: 8px; padding: 5px 0; text-align: center; position: relative;
+  }
+  .anat .fig { width: 175px; height: 350px; flex: none; }
+  .anat .kpi { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+  .anat .kpi .kv { background: #F7F7F5; border: 2px solid #E8E8E4; border-radius: 16px; padding: 14px 18px; }
+  .card.dark .anat .kpi .kv { background: #0F1113; border-color: #2A2E33; }
+  .anat .kpi b { font-size: 36px; font-weight: 800; display: block; }
+  .anat .kpi i { font-style: normal; font-size: 18px; font-weight: 600; color: #444; }
+  .card.dark .anat .kpi i { color: #B4B8BD; }
+
+  /* 动作卡 */
+  .acts { margin-top: 28px; border-top: 2px solid #E8E8E4; padding-top: 24px; }
+  .card.dark .acts { border-top-color: #2A2E33; }
+  .acts .sec-tit { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  .acts .sec-tit b { font-size: 26px; font-weight: 800; }
+  .acts .sec-tit span { font-size: 20px; font-weight: 600; color: #444; }
+  .card.dark .acts .sec-tit span { color: #B4B8BD; }
+  .act-row { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 2px solid #F1F1EE; }
+  .card.dark .act-row { border-bottom-color: #23272B; }
+  .act-row:last-child { border-bottom: none; }
+  .act-name { font-size: 28px; font-weight: 700; }
+  .act-caps { display: flex; gap: 10px; margin-top: 8px; }
+  .act-caps span {
+    font-size: 20px; font-weight: 700; color: #0A0A0A; background: #F1F1EE;
+    border-radius: 999px; padding: 6px 14px;
+  }
+  .card.dark .act-caps span { background: #23272B; color: #FFFFFF; }
+  .act-meta { font-size: 22px; font-weight: 600; color: #444; white-space: nowrap; }
+  .card.dark .act-meta { color: #B4B8BD; }
+
+  /* ---------- 页脚（T2 改造焦点） ---------- */
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 0 0; }
+  .foot .brand-line { flex: 1; min-width: 0; }
+  .foot .brand { font-size: 24px; font-weight: 800; letter-spacing: 1px; }
+  .foot .slogan { font-size: 20px; font-weight: 600; color: #444; margin-top: 2px; }
+  .card.dark .foot .slogan { color: #B4B8BD; }
+
+  /* 方案 A：白底圆角托底码（推荐） */
+  .qr {
+    flex: none; width: 132px; height: 132px; border-radius: 20px; background: #FFFFFF;
+    border: 2px solid #E8E8E4; display: flex; align-items: center; justify-content: center;
+  }
+  .card.dark .qr { border-color: #E8E8E4; }
+  .qr svg { width: 112px; height: 112px; display: block; }
+  .qr-hint { font-size: 18px; font-weight: 600; color: #444; margin-top: 6px; text-align: right; }
+  .card.dark .qr-hint { color: #B4B8BD; }
+
+  /* 方案 B：亮绿横条码 */
+  .foot-b {
+    margin-top: 24px; background: #C8FF00; border-radius: 20px; padding: 20px 28px;
+    display: flex; align-items: center; gap: 24px; color: #0A0A0A;
+  }
+  .foot-b .bl { flex: 1; min-width: 0; }
+  .foot-b .brand { font-size: 26px; font-weight: 800; }
+  .foot-b .slogan { font-size: 20px; font-weight: 700; margin-top: 4px; color: #3D5100; }
+  .foot-b .qr { width: 120px; height: 120px; border: none; }
+  .foot-b .qr svg { width: 104px; height: 104px; }
+
+  /* 方案 C：右上角角标码 */
+  .corner-wrap { position: relative; }
+  .corner-qr {
+    position: absolute; top: 24px; right: 24px; width: 96px; height: 96px;
+    background: #FFFFFF; border: 2px solid #E8E8E4; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center; z-index: 2;
+  }
+  .corner-qr svg { width: 80px; height: 80px; }
+
+  /* 标注 */
+  .anno { font-size: 13px; color: #707070; line-height: 1.8; margin-top: 14px; max-width: 465px; }
+  .anno b { color: #0A0A0A; }
+  .anno .ok { color: #4C7300; font-weight: 700; }
+  .anno .no { color: #C4363B; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="eyebrow">1.1 · T2 · 分享卡带小程序码</span>
+  <h1>分享卡带小程序码 · 样本设计稿</h1>
+  <p>版式逐条取自 <code>utils/shareCard.js</code> 现行常量（750px 宽 / 页边 24 / 卡内边 32 / 圆角 32），只做「叠码」一件事——
+  数据与结论照旧由 <code>trainingStats.js</code> 单源提供，<b>分享卡禁重算口径不变</b>。码 = 现有固定小程序码图片，生成时 <code>drawImage</code> 叠加，白底圆角托底，零服务端成本。
+  下图小程序码为<b>圆形放射状示意</b>，实际以固定码资源为准。数据均为虚构示例。</p>
+</div>
+
+<!-- ============ 方案 A（推荐） ============ -->
+<div class="sec">
+  <h2>方案 A · 页脚右下角，白底圆角托底（推荐）</h2>
+  <p class="note">页脚从单行改为「左品牌两行 + 右托底码」。码恒在卡片白底区右下角，<b>不与任何关键字段同行</b>；深浅两套调色板下码托都是纯白底，保证可扫。</p>
+  <div class="row">
+    <div class="shot">
+      <div class="cap">浅色 <span class="tag">方案 A · 推荐</span>
+        <span class="sub">码托 132×132（码 112）· 右下角对齐页边 24 · 与品牌行间距 ≥ 24</span></div>
+      <div class="zoom"><div class="card">
+        <div class="inner">
+          <div class="id-row">
+            <div class="avatar">李</div>
+            <div class="id-main">
+              <div class="nickname">李明</div>
+              <div class="verdict verdict-text">胸 + 三头 · 中高强度</div>
+            </div>
+            <div class="streak">12<small>连续天数</small></div>
+          </div>
+          <div class="verdict-bar">训练量 <span class="up">↑ 8%</span> 较近三场同类</div>
+          <div class="anat">
+            <div class="labcol"><div class="lab">胸</div><div class="lab">三头</div></div>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#E2E6EA" stroke="#D2D8DF" stroke-width="2"/>
+              <rect x="30" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="53" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="20" y="70" width="12" height="36" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#E2E6EA" stroke="#D2D8DF" stroke-width="2"/>
+              <rect x="32" y="30" width="36" height="26" rx="9" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="22" y="70" width="12" height="34" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="66" y="70" width="12" height="34" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <div class="kpi">
+              <div class="kv"><b>3,860</b><i>容量 kg</i></div>
+              <div class="kv"><b>32:40</b><i>时长 min</i></div>
+              <div class="kv"><b>4</b><i>动作</i></div>
+            </div>
+          </div>
+          <div class="acts">
+            <div class="sec-tit"><b>动作明细</b><span>逐组 RPE 已记录</span></div>
+            <div class="act-row">
+              <div><div class="act-name">杠铃卧推</div><div class="act-caps"><span>60kg×8</span><span>60kg×8</span><span>60kg×7</span></div></div>
+              <div class="act-meta">4 组 · 720kg</div>
+            </div>
+            <div class="act-row">
+              <div><div class="act-name">上斜哑铃卧推</div><div class="act-caps"><span>22.5kg×10</span><span>22.5kg×9</span></div></div>
+              <div class="act-meta">3 组 · 630kg</div>
+            </div>
+            <div class="act-row">
+              <div><div class="act-name">绳索下压</div><div class="act-caps"><span>35kg×12</span><span>35kg×12</span></div></div>
+              <div class="act-meta">3 组 · 1,260kg</div>
+            </div>
+          </div>
+          <div class="foot">
+            <div class="brand-line">
+              <div class="brand">衡砺健身记录</div>
+              <div class="slogan">记录每一次进步</div>
+            </div>
+            <div>
+              <div class="qr">
+                <!-- 圆形放射小程序码示意 -->
+                <svg viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="47" fill="none" stroke="#0A0A0A" stroke-width="3"/>
+                  <g stroke="#0A0A0A" stroke-width="2.4" fill="none">
+                    <path d="M50 14 A36 36 0 0 1 82 34"/><path d="M86 50 A36 36 0 0 1 66 82"/>
+                    <path d="M50 86 A36 36 0 0 1 18 66"/><path d="M14 50 A36 36 0 0 1 34 18"/>
+                    <path d="M50 24 A26 26 0 0 1 72 38"/><path d="M76 50 A26 26 0 0 1 62 72"/>
+                    <path d="M50 76 A26 26 0 0 1 28 62"/><path d="M24 50 A26 26 0 0 1 38 28"/>
+                  </g>
+                  <circle cx="50" cy="50" r="15" fill="#C8FF00"/>
+                  <circle cx="50" cy="50" r="15" fill="none" stroke="#0A0A0A" stroke-width="2.4"/>
+                  <rect x="43" y="43" width="14" height="14" rx="3" fill="#0A0A0A"/>
+                </svg>
+              </div>
+              <div class="qr-hint">扫码 · 记一次练</div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="anno"><b class="ok">✓</b> 页脚加高约 108px，卡片总高仍以内容自适应；
+        <b class="ok">✓</b> 码不与品牌行抢宽（brand-line flex:1 自动收缩，长昵称截断不影响码）；
+        <b class="ok">✓</b> 「扫码 · 记一次练」提示可留可删（删则纯码）。</div>
+    </div>
+
+    <div class="shot">
+      <div class="cap">深色 <span class="tag plain">同一布局</span>
+        <span class="sub">码托仍为纯白底 —— 码的可扫性与卡片主题无关</span></div>
+      <div class="zoom"><div class="card dark">
+        <div class="inner">
+          <div class="id-row">
+            <div class="avatar">李</div>
+            <div class="id-main">
+              <div class="nickname">李明</div>
+              <div class="verdict">胸 + 三头 · 中高强度</div>
+            </div>
+            <div class="streak">12<small>连续天数</small></div>
+          </div>
+          <div class="verdict-bar">训练量 <span class="up">↑ 8%</span> 较近三场同类</div>
+          <div class="anat">
+            <div class="labcol"><div class="lab">胸</div><div class="lab">三头</div></div>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#2A2F34" stroke="#3E454C" stroke-width="2"/>
+              <rect x="30" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="53" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="20" y="70" width="12" height="36" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#2A2F34" stroke="#3E454C" stroke-width="2"/>
+              <rect x="32" y="30" width="36" height="26" rx="9" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="22" y="70" width="12" height="34" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="66" y="70" width="12" height="34" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <div class="kpi">
+              <div class="kv"><b>3,860</b><i>容量 kg</i></div>
+              <div class="kv"><b>32:40</b><i>时长 min</i></div>
+              <div class="kv"><b>4</b><i>动作</i></div>
+            </div>
+          </div>
+          <div class="acts">
+            <div class="sec-tit"><b>动作明细</b><span>逐组 RPE 已记录</span></div>
+            <div class="act-row">
+              <div><div class="act-name">杠铃卧推</div><div class="act-caps"><span>60kg×8</span><span>60kg×8</span><span>60kg×7</span></div></div>
+              <div class="act-meta">4 组 · 720kg</div>
+            </div>
+            <div class="act-row">
+              <div><div class="act-name">上斜哑铃卧推</div><div class="act-caps"><span>22.5kg×10</span><span>22.5kg×9</span></div></div>
+              <div class="act-meta">3 组 · 630kg</div>
+            </div>
+            <div class="act-row">
+              <div><div class="act-name">绳索下压</div><div class="act-caps"><span>35kg×12</span><span>35kg×12</span></div></div>
+              <div class="act-meta">3 组 · 1,260kg</div>
+            </div>
+          </div>
+          <div class="foot">
+            <div class="brand-line">
+              <div class="brand">衡砺健身记录</div>
+              <div class="slogan">记录每一次进步</div>
+            </div>
+            <div>
+              <div class="qr">
+                <svg viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="47" fill="none" stroke="#0A0A0A" stroke-width="3"/>
+                  <g stroke="#0A0A0A" stroke-width="2.4" fill="none">
+                    <path d="M50 14 A36 36 0 0 1 82 34"/><path d="M86 50 A36 36 0 0 1 66 82"/>
+                    <path d="M50 86 A36 36 0 0 1 18 66"/><path d="M14 50 A36 36 0 0 1 34 18"/>
+                    <path d="M50 24 A26 26 0 0 1 72 38"/><path d="M76 50 A26 26 0 0 1 62 72"/>
+                    <path d="M50 76 A26 26 0 0 1 28 62"/><path d="M24 50 A26 26 0 0 1 38 28"/>
+                  </g>
+                  <circle cx="50" cy="50" r="15" fill="#C8FF00"/>
+                  <circle cx="50" cy="50" r="15" fill="none" stroke="#0A0A0A" stroke-width="2.4"/>
+                  <rect x="43" y="43" width="14" height="14" rx="3" fill="#0A0A0A"/>
+                </svg>
+              </div>
+              <div class="qr-hint">扫码 · 记一次练</div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="anno"><b class="ok">✓</b> 深色卡（<code>shareStyle:'dark'</code>）下码托同样为白底，
+        长按识别不受深底影响——这正是「白底托底」要求的原因。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 方案 B / C ============ -->
+<div class="sec">
+  <h2>备选方案（供比选）</h2>
+  <p class="note">B 更「广告位」，C 更省高度——但各有代价，见标注。</p>
+  <div class="row">
+    <div class="shot">
+      <div class="cap">方案 B · 亮绿横条码 <span class="tag plain">备选</span>
+        <span class="sub">页脚整体换成 --primary 横条，码白托内嵌右侧</span></div>
+      <div class="zoom"><div class="card">
+        <div class="inner" style="padding-bottom:24px">
+          <div class="id-row">
+            <div class="avatar">李</div>
+            <div class="id-main">
+              <div class="nickname">李明</div>
+              <div class="verdict">胸 + 三头 · 中高强度</div>
+            </div>
+            <div class="streak">12<small>连续天数</small></div>
+          </div>
+          <div class="verdict-bar">训练量 <span class="up">↑ 8%</span> 较近三场同类</div>
+          <div class="anat">
+            <div class="labcol"><div class="lab">胸</div><div class="lab">三头</div></div>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#E2E6EA" stroke="#D2D8DF" stroke-width="2"/>
+              <rect x="30" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="53" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#E2E6EA" stroke="#D2D8DF" stroke-width="2"/>
+              <rect x="32" y="30" width="36" height="26" rx="9" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="22" y="70" width="12" height="34" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <div class="kpi">
+              <div class="kv"><b>3,860</b><i>容量 kg</i></div>
+              <div class="kv"><b>32:40</b><i>时长 min</i></div>
+            </div>
+          </div>
+          <div class="acts">
+            <div class="sec-tit"><b>动作明细</b><span>逐组 RPE 已记录</span></div>
+            <div class="act-row">
+              <div><div class="act-name">杠铃卧推</div><div class="act-caps"><span>60kg×8</span><span>60kg×8</span><span>60kg×7</span></div></div>
+              <div class="act-meta">4 组 · 720kg</div>
+            </div>
+            <div class="act-row">
+              <div><div class="act-name">绳索下压</div><div class="act-caps"><span>35kg×12</span><span>35kg×12</span></div></div>
+              <div class="act-meta">3 组 · 1,260kg</div>
+            </div>
+          </div>
+          <div class="foot-b">
+            <div class="bl">
+              <div class="brand">衡砺健身记录</div>
+              <div class="slogan">记录每一次进步 · 扫码记一次练</div>
+            </div>
+            <div class="qr">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="47" fill="none" stroke="#0A0A0A" stroke-width="3"/>
+                <g stroke="#0A0A0A" stroke-width="2.4" fill="none">
+                  <path d="M50 14 A36 36 0 0 1 82 34"/><path d="M86 50 A36 36 0 0 1 66 82"/>
+                  <path d="M50 86 A36 36 0 0 1 18 66"/><path d="M14 50 A36 36 0 0 1 34 18"/>
+                  <path d="M50 24 A26 26 0 0 1 72 38"/><path d="M76 50 A26 26 0 0 1 62 72"/>
+                  <path d="M50 76 A26 26 0 0 1 28 62"/><path d="M24 50 A26 26 0 0 1 38 28"/>
+                </g>
+                <circle cx="50" cy="50" r="15" fill="#FFFFFF"/>
+                <circle cx="50" cy="50" r="15" fill="none" stroke="#0A0A0A" stroke-width="2.4"/>
+                <rect x="43" y="43" width="14" height="14" rx="3" fill="#0A0A0A"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="anno"><b class="ok">＋</b> 品牌曝光最强、裂变感最高；
+        <b class="no">－</b> 亮绿大色块改变现有卡片的克制版式，深色卡里也突兀；页脚加高更多（约 160px）。</div>
+    </div>
+
+    <div class="shot">
+      <div class="cap">方案 C · 右上角角标码 <span class="tag plain">备选</span>
+        <span class="sub">码叠在身份行右侧、连续天数上方</span></div>
+      <div class="zoom"><div class="card">
+        <div class="inner corner-wrap" style="padding-bottom:24px">
+          <div class="corner-qr">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="47" fill="none" stroke="#0A0A0A" stroke-width="3"/>
+              <g stroke="#0A0A0A" stroke-width="2.4" fill="none">
+                <path d="M50 14 A36 36 0 0 1 82 34"/><path d="M86 50 A36 36 0 0 1 66 82"/>
+                <path d="M50 86 A36 36 0 0 1 18 66"/><path d="M14 50 A36 36 0 0 1 34 18"/>
+                <path d="M50 24 A26 26 0 0 1 72 38"/><path d="M76 50 A26 26 0 0 1 62 72"/>
+                <path d="M50 76 A26 26 0 0 1 28 62"/><path d="M24 50 A26 26 0 0 1 38 28"/>
+              </g>
+              <circle cx="50" cy="50" r="15" fill="#C8FF00"/>
+              <circle cx="50" cy="50" r="15" fill="none" stroke="#0A0A0A" stroke-width="2.4"/>
+              <rect x="43" y="43" width="14" height="14" rx="3" fill="#0A0A0A"/>
+            </svg>
+          </div>
+          <div class="id-row" style="padding-right:110px">
+            <div class="avatar">李</div>
+            <div class="id-main">
+              <div class="nickname">李明</div>
+              <div class="verdict">胸 + 三头 · 中高强度</div>
+            </div>
+            <div class="streak">12<small>连续天数</small></div>
+          </div>
+          <div class="verdict-bar">训练量 <span class="up">↑ 8%</span> 较近三场同类</div>
+          <div class="anat">
+            <div class="labcol"><div class="lab">胸</div><div class="lab">三头</div></div>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#E2E6EA" stroke="#D2D8DF" stroke-width="2"/>
+              <rect x="30" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="53" y="38" width="17" height="30" rx="8" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <svg class="fig" viewBox="0 0 100 200">
+              <ellipse cx="50" cy="100" rx="26" ry="88" fill="#E2E6EA" stroke="#D2D8DF" stroke-width="2"/>
+              <rect x="32" y="30" width="36" height="26" rx="9" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+              <rect x="22" y="70" width="12" height="34" rx="6" fill="#C8FF00" stroke="#7CB800" stroke-width="2"/>
+            </svg>
+            <div class="kpi">
+              <div class="kv"><b>3,860</b><i>容量 kg</i></div>
+              <div class="kv"><b>32:40</b><i>时长 min</i></div>
+            </div>
+          </div>
+          <div class="foot">
+            <div class="brand-line">
+              <div class="brand">衡砺健身记录</div>
+              <div class="slogan">记录每一次进步</div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="anno"><b class="ok">＋</b> 页脚零加高；
+        <b class="no">－</b> 与「连续天数」徽章/长昵称抢右上角空间，昵称稍长就得截断；
+        <b class="no">－</b> 码的四周留白不足（码需要 ≥ 2 模块宽静区），扫码可靠性最差。
+        <b>三案对比：推荐 A——不碰任何现有内容区、双主题可扫、页脚增量最小。</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 落地口径 ============ -->
+<div class="sec">
+  <h2>落地口径（实现前对齐，来自 1.1 设计文档 T2）</h2>
+  <p class="note" style="max-width:1100px">
+    ① 固定码（现有压缩版二维码图片）白底圆角托底叠在卡片<b>右下角</b>，生成时 <code>drawImage</code> 叠加——零服务端、零 API 成本；
+    动态带参码（scene 归因）明确不做，留 1.2。<br>
+    ② 「分享卡禁重算」不变：只叠图，不动 <code>trainingStats.js</code> 的任何数字与结论。<br>
+    ③ 校验要求：白底托底在深浅两主题（<code>shareStyle: light/dark</code>）下都可扫；不遮名称/热量等关键字段；
+    守卫 <code>verify-share-card.cjs</code> 需补一条「码矩形不与页脚文字矩形相交」的版式断言；真机对卡片截图长按识别成功。<br>
+    ④ 尺寸建议：托底 132×132px（码 112×112，四周静区 ≥10px）、圆角 20、右边距 = 卡片页边 24；码中心建议离卡底 24+66=90px。
+  </p>
+</div>
+
+</body>
+</html>
