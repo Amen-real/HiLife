@@ -46,7 +46,17 @@ function bmi(w, h) {
 }
 
 /* ===== 「我的」页派生数据用的纯函数（口径与数据页/复盘组件保持一致） ===== */
-const APP_VERSION = '1.0.0';
+// 版本号：正式版以微信后台上传时填的版本为准（getAccountInfoSync），本地常量只在
+// 体验版/开发版兜底（那两种环境该 API 返回空串）。⚠️ 每次提审新版本前必须同步
+// 更新此常量，否则「关于」弹窗在开发/体验环境显示旧版本（曾因忘改一直显示 1.0.0）。
+const APP_VERSION = '1.0.2';
+function appVersion() {
+  try {
+    const v = wx.getAccountInfoSync().miniProgram.version;
+    if (v) return v;
+  } catch (e) { /* 低版本基础库无此 API → 用常量 */ }
+  return APP_VERSION;
+}
 function round1(v) { const n = Number(v); return isFinite(n) ? Math.round(n * 10) / 10 : 0; }
 // 一场训练的名字：归属计划仍在库里就用计划名；否则按动作分类
 // （单一分类取分类名，多分类记「综合训练」）。与 workout 保存时的命名规则一致，
@@ -158,7 +168,7 @@ Page({
     // 我的训练：首行 = 今日训练计划（mode: 'todo' 未完成 / 'done' 今日已完成 / 'empty' 空态）
     train: { show: false, mode: 'empty', tag: '', title: '', meta: '' },
     reminderOn: false,
-    version: APP_VERSION,
+    version: appVersion(),
     showDataMgr: false,
     showExportShare: false,
     exportFilePath: '',
@@ -231,7 +241,7 @@ Page({
   // 「关于我们」：版本 + 署名说明（媒体署名同时在页脚常驻，满足授权可见性要求）
   tapAbout() {
     wx.showModal({
-      title: '衡砺健身记录 v' + APP_VERSION,
+      title: '衡砺健身记录 v' + appVersion(),
       content: '本地优先的健身记录工具：训练 / 体重 / 饮食数据默认只存本机，可导出备份后换机恢复。\n动作演示媒体 © Gym visual · gymvisual.com',
       confirmText: '知道了',
       showCancel: false
