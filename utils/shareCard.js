@@ -641,8 +641,10 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.lineTo(x + rr, y + h);
   ctx.arcTo(x, y + h, x, y + h - rr, rr);
   ctx.lineTo(x, y + rr);
-  ctx.arcTo(x, y + h, x, y + h - rr, rr);
-  ctx.lineTo(x, y + rr);
+  // ⚠️ 左下角 arcTo 只能出现一次。曾在这里把底左角 arcTo 重复了一遍：
+  //    当前点已在左上，重复的 arcTo 会先沿左缘折返下行、再画一个 180° 回转的退化弧 ——
+  //    fill 时零面积看不出来（全卡片都正常），但描边会把异常段照实画出：
+  //    码托（全卡唯一带描边的矩形）左下角便拖出一条竖线（2026-10-30 真机截图实锤）。
   ctx.arcTo(x, y, x + rr, y, rr);
   ctx.closePath();
 }

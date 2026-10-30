@@ -771,6 +771,20 @@ isTrue('F4 动作库是懒加载（出现在函数体内，不在顶层）',
 isTrue('F4 卡片配色镜像自 app.wxss 根 token（改 token 要同步改这里）',
   /--primary/.test(read(SC)) || /#C8FF00/.test(readCode(SC)));
 
+// F4b roundRect 契约：四个圆角各一个 arcTo，且参数列表互不相同。
+// 曾把底左角 arcTo 复制了一遍：fill 时零面积看不出来（卡片全都正常），
+// 但描边会照实画出异常段 —— 码托（全卡唯一带描边的矩形）左下角拖出一条竖线
+//（2026-10-30 真机截图实锤）。锁死「恰 4 个 arcTo + 角点各异」，复制角必红。
+{
+  const m = readCode(SC).match(/function roundRect\(ctx, x, y, w, h, r\) \{[\s\S]*?\n\}/);
+  isTrue('F4b roundRect 存在', !!m);
+  if (m) {
+    const arcs = m[0].match(/ctx\.arcTo\([^)]*\)/g) || [];
+    eq('F4b roundRect 恰 4 个 arcTo（四角各一）', arcs.length, 4);
+    eq('F4b 四角 arcTo 参数互不相同（防复制粘贴角）', new Set(arcs).size, 4);
+  }
+}
+
 isTrue('F5 记录页的 onShareAppMessage 不再是空实现', !/onShareAppMessage\(\)\s*\{\s*\}/.test(readCode('pages/list/list.js')));
 isTrue('F5 记录页给出真实分享路径', has('pages/list/list.js', "path: '/pages/list/list'"));
 isTrue('F5 复盘页也实现了 onShareAppMessage', /onShareAppMessage\(\)\s*\{[\s\S]{0,120}?return\s*\{/.test(readCode('pages/review/review.js')));
