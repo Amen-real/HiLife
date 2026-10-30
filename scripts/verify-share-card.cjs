@@ -1190,6 +1190,81 @@ isTrue('K8 渲染链路先加载码再绘制（loadMinicode 在 draw 之前）',
   /loadMinicode\(canvas\)[\s\S]{0,200}shareCard\.draw\(ctx, model, img\)/.test(readCode('components/training-review/training-review.js')));
 
 
+console.log('\n[W] T3 周报卡（layoutWeekly）—— 几何 / 配色契约 / 页脚同源');
+{
+  // 周报模型 = weeklyReport 输出 + style。这里造一份已知的固定输入（不 require weeklyReport，
+  // 避免守卫间耦合 —— 直接手写字段，与 utils/weeklyReport.js 的输出形状逐字对齐）。
+  const RW = {
+    style: 'light',
+    label: '10.26 – 11.01', monStr: '2026-10-26', sunStr: '2026-11-02', endStr: '2026-11-01',
+    isCurrent: true, sessions: 2, days: 2, durationSec: 3600, durTxt: '1h',
+    vol: 5200, volTxt: '5.2k', kcal: 240,
+    target: 3, fromPlan: false, pct: 67,
+    prev: { sessions: 1, days: 1, vol: 4000 },
+    dSessions: 1, volTrend: 'up', dVolPct: 30,
+    prs: [{ name: '杠铃卧推', w: 90, wTxt: '90', date: '2026-10-28' }],
+    verdict: 'miss', comment: '本周 2 场，还差 1 次达标，剩 3 天', daysLeft: 3, empty: false
+  };
+  const LW = shareCard.layoutWeekly(RW);
+  isTrue('W1 周报卡可出版式', LW.ops.length > 10);
+  // W2 几何：全部 op 落在画布内（rect/text 的 x+y+w/h / line 两端）
+  let oob = 0;
+  LW.ops.forEach(o => {
+    const xs = [];
+    if (o.x !== undefined) xs.push(o.x, (o.x + (o.w || 0)));
+    if (o.x1 !== undefined) xs.push(o.x1, o.x2);
+    const ys = [];
+    if (o.y !== undefined) ys.push(o.y, (o.y + (o.h || 0)));
+    if (o.y1 !== undefined) ys.push(o.y1, o.y2);
+    xs.forEach(v => { if (v < 0 || v > LW.w) oob++; });
+    ys.forEach(v => { if (v < 0 || v > LW.h) oob++; });
+  });
+  eq('W2 全部图元落在画布内', oob, 0);
+  // W3 配色契约：每个 text 的 fg×bg 组合必须来自其调色板中**已验过 AA**的色对
+  const pal = PALETTES.light;
+  const known = new Set([
+    pal.ink + '|' + pal.card, pal.sub + '|' + pal.card,
+    pal.ink + '|' + pal.bg, pal.sub + '|' + pal.bg,
+    pal.brandInk + '|' + pal.brand,
+    pal.upFg + '|' + pal.upBg, pal.downFg + '|' + pal.downBg, pal.flatFg + '|' + pal.flatBg,
+    pal.chipInk + '|' + pal.chipBg
+  ]);
+  const unknown = LW.ops.filter(o => o.t === 'text' && !known.has(o.color + '|' + o.bg));
+  eq('W3 文字色对全部来自已验 AA 的组合', unknown.map(o => o.s), []);
+  // W4 进度条：fill 宽 ≤ track 宽，且二者同 y 同高
+  const track = LW.ops.filter(o => o.t === 'rect' && o.h === 12);
+  eq('W4 进度条 = 轨道 + 填充两段', track.length, 2);
+  if (track.length === 2) {
+    const f = track.find(o => o.fill === pal.brand), t = track.find(o => o.fill === pal.chipBg);
+    isTrue('W4 填充不越轨道', f && t && f.x >= t.x && f.x + f.w <= t.x + t.w + 0.5 && f.y === t.y);
+  }
+  // W5 码槽指纹：qr rect + qr image 各一，几何与场次卡口径一致（右下角、白底）
+  const qrR = LW.ops.filter(o => o.qr && o.t === 'rect');
+  const qrI = LW.ops.filter(o => o.qr && o.t === 'image');
+  eq('W5 码槽 = 白托 rect + image 各一', [qrR.length, qrI.length], [1, 1]);
+  if (qrR.length === 1) {
+    eq('W5 码托白底 + 固定描边', [qrR[0].fill, qrR[0].stroke], ['#FFFFFF', '#D9D9D5']);
+    isTrue('W5 码托贴内容区右缘', Math.abs(qrR[0].x + qrR[0].w - (shareCard.PAGE_PAD + shareCard.CARD_W_IN)) < 0.5);
+  }
+  // W6 空周与深色都能出（鲁棒：空模型 0 高、两套调色板高度一致）
+  const RWd = Object.assign({}, RW, { style: 'dark' });
+  const LWd = shareCard.layoutWeekly(RWd);
+  eq('W6 深浅两套高度一致（版式不随主题变形）', LWd.h, LW.h);
+  eq('W6 空模型 0 高', shareCard.layoutWeekly(null).h, 0);
+  const RWempty = Object.assign({}, RW, { sessions: 0, pct: 0, dSessions: -1, volTrend: '', dVolPct: null, prs: [], verdict: 'idle', comment: '这一周没有训练记录', empty: true, prev: { sessions: 0, days: 0, vol: 0 } });
+  const LWempty = shareCard.layoutWeekly(RWempty);
+  isTrue('W6 空周可出卡（有码托 + 标题）', LWempty.ops.some(o => o.qr) && LWempty.ops.some(o => o.t === 'text' && o.s === '本周周报'));
+  // W7 校准：判据不能恒绿 —— 制造一个画布外图元必须被 W2 抓到
+  const LWbad = shareCard.layoutWeekly(RW);
+  LWbad.ops[1].x = 9999;
+  let oobBad = 0;
+  LWbad.ops.forEach(o => { if (o.x !== undefined && (o.x < 0 || o.x > LWbad.w)) oobBad++; });
+  isFalse('W7 校准：画布外图元能被几何判据抓到', oobBad === 0);
+  // W8 禁重算：layoutWeekly 源码不得出现训练量/时长的再计算（loadOfLog / durationSecOfLog）
+  isFalse('W8 周报卡不重算指标（只消费 weeklyReport 字段）',
+    /loadOfLog|durationSecOfLog|estKcal|weekTargetOf/.test(readCode('utils/shareCard.js').split('function layoutWeekly')[1] || 'x'));
+}
+
 console.log('\n--------------------------------------------------------');
 console.log('share-card: pass=' + pass + '  fail=' + fail);
 if (fail) { console.log('存在失败断言'); process.exit(1); }

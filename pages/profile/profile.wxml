@@ -167,7 +167,7 @@
         <view class="p-chip"><view class="ico ico-dumbbell ico--ink p-chip-i"></view></view>
         <text>我的训练</text>
       </view>
-      <view class="p-head-a" bindtap="goHistory">查看全部<text class="p-ar">›</text></view>
+      <view class="p-head-a" bindtap="goWeekly">本周周报<text class="p-ar">›</text></view>
     </view>
 
     <!-- 首行 = 今日训练计划（口径与首页「今日推荐」同源，见 utils/todayPlan.js）：

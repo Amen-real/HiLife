@@ -1,0 +1,185 @@
+/* pages/weekly/weekly.wxss —— 周报页（浅色 + 荧光绿主题，token 全在 app.wxss） */
+.page { min-height: 100vh; background: var(--n-50); padding-bottom: 60rpx; box-sizing: border-box; }
+
+/* ============== 周切换器 ============== */
+.wk-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12rpx 31rpx 4rpx;
+}
+.wk-nav {
+  width: 64rpx; height: 64rpx; line-height: 60rpx; text-align: center;
+  border-radius: 50%;
+  background: var(--n-100); border: 1rpx solid var(--n-200);
+  font-size: 40rpx; color: var(--n-900);
+}
+.wk-nav.dis { color: var(--n-400); }
+.wk-title { display: flex; align-items: center; gap: 14rpx; }
+.wk-range { font-size: 30rpx; font-weight: 600; color: var(--n-900); }
+.wk-now {
+  font-size: 20rpx; font-weight: 600; color: #0A0A0A;
+  background: var(--primary); border-radius: 999rpx; padding: 4rpx 14rpx;
+}
+
+/* ============== 卡片通用 ============== */
+.wk-body { padding: 8rpx 31rpx 0; display: flex; flex-direction: column; gap: 20rpx; }
+.wk-card {
+  background: var(--card); border-radius: 24rpx;
+  padding: 28rpx; box-shadow: var(--shadow-card);
+}
+.wk-sec-t { font-size: 24rpx; color: var(--text-weak); margin-bottom: 16rpx; }
+
+/* ============== 达成块 ============== */
+.wk-top { display: flex; align-items: flex-end; justify-content: space-between; }
+.wk-big { display: flex; align-items: baseline; }
+.wk-num { font-size: 72rpx; font-weight: 800; color: var(--n-900); line-height: 1; font-variant-numeric: tabular-nums; }
+.wk-den { font-size: 30rpx; font-weight: 600; color: var(--text-weak); margin-left: 6rpx; }
+.wk-verdict {
+  font-size: 22rpx; font-weight: 600; padding: 8rpx 20rpx; border-radius: 999rpx;
+}
+/* 达成档色：达标 = 品牌绿字压 tint；未达标/未开始 = 中性（不引入新的语义色） */
+.wk-verdict.v-hit { color: var(--success-text, #4C7300); background: var(--primary-tint); }
+.wk-verdict.v-miss { color: var(--text-sub); background: var(--n-100); }
+.wk-verdict.v-idle { color: var(--text-sub); background: var(--n-100); }
+.wk-track {
+  height: 12rpx; border-radius: 999rpx; background: var(--n-100);
+  margin: 22rpx 0 18rpx; overflow: hidden;
+}
+.wk-fill { height: 100%; border-radius: 999rpx; background: var(--primary); transition: width .3s ease; }
+.wk-comment { font-size: 26rpx; color: var(--text-sub); line-height: 1.5; }
+
+/* ============== 对比上周 ============== */
+.cmp-grid { display: flex; gap: 20rpx; }
+.cmp-item {
+  flex: 1; min-width: 0;
+  background: var(--n-100); border-radius: 18rpx; padding: 20rpx 22rpx;
+}
+.cmp-v { font-size: 34rpx; font-weight: 800; color: var(--n-900); font-variant-numeric: tabular-nums; }
+.cmp-u { font-size: 20rpx; font-weight: 500; color: var(--text-weak); margin-left: 4rpx; }
+.cmp-k { font-size: 22rpx; color: var(--text-weak); margin-top: 8rpx; }
+.cmp-d { font-size: 22rpx; color: var(--text-weak); margin-top: 6rpx; font-variant-numeric: tabular-nums; }
+.cmp-d.up { color: var(--success-text, #4C7300); }
+.cmp-d.down { color: var(--danger-text); }
+.wk-fine { font-size: 22rpx; color: var(--text-weak); margin-top: 18rpx; }
+
+/* ============== 本周 PR ============== */
+.pr-row {
+  display: flex; align-items: center; gap: 16rpx; padding: 14rpx 0;
+}
+.pr-row + .pr-row { border-top: 1rpx solid var(--n-200); }
+.pr-badge {
+  flex-shrink: 0;
+  font-size: 20rpx; font-weight: 700; color: #0A0A0A;
+  background: var(--primary); border-radius: 10rpx; padding: 6rpx 12rpx;
+}
+.pr-name { flex: 1; min-width: 0; font-size: 26rpx; font-weight: 600; color: var(--n-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-val { font-size: 26rpx; font-weight: 700; color: var(--n-900); font-variant-numeric: tabular-nums; }
+.pr-date { font-size: 20rpx; color: var(--text-weak); font-variant-numeric: tabular-nums; }
+
+/* ============== 本周场次 ============== */
+.row {
+  display: flex; align-items: center; gap: 16rpx; padding: 18rpx 0;
+}
+.row + .row { border-top: 1rpx solid var(--n-200); }
+.row-date { display: flex; align-items: center; gap: 10rpx; flex-shrink: 0; min-width: 170rpx; }
+.rd-main { font-size: 26rpx; font-weight: 600; color: var(--n-900); font-variant-numeric: tabular-nums; }
+.rd-today {
+  font-size: 18rpx; font-weight: 600; color: var(--success-text, #4C7300);
+  background: var(--primary-tint); border-radius: 999rpx; padding: 2rpx 10rpx;
+}
+.row-meta { flex: 1; min-width: 0; font-size: 22rpx; color: var(--text-weak); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-go { width: 28rpx; height: 28rpx; flex-shrink: 0; }
+
+/* ============== 空周 ============== */
+.wk-empty { text-align: center; padding: 56rpx 28rpx; }
+.wk-empty-t { font-size: 28rpx; font-weight: 600; color: var(--n-900); }
+.wk-empty-s { font-size: 24rpx; color: var(--text-weak); margin-top: 10rpx; }
+
+/* 按压态 */
+.press { opacity: 0.7; }
+
+/* ============== 主出口按钮（亮绿实底 + 深字，对比度铁律） ============== */
+.share-btn {
+  margin-top: 6rpx;
+  height: 92rpx; line-height: 92rpx; text-align: center;
+  border-radius: 46rpx;
+  background: var(--primary);
+  font-size: 30rpx; font-weight: 700; color: #0A0A0A;
+}
+
+/* ============== 分享卡弹层 ============== */
+.sh-mask {
+  position: fixed; inset: 0; z-index: 1200;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex; align-items: flex-end;
+}
+.sh-sheet {
+  width: 100%; max-height: 82vh; overflow: hidden;
+  background: var(--card); border-radius: 32rpx 32rpx 0 0;
+  padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+.sh-head { display: flex; align-items: center; gap: 16rpx; flex: 0 0 auto; }
+.sh-title { flex: 1; font-size: 30rpx; font-weight: 700; color: var(--n-900); }
+.sh-style {
+  font-size: 24rpx; font-weight: 600; color: var(--n-700);
+  padding: 8rpx 22rpx; border-radius: 999rpx;
+  background: var(--n-100); border: 1rpx solid var(--n-200);
+}
+.sh-close { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; color: var(--text-weak); font-size: 30rpx; }
+.sh-body {
+  position: relative; margin: 20rpx 0;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 0;
+}
+.sh-canvas { width: 100%; }
+.sh-preview { width: 100%; height: 900rpx; border-radius: 16rpx; }
+.sh-busy {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26rpx; color: var(--text-sub);
+}
+.sh-btns { display: flex; gap: 20rpx; flex: 0 0 auto; }
+.sh-btn {
+  flex: 1; height: 88rpx; line-height: 88rpx; text-align: center;
+  border-radius: 44rpx; font-size: 28rpx; font-weight: 700;
+}
+.sh-btn.ghost { background: var(--n-100); color: var(--n-700); border: 1rpx solid var(--n-200); }
+.sh-btn.primary { background: var(--primary); color: #0A0A0A; }
+
+/* ============================================================
+   深色主题（.page.theme-dark 变量重定义，向下继承自动翻转）
+   ============================================================ */
+.page.theme-dark {
+  --n-950: #FFFFFF;
+  --n-900: #FFFFFF;
+  --n-700: rgba(255,255,255,.70);
+  --n-600: rgba(255,255,255,.55);
+  --n-500: rgba(255,255,255,.42);
+  --n-400: rgba(255,255,255,.32);
+  --n-300: rgba(255,255,255,.22);
+  --n-200: rgba(255,255,255,.10);
+  --n-100: #1E1E1E;
+  --n-50: #0A0A0A;
+  --white: #161616;
+
+  --text: #FFFFFF;
+  --text-sub: rgba(255,255,255,.70);
+  --text-weak: rgba(255,255,255,.45);
+
+  --success: #C8FF00;
+  /* 绿字浅色 #4C7300 压暗底只有 3.8:1 → 深色翻成品牌亮绿（与 plan 页同规矩） */
+  --success-text: #C8FF00;
+  --primary-tint: rgba(200,255,0,.12);
+
+  --card: #161616;
+  --bg: rgba(255,255,255,.06);
+  --bg-muted: #1E1E1E;
+
+  --danger-text: #FF6B70;   /* 深底红字提亮：根值 #C4363B 压暗底 3.9:1 不到 AA */
+
+  --shadow-card: 0 4rpx 16rpx rgba(0,0,0,.35);
+
+  background: var(--n-50);
+  color: var(--text);
+}

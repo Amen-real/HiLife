@@ -81,6 +81,12 @@ Page({
       app.globalData.pendingListTab = '';
       this.setData({ tab: target });
     }
+    // 来自周报页的深链：定位到指定日期的场次（training-review focus-date 既有通道）
+    if (app && app.globalData && app.globalData.pendingListDate) {
+      const d = app.globalData.pendingListDate;
+      app.globalData.pendingListDate = '';
+      if (d) this.setData({ selectedDate: d });
+    }
     this.setData({ todayStr: todayStr() });
     // 默认选中今天；若已选过日期则保持
     const sel = this.data.selectedDate || this.data.todayStr;

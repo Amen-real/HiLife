@@ -1,0 +1,111 @@
+<!-- pages/weekly/weekly.wxml —— 周报页：周切换 / 达成 / 对比上周 / 本周 PR / 场次列表 -->
+<view class="page {{theme}}">
+  <nav-bar title="周报" show-back="{{true}}" />
+
+  <!-- 周切换器：自然周单源（dateRange.weekRangeOffset） -->
+  <view class="wk-bar">
+    <view class="wk-nav" hover-class="press" bindtap="prevWeek" aria-label="上一周">‹</view>
+    <view class="wk-title">
+      <text class="wk-range">{{r.label}}</text>
+      <text class="wk-now" wx:if="{{r.isCurrent}}">本周</text>
+    </view>
+    <view class="wk-nav {{canNext ? '' : 'dis'}}" hover-class="press" bindtap="nextWeek" aria-label="下一周">›</view>
+  </view>
+
+  <view class="wk-body" wx:if="{{r}}">
+    <!-- 达成块：X/Y + 进度条 + 评语（评语由 weeklyReport 按达成档生成，只陈述事实） -->
+    <view class="card wk-card">
+      <view class="wk-top">
+        <view class="wk-big">
+          <text class="wk-num">{{r.sessions}}</text>
+          <text class="wk-den" wx:if="{{r.target > 0}}">/{{r.target}}</text>
+        </view>
+        <view class="wk-verdict v-{{r.verdict}}">
+          {{r.verdict === 'hit' ? '已达标' : (r.verdict === 'miss' ? '未达标' : '未开始')}}
+        </view>
+      </view>
+      <view class="wk-track">
+        <view class="wk-fill" style="width: {{r.pct}}%"></view>
+      </view>
+      <view class="wk-comment">{{r.comment}}</view>
+    </view>
+
+    <!-- 对比上周（场次 ±N；容量 ±% 走 DELTA_SESSION 抑噪；上周为 0 不显示趋势） -->
+    <view class="card wk-card">
+      <view class="wk-sec-t">对比上周</view>
+      <view class="cmp-grid">
+        <view class="cmp-item">
+          <view class="cmp-v">{{r.sessions}}<text class="cmp-u"> 场</text></view>
+          <view class="cmp-k">本周场次</view>
+          <view class="cmp-d {{r.dSessions > 0 ? 'up' : (r.dSessions < 0 ? 'down' : '')}}" wx:if="{{r.prev.sessions > 0}}">
+            {{r.dSessions > 0 ? '↑' : (r.dSessions < 0 ? '↓' : '—')}} {{r.dSessions === 0 ? '持平' : '上周 ' + r.prev.sessions}}
+          </view>
+          <view class="cmp-d" wx:else>上周无记录</view>
+        </view>
+        <view class="cmp-item">
+          <view class="cmp-v">{{r.volTxt}}<text class="cmp-u"> kg</text></view>
+          <view class="cmp-k">本周容量</view>
+          <view class="cmp-d {{r.volTrend === 'up' ? 'up' : (r.volTrend === 'down' ? 'down' : '')}}" wx:if="{{r.volTrend}}">
+            {{r.volTrend === 'up' ? '↑' : (r.volTrend === 'down' ? '↓' : '—')}} {{r.volTrend === 'flat' ? '与上周相当' : (r.dVolPct > 0 ? '+' : '') + r.dVolPct + '%'}}
+          </view>
+          <view class="cmp-d" wx:else>上周无记录</view>
+        </view>
+      </view>
+      <view class="wk-fine">练 {{r.days}} 天 · {{r.durTxt}}<text wx:if="{{r.kcal > 0}}"> · 约 {{r.kcal}} 千卡（估算）</text></view>
+    </view>
+
+    <!-- 本周 PR（weeklyReport：严格大于此前历史最高；首练不标） -->
+    <view class="card wk-card" wx:if="{{r.prs.length}}">
+      <view class="wk-sec-t">本周亮点</view>
+      <view class="pr-row" wx:for="{{r.prs}}" wx:key="name">
+        <view class="pr-badge">PR</view>
+        <text class="pr-name">{{item.name}}</text>
+        <text class="pr-val">{{item.wTxt}} kg</text>
+        <text class="pr-date">{{item.date}}</text>
+      </view>
+    </view>
+
+    <!-- 本周场次：点击 → 记录 tab 复盘并定位该天 -->
+    <view class="card wk-card" wx:if="{{rows.length}}">
+      <view class="wk-sec-t">本周场次</view>
+      <view class="row" wx:for="{{rows}}" wx:key="date" hover-class="press"
+            bindtap="goReview" data-date="{{item.date}}" aria-label="查看 {{item.date}} 的复盘">
+        <view class="row-date">
+          <text class="rd-main">{{item.dateTxt}}</text>
+          <text class="rd-today" wx:if="{{item.isToday}}">今天</text>
+        </view>
+        <view class="row-meta">{{item.acts}} 个动作 · {{item.durTxt}} · {{item.volTxt}}kg</view>
+        <view class="ico ico-arrowright ico--ink row-go"></view>
+      </view>
+    </view>
+
+    <!-- 空周：给出口（回「我的」计划行），不留死区块 -->
+    <view class="card wk-card wk-empty" wx:if="{{r.empty}}">
+      <view class="wk-empty-t">这一周没有训练记录</view>
+      <view class="wk-empty-s">去「我的」页安排一场训练吧</view>
+    </view>
+
+    <!-- 主出口：生成周报分享卡（shareCard 周报版式，含小程序码） -->
+    <view class="share-btn" hover-class="press" bindtap="genShare">生成周报分享卡</view>
+  </view>
+
+  <!-- ============== 分享卡弹层（画布 → 预览 → 分享/保存） ============== -->
+  <view class="sh-mask" wx:if="{{shareShow}}" bindtap="closeShare" catchtouchmove="noop">
+    <view class="sh-sheet" catchtap="noop">
+      <view class="sh-head">
+        <text class="sh-title">周报分享卡</text>
+        <view class="sh-style" hover-class="press" bindtap="cycleShareStyle">{{shareStyleName}}</view>
+        <view class="sh-close" bindtap="closeShare">✕</view>
+      </view>
+      <view class="sh-body">
+        <canvas id="weeklyShareCanvas" type="2d" class="sh-canvas" style="height: {{canvasH}}rpx" wx:if="{{!shareImg}}"></canvas>
+        <image wx:else class="sh-preview" src="{{shareImg}}" mode="aspectFit" show-menu-by-longpress />
+        <view class="sh-busy" wx:if="{{shareBusy}}">生成中…</view>
+      </view>
+      <view class="sh-btns">
+        <view class="sh-btn ghost" hover-class="press" bindtap="saveShareCard">保存到相册</view>
+        <view class="sh-btn primary" hover-class="press" bindtap="shareShareCard">分享给好友</view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "周报",
+  "usingComponents": {
+    "nav-bar": "/components/nav-bar/nav-bar"
+  },
+  "navigationStyle": "custom"
+}

@@ -611,9 +611,16 @@ function layout(m) {
   }
 
   /* ---------- 页脚（T2：左品牌两行 + 右小程序码托） ---------- */
+  y = pushFooter(ops, pal, y);
+
+  return { w: W, h: y, ops, palette: pal.key };
+}
+
+// 页脚（场次卡与周报卡共用）：左品牌两行 + 右白底圆角码托。
+// 码托：白底圆角，恒在卡片内容区右下角。无码图时 draw 会跳过这两个 op
+//（留白不画空框）——ops 上的 qr 标记就是给 draw 与守卫用的「码槽」指纹。
+function pushFooter(ops, pal, y) {
   y += 20;
-  // 码托：白底圆角，恒在卡片内容区右下角。无码图时 draw() 会跳过这两个 op
-  // （留白不画空框）——ops 上的 qr 标记就是给 draw() 与守卫用的「码槽」指纹。
   const qrX = CARD_X + CARD_W_IN - QR_BOX;
   // 托底边框刻意不走 palette：白托在浅/深两种卡上都要可见且不抢眼，固定一档中性灰
   ops.push({ t: 'rect', qr: true, x: qrX, y: y, w: QR_BOX, h: QR_BOX, r: 20, fill: '#FFFFFF', stroke: '#D9D9D5', lw: 2 });
@@ -621,13 +628,130 @@ function layout(m) {
   // 品牌两行：只占码托左侧（QR_GAP 静区），不再右对齐铺满，避免长文案逼近码托
   ops.push({ t: 'text', s: BRAND, x: CARD_X, y: y + 12, size: FS.foot, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.bg });
   ops.push({ t: 'text', s: SLOGAN, x: CARD_X, y: y + 44, size: FS.footSub, weight: 600, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.bg });
-  y += Math.max(QR_BOX, 56) + PAGE_PAD;
-
-  return { w: W, h: y, ops, palette: pal.key };
+  return y + Math.max(QR_BOX, 56) + PAGE_PAD;
 }
 
 // 卡片总高（内容自适应：有没有结论条/纪录条、动作行数、是否隐藏训练内容，高度都不一样）
 function measure(m) { return layout(m).h; }
+
+/* ================= 周报卡版式（T3，纯函数 → ops 列表） =================
+   输入 = utils/weeklyReport.js 的输出 + { style }（样式键与场次卡同一套 PALETTES，
+   色对已由守卫 [A] 全量验过 AA；不引入任何新颜色）。数据**不许**在这里重算 ——
+   「分享卡禁重算」口径对周报卡同样生效。 */
+function layoutWeekly(rw) {
+  if (!rw) return { w: CARD_W, h: 0, ops: [], palette: PALETTE.key };
+  const ops = [];
+  const pal = paletteOf(rw);
+  const W = CARD_W;
+  let y = PAGE_PAD;
+
+  // ---- 高度预计算（与下方逐段落点严格一致，改一处必改另一处）----
+  const cLines = rw.comment ? wrap(rw.comment, FS.verdict, INNER_W - 48, 2) : [];
+  // A 卡：pad + 标题行 + 大数字行 + 进度条 + 评语 + 细行 + pad
+  const aH = CARD_PAD + SEC_H + 20 + 60 + 14 + 12 + 22 + cLines.length * 32 + 10 + 34 + CARD_PAD;
+  // B 卡：pad + 标题 + 行区（上周有记录=2 行 56 + 分隔；无=单行 40）
+  const prevEmpty = !(rw.prev && rw.prev.sessions > 0);
+  const bH = CARD_PAD + SEC_H + (prevEmpty ? 40 : 56 * 2 + 1) + CARD_PAD;
+  // C 卡：PR 最多列 3 项
+  const prs = (rw.prs || []).slice(0, 3);
+  const prHidden = (rw.prs || []).length - prs.length;
+  const hasC = prs.length > 0;
+  const cH = hasC ? (CARD_PAD + SEC_H + prs.length * 48 + (prHidden > 0 ? 40 : 0) + CARD_PAD) : 0;
+
+  /* ---------- A 卡：标题 + 达成 + 评语 ---------- */
+  ops.push({ t: 'rect', x: CARD_X, y: y, w: CARD_W_IN, h: aH, r: CARD_R, fill: pal.card, stroke: pal.border, lw: 1 });
+  const titY = y + CARD_PAD + SEC_H / 2;
+  ops.push({ t: 'text', s: '本周周报', x: INNER_X, y: titY, size: FS.secTit, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+  ops.push({ t: 'text', s: fit(rw.label || '', FS.secMeta, INNER_W * 0.4), x: INNER_X + INNER_W, y: titY, size: FS.secMeta, weight: 600, color: pal.sub, align: 'right', baseline: 'middle', bg: pal.card });
+
+  const bigMid = y + CARD_PAD + SEC_H + 20 + 30;
+  ops.push({ t: 'text', s: String(rw.sessions), x: INNER_X, y: bigMid, size: 56, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+  const sValW = estWidth(String(rw.sessions), 56);
+  ops.push({ t: 'text', s: '/' + rw.target + ' 次', x: INNER_X + sValW + 8, y: bigMid + 8, size: 24, weight: 700, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card });
+  // 达成档 chip：hit=绿（up 色对，守卫已验），其余=中性
+  const vTxt = rw.verdict === 'hit' ? '已达标' : (rw.verdict === 'miss' ? '未达标' : '未开始');
+  const vCls = rw.verdict === 'hit' ? 'up' : 'flat';
+  const vcs = chipStyle(vCls, pal);
+  const vW = estWidth(vTxt, FS.actMeta) + 36;
+  ops.push({ t: 'rect', x: INNER_X + INNER_W - vW, y: bigMid - 22, w: vW, h: 44, r: 22, fill: vcs.bg });
+  ops.push({ t: 'text', s: vTxt, x: INNER_X + INNER_W - vW / 2, y: bigMid, size: FS.actMeta, weight: 700, color: vcs.fg, align: 'center', baseline: 'middle', bg: vcs.bg });
+
+  const trackY = y + CARD_PAD + SEC_H + 20 + 60 + 14;
+  ops.push({ t: 'rect', x: INNER_X, y: trackY, w: INNER_W, h: 12, r: 6, fill: pal.chipBg });
+  const fillW = Math.max(0, Math.min(INNER_W, Math.round(INNER_W * (rw.pct || 0) / 100)));
+  if (fillW > 0) ops.push({ t: 'rect', x: INNER_X, y: trackY, w: fillW, h: 12, r: 6, fill: pal.brand });
+
+  const commentY = trackY + 12 + 22;
+  cLines.forEach((ln, i) => ops.push({
+    t: 'text', s: ln, x: INNER_X, y: commentY + 16 + i * 32, size: FS.verdict, weight: 600,
+    color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card
+  }));
+  const fineMid = commentY + cLines.length * 32 + 10 + 17;
+  ops.push({
+    t: 'text', s: '练 ' + rw.days + ' 天 · ' + rw.durTxt + (rw.kcal > 0 ? ' · 约 ' + rw.kcal + ' 千卡（估算）' : ''),
+    x: INNER_X, y: fineMid, size: 20, weight: 500, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card
+  });
+  y += aH;
+
+  /* ---------- B 卡：对比上周 ---------- */
+  y += GAP_CARD;
+  ops.push({ t: 'rect', x: CARD_X, y: y, w: CARD_W_IN, h: bH, r: CARD_R, fill: pal.card, stroke: pal.border, lw: 1 });
+  ops.push({ t: 'text', s: '对比上周', x: INNER_X, y: y + CARD_PAD + SEC_H / 2, size: FS.secTit, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+  const bRowsY = y + CARD_PAD + SEC_H;
+  if (prevEmpty) {
+    ops.push({ t: 'text', s: '上周没有训练记录，无从对比', x: INNER_X, y: bRowsY + 20, size: FS.actMeta, weight: 500, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card });
+  } else {
+    // 行 1：场次（差值 ±N 直接比，不设阈值）
+    const dS = rw.dSessions;
+    const dsCls = dS > 0 ? 'up' : (dS < 0 ? 'down' : 'flat');
+    const dsTxt = dS === 0 ? '持平' : (dS > 0 ? '↑ 多 ' + dS + ' 场' : '↓ 少 ' + (-dS) + ' 场');
+    pushCmpRow(ops, pal, bRowsY, '场次', rw.sessions + ' 场', '上周 ' + rw.prev.sessions + ' 场', dsCls, dsTxt, false);
+    // 行 2：容量（±DELTA_SESSION 抑噪后给趋势，与复盘 chip 同一口径）
+    const dVpct = rw.dVolPct;
+    const dvTxt = rw.volTrend === 'flat' ? '持平'
+      : (rw.volTrend === 'up' ? '↑ +' + dVpct + '%' : '↓ ' + (dVpct || 0) + '%');
+    pushCmpRow(ops, pal, bRowsY + 57, '容量', rw.volTxt + ' kg', '上周 ' + stats.fmtVol(rw.prev.vol) + ' kg', rw.volTrend || 'flat', dvTxt, true);
+  }
+  y += bH;
+
+  /* ---------- C 卡：本周 PR（每动作只留最高一次，weeklyReport 已去重）---------- */
+  if (hasC) {
+    y += GAP_CARD;
+    ops.push({ t: 'rect', x: CARD_X, y: y, w: CARD_W_IN, h: cH, r: CARD_R, fill: pal.card, stroke: pal.border, lw: 1 });
+    ops.push({ t: 'text', s: '本周亮点', x: INNER_X, y: y + CARD_PAD + SEC_H / 2, size: FS.secTit, weight: 800, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+    prs.forEach((p, i) => {
+      const ry = y + CARD_PAD + SEC_H + i * 48;
+      ops.push({ t: 'rect', x: INNER_X, y: ry + 8, w: 44, h: 32, r: 10, fill: pal.brand });
+      ops.push({ t: 'text', s: 'PR', x: INNER_X + 22, y: ry + 24, size: FS.pbBadge, weight: 800, color: pal.brandInk, align: 'center', baseline: 'middle', bg: pal.brand });
+      ops.push({ t: 'text', s: fit(p.name, FS.actName, INNER_W - 44 - 16 - 150 - 110), x: INNER_X + 44 + 16, y: ry + 24, size: FS.actName, weight: 700, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+      ops.push({ t: 'text', s: p.wTxt + ' kg', x: INNER_X + INNER_W - 110, y: ry + 24, size: FS.actName, weight: 800, color: pal.ink, align: 'right', baseline: 'middle', bg: pal.card });
+      ops.push({ t: 'text', s: fit(p.date || '', 20, 90), x: INNER_X + INNER_W, y: ry + 24, size: 20, weight: 500, color: pal.sub, align: 'right', baseline: 'middle', bg: pal.card });
+      if (i < prs.length - 1) {
+        ops.push({ t: 'line', kind: 'rule', x1: INNER_X, y1: ry + 48, x2: INNER_X + INNER_W, y2: ry + 48, color: pal.border, lw: 1 });
+      }
+    });
+    if (prHidden > 0) {
+      ops.push({ t: 'text', s: '另有 ' + prHidden + ' 项纪录未列出', x: INNER_X, y: y + CARD_PAD + SEC_H + prs.length * 48 + 20, size: FS.secMeta, weight: 600, color: pal.sub, align: 'left', baseline: 'middle', bg: pal.card });
+    }
+    y += cH;
+  }
+
+  y = pushFooter(ops, pal, y);
+  return { w: W, h: y, ops, palette: pal.key };
+}
+
+// 对比行：标签左、数值右（含上周基线小字），趋势 chip 走守卫已验的 up/down/flat 色对
+function pushCmpRow(ops, pal, ry, lab, val, baseTxt, cls, chipTxt, withRule) {
+  ops.push({ t: 'text', s: lab, x: INNER_X, y: ry + 28, size: FS.actName, weight: 600, color: pal.ink, align: 'left', baseline: 'middle', bg: pal.card });
+  ops.push({ t: 'text', s: baseTxt, x: INNER_X + INNER_W - 210 - 16, y: ry + 28, size: FS.secMeta, weight: 500, color: pal.sub, align: 'right', baseline: 'middle', bg: pal.card });
+  const cs = chipStyle(cls, pal);
+  const cw = estWidth(chipTxt, FS.actMeta) + 28;
+  ops.push({ t: 'rect', x: INNER_X + INNER_W - cw, y: ry + 6, w: cw, h: 44, r: 22, fill: cs.bg });
+  ops.push({ t: 'text', s: chipTxt, x: INNER_X + INNER_W - cw / 2, y: ry + 28, size: FS.actMeta, weight: 700, color: cs.fg, align: 'center', baseline: 'middle', bg: cs.bg });
+  if (withRule) {
+    ops.push({ t: 'line', kind: 'rule', x1: INNER_X, y1: ry - 0.5, x2: INNER_X + INNER_W, y2: ry - 0.5, color: pal.border, lw: 1 });
+  }
+}
 
 /* ================= 绘制 ================= */
 
@@ -657,10 +781,30 @@ function roundRect(ctx, x, y, w, h, r) {
 function draw(ctx, m, minicodeImg) {
   const L = layout(m);
   const pal = paletteOf(m);
+  paintBg(ctx, L, pal);
+  renderOps(ctx, L, pal, minicodeImg);
+  return L;
+}
+
+// 周报卡：版式同样纯函数，绘制复用 renderOps。rw = weeklyReport 输出 + { style, avatarText? }
+function drawWeekly(ctx, rw, minicodeImg) {
+  const L = layoutWeekly(rw);
+  const pal = paletteOf(rw);
+  paintBg(ctx, L, pal);
+  renderOps(ctx, L, pal, minicodeImg);
+  return L;
+}
+
+function measureWeekly(rw) { return layoutWeekly(rw).h; }
+
+function paintBg(ctx, L, pal) {
   ctx.clearRect(0, 0, L.w, L.h);
   ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, L.w, L.h);
+}
 
+// ops → canvas 图元（场次卡与周报卡共用；解剖图与其它图元分开画的注释见下）。
+function renderOps(ctx, L, pal, minicodeImg) {
   // 解剖图与其它图元分开画：bodyPaths 的路径坐标在「图集 viewBox」里，
   // 必须先 save/translate/scale 定位，画完 restore 回来，否则后面所有图元都会被带偏。
   // 注意**不能**用 bodymap.drawBody：它会先 clearRect 把已经铺好的卡片擦掉。
@@ -706,7 +850,6 @@ function draw(ctx, m, minicodeImg) {
       ctx.fillText(op.s, op.x, op.y);
     }
   });
-  return L;
 }
 
 // T2 小程序码加载：wx canvas 2d 的图片必须由 canvas.createImage() 造（包内路径可直接 src）。
@@ -729,5 +872,5 @@ module.exports = {
   MINICODE_PATH, QR_BOX, QR_SIZE, QR_GAP, loadMinicode,
   PALETTE, PALETTES, STYLE_KEYS, FONT_SIZE: FS, LABEL_CN,
   estWidth, fit, fitSize, wrap,
-  buildModel, layout, measure, draw
+  buildModel, layout, measure, draw, drawWeekly, measureWeekly, layoutWeekly
 };

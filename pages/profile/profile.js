@@ -214,7 +214,10 @@ Page({
   goReview() { wx.navigateTo({ url: '/pages/review/review' }); },
 
   // 「查看全部」→ 数据 tab（训练历史 + 体重历史）
-  goHistory() { wx.switchTab({ url: '/pages/list/list' }); },
+  // 卡头入口 = 周报页（T2 顶替原「查看全部」）：
+  // 原「查看全部」是 switchTab 到数据 tab 的冗余捷径（tab 本身直达），浏览能力不受损；
+  // 周报页是 navigateTo 普通页，返回即回「我的」。周报唯一入口在此（通道数=能力数）。
+  goWeekly() { wx.navigateTo({ url: '/pages/weekly/weekly' }); },
 
   // 「我的训练」首行点按：今日已完成 → 看这一场的复盘；否则去开始训练。
   // 一行两用，WXML 的 bindtap 又不支持 Mustache 动态事件名（写了会被当字面量而失效），
