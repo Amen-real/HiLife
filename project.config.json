@@ -27,6 +27,10 @@
         "type": "folder"
       },
       {
+        "value": ".workbuddy",
+        "type": "folder"
+      },
+      {
         "value": "ui-redesign-preview.html",
         "type": "file"
       },
