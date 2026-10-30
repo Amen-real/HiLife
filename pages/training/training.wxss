@@ -1,5 +1,31 @@
 /* pages/training/training.wxss —— 对齐 02-train.html（HiLiLife 设计系统） */
 
+/* ============== 训练中挑选模式横幅 ============== */
+/* 亮绿实底 + 深字：--primary 是全库唯一不随主题翻转的颜色，两主题下都成立（对比度铁律） */
+.pick-banner {
+  margin: 0 31rpx 4rpx;
+  padding: 18rpx 24rpx;
+  border-radius: 23rpx;
+  background: var(--primary);
+  display: flex; align-items: center; gap: 19rpx;
+}
+.pick-text {
+  flex: 1 1 auto; min-width: 0;
+  font-size: 27rpx; font-weight: 600; line-height: 1.35;
+  color: #0A0A0A;
+}
+/* @contrast-ok: 压在 .pick-banner（恒 var(--primary) 亮绿底）上，--primary 是全库唯一
+   不随主题翻转的颜色；深字 #0A0A0A 压亮绿 ≈ 15:1 两主题恒成立。
+   深色推算因找不到非翻转祖先底色而误用页面深底。 */
+.pick-cancel {
+  flex: 0 0 auto;
+  padding: 8rpx 24rpx;
+  border-radius: 999rpx;
+  background: rgba(10, 10, 10, 0.14);
+  font-size: 25rpx; font-weight: 600;
+  color: #0A0A0A;
+}
+
 /* --lime：下划线色，与计划页 .tab-bar 同款（深色模式在 .page.theme-dark 内覆盖为 #C8FF00） */
 .page { padding: 0 0 230rpx; min-height: 100vh; background: var(--n-50); --lime: #B7E600; }
 

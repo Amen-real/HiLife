@@ -140,40 +140,8 @@
   </view>
 </view>
 
-  <!-- 添加动作 overlay（从全量动作库选择动作，追加到当前训练计划） -->
-  <view class="repl-mask {{theme}}" wx:if="{{showAdd}}" catchtouchmove="noop">
-    <view class="repl-pop">
-      <view class="repl-head">
-        <text class="repl-title">添加动作</text>
-        <text class="repl-sub">已选 {{actions.length}} 个动作</text>
-        <view class="repl-close" bindtap="closeAdd">✕</view>
-      </view>
-      <view class="repl-search">
-        <input class="repl-search-input" placeholder="搜索动作名称" value="{{replKeyword}}" bindinput="onReplSearch" confirm-type="search" />
-      </view>
-      <!-- enable-flex + flex row：真机可靠的横向滚动写法（nowrap+inline-block 在部分机型
-           末端滚动不净、最后一个分类被切；与 training 页动作库分类条同款方案） -->
-      <scroll-view class="repl-cats" scroll-x enable-flex>
-        <view class="repl-cat {{replCat === item ? 'on' : ''}}"
-              wx:for="{{replCats}}" wx:key="*this" data-cat="{{item}}" bindtap="onReplCat">{{item}}</view>
-      </scroll-view>
-      <scroll-view class="repl-body" scroll-y bindscrolltolower="loadMoreRepl" style="{{replBodyH ? 'height:' + replBodyH + 'px' : ''}}">
-        <view class="repl-empty" wx:if="{{addFiltered.length === 0}}">没有匹配的动作</view>
-        <view class="repl-item"
-              wx:for="{{addFiltered}}" wx:key="id" wx:for-item="item"
-              bindtap="selectAdd" data-id="{{item.id}}">
-          <image wx:if="{{item.video || item.image}}" class="repl-img" src="{{item.video || item.image}}" mode="aspectFill" />
-          <view wx:else class="ico ico-train ico--ink" style="width:48rpx;height:48rpx" />
-          <view class="repl-info">
-            <text class="repl-name">{{item.nameZh || item.name}}</text>
-            <text class="repl-item-cat">{{item.category}}</text>
-          </view>
-        </view>
-        <view class="repl-foot" wx:if="{{addFiltered.length < addFullLen}}">上拉加载更多（{{addFiltered.length}}/{{addFullLen}}）</view>
-        <view class="repl-foot done" wx:else>已加载全部</view>
-      </scroll-view>
-    </view>
-  </view>
+<!-- 添加/替换动作：已改为跳转训练 tab 的现成动作库挑选（utils/actionPick.js 交接），
+     原页内弹窗（repl-mask）在真机两次出滚动问题，整块移除；选择结果在 onLoad 消费。 -->
 
 <!-- 训练计时 最小化悬浮球（fixed 自管拖拽贴边；进度环 + 深色圆心，参考图「计时最小化」方案） -->
 <view wx:if="{{showTrain && trainMinimized}}"
@@ -356,40 +324,6 @@
         </view>
       </block>
     </scroll-view>
-  </view>
-</view>
-
-<!-- 替换动作 overlay（从动作库选择其他动作替换当前动作，保留已有组数据） -->
-<view class="repl-mask {{theme}}" wx:if="{{showReplace}}" catchtouchmove="noop">
-  <view class="repl-pop">
-    <view class="repl-head">
-      <text class="repl-title">替换动作</text>
-      <text class="repl-sub">当前：{{replaceTargetName}}</text>
-      <view class="repl-close" bindtap="closeReplace">✕</view>
-    </view>
-    <view class="repl-search">
-      <input class="repl-search-input" placeholder="搜索动作名称" value="{{replKeyword}}" bindinput="onReplSearch" confirm-type="search" />
-    </view>
-    <scroll-view class="repl-cats" scroll-x enable-flex>
-      <view class="repl-cat {{replCat === item ? 'on' : ''}}"
-            wx:for="{{replCats}}" wx:key="*this" data-cat="{{item}}" bindtap="onReplCat">{{item}}</view>
-    </scroll-view>
-      <scroll-view class="repl-body" scroll-y bindscrolltolower="loadMoreRepl" style="{{replBodyH ? 'height:' + replBodyH + 'px' : ''}}">
-        <view class="repl-empty" wx:if="{{replaceFiltered.length === 0}}">没有匹配的动作</view>
-        <view class="repl-item {{item.id === replaceTargetId ? 'current' : ''}}"
-              wx:for="{{replaceFiltered}}" wx:key="id" wx:for-item="item"
-              bindtap="selectReplacement" data-id="{{item.id}}">
-        <image wx:if="{{item.video || item.image}}" class="repl-img" src="{{item.video || item.image}}" mode="aspectFill" />
-        <view wx:else class="ico ico-train ico--ink" style="width:48rpx;height:48rpx" />
-        <view class="repl-info">
-          <text class="repl-name">{{item.nameZh || item.name}}</text>
-          <text class="repl-item-cat">{{item.category}}</text>
-        </view>
-        <view class="repl-check" wx:if="{{item.id === replaceTargetId}}">✓</view>
-      </view>
-        <view class="repl-foot" wx:if="{{replaceFiltered.length < replaceFullLen}}">上拉加载更多（{{replaceFiltered.length}}/{{replaceFullLen}}）</view>
-        <view class="repl-foot done" wx:else>已加载全部</view>
-      </scroll-view>
   </view>
 </view>
 

@@ -8,12 +8,11 @@ const auth = require('../../utils/auth.js');
 const { media, resolveUrl } = require('../../utils/media.js');
 const exercises = require('../../utils/exercises.js');
 const workoutSession = require('../../utils/workoutSession.js');
+const actionPick = require('../../utils/actionPick.js');
 const theme = require('../../utils/theme.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function fmtClock(sec) { sec = sec || 0; return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60); }
-// 替换/添加动作浮层：单次渲染的最大候选数（超出部分上拉加载更多），避免上千项一次性渲染超节点上限被截断
-const REPL_PAGE = 120;
 // 「完成并生成分享图」的落点：复盘页 + share=1（复盘页据此让 training-review 自动打开分享卡）。
 // 路径在本仓只此一处出现，避免页面名写死在两个地方后改名漏改。
 const REVIEW_SHARE_URL = '/pages/review/review?share=1';
@@ -89,32 +88,16 @@ Page({
     showHistory: false,
     histAction: null,     // 当前展开动作（历史 overlay 只展示选中动作）
     hist: null,           // 历史汇总：上次日期/每组对比/最佳重量容量（打开时由 buildActionHistory 计算）
-    // 替换动作
-    showReplace: false,
-    replaceAi: -1,          // 待替换的动作索引
-    replaceTargetId: '',     // 待替换的动作 id
-    replaceTargetName: '',   // 待替换的动作名（标题显示）
     // 单动作操作菜单（头部 ⋯）：动作详情 / 替换动作 / 删除动作
     showActionMenu: false,
     menuAi: -1,              // 菜单指向的动作索引
     menuActionName: '',      // 菜单标题显示的动作名
     menuPosStyle: '',        // 悬浮小窗位置（完整 CSS 串，锚定被点 ⋯ 下方；单 mustache 合规）
-    // 替换/添加浮层的搜索 + 分类过滤
-    replKeyword: '',
-    replCat: '全部',
-    replCats: ['全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心'],
-    replaceFiltered: [],
-    addFiltered: [],
-    replaceFullLen: 0,
-    addFullLen: 0,
-    replBodyH: 0,            // 浮层 scroll-view 确定高度(px)，真机用 JS 实测，避免 flex 高度对 scroll-view 失效导致只显示几项
     finished: false,
     // 顶栏「完成训练」二次确认卡（完成并生成分享图 / 完成训练 / 取消）
     showFinishCard: false,
     finishSub: '',           // 副标题：还有 N 组未完成 / 全部动作已完成
     finishSummary: [],       // 摘要三项 [{k,v}]：已练 / 完成组数 / 完成动作
-    // 添加动作
-    showAdd: false,
     // 弹窗/悬浮球进度环（conic-gradient 完整 CSS 字符串，由 JS 拼接，单 mustache 合规）
     trainRingStyle: '',
     trainBallRingStyle: '',
@@ -231,6 +214,8 @@ Page({
     this.applyBall('rest', this.defaultBall());
     // 恢复离开前最小化的训练/休息倒计时球（如有）
     this.restoreMiniTimer(sess);
+    // 从动作库挑选回场：应用「添加/替换」结果（一次性消费 actionPick，无意图时空操作）
+    this.consumeActionPick();
     this.initBeeps();
   },
 
@@ -885,71 +870,14 @@ Page({
     wx.showToast({ title: '已删除', icon: 'none' });
   },
 
+  // 替换动作：改为跳转训练 tab 的现成动作库挑选（同「添加动作」，共用 actionPick 交接）。
+  // 选择结果在 onLoad → consumeActionPick 应用；targetId 用于回场后定位被替换的动作。
   replaceAction(e) {
     const ai = Number(e.currentTarget.dataset.ai);
     const a = this.data.actions[ai];
     if (!a) return;
-    const all = this.buildLibrary();
-    this._replaceAll = all
-      .filter(x => x.id !== a.id)
-      .map(x => ({
-        id: x.id,
-        name: x.name,
-        nameZh: x.nameZh || '',
-        category: x.category || '',
-        image: x.image ? media(x.image) : '',
-        video: x.video ? media(x.video) : ''   // 浮层缩略图优先用 GIF 演示
-      }));
-    this.setData({
-      showReplace: true,
-      replaceAi: ai,
-      replaceTargetId: a.id,
-      replaceTargetName: a.nameZh || a.name,
-      replKeyword: '',
-      replCat: '全部'
-    });
-    this.measureReplBody();
-    this.applyReplFilter('replace');
-  },
-  closeReplace() { this.setData({ showReplace: false }); },
-  // 选择替换目标：用新动作数据替换当前动作（保留已有组数/重量/次数记录），并写回当前训练计划
-  selectReplacement(e) {
-    const newId = e.currentTarget.dataset.id;
-    const ai = this.data.replaceAi;
-    const oldId = this.data.replaceTargetId;
-    if (newId === oldId) return; // 点的是当前项，忽略
-    const cand = this.data.replaceFiltered.find(c => c.id === newId);
-    if (!cand || ai < 0) return;
-    const raw = this._libById[newId] || {};
-    const actions = this.data.actions.slice();
-    const oldSets = actions[ai].sets; // 保留已有组数据
-    actions[ai] = Object.assign({}, actions[ai], {
-      id: cand.id,
-      name: cand.name,
-      nameZh: cand.nameZh,
-      category: cand.category,
-      image: cand.image,
-      // 用原始动作库的 video 相对路径重新拼 R2：候选 cand 未携带 video 字段，必须用 raw（_libById）取
-      video: raw.video ? media(raw.video) : '',
-      sets: oldSets // 保留已有训练进度
-    });
-    const stats = this.decorate(actions, this.data.expandedId);
-    this.setData({
-      actions, stats,
-      replaceTargetId: newId,
-      replaceTargetName: cand.nameZh || cand.name,
-      showReplace: false
-    });
-    // 同步回「已选动作」：仅手动勾选来源（selectedActions 保持原始相对路径，避免二次 media 包裹）；
-    // 计划来源不写 selectedActions，避免污染训练页「已选动作」
-    if (this._woSource !== 'plan') {
-      store.removeSelected(oldId);
-      store.addSelected({
-        id: cand.id, name: cand.name, nameZh: cand.nameZh || '', category: cand.category || '',
-        image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
-      });
-    }
-    wx.showToast({ title: '已替换动作', icon: 'success' });
+    actionPick.request('replace', a.id, a.nameZh || a.name || '');
+    wx.switchTab({ url: '/pages/training/training' });
   },
 
   // 扁平化全量动作库：内置库（按分类）→ 一维数组，叠加自建动作；并建立 id→动作 索引
@@ -965,120 +893,83 @@ Page({
     return flat;
   },
 
-  // 添加动作：打开选择浮层（候选 = 全量动作库排除当前计划已有动作）
+  // 添加动作：改为跳转训练 tab 的现成动作库挑选（原页内弹窗在真机两次出滚动问题，已删）。
+  // 原弹窗「排除已有动作」的语义改在回场时处理：重复添加 → 提示并展开已有卡，不产生重复项。
+  // 训练进度安全：switchTab 会销毁本页实例，但 onUnload 已把整场会话快照进 workoutSession
+  // （内存级、跨页面存活），挑选完 navigateTo 回场由 onLoad 完整恢复。
   openAdd() {
-    const all = this.buildLibrary();
-    const existing = {};
-    this.data.actions.forEach(a => { existing[a.id] = true; });
-    this._addAll = all
-      .filter(x => !existing[x.id])
-      .map(x => ({
-        id: x.id,
-        name: x.name,
-        nameZh: x.nameZh || '',
-        category: x.category || '',
-        image: x.image ? media(x.image) : '',
-        video: x.video ? media(x.video) : ''   // 浮层缩略图优先用 GIF 演示
-      }));
-    this.setData({ showAdd: true, replKeyword: '', replCat: '全部' });
-    this.measureReplBody();
-    this.applyReplFilter('add');
+    actionPick.request('add');
+    wx.switchTab({ url: '/pages/training/training' });
   },
-  closeAdd() { this.setData({ showAdd: false }); },
 
-  // 实测窗口高度，给浮层 scroll-view 一个确定的 px 高度。
-  // 真机上 scroll-view 用 flex:1 经常拿不到稳定高度 → 高度塌陷、只露几项且滚不动；
-  // 改为 JS 实测 windowHeight 按 70vh 减去头部估算高度，直接给 px 高度最可靠。
-  measureReplBody() {
-    let info;
-    try { info = (wx.getWindowInfo && wx.getWindowInfo()) || wx.getSystemInfoSync(); }
-    catch (e) { info = null; }
-    const winH = (info && (info.windowHeight || info.screenHeight)) || 0;
-    const winW = (info && info.windowWidth) || 375;
-    if (!winH) { this.setData({ replBodyH: 0 }); return; }
-    const headerPx = 260 * winW / 750;                 // 标题+搜索框+分类 chips 估算高度(rpx→px)
-    const bodyPx = Math.max(220, winH * 0.7 - headerPx); // 浮层整体 70vh 减去头部
-    this.setData({ replBodyH: Math.round(bodyPx) });
-  },
-  // 浮层搜索框输入
-  onReplSearch(e) {
-    this.setData({ replKeyword: e.detail.value });
-    this.applyReplFilter('both');
-  },
-  // 浮层分类切换
-  onReplCat(e) {
-    this.setData({ replCat: e.currentTarget.dataset.cat });
-    this.applyReplFilter('both');
-  },
-  // 按分类 + 关键词过滤候选：结果存入 _replaceFull/_addFull（完整过滤结果），
-  // 仅渲染前 REPL_PAGE 项到 replaceFiltered/addFiltered，避免一次性渲染上千项超出节点上限被截断。
-  applyReplFilter(scope) {
-    const kw = (this.data.replKeyword || '').trim().toLowerCase();
-    const cat = this.data.replCat;
-    const match = (list) => list.filter(x => {
-      if (cat !== '全部' && x.category !== cat) return false;
-      if (kw) {
-        const n = (x.nameZh || x.name || '').toLowerCase();
-        const en = (x.name || '').toLowerCase();
-        if (n.indexOf(kw) < 0 && en.indexOf(kw) < 0) return false;
-      }
-      return true;
-    });
-    const patch = {};
-    if (scope !== 'add' && this._replaceAll) {
-      this._replaceFull = match(this._replaceAll);
-      patch.replaceFiltered = this._replaceFull.slice(0, REPL_PAGE);
-      patch.replaceFullLen = this._replaceFull.length;
-    }
-    if (scope !== 'replace' && this._addAll) {
-      this._addFull = match(this._addAll);
-      patch.addFiltered = this._addFull.slice(0, REPL_PAGE);
-      patch.addFullLen = this._addFull.length;
-    }
-    this.setData(patch);
-  },
-  // 上拉加载更多：把 _replaceFull/_addFull 的后续分片追加进渲染数组（替换/添加浮层共用）
-  loadMoreRepl() {
-    if (this.data.showReplace && this._replaceFull) {
-      const cur = this.data.replaceFiltered.length;
-      if (cur >= this._replaceFull.length) return;
-      this.setData({ replaceFiltered: this.data.replaceFiltered.concat(this._replaceFull.slice(cur, cur + REPL_PAGE)) });
-    } else if (this.data.showAdd && this._addFull) {
-      const cur = this.data.addFiltered.length;
-      if (cur >= this._addFull.length) return;
-      this.setData({ addFiltered: this.data.addFiltered.concat(this._addFull.slice(cur, cur + REPL_PAGE)) });
-    }
-  },
-  // 选择添加目标：向当前训练计划追加该动作（默认 1 组空），写回计划并展开新卡
-  selectAdd(e) {
-    const id = e.currentTarget.dataset.id;
-    const raw = this._libById[id];
-    if (!raw) return;
-    const newAction = {
-      id: raw.id,
-      name: raw.name,
-      nameZh: raw.nameZh || '',
-      category: raw.category || '',
-      equip: raw.equip || '',
-      image: raw.image ? media(raw.image) : '',
-      video: raw.video ? media(raw.video) : '',
-      perSetTimer: true,
-      sets: presetSets(raw)
-    };
+  // 回场后应用挑选结果（onLoad 恢复会话之后调用；一次性消费 actionPick）。
+  // 数据形状与原弹窗 selectAdd/selectReplacement 完全一致：
+  //   添加 = presetSets(raw) 的新卡；替换 = 保留 oldSets 只换动作档案；
+  //   selectedActions 仅手动勾选来源回写（计划来源不污染训练页「已选动作」）。
+  consumeActionPick() {
+    const it = actionPick.consume();
+    if (!it || !it.picked) return;
+    const raw = it.picked;
     const actions = this.data.actions.slice();
-    actions.push(newAction);
-    const expandedId = raw.id;
-    const total = actions.length;
-    const stats = this.decorate(actions, expandedId);
-    this.setData({ actions, total, expandedId, showAdd: false, stats });
-    // 同步追加到「已选动作」：仅手动勾选来源；计划来源不写 selectedActions
-    if (this._woSource !== 'plan') {
-      store.addSelected({
-        id: raw.id, name: raw.name, nameZh: raw.nameZh || '', category: raw.category || '',
-        image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
+    if (it.mode === 'add') {
+      const existing = actions.findIndex(a => a.id === raw.id);
+      if (existing >= 0) {
+        // 点了已在训练中的动作：不重复添加，直接展开它的卡片
+        const stats = this.decorate(actions, raw.id);
+        this.setData({ expandedId: raw.id, stats });
+        wx.showToast({ title: '该动作已在训练中', icon: 'none' });
+        return;
+      }
+      actions.push({
+        id: raw.id,
+        name: raw.name,
+        nameZh: raw.nameZh || '',
+        category: raw.category || '',
+        equip: raw.equip || '',
+        image: raw.image ? media(raw.image) : '',
+        video: raw.video ? media(raw.video) : '',
+        perSetTimer: true,
+        sets: presetSets(raw)
       });
+      // 同步追加到「已选动作」：仅手动勾选来源；计划来源不写 selectedActions
+      if (this._woSource !== 'plan') {
+        store.addSelected({
+          id: raw.id, name: raw.name, nameZh: raw.nameZh || '', category: raw.category || '',
+          image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
+        });
+      }
+      const stats = this.decorate(actions, raw.id);
+      this.setData({ actions, total: actions.length, expandedId: raw.id, stats });
+      wx.showToast({ title: '已添加动作', icon: 'success' });
+    } else if (it.mode === 'replace') {
+      const ai = actions.findIndex(a => a.id === it.targetId);
+      if (ai < 0 || raw.id === it.targetId) return; // 目标已被删 / 点的就是当前动作
+      const oldSets = actions[ai].sets; // 保留已有组数据
+      actions[ai] = Object.assign({}, actions[ai], {
+        id: raw.id,
+        name: raw.name,
+        nameZh: raw.nameZh || '',
+        category: raw.category || '',
+        image: raw.image ? media(raw.image) : '',
+        video: raw.video ? media(raw.video) : '',
+        sets: oldSets
+      });
+      // 同步回「已选动作」：仅手动勾选来源（保持原始相对路径，避免二次 media 包裹）
+      if (this._woSource !== 'plan') {
+        store.removeSelected(it.targetId);
+        store.addSelected({
+          id: raw.id, name: raw.name, nameZh: raw.nameZh || '', category: raw.category || '',
+          image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
+        });
+      }
+      // 展开位跟随被替换卡：原动作展开则新动作也展开
+      const expandedId = this.data.expandedId === it.targetId ? raw.id : this.data.expandedId;
+      const stats = this.decorate(actions, expandedId);
+      this.setData({ actions, expandedId, stats });
+      wx.showToast({ title: '已替换动作', icon: 'success' });
     }
-    wx.showToast({ title: '已添加动作', icon: 'success' });
+    // 添加/替换都会改变动作 id 组成（签名），立即重快照，避免页面销毁时签名与源失配
+    this.snapshotSession();
   },
 
   // 最小化当前页面：保存进度 → 真正离开训练页（返回上一页/训练 tab），

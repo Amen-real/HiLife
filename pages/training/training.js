@@ -4,6 +4,7 @@ const { media, thumb } = require('../../utils/media.js');
 const store = require('../../utils/store.js');
 const auth = require('../../utils/auth.js');
 const theme = require('../../utils/theme.js');
+const actionPick = require('../../utils/actionPick.js');
 
 // 分类 -> emoji 占位图。原先来自 utils/mock.js，但那个文件另外三个导出
 // （actionLibrary / dietRecommend / myActions）已全部无人引用，为这 7 行养一个 12KB
@@ -48,6 +49,9 @@ Page({
     // 'theme-light' | 'theme-dark'，由「我的 → 深色主题」开关控制，onShow 同步
     theme: 'theme-light',
     mode: 'lib', // lib=动作库 / fav=收藏
+    // 训练中挑选模式（actionPick 交接）：横幅显示 + 点动作改为回传 workout
+    pickMode: false,
+    pickText: '',
     categories: ['全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心', '我的动作'],
     catIcons: { '全部': 'all', '胸部': 'chest', '背部': 'muscleback', '肩膀': 'shoulder', '腿部': 'leg', '手臂': 'arm', '核心': 'core', '我的动作': 'myaction' },
     activeCat: '全部',
@@ -84,6 +88,17 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1, theme: themeCls });
     }
+    // 训练中「添加/替换动作」挑选模式：workout 页 switchTab 过来、由本页点动作回传。
+    // 状态以 actionPick 的意图为准（跨 tab onShow 反复进入都要正确显示/隐藏横幅）。
+    const pick = actionPick.get();
+    this.setData({
+      pickMode: !!pick,
+      pickText: pick
+        ? (pick.mode === 'replace'
+          ? '正在替换「' + (pick.targetName || '动作') + '」— 点按动作完成替换'
+          : '正在挑选动作 — 点按动作添加到进行中的训练')
+        : ''
+    });
     this.syncState();
     this.computeCounts();
     this.computeEquips();   // 器械条随 onShow 重算（动作库可能已变）
@@ -159,6 +174,11 @@ Page({
       base = (exercises.library[cat] || []).slice();
     }
     const isCustomTab = cat === '我的动作' && this.data.mode === 'lib';
+    // 原始对象索引（image/video 相对路径未被 thumb/media 覆盖）：
+    // 挑选模式下点动作要回传 workout，workout 端按「原始相对路径 + media()」拼 R2，
+    // 列表项的 image 已是 thumb() 绝对地址、video 已是 media() 包裹过的，二次包裹会坏。
+    this._rawById = {};
+    base.forEach(a => { this._rawById[a.id] = a; });
     let list = base.map(a => ({
       ...a,
       // 「我的动作」下展示的必然是自建动作，强制打标，覆盖旧数据（无 custom 字段）也能显示删除按钮
@@ -251,8 +271,22 @@ Page({
     const id = e.currentTarget.dataset.id;
     const act = this.data.list.find(a => a.id === id);
     if (!act) return;
+    // 训练中挑选模式：点动作 = 记录原始库对象并回场 workout（不进详情页）
+    if (this.data.pickMode) {
+      const raw = this._rawById && this._rawById[id];
+      if (!raw) return;
+      actionPick.fulfill(raw);
+      wx.navigateTo({ url: '/pages/workout/workout' });
+      return;
+    }
     store.get().currentAction = act;
     wx.navigateTo({ url: '/pages/action-detail/action-detail' });
+  },
+
+  // 取消挑选：清掉意图，横幅在下次 onShow（或本页 setData）后消失
+  cancelPick() {
+    actionPick.cancel();
+    this.setData({ pickMode: false, pickText: '' });
   },
 
   toggleSelect(e) {
@@ -468,6 +502,9 @@ Page({
 
   startTraining() {
     if (!auth.requireLogin()) return;
+    // 挑选模式是「为进行中的训练选动作」，走「开始训练」= 放弃挑选、开一场新训练，
+    // 必须先清意图，否则新训练 onLoad 会误消费旧挑选结果
+    actionPick.cancel();
     let sel = store.get().selectedActions;
     if (!sel.length) {
       // 未选动作：自动预选各部位代表动作，保证「开始训练」一定能开练

@@ -2,6 +2,12 @@
 <view class="page {{theme}}">
   <nav-bar title="训练" show-back="{{false}}" />
 
+  <!-- 训练中挑选模式横幅（actionPick 交接）：亮绿实底 + 深字（对比度铁律），点取消退出挑选 -->
+  <view wx:if="{{pickMode}}" class="pick-banner">
+    <text class="pick-text">{{pickText}}</text>
+    <view class="pick-cancel" hover-class="op-press" bindtap="cancelPick">取消</view>
+  </view>
+
   <!-- ============== HEADER：动作库 / 收藏 ============== -->
   <view class="header">
     <view class="lead">
@@ -100,8 +106,9 @@
   <view class="attr">动作图片 © Gym visual</view>
   <view class="bottom-gap"></view>
 
-<!-- ============== 底部固定行动栏（仅手动勾选动作后出现，selectedActions 只存手动添加） ============== -->
-<view wx:if="{{selectedCount > 0}}" class="action-bar">
+<!-- ============== 底部固定行动栏（仅手动勾选动作后出现，selectedActions 只存手动添加；
+     挑选模式下隐藏 ——「开始训练」会开新训练顶掉进行中的那场，语义冲突） ============== -->
+<view wx:if="{{selectedCount > 0 && !pickMode}}" class="action-bar">
   <view class="ab-count" hover-class="op-press" bindtap="openSelPanel">
     <text class="ab-num">{{selectedCount}}</text>
     <text class="ab-label">已选动作</text>

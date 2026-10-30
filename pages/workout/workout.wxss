@@ -732,122 +732,6 @@
 .hist-delta.down { color: var(--primary-text); background: var(--primary-tint); }
 .hist-set-past { opacity: 0.85; }
 
-/* ── 替换动作 overlay（底部上滑选择列表） ── */
-.repl-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  display: flex;
-  align-items: flex-end;
-  z-index: 145;
-  animation: rest-fade 0.2s ease;
-}
-.repl-pop {
-  width: 100%;
-  max-height: 70vh;
-  background: #fff;
-  border-radius: 32rpx 32rpx 0 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 -10rpx 40rpx rgba(15, 23, 42, 0.2);
-  animation: hist-up 0.26s ease;
-}
-.repl-head {
-  display: flex;
-  align-items: center;
-  padding: 32rpx 40rpx 16rpx;
-  position: relative;
-}
-.repl-title { font-size: var(--fs-title); font-weight: 600; color: var(--text); }
-.repl-sub {
-  font-size: var(--fs-label);
-  color: var(--text-sub);
-  margin-left: 16rpx;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.repl-close {
-  width: 56rpx;
-  height: 56rpx;
-  line-height: 56rpx;
-  text-align: center;
-  color: var(--text-weak);
-  font-size: var(--fs-title);
-  flex-shrink: 0;
-}
-.repl-body {
-  flex: 1;
-  min-height: 0;
-  padding: 0 40rpx 40rpx;
-  box-sizing: border-box;
-}
-/* 双排网格（对齐训练页动作库卡片） */
-.repl-item {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 20rpx 24rpx;
-  border-radius: 20rpx;
-  margin-bottom: 12rpx;
-  background: var(--bg);
-  border: 2rpx solid transparent;
-  transition: border-color .15s;
-}
-.repl-item.current {
-  border-color: var(--primary);
-  background: var(--primary-tint);
-}
-.repl-img {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 18rpx;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, var(--primary-tint), rgba(124, 184, 0, 0.12));
-}
-.repl-info { flex: 1; min-width: 0; }
-.repl-name {
-  font-size: var(--fs-body);
-  font-weight: 600;
-  color: var(--text);
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* 列表项的分类小字（⚠️ 勿与分类胶囊 .repl-cat 同名——曾因同名把胶囊的
-   背景/边框/内边距泄漏进列表每一行，chips 反向吃到 margin-top） */
-.repl-item-cat {
-  font-size: var(--fs-caption);
-  color: var(--text-sub);
-  margin-top: 4rpx;
-  display: block;
-}
-.repl-check {
-  width: 44rpx;
-  height: 44rpx;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #0A0A0A;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--fs-body);
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-/* 浮层底部：上拉加载更多 / 已加载全部 提示 */
-.repl-foot {
-  text-align: center;
-  font-size: var(--fs-caption);
-  color: var(--text-weak);
-  padding: 24rpx 0 8rpx;
-}
-.repl-foot.done { color: var(--text-sub); }
-
 /* 完成态 */
 .page.finished {
   display: flex;
@@ -952,58 +836,6 @@
 }
 .wo-del-btn::after { border: none; }
 
-/* 浮层搜索框 + 分类筛选 */
-.repl-search {
-  padding: 8rpx 40rpx 4rpx;
-}
-.repl-search-input {
-  height: 72rpx;
-  line-height: 72rpx;
-  padding: 0 28rpx;
-  border-radius: 18rpx;
-  background: var(--bg);
-  border: 2rpx solid var(--line);
-  font-size: var(--fs-body);
-  color: var(--text);
-  box-sizing: border-box;
-}
-/* 横向分类条：enable-flex + flex row（training 页同款可靠写法）。
-   旧 nowrap+inline-block 在真机末端滚动不净，最后一个分类被切在右缘。
-   flex-shrink:0 防止被弹窗 flex 纵向挤压。 */
-.repl-cats {
-  display: flex;
-  flex-direction: row;
-  white-space: nowrap;
-  padding: 16rpx 32rpx 8rpx;
-  box-sizing: border-box;
-  flex-shrink: 0;
-}
-.repl-cat {
-  display: inline-block;
-  flex: 0 0 auto;
-  padding: 10rpx 28rpx;
-  margin-right: 14rpx;
-  border-radius: 999rpx;
-  background: var(--bg);
-  border: 2rpx solid var(--line);
-  font-size: var(--fs-body);
-  color: var(--text-sub);
-  transition: all .15s;
-}
-.repl-cat.on {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #0A0A0A;
-  font-weight: 600;
-}
-.repl-empty {
-  text-align: center;
-  color: var(--text-weak);
-  font-size: var(--fs-body);
-  padding: 48rpx 0;
-}
-
-
 /* ============================================================
    深色主题（.page.theme-dark 重定义 token，向下继承自动翻转；
    页面外的浮层 mask 也挂了 .theme-dark 类，与 .page 共享同一套变量）
@@ -1011,7 +843,6 @@
 .page.theme-dark,
 .rest-mask.theme-dark,
 .hist-mask.theme-dark,
-.repl-mask.theme-dark,
 .exmenu-mask.theme-dark {
   --n-950: #FFFFFF;
   --n-900: #FFFFFF;
@@ -1070,8 +901,7 @@
 .page.theme-dark .wo-clock-toggle:active { background: rgba(255,255,255,0.10); }
 .page.theme-dark .wo-min-btn:active { background: #1E1E1E; } /* 比 --card(#161616) 亮一档的按压态 */
 .rest-mask.theme-dark .rest-pop,
-.hist-mask.theme-dark .hist-pop,
-.repl-mask.theme-dark .repl-pop { background: #161616; }
+.hist-mask.theme-dark .hist-pop { background: #161616; }
 
 /* ═══════ 单动作操作菜单（头部 ⋯）：锚定齿轮下方的悬浮小窗 ═══════ */
 .exmenu-mask {

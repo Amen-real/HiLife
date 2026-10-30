@@ -254,8 +254,12 @@ console.log('\n[D] 接线：wxml / js / wxss 三处对得上');
     isTrue('D7 data 里有 ' + k, js.indexOf(k + ':') >= 0));
   ['equipBuckets', 'matchesEquip', 'computeEquips', 'switchEquip'].forEach(m =>
     isTrue('D8 js 有方法 ' + m + '()', js.indexOf(m + '(') >= 0));
-  // onShow 必须先算器械再刷列表（顺序错会用旧 activeEquip 过滤）
-  const os = js.slice(js.indexOf('onShow()'), js.indexOf('onShow()') + 600);
+  // onShow 必须先算器械再刷列表（顺序错会用旧 activeEquip 过滤）。
+  // 窗口取整个 onShow 方法体（到第一个方法边界 `\n  },`），不用固定字符数——
+  // 固定 600 字符窗口曾被 onShow 头部新增的挑选模式块挤出（2026-10-30），误报顺序错误。
+  const _osStart = js.indexOf('onShow()');
+  const _osEnd = js.indexOf('\n  },', _osStart);
+  const os = js.slice(_osStart, _osEnd > _osStart ? _osEnd : _osStart + 600);
   isTrue('D9 onShow 中 computeEquips 在 refresh 之前（顺序正确）',
     os.indexOf('computeEquips()') >= 0 && os.indexOf('refresh()') >= 0
     && os.indexOf('computeEquips()') < os.indexOf('refresh()'));
