@@ -817,7 +817,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.repl-cat {
+/* 列表项的分类小字（⚠️ 勿与分类胶囊 .repl-cat 同名——曾因同名把胶囊的
+   背景/边框/内边距泄漏进列表每一行，chips 反向吃到 margin-top） */
+.repl-item-cat {
   font-size: var(--fs-caption);
   color: var(--text-sub);
   margin-top: 4rpx;
@@ -965,13 +967,20 @@
   color: var(--text);
   box-sizing: border-box;
 }
+/* 横向分类条：enable-flex + flex row（training 页同款可靠写法）。
+   旧 nowrap+inline-block 在真机末端滚动不净，最后一个分类被切在右缘。
+   flex-shrink:0 防止被弹窗 flex 纵向挤压。 */
 .repl-cats {
+  display: flex;
+  flex-direction: row;
   white-space: nowrap;
   padding: 16rpx 32rpx 8rpx;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 .repl-cat {
   display: inline-block;
+  flex: 0 0 auto;
   padding: 10rpx 28rpx;
   margin-right: 14rpx;
   border-radius: 999rpx;

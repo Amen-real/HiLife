@@ -151,7 +151,9 @@
       <view class="repl-search">
         <input class="repl-search-input" placeholder="搜索动作名称" value="{{replKeyword}}" bindinput="onReplSearch" confirm-type="search" />
       </view>
-      <scroll-view class="repl-cats" scroll-x>
+      <!-- enable-flex + flex row：真机可靠的横向滚动写法（nowrap+inline-block 在部分机型
+           末端滚动不净、最后一个分类被切；与 training 页动作库分类条同款方案） -->
+      <scroll-view class="repl-cats" scroll-x enable-flex>
         <view class="repl-cat {{replCat === item ? 'on' : ''}}"
               wx:for="{{replCats}}" wx:key="*this" data-cat="{{item}}" bindtap="onReplCat">{{item}}</view>
       </scroll-view>
@@ -164,7 +166,7 @@
           <view wx:else class="ico ico-train ico--ink" style="width:48rpx;height:48rpx" />
           <view class="repl-info">
             <text class="repl-name">{{item.nameZh || item.name}}</text>
-            <text class="repl-cat">{{item.category}}</text>
+            <text class="repl-item-cat">{{item.category}}</text>
           </view>
         </view>
         <view class="repl-foot" wx:if="{{addFiltered.length < addFullLen}}">上拉加载更多（{{addFiltered.length}}/{{addFullLen}}）</view>
@@ -368,7 +370,7 @@
     <view class="repl-search">
       <input class="repl-search-input" placeholder="搜索动作名称" value="{{replKeyword}}" bindinput="onReplSearch" confirm-type="search" />
     </view>
-    <scroll-view class="repl-cats" scroll-x>
+    <scroll-view class="repl-cats" scroll-x enable-flex>
       <view class="repl-cat {{replCat === item ? 'on' : ''}}"
             wx:for="{{replCats}}" wx:key="*this" data-cat="{{item}}" bindtap="onReplCat">{{item}}</view>
     </scroll-view>
@@ -381,7 +383,7 @@
         <view wx:else class="ico ico-train ico--ink" style="width:48rpx;height:48rpx" />
         <view class="repl-info">
           <text class="repl-name">{{item.nameZh || item.name}}</text>
-          <text class="repl-cat">{{item.category}}</text>
+          <text class="repl-item-cat">{{item.category}}</text>
         </view>
         <view class="repl-check" wx:if="{{item.id === replaceTargetId}}">✓</view>
       </view>
