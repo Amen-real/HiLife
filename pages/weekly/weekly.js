@@ -25,7 +25,8 @@ Page({
     shareImg: '',
     shareStyle: 'light',
     shareStyleName: '浅色',
-    canvasH: 900      // 画布显示高（rpx）= 卡片高，随内容自适应（750 宽 = 750rpx 同比）
+    canvasH: 900,      // 画布像素高（backing store），随内容自适应
+    canvasStyle: 'height: 900rpx' // 完整 style 串（wxml 红线：禁混写 Mustache）
   },
 
   onShow() {
@@ -114,9 +115,10 @@ Page({
   genShare() {
     if (!this.data.r) return;
     this._rwModel = Object.assign({}, this.data.r, { style: this.data.shareStyle });
+    const h = Math.round(shareCard.measureWeekly(this._rwModel));
     this.setData({
       shareShow: true, shareBusy: true, shareImg: '',
-      canvasH: Math.round(shareCard.measureWeekly(this._rwModel))
+      canvasH: h, canvasStyle: 'height: ' + h + 'rpx'
     }, () => this._renderWeekly());
   },
 
@@ -163,9 +165,10 @@ Page({
     const i = keys.indexOf(this.data.shareStyle);
     const next = keys[(i + 1) % keys.length];
     this._rwModel = Object.assign({}, this.data.r, { style: next });
+    const h = Math.round(shareCard.measureWeekly(this._rwModel));
     this.setData({
       shareStyle: next, shareStyleName: shareCard.PALETTES[next].name, shareImg: '',
-      canvasH: Math.round(shareCard.measureWeekly(this._rwModel))
+      canvasH: h, canvasStyle: 'height: ' + h + 'rpx'
     }, () => this._renderWeekly());
   },
 

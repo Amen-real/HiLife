@@ -3,7 +3,7 @@
   <nav-bar title="训练中" show-back="{{true}}" />
 
   <!-- 顶部操作栏：计时器 + 播放/暂停 + 完成（sticky 偏移 navH，避让吸顶的自定义导航栏） -->
-  <view class="wo-top" style="--nav-h: {{navH}}px">
+  <view class="wo-top" style="{{navHStyle}}">
     <view class="wo-timer-wrap">
       <text class="wo-timer">{{workoutClock}}</text>
       <view class="wo-clock-toggle" hover-class="press" bindtap="toggleClock">

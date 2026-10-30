@@ -105,7 +105,8 @@ Page({
     restBallRingStyle: '',
     restClock: '00:00',
     // 自定义导航栏总高（px，状态栏 + 44px 导航栏）：供 .wo-top 的 sticky top 偏移，避免与吸顶导航栏重叠
-    navH: 0
+    navH: 0,
+    navHStyle: '--nav-h: 0px', // 完整 style 串（wxml 红线：禁混写 Mustache）
   },
 
   // 深色主题同步：本页原先无 onShow，切主题后从其它页进入仍是白色，这里与其它页保持同一套路
@@ -135,7 +136,8 @@ Page({
   onLoad() {
     // 导航栏高度实测注入（.wo-top 是 sticky 顶栏，需要让出导航栏位置）
     const winInfo = (typeof wx.getWindowInfo === 'function') ? wx.getWindowInfo() : wx.getSystemInfoSync();
-    this.setData({ navH: (winInfo.statusBarHeight || 20) + 44 });
+    const navH = (winInfo.statusBarHeight || 20) + 44;
+    this.setData({ navH: navH, navHStyle: '--nav-h: ' + navH + 'px' });
 
     const src = this.resolveWorkoutSource();
     this._woSource = src.name ? 'plan' : 'manual'; // 标记来源：plan 来源的替换/添加动作不回写 selectedActions

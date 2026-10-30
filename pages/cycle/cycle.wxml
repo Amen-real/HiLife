@@ -71,9 +71,9 @@
     <view class="cyc-spark">
       <text class="cyc-spark-label">处方 RPE 走势</text>
       <view class="cyc-spark-bars">
-        <view class="cyc-spark-col" wx:for="{{item.rpeChart}}" wx:for-item="rv" wx:key="*this">
-          <view class="cyc-spark-bar" style="height:{{rv * 10}}%"></view>
-          <view class="cyc-spark-val">{{rv}}</view>
+        <view class="cyc-spark-col" wx:for="{{item.rpeChart}}" wx:for-item="rv" wx:key="i">
+          <view class="cyc-spark-bar" style="{{rv.barStyle}}"></view>
+          <view class="cyc-spark-val">{{rv.v}}</view>
         </view>
       </view>
     </view>

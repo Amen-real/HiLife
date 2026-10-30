@@ -157,6 +157,8 @@ function weeklyReport(logsDesc, profile, activePlan, off, anchor) {
     target: target,
     fromPlan: wt.fromPlan,
     pct: pct,
+    // 完整 style 串（wxml 红线：style 属性禁混写 Mustache，会触发 IDE 静态 CSS 解析报错）
+    pctStyle: 'width: ' + pct + '%',
     prev: { sessions: prevLogs.length, days: new Set(prevLogs.map(l => l.date)).size, vol: prevVol },
     dSessions: sessions - prevLogs.length,
     volTrend: volTrendOf(vol, prevVol),

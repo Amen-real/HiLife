@@ -49,7 +49,7 @@ Page({
     // 顶部品牌行的行高 + 右侧内缩（按微信胶囊实测算，见 utils/navMetrics.js）。
     // 装饰性标题也要接：行中心必须 == 胶囊中心，手调 rpx 永远跟不上随机型变的胶囊。
     navRowStyle: '',
-    checkin: { done: 0, total: 3, pct: 0 },
+    checkin: { done: 0, total: 3, pct: 0, pctStyle: '--pct: 0' },
     fitnessDays: 0,
     streak: 0,
     suggest: { title: '全身训练 · 中级', sub: '预计 45 分钟 · 320 kcal' },
@@ -203,7 +203,7 @@ Page({
 
     this.setData({
       greeting, nickname, sub,
-      checkin: { done, total, pct },
+      checkin: { done, total, pct, pctStyle: '--pct: ' + pct }, // 完整 style 串（禁混写 Mustache）
       fitnessDays, streak,
       diet: {
         intake: Math.round(intake),

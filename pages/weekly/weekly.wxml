@@ -28,7 +28,7 @@
         </view>
       </view>
       <view class="wk-track">
-        <view class="wk-fill" style="width: {{r.pct}}%"></view>
+        <view class="wk-fill" style="{{r.pctStyle}}"></view>
       </view>
       <view class="wk-comment">{{r.comment}}</view>
     </view>
@@ -132,7 +132,7 @@
         <view class="sh-close" bindtap="closeShare">✕</view>
       </view>
       <view class="sh-body">
-        <canvas id="weeklyShareCanvas" type="2d" class="sh-canvas" style="height: {{canvasH}}rpx" wx:if="{{!shareImg}}"></canvas>
+        <canvas id="weeklyShareCanvas" type="2d" class="sh-canvas" style="{{canvasStyle}}" wx:if="{{!shareImg}}"></canvas>
         <image wx:else class="sh-preview" src="{{shareImg}}" mode="aspectFit" show-menu-by-longpress />
         <view class="sh-busy" wx:if="{{shareBusy}}">生成中…</view>
       </view>

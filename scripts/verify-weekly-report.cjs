@@ -76,6 +76,7 @@ console.log('\n[D] 周目标口径（计划 > 设置 > 默认）');
     log('2026-10-28', [act('a', '动作甲', [[20, 10]])])
   ], {}, null, 0, '2026-10-28');
   eq('D4 pct 封顶 100', r4.pct, 100);
+  eq('D4b pctStyle 完整 style 串（wxml 红线：禁混写 Mustache）', r4.pctStyle, 'width: 100%');
   const r5 = wr.weeklyReport([], {}, { daysPerWeek: 4 }, 0, '2026-10-28');
   eq('D5 pct=0（空周）', r5.pct, 0);
 }

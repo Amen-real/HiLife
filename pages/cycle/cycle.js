@@ -59,7 +59,11 @@ Page({
         id: c.id, name: c.name, goal: c.goal, level: c.level, weeks: c.weeks,
         desc: c.desc,
         phases: c.cycle.phases,
-        rpeChart: c.cycle.chart.rpe,           // 处方 RPE 走势（迷你 sparkline）
+        // 处方 RPE 走势（迷你 sparkline）：对象化携带完整 style 串（禁混写 Mustache）；
+        // i 作 wx:key（数值可重复，*this 会撞 key）
+        rpeChart: (c.cycle.chart.rpe || []).map((v, i) => ({
+          i: i, v: v, barStyle: 'height: ' + (Number(v) * 10) + '%'
+        })),
         cycle: c.cycle                          // 整段 cycle（导入时原样带入计划）
       }))
     });
