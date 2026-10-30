@@ -169,4 +169,65 @@ function weeklyReport(logsDesc, profile, activePlan, off, anchor) {
   };
 }
 
-module.exports = { weeklyReport, fmtDuration, weekLabel, volTrendOf, prsOfWeek };
+// ---------- 每周体重 / 饮食（周报页新增板块，同一套自然周口径） ----------
+
+// meal 的日期：meals 只存 time(毫秒)，日期 = 本地时区格式化（与 advice.js/home.js
+// 的 dateOf 同一口径；字符串切窗口一律走 dateRange 单源）。
+function mealDateOf(m) {
+  const t = Number(m && m.time);
+  if (!t) return '';
+  return dateRange.fmtDate(new Date(t));
+}
+
+// 本周饮食聚合：记录条数 / 覆盖天数 / 总千卡 / 日均（ kcal 取整；days>0 才有日均）。
+function weeklyDiet(meals, monStr, sunStr) {
+  const inW = (meals || []).filter(m => dateRange.inRange(mealDateOf(m), monStr, sunStr));
+  const days = new Set(inW.map(mealDateOf)).size;
+  const kcal = Math.round(inW.reduce((s, m) => s + Math.max(0, Number(m && m.calories) || 0), 0));
+  return {
+    count: inW.length,
+    days: days,
+    kcal: kcal,
+    avgKcal: days > 0 ? Math.round(kcal / days) : 0,
+    empty: inW.length === 0
+  };
+}
+
+// 本周体重聚合。weightRecords: [{date:'YYYY-MM-DD', weight}]（每日期一条，但聚合前
+// 仍按日期排序兜底，不依赖写入顺序）。三种形态：
+//   · any=false                    —— 从无任何体重记录；
+//   · inWeek=0                     —— 本周没称，带最近一次记录（last）；
+//   · inWeek>0                     —— 本周最新一条 + 与「全量序列里紧邻其前一条」的差值
+//                                     （基线可能落在上周，跨周也如实给出）；
+//     首条记录之前没有基线 → delta=null（第一次称重不叫变化）。
+function weeklyWeight(weightRecords, monStr, sunStr) {
+  const list = (weightRecords || [])
+    .filter(r => r && r.date && isFinite(Number(r.weight)))
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  if (!list.length) return { any: false, inWeek: 0, latest: null, delta: null };
+  const inW = list.filter(r => dateRange.inRange(r.date, monStr, sunStr));
+  if (!inW.length) {
+    const last = list[list.length - 1];
+    return {
+      any: true, inWeek: 0, latest: null, delta: null,
+      last: { date: last.date, w: Number(last.weight) }
+    };
+  }
+  const latest = inW[inW.length - 1];
+  const idx = list.indexOf(latest);
+  const base = idx > 0 ? list[idx - 1] : null;
+  const w = Number(latest.weight);
+  const delta = base ? Number((w - Number(base.weight)).toFixed(1)) : null;
+  return {
+    any: true,
+    inWeek: inW.length,
+    latest: w,
+    latestDate: latest.date,
+    baseDate: base ? base.date : null,
+    delta: delta,
+    down: delta != null && delta < 0
+  };
+}
+
+module.exports = { weeklyReport, fmtDuration, weekLabel, volTrendOf, prsOfWeek, weeklyDiet, weeklyWeight, mealDateOf, fmtShort };

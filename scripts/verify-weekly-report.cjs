@@ -162,6 +162,62 @@ console.log('\n[H] 格式化辅助');
   eq('H5 kcal 走 estKcal（trainSec 口径）', r.kcal, stats.estKcal(stats.trainSecOfLog(log('2026-10-28', [act('bench', '卧推', [[90, 5, 1800]])]))));
 }
 
+console.log('\n[I] 每周饮食聚合（weeklyDiet：本地时区 time→日期，kcal 取整）');
+{
+  const ts = (y, m, d, h) => new Date(y, m - 1, d, h || 12).getTime(); // 本地时区毫秒
+  const meal = (time, kcal) => ({ time: time, calories: kcal, name: '餐' });
+  const meals = [
+    meal(ts(2026, 10, 28, 8), 480.4),   // 周三早
+    meal(ts(2026, 10, 28, 12), 620.6),  // 周三午（同日 → days 去重）
+    meal(ts(2026, 10, 30, 19), 900),    // 周五晚
+    meal(ts(2026, 10, 25, 12), 999),    // 上周日（窗外）
+    meal(ts(2026, 11, 2, 8), 888),      // 下周一（sunStr 半开区不计）
+    meal(0, 500)                        // 脏输入：无 time → 忽略
+  ];
+  const d = wr.weeklyDiet(meals, '2026-10-26', '2026-11-01');
+  eq('I1 条数=3（窗外/半开/脏数据不计）', d.count, 3);
+  eq('I2 天数去重=2', d.days, 2);
+  eq('I3 kcal 取整合计', d.kcal, Math.round(480.4 + 620.6 + 900));
+  eq('I4 日均=round(kcal/days)', d.avgKcal, Math.round(d.kcal / 2));
+  isFalse('I5 非空周', d.empty);
+  const d0 = wr.weeklyDiet(meals, '2026-10-19', '2026-10-26'); // 上一自然周：[10-19, 10-26)，含周日那条
+  eq('I6 换周重算', [d0.count, d0.kcal], [1, 999]);
+  const dE = wr.weeklyDiet([], '2026-10-26', '2026-11-01');
+  isTrue('I7 空周标记', dE.empty && dE.days === 0 && dE.avgKcal === 0);
+  // calories 脏值兜底：null/负数按 0 计
+  const dDirty = wr.weeklyDiet([meal(ts(2026, 10, 28), null), meal(ts(2026, 10, 29), -50)], '2026-10-26', '2026-11-01');
+  eq('I8 脏 kcal 按 0 计', [dDirty.count, dDirty.kcal], [2, 0]);
+}
+
+console.log('\n[J] 每周体重聚合（weeklyWeight：三形态 + 跨周基线 + 排序兜底）');
+{
+  const rec = (date, w) => ({ date: date, weight: w });
+  // J1-J2：基线在上一周（跨周也如实给出差值）
+  const recs = [
+    rec('2026-10-20', 80.0),  // 上周
+    rec('2026-10-27', 79.2),  // 本周二
+    rec('2026-10-29', 79.0)   // 本周四（最新）
+  ];
+  const w1 = wr.weeklyWeight(recs, '2026-10-26', '2026-11-01');
+  eq('J1 最新=周四 79.0，本周 2 次', [w1.latest, w1.inWeek], [79, 2]);
+  eq('J2 跨周基线差值', [w1.delta, w1.down, w1.baseDate], [-0.2, true, '2026-10-27']);
+  // J3：乱序输入（restore/兜底）→ 排序后口径不变
+  const w2 = wr.weeklyWeight([recs[2], recs[0], recs[1]], '2026-10-26', '2026-11-01');
+  eq('J3 乱序输入结果一致', [w2.latest, w2.delta], [79, -0.2]);
+  // J4：本周没称 → off 形态，带最近一次
+  const w3 = wr.weeklyWeight([recs[0]], '2026-10-26', '2026-11-01');
+  eq('J4 本周未称', [w3.inWeek, w3.latest, w3.last.date, w3.last.w], [0, null, '2026-10-20', 80]);
+  // J5：从无记录
+  const w4 = wr.weeklyWeight([], '2026-10-26', '2026-11-01');
+  isFalse('J5 从无记录 any=false', w4.any);
+  // J6：本周首条记录（无基线）→ delta=null（首称不叫变化）
+  const w5 = wr.weeklyWeight([rec('2026-10-27', 79.2)], '2026-10-26', '2026-11-01');
+  eq('J6 首称无 delta', [w5.inWeek, w5.latest, w5.delta], [1, 79.2, null]);
+  // J7：脏输入过滤（weight 非数值 / 缺 date）
+  const w6 = wr.weeklyWeight([rec('2026-10-27', NaN), rec(null, 70), rec('2026-10-28', 78)], '2026-10-26', '2026-11-01');
+  eq('J7 脏数据只留合法条', [w6.inWeek, w6.latest], [1, 78]);
+}
+
 console.log('\n--------------------------------------------------------');
 console.log('weekly-report: pass=' + pass + '  fail=' + fail);
 if (fail > 0) process.exit(1);

@@ -6,6 +6,7 @@ const theme = require('../../utils/theme.js');
 const dateRange = require('../../utils/dateRange.js');
 const stats = require('../../utils/trainingStats.js');
 const wr = require('../../utils/weeklyReport.js');
+const nutrition = require('../../utils/nutrition.js');
 const shareCard = require('../../utils/shareCard.js');
 
 Page({
@@ -14,6 +15,9 @@ Page({
     off: 0,            // 0=本周，-1=上周……
     r: null,           // weeklyReport 输出（含 label/verdict/comment/对比/PR）
     rows: [],          // 本周场次视图模型（倒序展示）
+    wt: null,          // 本周体重视图模型（weeklyWeight → 三形态：week/off/none）
+    diet: null,        // 本周饮食视图模型（weeklyDiet）
+    dietRecKcal: 0,    // 每日推荐摄入（nutrition.recommendIntake 真源，仅展示）
     canNext: false,    // 已在「本周」时不可再往后翻
     // 分享卡弹层（出图流程与 training-review 组件同一套，仅去掉「合并/隐藏」选项）
     shareShow: false,
@@ -50,6 +54,34 @@ Page({
         isToday: l.date === dateRange.todayStr()
       }));
     this.setData({ r: r, rows: rows, canNext: off < 0 });
+    this.buildBodySection(g, r);
+  },
+
+  // 体重 / 饮食板块：聚合真源 = weeklyReport.weeklyWeight / weeklyDiet（与训练同一自然周口径）。
+  // 推荐摄入 = nutrition.recommendIntake（单源），只作日均对照展示，不参与任何判定。
+  buildBodySection(g, r) {
+    const w = wr.weeklyWeight(g.weightRecords || [], r.monStr, r.sunStr);
+    const wt = {
+      state: !w.any ? 'none' : (w.inWeek > 0 ? 'week' : 'off'),
+      latestTxt: w.latest != null ? w.latest.toFixed(1) : '',
+      latestDateTxt: w.latestDate ? wr.fmtShort(w.latestDate) : '', // 'MM.DD'
+      count: w.inWeek,
+      deltaTxt: w.delta == null ? '' : (w.delta > 0 ? '+' : '') + w.delta.toFixed(1),
+      down: !!w.down,
+      lastTxt: w.last ? w.last.w.toFixed(1) : '',
+      lastDateTxt: w.last ? wr.fmtShort(w.last.date) : ''
+    };
+    const d = wr.weeklyDiet(g.meals || [], r.monStr, r.sunStr);
+    this.setData({
+      wt: wt,
+      diet: d,
+      dietRecKcal: Math.round(nutrition.recommendIntake(g.profile || {}).kcal)
+    });
+  },
+
+  // 体重卡出口：体重记录页（普通页，navigateTo 直达）
+  goWeight() {
+    wx.navigateTo({ url: '/pages/weight-record/weight-record' });
   },
 
   prevWeek() {

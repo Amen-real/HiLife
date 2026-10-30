@@ -20,19 +20,29 @@
   background: var(--primary); border-radius: 999rpx; padding: 4rpx 14rpx;
 }
 
-/* ============== 卡片通用 ============== */
+/* ============== 卡片通用 ==============
+   页面自足、不引全局 .card：全局类自带 margin:24/32 与 .wk-body 的 padding/gap
+   叠成双层边距；此处自带与全局同规格的边框（--n-200 成对翻转化），边距全部交给容器。 */
 .wk-body { padding: 8rpx 31rpx 0; display: flex; flex-direction: column; gap: 20rpx; }
 .wk-card {
-  background: var(--card); border-radius: 24rpx;
+  background: var(--card); border: 1rpx solid var(--n-200);
+  border-radius: 24rpx;
   padding: 28rpx; box-shadow: var(--shadow-card);
 }
-.wk-sec-t { font-size: 24rpx; color: var(--text-weak); margin-bottom: 16rpx; }
+.wk-sec-t { font-size: 24rpx; color: var(--n-700); margin-bottom: 16rpx; }
+/* 体重/饮食卡的行头（标题 + 右侧箭头同行）与整卡可点 */
+.wk-rowhead { display: flex; align-items: center; justify-content: space-between; }
+.wk-rowhead .wk-sec-t { margin-bottom: 0; }
+.wk-go { width: 24rpx; height: 24rpx; }
+/* 小号大数字（体重/饮食主值：比达成块的 72rpx 收一档） */
+.wk-num-sm { font-size: 48rpx; font-weight: 800; color: var(--n-900); line-height: 1.2; font-variant-numeric: tabular-nums; }
+.wk-sub { font-size: 24rpx; color: var(--n-700); margin-top: 10rpx; line-height: 1.5; }
 
 /* ============== 达成块 ============== */
 .wk-top { display: flex; align-items: flex-end; justify-content: space-between; }
 .wk-big { display: flex; align-items: baseline; }
 .wk-num { font-size: 72rpx; font-weight: 800; color: var(--n-900); line-height: 1; font-variant-numeric: tabular-nums; }
-.wk-den { font-size: 30rpx; font-weight: 600; color: var(--text-weak); margin-left: 6rpx; }
+.wk-den { font-size: 30rpx; font-weight: 600; color: var(--n-700); margin-left: 6rpx; }
 .wk-verdict {
   font-size: 22rpx; font-weight: 600; padding: 8rpx 20rpx; border-radius: 999rpx;
 }
@@ -54,12 +64,12 @@
   background: var(--n-100); border-radius: 18rpx; padding: 20rpx 22rpx;
 }
 .cmp-v { font-size: 34rpx; font-weight: 800; color: var(--n-900); font-variant-numeric: tabular-nums; }
-.cmp-u { font-size: 20rpx; font-weight: 500; color: var(--text-weak); margin-left: 4rpx; }
-.cmp-k { font-size: 22rpx; color: var(--text-weak); margin-top: 8rpx; }
-.cmp-d { font-size: 22rpx; color: var(--text-weak); margin-top: 6rpx; font-variant-numeric: tabular-nums; }
+.cmp-u { font-size: 20rpx; font-weight: 500; color: var(--n-700); margin-left: 4rpx; }
+.cmp-k { font-size: 22rpx; color: var(--n-700); margin-top: 8rpx; }
+.cmp-d { font-size: 22rpx; color: var(--n-700); margin-top: 6rpx; font-variant-numeric: tabular-nums; }
 .cmp-d.up { color: var(--success-text, #4C7300); }
 .cmp-d.down { color: var(--danger-text); }
-.wk-fine { font-size: 22rpx; color: var(--text-weak); margin-top: 18rpx; }
+.wk-fine { font-size: 22rpx; color: var(--n-700); margin-top: 18rpx; }
 
 /* ============== 本周 PR ============== */
 .pr-row {
@@ -73,7 +83,7 @@
 }
 .pr-name { flex: 1; min-width: 0; font-size: 26rpx; font-weight: 600; color: var(--n-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pr-val { font-size: 26rpx; font-weight: 700; color: var(--n-900); font-variant-numeric: tabular-nums; }
-.pr-date { font-size: 20rpx; color: var(--text-weak); font-variant-numeric: tabular-nums; }
+.pr-date { font-size: 20rpx; color: var(--n-700); font-variant-numeric: tabular-nums; }
 
 /* ============== 本周场次 ============== */
 .row {
@@ -86,13 +96,13 @@
   font-size: 18rpx; font-weight: 600; color: var(--success-text, #4C7300);
   background: var(--primary-tint); border-radius: 999rpx; padding: 2rpx 10rpx;
 }
-.row-meta { flex: 1; min-width: 0; font-size: 22rpx; color: var(--text-weak); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-meta { flex: 1; min-width: 0; font-size: 22rpx; color: var(--n-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-go { width: 28rpx; height: 28rpx; flex-shrink: 0; }
 
 /* ============== 空周 ============== */
 .wk-empty { text-align: center; padding: 56rpx 28rpx; }
 .wk-empty-t { font-size: 28rpx; font-weight: 600; color: var(--n-900); }
-.wk-empty-s { font-size: 24rpx; color: var(--text-weak); margin-top: 10rpx; }
+.wk-empty-s { font-size: 24rpx; color: var(--n-700); margin-top: 10rpx; }
 
 /* 按压态 */
 .press { opacity: 0.7; }
@@ -126,7 +136,7 @@
   padding: 8rpx 22rpx; border-radius: 999rpx;
   background: var(--n-100); border: 1rpx solid var(--n-200);
 }
-.sh-close { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; color: var(--text-weak); font-size: 30rpx; }
+.sh-close { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; color: var(--n-700); font-size: 30rpx; }
 .sh-body {
   position: relative; margin: 20rpx 0;
   display: flex; align-items: center; justify-content: center;

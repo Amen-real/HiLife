@@ -12,9 +12,12 @@
     <view class="wk-nav {{canNext ? '' : 'dis'}}" hover-class="press" bindtap="nextWeek" aria-label="下一周">›</view>
   </view>
 
+<!-- 卡片一律只用 .wk-card（页面自足）：
+     全局 .card 自带 margin:24rpx 32rpx，会与 .wk-body 的 padding/gap 叠成双层边距
+     （两侧 31+32=63rpx，卡间 20+48=68rpx），故此处不引全局类，边距由容器统一管。 -->
   <view class="wk-body" wx:if="{{r}}">
     <!-- 达成块：X/Y + 进度条 + 评语（评语由 weeklyReport 按达成档生成，只陈述事实） -->
-    <view class="card wk-card">
+    <view class="wk-card">
       <view class="wk-top">
         <view class="wk-big">
           <text class="wk-num">{{r.sessions}}</text>
@@ -31,7 +34,7 @@
     </view>
 
     <!-- 对比上周（场次 ±N；容量 ±% 走 DELTA_SESSION 抑噪；上周为 0 不显示趋势） -->
-    <view class="card wk-card">
+    <view class="wk-card">
       <view class="wk-sec-t">对比上周</view>
       <view class="cmp-grid">
         <view class="cmp-item">
@@ -55,7 +58,7 @@
     </view>
 
     <!-- 本周 PR（weeklyReport：严格大于此前历史最高；首练不标） -->
-    <view class="card wk-card" wx:if="{{r.prs.length}}">
+    <view class="wk-card" wx:if="{{r.prs.length}}">
       <view class="wk-sec-t">本周亮点</view>
       <view class="pr-row" wx:for="{{r.prs}}" wx:key="name">
         <view class="pr-badge">PR</view>
@@ -66,7 +69,7 @@
     </view>
 
     <!-- 本周场次：点击 → 记录 tab 复盘并定位该天 -->
-    <view class="card wk-card" wx:if="{{rows.length}}">
+    <view class="wk-card" wx:if="{{rows.length}}">
       <view class="wk-sec-t">本周场次</view>
       <view class="row" wx:for="{{rows}}" wx:key="date" hover-class="press"
             bindtap="goReview" data-date="{{item.date}}" aria-label="查看 {{item.date}} 的复盘">
@@ -79,8 +82,39 @@
       </view>
     </view>
 
+    <!-- 本周体重：weeklyWeight 三形态（有称/未称/从无记录）；点卡 → 体重记录页 -->
+    <view class="wk-card wk-tap" hover-class="press" bindtap="goWeight" aria-label="查看体重记录">
+      <view class="wk-rowhead">
+        <text class="wk-sec-t">体重</text>
+        <view class="ico ico-arrowright ico--ink wk-go"></view>
+      </view>
+      <block wx:if="{{wt && wt.state === 'week'}}">
+        <view class="wk-big">
+          <text class="wk-num-sm">{{wt.latestTxt}}</text>
+          <text class="wk-den"> kg</text>
+        </view>
+        <view class="wk-sub" wx:if="{{wt.deltaTxt}}">较上次 {{wt.deltaTxt}} kg · 本周记录 {{wt.count}} 次</view>
+        <view class="wk-sub" wx:else>本周记录 {{wt.count}} 次（首次称重，暂无对比）</view>
+      </block>
+      <view class="wk-sub" wx:if="{{wt && wt.state === 'off'}}">本周没有称重 · 最近一次 {{wt.lastDateTxt}}（{{wt.lastTxt}} kg）</view>
+      <view class="wk-sub" wx:if="{{wt && wt.state === 'none'}}">还没有体重记录</view>
+    </view>
+
+    <!-- 本周饮食：weeklyDiet 聚合；日均对照推荐摄入（nutrition.recommendIntake 真源） -->
+    <view class="wk-card">
+      <view class="wk-sec-t">饮食</view>
+      <block wx:if="{{diet && !diet.empty}}">
+        <view class="wk-big">
+          <text class="wk-num-sm">{{diet.kcal}}</text>
+          <text class="wk-den"> 千卡</text>
+        </view>
+        <view class="wk-sub">记录 {{diet.days}} 天 · {{diet.count}} 条 · 日均 {{diet.avgKcal}} 千卡（建议 {{dietRecKcal}}）</view>
+      </block>
+      <view class="wk-sub" wx:if="{{diet && diet.empty}}">本周没有饮食记录</view>
+    </view>
+
     <!-- 空周：给出口（回「我的」计划行），不留死区块 -->
-    <view class="card wk-card wk-empty" wx:if="{{r.empty}}">
+    <view class="wk-card wk-empty" wx:if="{{r.empty}}">
       <view class="wk-empty-t">这一周没有训练记录</view>
       <view class="wk-empty-s">去「我的」页安排一场训练吧</view>
     </view>
