@@ -1,0 +1,88 @@
+%% 衡砺 · 订阅消息提醒 —— 类图
+classDiagram
+    %% ===== 小程序端 =====
+    class ReminderCloud {
+        %% utils/reminderCloud.js —— 云端唯一通道，所有出口失败静默
+        +TMPL_ID$ string
+        +buildSnapshot(gd, facts) Snapshot
+        +reportState(gd, facts) void
+        +requestGrant(gd) void
+        -callSync$(payload) void
+    }
+    class Snapshot {
+        %% 上报最小字段集（客户端算，云端只信）
+        +on boolean
+        +hour number
+        +intent boolean
+        +intentDate string
+        +lastTrainDate string
+        +quotaDelta number
+    }
+    class ReminderStore {
+        %% utils/store.js 既有字段，不新增本地字段
+        +reminderOn boolean
+        +reminderDismissedOn string
+        +reminderSnoozeOn string
+        +reminderHour number
+        +trainingLogs Log[]
+    }
+    class ReminderPure {
+        %% utils/reminder.js —— 判据唯一真源（只读消费）
+        +REMIND_HOURS$ number[]
+        +normalizeHour$(h) number
+        +shouldRemind$(opt) boolean
+        +buildReminder$(opt) ReminderState
+    }
+
+    ReminderCloud ..> ReminderPure : 读 REMIND_HOURS/normalizeHour
+    ReminderCloud ..> ReminderStore : 读 globalData 快照
+    ReminderCloud --> Snapshot : 产出
+    ReminderCloud ..> ReminderSyncFn : wx.cloud.callFunction
+
+    %% ===== 云端 =====
+    class ReminderSyncFn {
+        %% cloudfunctions/reminderSync/index.js 薄壳
+        +main(event, ctx) Result
+        -upsert(db, openid, patch) void
+    }
+    class SyncNormalize {
+        %% reminderSync/normalize.js 纯函数
+        +normalize$(payload, today) Patch
+        +applyQuota$(doc, delta) number
+    }
+    class ReminderUser {
+        %% 云数据库 reminderUsers 文档
+        +openid string
+        +on boolean
+        +hour number
+        +quota number
+        +intent boolean
+        +intentDate string
+        +lastTrainDate string
+        +lastPushDate string
+        +updatedAt Date
+    }
+    class ReminderPushFn {
+        %% cloudfunctions/reminderPush/index.js 薄壳
+        +main(event, ctx) Result
+        -sendOne(openapi, openid, cfg) boolean
+        -commit(db, openid, patch) void
+    }
+    class PushPicker {
+        %% reminderPush/picker.js 纯函数
+        +pick$(users, ctx) PickResult
+        -eligible$(u, ctx) boolean
+        -patchOf$(u) Patch
+    }
+    class PushCfg {
+        %% 模板 ID/字段：环境变量 TMPL_ID，常量兜底
+        +tmplId string
+        +page string
+        +dataKeys string[]
+    }
+
+    ReminderSyncFn ..> SyncNormalize : 归一/补丁
+    ReminderSyncFn --> ReminderUser : upsert
+    ReminderPushFn ..> PushPicker : 筛选/去重/扣减
+    ReminderPushFn --> ReminderUser : 读 + 写 quota/lastPushDate
+    ReminderPushFn ..> PushCfg : 读取

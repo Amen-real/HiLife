@@ -1,0 +1,9 @@
+{
+  "name": "reminderSync",
+  "version": "1.0.0",
+  "description": "订阅消息提醒：上报快照归一 + upsert reminderUsers",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

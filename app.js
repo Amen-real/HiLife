@@ -49,8 +49,12 @@ App({
     // 设置
     reminderOn: false,          // 「今日未训练提醒」总开关（语义与判据见 utils/reminder.js）
     reminderDismissedOn: '',    // 用户关掉提醒的日期 'YYYY-MM-DD'，跨天自动失效
-    reminderHour: 18,           // 提醒时刻档位（18/20/21，集合单源 reminder.REMIND_HOURS）
+    reminderHour: 18,           // 提醒时刻档位（18/19/20/21，集合单源 reminder.REMIND_HOURS）
     reminderSnoozeOn: '',       // 用户点「稍后再说」的日期 'YYYY-MM-DD'（当晚 21:00 起再提示）
+    // 订阅消息模板 ID：在公众平台申请「订阅消息」模板后填写（申请步骤见 docs/deploy-reminder.md）。
+    // 留空 = 订阅链路安全空转（requestGrant 不弹授权窗、云函数不下发）；申请后改这一处
+    // + 云函数 reminderPush 的环境变量 TMPL_ID，共两处。
+    reminderTmplId: '',
 
     // 视觉识别（多模态大模型）后端地址，**故意留空**。
     // 上线链路走云托管（下方 useCallContainer: true），根本不需要这个地址；

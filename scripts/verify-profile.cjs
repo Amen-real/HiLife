@@ -389,12 +389,20 @@ truthy(/bindtap="tapAccount"/.test(wxml), 'C9b 关于与数据有账号兜底行
 truthy(/class="ico ico-plus ico--ink p-avatar-add-i"/.test(wxml), 'C9c 未登录头像上有加号角标');
 
 /* C10 文案必须是「真做得到」的事：本机存储 + 导出导入换机。
-   禁词对应三个未实现的能力（无云端库、无账号体系、无自动迁移） */
+   禁词对应三个未实现的能力（无云端库、无账号体系、无自动迁移）。
+   扫描范围含 privacy.wxml：订阅消息推送的云端上报说明同样不许夸口（2026-11-05 随功能同批落地）。
+   privacyWxml 在此提前读取（C16 复用同一份，不重复读盘）。 */
+const privacyWxml = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxml'), 'utf8');
 const NOCLAIM = ['云备份', '跨设备同步', '换机自动恢复', '微信一键登录'];
+const C10_TARGETS = [['profile.wxml', wxml], ['profile.js', js], ['privacy.wxml', privacyWxml]];
 const claimed = [];
-NOCLAIM.forEach(w => { if (wxml.indexOf(w) >= 0 || js.indexOf(w) >= 0) claimed.push(w); });
-eq(claimed.length, 0, 'C10 未实现的云端承诺已从文案移除' + (claimed.length ? ' → 残留 ' + claimed.join(', ') : ''));
+NOCLAIM.forEach(w => {
+  C10_TARGETS.forEach(([name, src]) => { if (src.indexOf(w) >= 0) claimed.push(name + ' → ' + w); });
+});
+eq(claimed.length, 0, 'C10 未实现的云端承诺已从文案移除（profile.wxml / profile.js / privacy.wxml）'
+  + (claimed.length ? ' → 残留 ' + claimed.join(', ') : ''));
 truthy(wxml.indexOf('数据只存本机') >= 0, 'C10b 副标题写明「数据只存本机」');
+truthy(privacyWxml.indexOf('订阅消息推送说明') >= 0, 'C10c privacy.wxml 含「订阅消息推送说明」段（推送说明与实现同批落地，不许只上功能不改政策）');
 
 /* C11 处理函数齐备：点击头像/账号行必须有落点，否则点了没反应 */
 ['onIdTap', 'tapAccount', 'wechatLogin', 'onChooseAvatar'].forEach(fn => {
@@ -454,8 +462,8 @@ truthy(!/联系开发者/.test(wxmlCode), 'C14b 我的页不再有「联系开�
 truthy(!/\.mi-btn/.test(wxss), 'C15 .mi-btn 规则随 button 一起删除（不留死 CSS）');
 
 /* C16 隐私政策「六、联系我们」必须给出**真实可达**的联系方式 —— 原意的延续：
-   跨文件闭环（文案在 privacy.wxml、能力在 privacy.js），只改一边就是又一次空承诺。 */
-const privacyWxml = fs.readFileSync(path.join(ROOT, 'pages/privacy/privacy.wxml'), 'utf8');
+   跨文件闭环（文案在 privacy.wxml、能力在 privacy.js），只改一边就是又一次空承诺。
+   privacyWxml 已在 C10 提前读取。 */
 ['小程序内反馈渠道', '意见反馈入口'].forEach(w => {
   truthy(privacyWxml.indexOf(w) < 0, 'C16 privacy.wxml 不再出现无落点的空承诺：' + w);
 });

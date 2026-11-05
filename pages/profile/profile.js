@@ -12,6 +12,9 @@ const auth = require('../../utils/auth.js');
 // 文案里的时间阈值也取自它，避免「改了逻辑忘了改文案」两处漂移。
 const privacy = require('../../utils/privacy.js');
 const reminder = require('../../utils/reminder.js');
+// 订阅消息提醒的云端唯一通道：授权/上报全走它（页面不许直接 wx.cloud.callFunction），
+// 所有出口失败静默（红线），本地开关行为不受云端影响
+const reminderCloud = require('../../utils/reminderCloud.js');
 // 顶部安全区唯一真源（状态栏高度 + 微信胶囊度量）：Hero 大标题与胶囊同心的行高从这里算
 const navMetrics = require('../../utils/navMetrics.js');
 
@@ -295,34 +298,63 @@ Page({
     });
   },
 
+  // 订阅消息上报的「当日事实」采集：口径与首页 refresh 完全一致
+  // （todayPlan 是否有安排 / 今天有没有训练记录 / 自然周进度 dateRange / 周目标 weekTargetOf）。
+  // 这里只喂事实，intent 判据仍由唯一真源 utils/reminder.intentToday 计算，本页不复刻。
+  // ⚠️ QA Bug1（2026-11-05）：空事实会把云端当日 intent:true 覆盖成 false（当晚不下发，
+  // 直到下次打开首页才自愈）—— profile 内所有 reportState 调用点必须走这里，禁止传 {}。
+  reminderFacts() {
+    const g = store.get();
+    const logs = g.trainingLogs || [];
+    const today = dateRange.todayStr();
+    const wk = dateRange.weekRange(today);       // 自然周半开区间，与首页同一 dateRange 口径
+    let weekDone = 0;
+    logs.forEach(l => { if (l && dateRange.inRange(l.date, wk.monStr, wk.sunStr)) weekDone++; });
+    return {
+      hasPlan: !!todayPlan.resolveTodayPlan().hasPlan,
+      trainedToday: logs.some(l => l && l.date === today),
+      weekDone: weekDone,
+      weekTarget: stats.weekTargetOf(g.profile || {}, store.getActivePlan()).target
+    };
+  },
+
   // 今日未训练提醒：本地开关（落 store.reminderOn），由首页消费（见 utils/reminder.js）。
-  // 注意这里**不做推送**：真正的推送要服务端下发订阅消息，不在此承诺。
   // 提醒的真实语义是「你今天还没练」而不是「今天是训练日」——
   // 本仓「训练日」已被占用为模板里的 A/B/C 日，且没有「周几训练」的模型，详见 reminder.js 头部注释。
+  // v2（2026-11-05）：开启后可再授权订阅消息，在微信里收到训练提醒推送（授权/上报全静默失败）。
   tapReminder() {
     const on = !this.data.reminderOn;
     store.setReminder(on);
     this.setData({ reminderOn: on });
+    const g = getApp().globalData;
     if (on) {
       const hour = this.data.reminderHour || reminder.REMIND_HOUR;
       wx.showModal({
         title: '已开启今日未训练提醒',
-        content: '晚上 ' + hour + ':00 后，若今天该练还没练（本周没达标也算），首页会提示你。仅在小程序内提示，不发系统推送。',
+        content: '晚上 ' + hour + ':00 后，若今天该练还没练（本周没达标也算），首页会提示你。还可授权订阅消息，在微信里收到训练提醒。',
         confirmText: '知道了',
         showCancel: false
       });
+      // 订阅消息授权必须留在用户点击的同步调用栈内（合规红线，守卫锁定）；
+      // fire-and-forget：弹窗/上报失败均静默，不阻塞本地开关
+      reminderCloud.requestGrant(g);
+      reminderCloud.reportState(g, this.reminderFacts());
     } else {
       wx.showToast({ title: '已关闭今日未训练提醒', icon: 'none', duration: 1200 });
+      // 关闭 = 云端仅停用（on:false，intent 当日归 false），不动额度（quota 语义：决策③）
+      reminderCloud.reportState(g, this.reminderFacts());
     }
   },
 
-  // 提醒时刻档位（18/20/21）：picker 选择，落 store.reminderHour（合法性收口在 normalizeHour）
+  // 提醒时刻档位（18/19/20/21）：picker 选择，落 store.reminderHour（合法性收口在 normalizeHour）
   onPickReminderHour(e) {
     const h = reminder.REMIND_HOURS[Number(e.detail.value)];
     if (h == null) return;
     store.setReminderHour(h);
     this.setData({ reminderHour: h, hourIndex: reminder.REMIND_HOURS.indexOf(h) });
     wx.showToast({ title: '已改为 ' + h + ':00 提示', icon: 'none', duration: 1200 });
+    // 档位变化同步云端（失败静默；事实走 reminderFacts，防空事实覆盖当日 intent）
+    reminderCloud.reportState(getApp().globalData, this.reminderFacts());
   },
 
   refresh() {

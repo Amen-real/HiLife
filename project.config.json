@@ -35,6 +35,10 @@
         "type": "folder"
       },
       {
+        "value": "cloudfunctions",
+        "type": "folder"
+      },
+      {
         "value": "ui-redesign-preview.html",
         "type": "file"
       },
@@ -115,6 +119,7 @@
     }
   },
   "compileType": "miniprogram",
+  "cloudfunctionRoot": "cloudfunctions/",
   "libVersion": "3.0.0",
   "appid": "wx0d4d9fe07646ea15",
   "projectname": "uu-fitness",

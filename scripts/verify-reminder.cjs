@@ -136,6 +136,25 @@ console.log('\n[A6] 连续未练天数（文案分级的输入）');
   eq(TD(undefined, '2026-09-15'), 0, '脏输入不崩 → 0');
 }
 
+console.log('\n[A7] intentToday（云端快照的意图判据唯一真源：与时刻线无关）');
+{
+  const it = (over) => reminder.intentToday(Object.assign({
+    enabled: true, hasPlan: true, trainedToday: false, dismissedOn: '',
+    weekDone: 0, weekTarget: 0, today: '2026-09-15'
+  }, over));
+  truthy(it({}) === true, '基准（开启 + 有安排 + 没练 + 没关）→ true');
+  eq(it({ now: AT(10, 0) }), true, '10:00（18 点档之前）intentToday 也为 true（意图与时刻线无关）');
+  eq(reminder.shouldRemind(Object.assign(base(AT(10, 0)), {})), false,
+    '对照：同一时刻 shouldRemind=false（时刻线只属于 shouldRemind，不进 intentToday）');
+  eq(it({ trainedToday: true }), false, '今天已练 → false');
+  eq(it({ enabled: false }), false, '关开关 → false');
+  eq(it({ dismissedOn: '2026-09-15' }), false, '当天关掉过 → false');
+  truthy(it({ hasPlan: false, weekDone: 1, weekTarget: 3 }) === true, '没安排但周目标未达 → true（catchup）');
+  eq(it({ hasPlan: false, weekDone: 3, weekTarget: 3 }), false, '没安排且周目标已达成 → false');
+  eq(reminder.intentToday(undefined), false, '不传参数 → false（不崩）');
+  eq(reminder.intentToday({}), false, '空对象 → false（不崩）');
+}
+
 // ---------- [B] 文案组装 ----------
 console.log('\n[B] buildReminder：不展示时留空，展示时文案完整');
 {
@@ -307,8 +326,10 @@ console.log('\n[D] 术语红线：提醒相关文案禁出现「训练日」');
   const body = j < 0 ? '' : pj.slice(j, pj.indexOf('\n  },', j));
   truthy(body.length > 0, '取到 tapReminder 方法体');
   truthy(!body.includes('训练日'), 'tapReminder 的弹窗文案不含「训练日」');
-  truthy(!/推送/.test(body.replace(/不发系统推送/g, '')) === false || /不发系统推送/.test(body),
-    '弹窗明说「不发系统推送」（不暗示系统级提醒）');
+  // 订阅消息推送已上线（2026-11-05）：弹窗必须如实说明订阅消息授权，且不得再保留
+  // 「不发系统推送」的旧承诺 —— 推送能力存在后那句话就是假话（文案与能力一致的铁律）。
+  truthy(body.includes('订阅消息'), '弹窗说明订阅消息推送需授权（与新推送能力一致）');
+  truthy(!body.includes('不发系统推送'), '弹窗不再承诺「不发系统推送」（与已上线的订阅消息推送矛盾）');
 
   // 口径单源本体也不得引入撞车词（v2 新增的分级/catchup 文案同样受红线约束）。
   // 先剥注释：头部那段「为什么不是训练日提醒」的历史说明本身要提到这个词，不算违规。

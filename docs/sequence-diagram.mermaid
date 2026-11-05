@@ -1,0 +1,85 @@
+%% 衡砺 · 订阅消息提醒 —— 关键时序图合集
+%% 流程一：开关开启 → 授权攒额度（profile 页）
+sequenceDiagram
+    participant U as 用户
+    participant P as profile.js(tapReminder)
+    participant S as utils/store.js
+    participant C as utils/reminderCloud.js
+    participant W as wx.requestSubscribeMessage
+    participant F as 云函数 reminderSync
+    participant D as 云数据库 reminderUsers
+
+    U->>P: 点击提醒开关
+    P->>S: setReminder(on)
+    P->>C: reportState()（开关变更，同步栈内）
+    C->>C: buildSnapshot()（纯函数，读 globalData+训练事实）
+    C--xF: callFunction('reminderSync') 失败静默
+    alt on=true
+        P->>C: requestGrant()（同一 tap 同步栈内）
+        C->>W: requestSubscribeMessage(tmplIds)
+        W-->>C: accept（「总是保持」用户静默 accept）
+        C--xF: callFunction reminderSync {quotaDelta:1} 失败静默
+        F->>F: normalize() 纯函数归一
+        F->>D: quota+1，upsert on/hour/intent
+    end
+
+%% 流程二：完成训练 → 静默续额度（workout 页）
+sequenceDiagram
+    participant U as 用户
+    participant WO as workout.js(saveWorkout)
+    participant ST as utils/store.js
+    participant C as utils/reminderCloud.js
+    participant W as wx.requestSubscribeMessage
+    participant F as 云函数 reminderSync
+
+    U->>WO: 点击「完成训练」（tap 回调）
+    WO->>WO: auth.requireLogin() 通过
+    WO->>C: requestGrant()（★同步栈内、任何 setTimeout 之前）
+    C->>W: requestSubscribeMessage(tmplIds)
+    alt 勾选过「总是保持」
+        W-->>C: accept（无弹窗，静默）
+        C-->>F: callFunction {quotaDelta:1, trainedToday:true...}
+    else 未授权/拒绝/云失败
+        W-->>C: reject 或 fail
+        Note over C: 全部静默，只 console.warn
+    end
+    WO->>ST: saveTrainingLog()（与云端结果完全无关，永不阻塞）
+    WO->>C: reportState()（intent 变 false：今天已练）
+
+%% 流程三：整点定时下发（云函数 reminderPush）
+sequenceDiagram
+    participant T as 定时触发器(每小时整点)
+    participant P as reminderPush/index.js
+    participant K as picker.js(纯函数)
+    participant D as 云数据库 reminderUsers
+    participant O as cloud.openapi.subscribeMessage.send
+    participant MP as 小程序(训练 tab)
+
+    T->>P: 触发（cron 0 0 * * * * *）
+    P->>D: 查 on==true && quota>0 的文档
+    P->>K: pick(users, {hour: 当前小时, today: 今天串})
+    K-->>P: 精筛结果（hour匹配 && intent && intentDate==today<br/>&& lastTrainDate!=today && lastPushDate!=today）
+    loop 每个命中用户
+        P->>O: send(tmplId, page:'pages/training/training', data)
+        alt 发送成功
+            P->>D: quota-1 + lastPushDate=today
+            O->>MP: 订阅消息卡片
+            U->>MP: 点击卡片 → 落地训练 tab（冷启动直达）
+        else 发送失败(43101 等)
+            Note over P: 静默记录，不扣额度
+        end
+    end
+
+%% 流程四：首页快照上报（决策②核心通路）
+sequenceDiagram
+    participant H as home.js
+    participant C as utils/reminderCloud.js
+    participant F as 云函数 reminderSync
+    participant D as 云数据库
+
+    H->>H: refresh()（onShow/跨天/开关变更后）
+    H->>C: reportState()
+    C->>C: buildSnapshot()<br/>intent = 开 && 今天没练 && 今天没 dismiss<br/>&& (hasPlan || 周目标未达)
+    C--xF: callFunction reminderSync（失败静默）
+    F->>D: upsert {on, hour, intent, intentDate, lastTrainDate}
+    Note over D: 云函数只信上报值，不做任何判据重算

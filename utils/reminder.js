@@ -64,6 +64,34 @@ function gapDaysSinceTrain(trainDates, today) {
 }
 
 /**
+ * 当日「想不想被提醒」的意图判据 —— 云端快照上报的唯一真源（utils/reminderCloud 消费）。
+ * 与 shouldRemind 的差别：**不含时刻线**（时刻线只属于站内展示；云端整点触发天然按档位小时命中）。
+ *   enabled && !trainedToday && dismissedOn != today && (hasPlan || weekBehind)
+ * @param {object} opt
+ * @param {boolean} opt.enabled       提醒总开关
+ * @param {boolean} opt.trainedToday  今天已有训练记录
+ * @param {string}  opt.dismissedOn   用户点「今天不了」的日期串
+ * @param {boolean} opt.hasPlan       今天有训练安排
+ * @param {number}  opt.weekDone      本周已练天数
+ * @param {number}  opt.weekTarget    本周目标天数
+ * @param {Date}    opt.now           当前时刻（缺省 new Date()；仅用于推 today，不影响判据）
+ * @param {string}  opt.today         今天日期串（缺省从 now 推）
+ * @returns {boolean}
+ */
+function intentToday(opt) {
+  const o = opt || {};
+  if (!o.enabled) return false;        // 没开开关，永不打扰
+  if (o.trainedToday) return false;    // 今天已经练了
+  const now = o.now instanceof Date ? o.now : new Date();
+  const today = (typeof o.today === 'string' && o.today) ? o.today : dateRange.fmtDate(now);
+  if (String(o.dismissedOn || '') === today) return false;   // 当天关掉过 → 不再想被提醒
+  const wkT = Number(o.weekTarget) || 0;
+  const wkD = Number(o.weekDone) || 0;
+  const weekBehind = wkT > 0 && wkD < wkT;
+  return !!o.hasPlan || weekBehind;
+}
+
+/**
  * 是否应当展示提醒。
  * 传入一个「时刻快照」而非让它自己取 now —— 便于在 verify 里冻结时间做边界断言。
  * @param {object} opt
@@ -94,11 +122,8 @@ function shouldRemind(opt) {
     ? pastRemindHour(now, SNOOZE_HOUR)
     : pastRemindHour(now, o.remindHour);
   if (!pass) return false;
-  // 意图判据：今天有安排，或（没排课但）本周目标还没达成 —— 没排课也该补，别漏掉休息日的催练
-  const wkT = Number(o.weekTarget) || 0;
-  const wkD = Number(o.weekDone) || 0;
-  const weekBehind = wkT > 0 && wkD < wkT;
-  return !!o.hasPlan || weekBehind;
+  // 意图判据：唯一真源 intentToday（与 shouldRemind 共用同一段，勿在此复刻）
+  return intentToday(o);
 }
 
 /**
@@ -152,5 +177,5 @@ function buildReminder(opt) {
 
 module.exports = {
   REMIND_HOURS, REMIND_HOUR, REMIND_MINUTE, SNOOZE_HOUR,
-  normalizeHour, pastRemindHour, gapDaysSinceTrain, shouldRemind, buildReminder
+  normalizeHour, pastRemindHour, gapDaysSinceTrain, intentToday, shouldRemind, buildReminder
 };

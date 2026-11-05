@@ -1,0 +1,9 @@
+{
+  "name": "reminderPush",
+  "version": "1.0.0",
+  "description": "订阅消息提醒：定时筛选 + 下发 + 去重扣减",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

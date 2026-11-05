@@ -10,6 +10,8 @@ const exercises = require('../../utils/exercises.js');
 const workoutSession = require('../../utils/workoutSession.js');
 const actionPick = require('../../utils/actionPick.js');
 const theme = require('../../utils/theme.js');
+// 订阅消息提醒的云端唯一通道：完成训练时静默续额度 + 上报「今天已练」（全部出口失败静默）
+const reminderCloud = require('../../utils/reminderCloud.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 function fmtClock(sec) { sec = sec || 0; return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60); }
@@ -1133,6 +1135,9 @@ Page({
   saveWorkout(actions, after) {
     // 未登录 → 不保存、也不关确认卡：什么结果都没发生，卡片就不该凭空消失
     if (!auth.requireLogin()) return;
+    // 订阅消息静默续额度：完成训练是用户点击的同步调用栈（合规授权时机），
+    // 必须挂在任何 setTimeout 之前（守卫锁定）；fire-and-forget，弹窗/失败均静默，绝不阻塞本地保存
+    reminderCloud.requestGrant(getApp().globalData);
     this.setData({ showFinishCard: false });
     this._finished = true;
     // 整场总时长（墙上时间，与训练页顶部计时同源）：必须在 clear() 之前取——
@@ -1169,6 +1174,8 @@ Page({
       planId: plan ? plan.id : '',
       programId: plan ? (plan.programId || '') : ''
     });
+    // 落库后上报快照：今天已训练 → 云端 lastTrainDate=今天、intent 变 false（失败静默，不影响保存）
+    reminderCloud.reportState(getApp().globalData, { trainedToday: true });
     store.clearSelected();
     // 计划流：完成一次训练后把「今日计划」指针推进到同一模板的下一个训练日（A→B→C→A）。
     // 手动动作流（_woSource='manual'）不轮转；首页今日推荐随 activePlanId 变化。

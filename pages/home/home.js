@@ -12,6 +12,8 @@ const navMetrics = require('../../utils/navMetrics.js');
 const reminder = require('../../utils/reminder.js');
 // 周目标口径（daysPerWeek > weeklyTarget > 3）单源：提醒的 catchup 档要用
 const trainingStats = require('../../utils/trainingStats.js');
+// 订阅消息提醒的云端唯一通道：首页 refresh 时上报快照（intent 由 reminder.intentToday 算），失败静默
+const reminderCloud = require('../../utils/reminderCloud.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 // 首页背景图：本地 static/ 随包发布（即时显示，无网络往返）；加载异常时 onBgError 回退云端 cloud://
@@ -240,6 +242,15 @@ Page({
       // setData 完成后绘制折线图（canvas 节点已就绪）
       wx.nextTick(() => this.drawSpark());
     });
+
+    // —— 云端快照上报（订阅消息推送的数据源；所有出口失败静默，见 utils/reminderCloud.js）——
+    // 喂给 intentToday 的事实与上面提醒条同一套（判据唯一真源在 utils/reminder.js，这里只喂事实）
+    reminderCloud.reportState(getApp().globalData, {
+      hasPlan: !!suggest.hasPlan,
+      trainedToday: trainingDone,
+      weekDone: weekDone,
+      weekTarget: trainingStats.weekTargetOf(g.profile || {}, store.getActivePlan()).target
+    });
   },
 
   // 用 canvas 2d 绘制体重趋势折线图（对齐 01-home.html：荧光绿线 + 渐变填充 + 末点）
@@ -324,6 +335,8 @@ Page({
   closeReminder() {
     store.setReminderDismissed(dateRange.todayStr());
     this.setData({ 'reminder.show': false });
+    // 当天不再提醒 → 云端 intent:false（失败静默）
+    reminderCloud.reportState(getApp().globalData, {});
   },
 
   // 「稍后再说」：当晚再提示一次（再提示时刻单源 reminder.SNOOZE_HOUR，勿在此写死）。
@@ -331,6 +344,8 @@ Page({
   snoozeReminder() {
     store.setReminderSnooze(dateRange.todayStr());
     this.setData({ 'reminder.show': false });
+    // 站内提醒延后 → 云端当日 intent:false（失败静默）
+    reminderCloud.reportState(getApp().globalData, {});
   },
 
   // 提醒条 CTA：有安排（plan）→ 直进训练页（startPlan 原链路）；
