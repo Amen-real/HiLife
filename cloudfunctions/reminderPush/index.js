@@ -36,8 +36,8 @@ function cardData(hour) {
 }
 
 exports.main = async () => {
-  // 模板 ID 走环境变量 TMPL_ID：未配置 = 安全空转（不查库、不下发）
-  const tmplId = process.env.TMPL_ID || '';
+  // 模板 ID：环境变量 TMPL_ID 可覆盖；代码内兜底为已申请的正式模板（打卡提醒/健康管理，场景说明「今日未训练提醒」）。仍为空 = 安全空转（不查库、不下发）
+  const tmplId = process.env.TMPL_ID || '7V2V0M3wfM50vbeo97kY-MCdk0y1wWmqJK7mefbSGlU';
   if (!tmplId) return { ok: true, skipped: 'TMPL_ID 未配置，安全空转' };
 
   const now = new Date();

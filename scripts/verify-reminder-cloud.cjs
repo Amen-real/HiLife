@@ -258,7 +258,9 @@ console.log('\n[W] 小程序端接线 + 云函数结构');
   });
 
   // —— 占位常量 ——
-  truthy(/reminderTmplId\s*:\s*''/.test(SRC['app.js']), 'W22 app.js globalData 有 reminderTmplId 空占位');
+  truthy(/reminderTmplId\s*:\s*'[0-9A-Za-z_-]{20,}'/.test(SRC['app.js']), 'W22 app.js globalData 有 reminderTmplId 非空合法模板 ID');
+  truthy(/process\.env\.TMPL_ID\s*\|\|\s*'[0-9A-Za-z_-]{20,}'/.test(SRC['cloudfunctions/reminderPush/index.js'] || ''),
+    'W22b reminderPush 环境变量之外有真实模板 ID 兜底');
 }
 
 // —— 云函数结构：薄壳只做 IO，纯函数零 wx-server-sdk ——

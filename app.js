@@ -51,10 +51,11 @@ App({
     reminderDismissedOn: '',    // 用户关掉提醒的日期 'YYYY-MM-DD'，跨天自动失效
     reminderHour: 18,           // 提醒时刻档位（18/19/20/21，集合单源 reminder.REMIND_HOURS）
     reminderSnoozeOn: '',       // 用户点「稍后再说」的日期 'YYYY-MM-DD'（当晚 21:00 起再提示）
-    // 订阅消息模板 ID：在公众平台申请「订阅消息」模板后填写（申请步骤见 docs/deploy-reminder.md）。
-    // 留空 = 订阅链路安全空转（requestGrant 不弹授权窗、云函数不下发）；申请后改这一处
-    // + 云函数 reminderPush 的环境变量 TMPL_ID，共两处。
-    reminderTmplId: '',
+    // 订阅消息模板 ID：公众平台公共模板「打卡提醒」（健康管理类）已申请，
+    // 场景说明「今日未训练提醒」，关键词：提醒时间(time)/任务说明(thing)/打卡状态(thing)。
+    // 模板 ID 非机密，可入库；申请/配置步骤见 docs/deploy-reminder.md。
+    // 云函数 reminderPush 侧同值兜底（环境变量 TMPL_ID 可覆盖，未配置则用本值）。
+    reminderTmplId: '7V2V0M3wfM50vbeo97kY-MCdk0y1wWmqJK7mefbSGlU',
 
     // 视觉识别（多模态大模型）后端地址，**故意留空**。
     // 上线链路走云托管（下方 useCallContainer: true），根本不需要这个地址；

@@ -33,34 +33,33 @@
 
 7 段 cron（秒 分 时 日 月 星期 年）= **每小时整点**触发一次。可在云开发控制台「云函数 → reminderPush → 触发器」查看/调整；改 `config.json` 后需重新部署 reminderPush。
 
-### 4. 环境变量 TMPL_ID
+### 4. 环境变量 TMPL_ID（可选）
 
-云开发控制台 → 云函数 → `reminderPush` → 配置 → 环境变量，添加：
+模板 ID 已在代码内兜底（`reminderPush/index.js` + `app.js` 的 `reminderTmplId`，见下节），**环境变量为可覆盖项，非必配**：
+
+云开发控制台 → 云函数 → `reminderPush` → 配置 → 环境变量，如需覆盖再添加：
 
 | 键 | 值 |
 |---|---|
-| `TMPL_ID` | 订阅消息模板 ID（见下节申请；**未配置 = 安全空转**，不查库不下发） |
+| `TMPL_ID` | 订阅消息模板 ID（不配 = 用代码兜底值；填空串同样回落兜底） |
 
 ---
 
-## 二、订阅消息模板申请（一次性）
+## 二、订阅消息模板申请（已申请 ✅）
 
-1. 登录 [mp.weixin.qq.com](https://mp.weixin.qq.com) → **功能 → 订阅消息 → 公共模板库**；
-2. 搜索并选用「健身 / 运动打卡提醒」类模板；
-3. 字段建议（与 `reminderPush/index.js` 的 `cardData()` 一一对应）：
+**已选用「打卡提醒（健康管理）」类目模板**：场景说明「今日未训练提醒」，勾选三个关键词：提醒时间（time）/ 任务说明（thing）/ 打卡状态（thing）。
 
-| 字段 | 类型 | 内容建议 | 说明 |
+- **模板 ID（正式）**：`7V2V0M3wfM50vbeo97kY-MCdk0y1wWmqJK7mefbSGlU` —— 已填入 `app.js` 的 `globalData.reminderTmplId` 与 `reminderPush/index.js` 的兜底值，**无需再手动配置**；
+- ⚠️ **待确认字段键名**：`reminderPush/index.js` 的 `cardData()` 目前按占位结构 `thing1 / time2 / thing3` 填数据。请到 mp.weixin.qq.com「订阅消息 → 我的模板」打开该模板详情页，确认实际键名（如 `thing1/time2/thing3` 还是其他序号）。**键名不符会导致下发报 47003，全部静默失败**；确认后如不一致需同步改 `cardData()`；
+- 字段内容与建议：
+
+| 字段（占位） | 类型 | 内容建议 | 说明 |
 |---|---|---|---|
 | `thing1` | thing（≤20 字） | 今天还没训练，练一场吧 | 提醒文案 |
 | `time2` | time | 18:00 | 提醒时刻 |
 | `thing3` | thing（≤20 字） | 衡砺健身记录 · 训练提醒 | 状态副语 |
 
-4. 提交后等待审核通过，复制**模板 ID**；
-5. 填写两处（缺一不可）：
-   - `app.js` → `globalData.reminderTmplId`
-   - 云函数 `reminderPush` 环境变量 `TMPL_ID`（填完需在控制台「保存并重新部署」）
-
-> 两处任一为空时整条链路安全空转：客户端不弹授权窗、云函数不下发，无报错。
+> 若最终只选了 3 个关键词以外的组合（如没有 time 字段），按详情页实际键名与类型调整 `cardData()` 并同步守卫 `verify-reminder-cloud.cjs` 的 [W] 断言。
 
 ---
 
@@ -83,6 +82,6 @@
 | 现象 | 原因与处理 |
 |---|---|
 | 日志出现 `43101` | 用户未订阅 / 订阅额度耗尽。属预期：**静默跳过、不扣 quota、不写 lastPushDate** |
-| 一直不下发 | 依次检查：TMPL_ID 是否已配 → `reminderUsers` 里 `on/quota/intent/intentDate/hour` 是否满足 → 触发器是否生效 |
+| 一直不下发 | 依次检查：模板 ID 是否生效（代码已兜底，一般无需动；若配了环境变量 TMPL_ID 注意别填错）→ `reminderUsers` 里 `on/quota/intent/intentDate/hour` 是否满足 → 触发器是否生效 → 卡片键名是否与模板详情页一致（不一致报 47003） |
 | 点击卡片没落到训练 tab | 训练页是 tabBar 页，主流基础库支持冷启动直达；若个别版本异常，备选方案是新增非 tab 中转页（当前未建，避免无用页面进包） |
 | 客户端开/关提醒没反应 | 云链路全静默（红线）：本地开关行为不受云端影响；排查 `reminderSync` 云函数日志即可 |
