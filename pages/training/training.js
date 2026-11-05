@@ -52,6 +52,11 @@ Page({
     // 训练中挑选模式（actionPick 交接）：横幅显示 + 点动作改为回传 workout
     pickMode: false,
     pickText: '',
+    // add 模式多选态：pickIds 是本页本地点选集（⚠️ 绝不写 store.selectedActions ——
+    // 那是训练中页来源签名的依据，动了会顶掉进行中的训练，见 toggleSelect 守卫注释）
+    pickMulti: false,
+    pickIds: {},
+    pickCount: 0,
     categories: ['全部', '胸部', '背部', '肩膀', '腿部', '手臂', '核心', '我的动作'],
     catIcons: { '全部': 'all', '胸部': 'chest', '背部': 'muscleback', '肩膀': 'shoulder', '腿部': 'leg', '手臂': 'arm', '核心': 'core', '我的动作': 'myaction' },
     activeCat: '全部',
@@ -88,15 +93,21 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1, theme: themeCls });
     }
-    // 训练中「添加/替换动作」挑选模式：workout 页 switchTab 过来、由本页点动作回传。
+    // 训练中「添加/替换动作」挑选模式：workout 页 switchTab 过来、由本页点选回传。
     // 状态以 actionPick 的意图为准（跨 tab onShow 反复进入都要正确显示/隐藏横幅）。
     const pick = actionPick.get();
+    // 新意图（ts 变化）→ 清空上一轮遗留的本地多选态；同一次挑选中途 onShow 反复进来则保留
+    if (pick && pick.ts !== this._pickTs) {
+      this._pickTs = pick.ts;
+      this.setData({ pickIds: {}, pickCount: 0 });
+    }
     this.setData({
       pickMode: !!pick,
+      pickMulti: !!pick && pick.mode === 'add',
       pickText: pick
         ? (pick.mode === 'replace'
           ? '正在替换「' + (pick.targetName || '动作') + '」— 点按动作完成替换'
-          : '正在挑选动作 — 点按动作添加到进行中的训练')
+          : '正在挑选动作 — 点选动作（可多选），完成后点「完成挑选」')
         : ''
     });
     // 挑选模式下收起上次遗留在本页的「已选动作」面板/悬浮气泡：面板里的
@@ -274,8 +285,11 @@ Page({
     const id = e.currentTarget.dataset.id;
     const act = this.data.list.find(a => a.id === id);
     if (!act) return;
-    // 训练中挑选模式：点动作 = 记录原始库对象并回场 workout（不进详情页）
+    // 训练中挑选模式：
+    //   add（多选）→ 点卡片 = 切换本地点选，攒一批后「完成挑选」一键回传
+    //   replace（单选）→ 点动作 = 记录原始库对象并立即回场 workout（不进详情页）
     if (this.data.pickMode) {
+      if (this.data.pickMulti) { this.togglePick(e); return; }
       const raw = this._rawById && this._rawById[id];
       if (!raw) return;
       actionPick.fulfill(raw);
@@ -286,10 +300,38 @@ Page({
     wx.navigateTo({ url: '/pages/action-detail/action-detail' });
   },
 
-  // 取消挑选：清掉意图，横幅在下次 onShow（或本页 setData）后消失
+  // 多选点选切换：只动本页 pickIds（原始库对象从 _rawById 确认存在才计数，
+  // 防止把不在当前库索引里的 id 带进回传）。绝不写 store.selectedActions。
+  togglePick(e) {
+    if (!this.data.pickMode || !this.data.pickMulti) return;
+    const id = e.currentTarget.dataset.id;
+    if (!this._rawById || !this._rawById[id]) return;
+    const pickIds = Object.assign({}, this.data.pickIds);
+    if (pickIds[id]) delete pickIds[id]; else pickIds[id] = true;
+    this.setData({ pickIds: pickIds, pickCount: Object.keys(pickIds).length });
+  },
+
+  // 「完成挑选」：把本地点选的全部原始库对象一次性回传，回场 workout 逐个追加
+  confirmPick() {
+    if (!this.data.pickMode || !this.data.pickMulti) return;
+    const ids = Object.keys(this.data.pickIds);
+    if (!ids.length) {
+      wx.showToast({ title: '先点选要添加的动作', icon: 'none' });
+      return;
+    }
+    const raws = [];
+    ids.forEach(id => { const raw = this._rawById && this._rawById[id]; if (raw) raws.push(raw); });
+    if (!raws.length) return;
+    actionPick.fulfillMany(raws);
+    this.setData({ pickIds: {}, pickCount: 0 });
+    wx.navigateTo({ url: '/pages/workout/workout' });
+  },
+
+  // 取消挑选：清掉意图与本页多选态，横幅在下次 onShow（或本页 setData）后消失
   cancelPick() {
     actionPick.cancel();
-    this.setData({ pickMode: false, pickText: '' });
+    this._pickTs = null;
+    this.setData({ pickMode: false, pickText: '', pickMulti: false, pickIds: {}, pickCount: 0 });
   },
 
   toggleSelect(e) {

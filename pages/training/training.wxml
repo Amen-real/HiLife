@@ -95,6 +95,10 @@
         <view wx:if="{{!pickMode}}" class="add {{selectedIds[item.id] ? 'added' : ''}}" hover-class="op-press" catchtap="toggleSelect" data-id="{{item.id}}">
           <text>{{selectedIds[item.id] ? '✓' : '+'}}</text>
         </view>
+        <!-- add 挑选（多选）：圈位复用「+」的视觉语言，但只切本页 pickIds（不动 selectedActions） -->
+        <view wx:if="{{pickMulti}}" class="add {{pickIds[item.id] ? 'added' : ''}}" hover-class="op-press" catchtap="togglePick" data-id="{{item.id}}">
+          <text>{{pickIds[item.id] ? '✓' : '+'}}</text>
+        </view>
         <!-- 挑选模式下隐藏 🗑：删除自建动作会连带把该 id 从 selectedActions 剔除，
              回场来源签名失配顶掉进行中的训练（同「+」按钮的理由） -->
         <view wx:if="{{item.custom && !pickMode}}" class="del" hover-class="op-press" catchtap="deleteCustom" data-id="{{item.id}}" aria-label="删除动作">
@@ -119,6 +123,15 @@
   <!-- 双保险：行动栏已含 !pickMode，按钮再挂一层 —— 与 startTraining 的意图守卫呼应，
        防止未来行动栏条件被改漏时「开始训练」在挑选模式单独漏出 -->
   <button wx:if="{{!pickMode}}" class="ab-start {{selectedCount ? '' : 'disabled'}}" bindtap="startTraining">开始训练</button>
+</view>
+
+<!-- ============== 多选挑选底栏（add 挑选模式）：攒一批点选后一键回传，样式复用行动栏 ============== -->
+<view wx:if="{{pickMulti}}" class="action-bar">
+  <view class="ab-count">
+    <text class="ab-num">{{pickCount}}</text>
+    <text class="ab-label">已挑选动作</text>
+  </view>
+  <button class="ab-start {{pickCount ? '' : 'disabled'}}" bindtap="confirmPick">完成挑选</button>
 </view>
 
 <!-- ============== 创建动作弹窗 ============== -->

@@ -265,9 +265,12 @@ Page({
   // 把当前进度快照进全局会话（离开训练页前调用，确保悬浮窗与恢复为最新状态）
   // 仅更新动作/计划类字段；elapsed/running/startTs 由计时模型（markRunning/freeze/getElapsed）管理，不被覆盖
   snapshotSession() {
-    // 签名与 onLoad 保持一致：从当前会话动作列表推导
-    // （计划来源时 selectedActions 为空，不能再用它算签名；onLoad 时 sel 与 actions 的 id 一一对应）
-    const sig = (this.data.actions || []).map(a => a.id).sort().join(',');
+    // ⚠️ 不重算 signature：signature 是「来源签名」（会话创建时从 resolveWorkoutSource
+    // 推导一次，onLoad 写入）。用户在训练页内删除/添加/替换动作改变的是 sess.actions，
+    // 不是来源 —— 若在这里用当前动作列表覆盖 signature，下次 onLoad 的来源签名比对
+    // 必然失配 → 按来源全量重建 → 页内编辑（如删除动作）被回滚
+    // （2026-11-05 真机 bug：删动作 → 挑选回传 → 删掉的动作全部回来）。
+    // 来源本身合法变化时（挑选回传手动来源回写 selectedActions）由 refreshSessionSignature 显式同步。
     // 最小化倒计时球快照：离开页面（最小化成药丸）后球随页面销毁，回来时据此恢复
     let miniTimer = null;
     if (this.data.showTrain && this.data.trainMinimized) {
@@ -280,7 +283,6 @@ Page({
       miniTimer = { kind: 'rest', left: this.data.restLeft, total: this.data.restTotal, ts: Date.now() };
     }
     workoutSession.update({
-      signature: sig,
       actions: this.data.actions,
       planName: this.data.planName,
       expandedId: this.data.expandedId,
@@ -866,8 +868,9 @@ Page({
     if (removed && expandedId === removed.id) expandedId = null;
     const stats = this.decorate(actions, expandedId);
     this.setData({ actions, stats, expandedId, showActionMenu: false });
-    // 必须显式快照：signature 由动作 id 推导，删动作会改变签名。
-    // 若不重快照，下次 onLoad 的 resolveWorkoutSource 签名比对失配 → 页面重建 → 删除被回滚
+    // 快照保存删后的动作列表与组进度（elapsed/running 由计时模型保留）。
+    // signature 是「来源签名」、不随删除改变 → 下次 onLoad 来源签名仍匹配 →
+    // 恢复本会话 → 删除不会回滚（旧注释「防签名失配」的模型有误，机制见 snapshotSession）。
     this.snapshotSession();
     wx.showToast({ title: '已删除', icon: 'none' });
   },
@@ -905,47 +908,55 @@ Page({
   },
 
   // 回场后应用挑选结果（onLoad 恢复会话之后调用；一次性消费 actionPick）。
-  // 数据形状与原弹窗 selectAdd/selectReplacement 完全一致：
-  //   添加 = presetSets(raw) 的新卡；替换 = 保留 oldSets 只换动作档案；
+  // picked 统一为数组（actionPick.fulfill 单选 push / fulfillMany 多选确认，兼容旧单对象）。
+  //   添加（可多选）= 逐个追加 presetSets(raw) 的新卡，已在训练中的跳过（不产生重复项）；
+  //   替换（单选）= 取 picked[0]，保留 oldSets 只换动作档案；
   //   selectedActions 仅手动勾选来源回写（计划来源不污染训练页「已选动作」）。
   consumeActionPick() {
     const it = actionPick.consume();
-    if (!it || !it.picked) return;
-    const raw = it.picked;
+    if (!it) return;
+    const list = Array.isArray(it.picked) ? it.picked : (it.picked ? [it.picked] : []);
+    if (!list.length) return;
     const actions = this.data.actions.slice();
     if (it.mode === 'add') {
-      const existing = actions.findIndex(a => a.id === raw.id);
-      if (existing >= 0) {
-        // 点了已在训练中的动作：不重复添加，直接展开它的卡片
-        const stats = this.decorate(actions, raw.id);
-        this.setData({ expandedId: raw.id, stats });
-        wx.showToast({ title: '该动作已在训练中', icon: 'none' });
+      let added = 0, lastAdded = null, dupId = null;
+      list.forEach(raw => {
+        if (!raw) return;
+        if (actions.findIndex(a => a.id === raw.id) >= 0) { dupId = raw.id; return; }
+        actions.push({
+          id: raw.id,
+          name: raw.name,
+          nameZh: raw.nameZh || '',
+          category: raw.category || '',
+          equip: raw.equip || '',
+          image: raw.image ? media(raw.image) : '',
+          video: raw.video ? media(raw.video) : '',
+          perSetTimer: true,
+          sets: presetSets(raw)
+        });
+        // 同步追加到「已选动作」：仅手动勾选来源；计划来源不写 selectedActions
+        if (this._woSource !== 'plan') {
+          store.addSelected({
+            id: raw.id, name: raw.name, nameZh: raw.nameZh || '', category: raw.category || '',
+            image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
+          });
+        }
+        added++; lastAdded = raw.id;
+      });
+      if (!added) {
+        // 一个都没加成（全部重复）：不重复添加，展开其中一张已有的卡
+        const stats = this.decorate(actions, dupId);
+        this.setData({ expandedId: dupId, stats });
+        wx.showToast({ title: '所选动作已在训练中', icon: 'none' });
         return;
       }
-      actions.push({
-        id: raw.id,
-        name: raw.name,
-        nameZh: raw.nameZh || '',
-        category: raw.category || '',
-        equip: raw.equip || '',
-        image: raw.image ? media(raw.image) : '',
-        video: raw.video ? media(raw.video) : '',
-        perSetTimer: true,
-        sets: presetSets(raw)
-      });
-      // 同步追加到「已选动作」：仅手动勾选来源；计划来源不写 selectedActions
-      if (this._woSource !== 'plan') {
-        store.addSelected({
-          id: raw.id, name: raw.name, nameZh: raw.nameZh || '', category: raw.category || '',
-          image: raw.image || '', video: raw.video || '', emoji: raw.emoji || '', equip: raw.equip || '', part: raw.part || ''
-        });
-      }
-      const stats = this.decorate(actions, raw.id);
-      this.setData({ actions, total: actions.length, expandedId: raw.id, stats });
-      wx.showToast({ title: '已添加动作', icon: 'success' });
+      const stats = this.decorate(actions, lastAdded);
+      this.setData({ actions, total: actions.length, expandedId: lastAdded, stats });
+      wx.showToast({ title: added > 1 ? '已添加 ' + added + ' 个动作' : '已添加动作', icon: 'success' });
     } else if (it.mode === 'replace') {
+      const raw = list[0];
       const ai = actions.findIndex(a => a.id === it.targetId);
-      if (ai < 0 || raw.id === it.targetId) return; // 目标已被删 / 点的就是当前动作
+      if (ai < 0 || !raw || raw.id === it.targetId) return; // 目标已被删 / 点的就是当前动作
       const oldSets = actions[ai].sets; // 保留已有组数据
       actions[ai] = Object.assign({}, actions[ai], {
         id: raw.id,
@@ -970,8 +981,21 @@ Page({
       this.setData({ actions, expandedId, stats });
       wx.showToast({ title: '已替换动作', icon: 'success' });
     }
-    // 添加/替换都会改变动作 id 组成（签名），立即重快照，避免页面销毁时签名与源失配
+    // 添加/替换都会改变动作列表，立即重快照保存组进度（signature 是来源签名，
+    // 不在这里覆盖 —— 见 snapshotSession 注释）
     this.snapshotSession();
+    // 手动来源：上面回写 selectedActions 改变了「来源本身」→ 同步会话的来源签名，
+    // 否则下次 onLoad 比对失配 → 按来源全量重建 → 本次会话的组进度丢失。
+    // 计划来源无回写，签名天然不变（计划被外部改动则按新计划重建，属预期）。
+    if (this._woSource !== 'plan') this.refreshSessionSignature();
+  },
+
+  // 把会话签名同步为「当前来源」的签名（口径与 onLoad 一致：来源动作 id 排序拼接）。
+  // 仅在页面自身通过 addSelected/removeSelected 合法改变了来源时调用（挑选回传手动来源）。
+  refreshSessionSignature() {
+    const src = this.resolveWorkoutSource();
+    const sig = src.actions.map(a => a.id).sort().join(',');
+    workoutSession.update({ signature: sig });
   },
 
   // 最小化当前页面：保存进度 → 真正离开训练页（返回上一页/训练 tab），
