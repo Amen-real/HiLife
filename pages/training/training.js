@@ -99,6 +99,9 @@ Page({
           : '正在挑选动作 — 点按动作添加到进行中的训练')
         : ''
     });
+    // 挑选模式下收起上次遗留在本页的「已选动作」面板/悬浮气泡：面板里的
+    // 修改/删除会动 store.selectedActions，与挑选回传语义冲突（理由同 toggleSelect 守卫）。
+    if (pick) this.setData({ showSelPanel: false, selMinimized: false });
     this.syncState();
     this.computeCounts();
     this.computeEquips();   // 器械条随 onShow 重算（动作库可能已变）
@@ -290,6 +293,13 @@ Page({
   },
 
   toggleSelect(e) {
+    // 挑选模式下禁用「+」勾选：selectedActions 是训练中页来源解析（签名）的依据，
+    // 挑选途中改它会让回场签名失配 → onLoad 按已选动作重建 → 进行中的训练被顶掉。
+    // 挑选模式只允许「点卡片回传」一条路（+ 按钮在 pickMode 已隐藏，这里是兜底）。
+    if (this.data.pickMode) {
+      wx.showToast({ title: '正在为进行中的训练挑选动作——点按动作即可添加', icon: 'none' });
+      return;
+    }
     if (!auth.requireLogin()) return;
     const id = e.currentTarget.dataset.id;
     const act = this.data.list.find(a => a.id === id);
@@ -367,6 +377,10 @@ Page({
   },
   // 保存并直接加入本次训练
   submitAndUse() {
+    // 挑选模式下没有「本次训练」可加：addSelected 会改 store.selectedActions，
+    // 回场来源解析签名失配 → 顶掉进行中的训练。退化为仅保存进「我的动作」，
+    // 用户仍可点按该动作把它加进进行中的训练。
+    if (this.data.pickMode) { this.submitCreate(); return; }
     if (!auth.requireLogin()) return;
     const name = this.data.newName.trim();
     if (!name) { wx.showToast({ title: '请输入动作名称', icon: 'none' }); return; }
@@ -481,6 +495,13 @@ Page({
 
   // 删除手动添加的动作（仅「我的动作」中的自建动作有此按钮）
   deleteCustom(e) {
+    // 挑选模式下禁删：removeCustomAction 会把该 id 从 selectedActions 一并剔除，
+    // 回场来源解析签名失配 → 训练中页按已选动作重建 → 进行中的训练被顶掉。
+    // （🗑 按钮在 pickMode 已隐藏，这里是兜底。）
+    if (this.data.pickMode) {
+      wx.showToast({ title: '正在为进行中的训练挑选动作——点按动作即可添加', icon: 'none' });
+      return;
+    }
     if (!auth.requireLogin()) return;
     const id = e.currentTarget.dataset.id;
     const act = this.data.list.find(a => a.id === id);
@@ -502,9 +523,14 @@ Page({
 
   startTraining() {
     if (!auth.requireLogin()) return;
-    // 挑选模式是「为进行中的训练选动作」，走「开始训练」= 放弃挑选、开一场新训练，
-    // 必须先清意图，否则新训练 onLoad 会误消费旧挑选结果
-    actionPick.cancel();
+    // 挑选守卫：actionPick 意图存在 = 有进行中的训练正等着回传动作，此时
+    // 开新训练会用行动栏里暂存的已选动作覆盖 workoutSession（进行中的那场丢失）。
+    // 行动栏/开始按钮在 pickMode 已隐藏（UI 守卫），这里再拦一道：任何残留路径
+    // （横幅取消的时序缝隙等）进来也只得到提示，而不是静默顶掉用户的训练。
+    if (actionPick.get()) {
+      wx.showToast({ title: '正在为进行中的训练挑选动作——点按动作即可添加', icon: 'none' });
+      return;
+    }
     let sel = store.get().selectedActions;
     if (!sel.length) {
       // 未选动作：自动预选各部位代表动作，保证「开始训练」一定能开练

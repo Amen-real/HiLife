@@ -91,10 +91,13 @@
         <view class="star {{favoriteIds[item.id] ? 'on' : ''}}" hover-class="op-press" catchtap="toggleFav" data-id="{{item.id}}">
           <view class="ico ico-{{favoriteIds[item.id] ? 'staron' : 'staroff'}} {{favoriteIds[item.id] ? 'ico--accent' : ''}}" style="width:40rpx;height:40rpx"></view>
         </view>
-        <view class="add {{selectedIds[item.id] ? 'added' : ''}}" hover-class="op-press" catchtap="toggleSelect" data-id="{{item.id}}">
+        <!-- 挑选模式下隐藏「+」：勾选会改 selectedActions，回场后来源签名失配顶掉进行中的训练 -->
+        <view wx:if="{{!pickMode}}" class="add {{selectedIds[item.id] ? 'added' : ''}}" hover-class="op-press" catchtap="toggleSelect" data-id="{{item.id}}">
           <text>{{selectedIds[item.id] ? '✓' : '+'}}</text>
         </view>
-        <view wx:if="{{item.custom}}" class="del" hover-class="op-press" catchtap="deleteCustom" data-id="{{item.id}}" aria-label="删除动作">
+        <!-- 挑选模式下隐藏 🗑：删除自建动作会连带把该 id 从 selectedActions 剔除，
+             回场来源签名失配顶掉进行中的训练（同「+」按钮的理由） -->
+        <view wx:if="{{item.custom && !pickMode}}" class="del" hover-class="op-press" catchtap="deleteCustom" data-id="{{item.id}}" aria-label="删除动作">
           <text class="del-glyph">🗑</text>
         </view>
       </view>
@@ -113,7 +116,9 @@
     <text class="ab-num">{{selectedCount}}</text>
     <text class="ab-label">已选动作</text>
   </view>
-  <button class="ab-start {{selectedCount ? '' : 'disabled'}}" bindtap="startTraining">开始训练</button>
+  <!-- 双保险：行动栏已含 !pickMode，按钮再挂一层 —— 与 startTraining 的意图守卫呼应，
+       防止未来行动栏条件被改漏时「开始训练」在挑选模式单独漏出 -->
+  <button wx:if="{{!pickMode}}" class="ab-start {{selectedCount ? '' : 'disabled'}}" bindtap="startTraining">开始训练</button>
 </view>
 
 <!-- ============== 创建动作弹窗 ============== -->
