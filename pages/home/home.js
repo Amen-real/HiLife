@@ -10,6 +10,8 @@ const dateRange = require('../../utils/dateRange.js');
 const navMetrics = require('../../utils/navMetrics.js');
 // 「今日未训练提醒」的口径真源：本页只负责展示与关闭，判据/文案一律读它（勿在此另写一套）
 const reminder = require('../../utils/reminder.js');
+// 周目标口径（daysPerWeek > weeklyTarget > 3）单源：提醒的 catchup 档要用
+const trainingStats = require('../../utils/trainingStats.js');
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 // 首页背景图：本地 static/ 随包发布（即时显示，无网络往返）；加载异常时 onBgError 回退云端 cloud://
@@ -188,16 +190,30 @@ Page({
     //    selectedActions 会被跨天重置清空，仅作无计划时的兜底数据源 —— 这些规则都收在 util 里。
     const suggest = todayPlan.resolveTodayPlan();
 
-    // —— 今日未训练提醒：开关（我的页）× 有安排 × 今天没练 × 已过晚间阈值 × 今天没关掉。
-    //    四个判据全在 utils/reminder.js，这里只把已有的事实喂进去：
-    //      trainingDone 就是上面算好的「今天有没有训练记录」，hasPlan 直接复用 suggest。
+    // —— 今日未训练提醒：开关（我的页）× 今天没练 × 今天没关掉 × 过时刻线（用户档位/稍后再说）× 有意图。
+    //    判据全在 utils/reminder.js，这里只把已有的事实喂进去：
+    //      trainingDone 就是上面算好的「今天有没有训练记录」，hasPlan 直接复用 suggest；
+    //      周进度用自然周口径（dateRange 单源）+ weekTargetOf（daysPerWeek > weeklyTarget > 3）——
+    //      没排课但周目标没达成的日子也提醒（catchup 档，CTA 跳训练 tab 补一场）；
+    //      trainDates 给 reminder 算「连续未练天数」做文案分级。
     //    故意在「今日推荐」之后展示：提醒说的就是这张卡上的事，放一起才可执行。
+    const trainDateSet = new Set();
+    g.trainingLogs.forEach(l => trainDateSet.add(l.date));
+    const wk = dateRange.weekRange(today);
+    let weekDone = 0;
+    g.trainingLogs.forEach(l => { if (dateRange.inRange(l.date, wk.monStr, wk.sunStr)) weekDone++; });
     const reminderState = reminder.buildReminder({
       now,
       enabled: !!g.reminderOn,
       hasPlan: !!suggest.hasPlan,
       trainedToday: trainingDone,
       dismissedOn: g.reminderDismissedOn,
+      snoozedOn: g.reminderSnoozeOn,
+      remindHour: g.reminderHour,
+      weekDone: weekDone,
+      weekTarget: trainingStats.weekTargetOf(g.profile || {}, store.getActivePlan()).target,
+      trainDates: trainDateSet,
+      today: today,
       plan: suggest
     });
 
@@ -308,6 +324,21 @@ Page({
   closeReminder() {
     store.setReminderDismissed(dateRange.todayStr());
     this.setData({ 'reminder.show': false });
+  },
+
+  // 「稍后再说」：当晚再提示一次（再提示时刻单源 reminder.SNOOZE_HOUR，勿在此写死）。
+  // 与 closeReminder 同款日期串语义，跨天自动失效。
+  snoozeReminder() {
+    store.setReminderSnooze(dateRange.todayStr());
+    this.setData({ 'reminder.show': false });
+  },
+
+  // 提醒条 CTA：有安排（plan）→ 直进训练页（startPlan 原链路）；
+  // 没排课的补练（catchup）→ 跳训练 tab 自由开练（计划页是规划意图，链路太重）
+  reminderGo() {
+    if (!auth.requireLogin()) return;
+    if (this.data.reminder.kind === 'catchup') { wx.switchTab({ url: '/pages/training/training' }); return; }
+    this.startPlan();
   },
 
   goWeight() { if (!auth.requireLogin()) return; wx.navigateTo({ url: '/pages/weight-record/weight-record?from=home' }); },

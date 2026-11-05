@@ -298,6 +298,13 @@
   display: grid; place-items: center;
 }
 .remind-x .ico { width: 26rpx; height: 26rpx; background-color: var(--n-500); }
+/* 稍后再说：当晚 21:00 起再提示一次。弱化字形（次级动作，主 CTA 是开始训练），
+   压 --primary-tint 亮底用 --n-700（小字对比度铁律：禁 --text-weak） */
+.remind-snooze {
+  flex: none;
+  font-size: 24rpx; font-weight: 600;
+  color: var(--n-700);
+}
 
 /* ============== 4 今日饮食 ============== */
 /* 标题前缀：绿竖条 + 右侧「查看详情」文字 + 标准 chev 箭头（复用 .section-label.with-arrow 的 flex 布局，箭头与「体重趋势」同款） */

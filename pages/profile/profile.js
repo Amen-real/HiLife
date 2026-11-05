@@ -168,6 +168,9 @@ Page({
     // 我的训练：首行 = 今日训练计划（mode: 'todo' 未完成 / 'done' 今日已完成 / 'empty' 空态）
     train: { show: false, mode: 'empty', tag: '', title: '', meta: '' },
     reminderOn: false,
+    // 提醒时刻档位：选项标签必须从 reminder.REMIND_HOURS 生成（守卫 [E]：时刻数字不散落页面）
+    hourLabels: reminder.REMIND_HOURS.map(function (h) { return h + ':00'; }),
+    hourIndex: 0,
     version: appVersion(),
     showDataMgr: false,
     showExportShare: false,
@@ -301,15 +304,25 @@ Page({
     store.setReminder(on);
     this.setData({ reminderOn: on });
     if (on) {
+      const hour = this.data.reminderHour || reminder.REMIND_HOUR;
       wx.showModal({
         title: '已开启今日未训练提醒',
-        content: '晚上 ' + reminder.REMIND_HOUR + ':00 后，若今天有安排但还没练，首页会提示你。仅在小程序内提示，不发系统推送。',
+        content: '晚上 ' + hour + ':00 后，若今天该练还没练（本周没达标也算），首页会提示你。仅在小程序内提示，不发系统推送。',
         confirmText: '知道了',
         showCancel: false
       });
     } else {
       wx.showToast({ title: '已关闭今日未训练提醒', icon: 'none', duration: 1200 });
     }
+  },
+
+  // 提醒时刻档位（18/20/21）：picker 选择，落 store.reminderHour（合法性收口在 normalizeHour）
+  onPickReminderHour(e) {
+    const h = reminder.REMIND_HOURS[Number(e.detail.value)];
+    if (h == null) return;
+    store.setReminderHour(h);
+    this.setData({ reminderHour: h, hourIndex: reminder.REMIND_HOURS.indexOf(h) });
+    wx.showToast({ title: '已改为 ' + h + ':00 提示', icon: 'none', duration: 1200 });
   },
 
   refresh() {
@@ -467,7 +480,9 @@ Page({
       bmi: bmiInfo,
       goal: goalInfo,
       train,
-      reminderOn: !!g.reminderOn
+      reminderOn: !!g.reminderOn,
+      reminderHour: reminder.normalizeHour(g.reminderHour),
+      hourIndex: reminder.REMIND_HOURS.indexOf(reminder.normalizeHour(g.reminderHour))
     });
   },
 
@@ -737,6 +752,8 @@ Page({
         g.customActions = [];
         g.reminderOn = false;
         g.reminderDismissedOn = '';
+        g.reminderHour = reminder.REMIND_HOUR;   // 档位回到默认（常量单源在 reminder.js）
+        g.reminderSnoozeOn = '';
         getApp().persist();
         wx.removeStorageSync('local_uid');
         wx.removeStorageSync('uu_fitness_backup');

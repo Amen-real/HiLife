@@ -49,6 +49,8 @@ App({
     // 设置
     reminderOn: false,          // 「今日未训练提醒」总开关（语义与判据见 utils/reminder.js）
     reminderDismissedOn: '',    // 用户关掉提醒的日期 'YYYY-MM-DD'，跨天自动失效
+    reminderHour: 18,           // 提醒时刻档位（18/20/21，集合单源 reminder.REMIND_HOURS）
+    reminderSnoozeOn: '',       // 用户点「稍后再说」的日期 'YYYY-MM-DD'（当晚 21:00 起再提示）
 
     // 视觉识别（多模态大模型）后端地址，**故意留空**。
     // 上线链路走云托管（下方 useCallContainer: true），根本不需要这个地址；

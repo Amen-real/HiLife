@@ -5,6 +5,8 @@
 const planRotation = require('./planRotation.js');
 // 日期串唯一真源：本文件所有「日期 ↔ 字符串」一律走它，不再自己碰 Date 的序列化
 const dateRange = require('./dateRange.js');
+// 提醒时刻档位的合法性收口（REMIND_HOURS 单源）；reminder 只依赖 dateRange，无环
+const reminder = require('./reminder.js');
 
 function app() {
   return getApp();
@@ -363,6 +365,20 @@ const store = {
   },
   setReminderDismissed(dateStr) {
     g().reminderDismissedOn = String(dateStr || '');
+    this.persist();
+  },
+  // 「稍后再说」：当天 21:00 前静音、21:00 起再提示一次（再提示时刻与判据单源在 reminder.js）。
+  // 同 dismissed 的日期串语义：跨天自动失效，无需清理逻辑。
+  getReminderSnooze() {
+    return String(g().reminderSnoozeOn || '');
+  },
+  setReminderSnooze(dateStr) {
+    g().reminderSnoozeOn = String(dateStr || '');
+    this.persist();
+  },
+  // 提醒时刻档位：合法性收口在 reminder.normalizeHour（档位集合单源 REMIND_HOURS）
+  setReminderHour(h) {
+    g().reminderHour = reminder.normalizeHour(h);
     this.persist();
   },
   // 本地登录：openid 字段在此存放本地匿名标识 local_uid（不关联真实微信身份）

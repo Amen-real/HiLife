@@ -226,9 +226,18 @@
       <view class="mi" bindtap="tapReminder">
         <view class="ico ico-clock ico--ink mi-i"></view>
         <view class="mi-t">今日未训练提醒</view>
-        <view class="mi-note">{{reminderOn ? '已开启 · 未练时提示' : '未开启'}}</view>
+        <view class="mi-note">{{reminderOn ? '已开启 · ' + reminderHour + ':00 提示' : '未开启'}}</view>
         <text class="mi-ar">›</text>
       </view>
+      <!-- 提醒时刻档位（仅开启后可见）：选项标签由 reminder.REMIND_HOURS 生成，不写死时刻数字 -->
+      <picker wx:if="{{reminderOn}}" mode="selector" range="{{hourLabels}}" value="{{hourIndex}}" bindchange="onPickReminderHour">
+        <view class="mi">
+          <view class="mi-i"></view>
+          <view class="mi-t">提醒时刻</view>
+          <view class="mi-note">{{reminderHour}}:00</view>
+          <text class="mi-ar">›</text>
+        </view>
+      </picker>
     </view>
   </view>
 
