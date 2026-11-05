@@ -31,6 +31,10 @@
         "type": "folder"
       },
       {
+        "value": "deliverables",
+        "type": "folder"
+      },
+      {
         "value": "ui-redesign-preview.html",
         "type": "file"
       },
