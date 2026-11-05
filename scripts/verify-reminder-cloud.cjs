@@ -300,6 +300,13 @@ console.log('\n[W] 小程序端接线 + 云函数结构');
   truthy(/\.set\(\s*\{/.test(code(syncIdx)), 'W33b 不存在时 doc(openid).set 建档（set 语义幂等）');
   truthy(!/\.add\(/.test(code(syncIdx)), 'W33c 不再使用 add（where+add 非原子，已废弃）');
   truthy(!/where\(\s*\{\s*_openid/.test(code(syncIdx)), 'W33d 不再按 _openid where 查询（改 doc(openid) 直取）');
+
+  // W34 卡片键名契约 —— 模板 518「打卡提醒」详情页实际键名；不符会 47003 静默全失败
+  truthy(/time13\s*:\s*\{\s*value/.test(code(pushIdx)), 'W34a cardData 用 time13（提醒时间）');
+  truthy(/thing8\s*:\s*\{\s*value/.test(code(pushIdx)), 'W34b cardData 用 thing8（任务说明）');
+  truthy(/phrase10\s*:\s*\{\s*value/.test(code(pushIdx)), 'W34c cardData 用 phrase10（打卡状态，phrase ≤5 字）');
+  truthy(!/thing1\s*:\s*\{\s*value|time2\s*:\s*\{\s*value|thing3\s*:\s*\{\s*value/.test(code(pushIdx)),
+    'W34d cardData 不再含旧占位键名 thing1/time2/thing3');
 }
 
 console.log('\npass=' + pass + '  fail=' + fail);

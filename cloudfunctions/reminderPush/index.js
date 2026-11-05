@@ -25,13 +25,13 @@ function nowHour(now) {
   return beijingNow(now).getUTCHours();
 }
 
-// 订阅消息卡片字段 —— 与 docs/deploy-reminder.md 的模板申请建议一一对应：
-// thing1 提醒文案（≤20 字）/ time2 提醒时刻 / thing3 状态副语（≤20 字）
+// 订阅消息卡片字段 —— 与「我的模板」详情页实际键名一一对应（模板 518「打卡提醒」，健康管理）：
+// time13 提醒时刻 / thing8 任务说明（thing ≤20 字）/ phrase10 打卡状态（phrase ≤5 字）
 function cardData(hour) {
   return {
-    thing1: { value: '今天还没训练，练一场吧' },
-    time2: { value: pad2(hour) + ':00' },
-    thing3: { value: '衡砺健身记录 · 训练提醒' }
+    time13: { value: pad2(hour) + ':00' },
+    thing8: { value: '今天还没训练，练一场吧' },
+    phrase10: { value: '待训练' }
   };
 }
 

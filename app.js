@@ -51,8 +51,8 @@ App({
     reminderDismissedOn: '',    // 用户关掉提醒的日期 'YYYY-MM-DD'，跨天自动失效
     reminderHour: 18,           // 提醒时刻档位（18/19/20/21，集合单源 reminder.REMIND_HOURS）
     reminderSnoozeOn: '',       // 用户点「稍后再说」的日期 'YYYY-MM-DD'（当晚 21:00 起再提示）
-    // 订阅消息模板 ID：公众平台公共模板「打卡提醒」（健康管理类）已申请，
-    // 场景说明「今日未训练提醒」，关键词：提醒时间(time)/任务说明(thing)/打卡状态(thing)。
+    // 订阅消息模板 ID：公众平台公共模板「打卡提醒」（健康管理类，模板编号 518）已申请，
+    // 场景说明「今日未训练提醒」，实际键名：提醒时间 time13 / 任务说明 thing8 / 打卡状态 phrase10（phrase ≤5 字）。
     // 模板 ID 非机密，可入库；申请/配置步骤见 docs/deploy-reminder.md。
     // 云函数 reminderPush 侧同值兜底（环境变量 TMPL_ID 可覆盖，未配置则用本值）。
     reminderTmplId: '7V2V0M3wfM50vbeo97kY-MCdk0y1wWmqJK7mefbSGlU',

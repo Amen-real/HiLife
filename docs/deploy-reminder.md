@@ -50,16 +50,15 @@
 **已选用「打卡提醒（健康管理）」类目模板**：场景说明「今日未训练提醒」，勾选三个关键词：提醒时间（time）/ 任务说明（thing）/ 打卡状态（thing）。
 
 - **模板 ID（正式）**：`7V2V0M3wfM50vbeo97kY-MCdk0y1wWmqJK7mefbSGlU` —— 已填入 `app.js` 的 `globalData.reminderTmplId` 与 `reminderPush/index.js` 的兜底值，**无需再手动配置**；
-- ⚠️ **待确认字段键名**：`reminderPush/index.js` 的 `cardData()` 目前按占位结构 `thing1 / time2 / thing3` 填数据。请到 mp.weixin.qq.com「订阅消息 → 我的模板」打开该模板详情页，确认实际键名（如 `thing1/time2/thing3` 还是其他序号）。**键名不符会导致下发报 47003，全部静默失败**；确认后如不一致需同步改 `cardData()`；
-- 字段内容与建议：
+- **字段键名（已按详情页核对 ✅）**：`reminderPush/index.js` 的 `cardData()` 按实际键名填数据：
 
-| 字段（占位） | 类型 | 内容建议 | 说明 |
-|---|---|---|---|
-| `thing1` | thing（≤20 字） | 今天还没训练，练一场吧 | 提醒文案 |
-| `time2` | time | 18:00 | 提醒时刻 |
-| `thing3` | thing（≤20 字） | 衡砺健身记录 · 训练提醒 | 状态副语 |
+| 关键词 | 类型 | 实际键名 | 内容 | 说明 |
+|---|---|---|---|---|
+| 提醒时间 | time | `time13` | 如 `18:00` | 档位时刻 |
+| 任务说明 | thing（≤20 字） | `thing8` | 今天还没训练，练一场吧 | 提醒文案 |
+| 打卡状态 | phrase（≤5 字） | `phrase10` | 待训练 | 状态短词 |
 
-> 若最终只选了 3 个关键词以外的组合（如没有 time 字段），按详情页实际键名与类型调整 `cardData()` 并同步守卫 `verify-reminder-cloud.cjs` 的 [W] 断言。
+> ⚠️ **打卡状态是 `phrase` 类型**（≤5 字），不是 thing；若改文案超过 5 字会被拒发。键名/类型变更须同步改 `cardData()` 与守卫 `verify-reminder-cloud.cjs` 的 W34 断言。
 
 ---
 
