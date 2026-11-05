@@ -85,7 +85,7 @@ console.log('\n[A2] 晚间阈值边界（18:00 起提醒）');
 
 console.log('\n[A3] 提醒时刻档位（用户可选 18/20/21）');
 {
-  eq(reminder.REMIND_HOURS.join(','), '18,20,21', 'REMIND_HOURS 档位集合');
+  eq(reminder.REMIND_HOURS.join(','), '18,19,20,21', 'REMIND_HOURS 档位集合');
   eq(reminder.normalizeHour(20), 20, 'normalizeHour 认合法档位');
   eq(reminder.normalizeHour('21'), 21, 'normalizeHour 认字符串档位');
   eq(reminder.normalizeHour(19), 18, '不在集合内的值回落默认档');
@@ -93,6 +93,9 @@ console.log('\n[A3] 提醒时刻档位（用户可选 18/20/21）');
   const at20 = (h, m) => reminder.shouldRemind(Object.assign(base(AT(h, m)), { remindHour: 20 }));
   eq(at20(19, 0), false, '档位 20 时 19:00 → false');
   eq(at20(20, 0), true, '档位 20 时 20:00 → true');
+  const at19 = (h, m) => reminder.shouldRemind(Object.assign(base(AT(h, m)), { remindHour: 19 }));
+  eq(at19(18, 30), false, '档位 19 时 18:30 → false');
+  eq(at19(19, 0), true, '档位 19 时 19:00 → true');
   eq(reminder.shouldRemind(Object.assign(base(AT(18, 0)), { remindHour: 21 })), false,
     '档位 21 时 18:00 → false（默认档已过线但用户选了 21）');
 }
@@ -318,8 +321,8 @@ console.log('\n[E] 阈值单源：时刻数字只能活在 utils/reminder.js');
   const rj = read('utils/reminder.js');
   const defs = rj.match(/REMIND_HOUR\s*=\s*18/g) || [];
   eq(defs.length, 1, 'reminder.js 中 REMIND_HOUR = 18 只定义一次');
-  truthy(Array.isArray(reminder.REMIND_HOURS) && reminder.REMIND_HOURS.length === 3,
-    'REMIND_HOURS 档位集合（18/20/21）');
+  truthy(Array.isArray(reminder.REMIND_HOURS) && reminder.REMIND_HOURS.length === 4,
+    'REMIND_HOURS 档位集合（18/19/20/21）');
   eq(reminder.SNOOZE_HOUR, 21, 'SNOOZE_HOUR 常量（稍后再说的再提示时刻）');
 
   // 文案里的时间必须来自常量/档位数据，不能自己写死

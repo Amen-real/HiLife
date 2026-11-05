@@ -25,7 +25,7 @@
 const dateRange = require('./dateRange.js');
 
 // 提醒时刻档位：「我的」页可选，改集合只改这里（页面选项必须从本常量生成，禁止散写死）。
-const REMIND_HOURS = [18, 20, 21];
+const REMIND_HOURS = [18, 19, 20, 21];
 // 默认档（早于这个点不提醒 —— 刚睡醒就催会招人烦）
 const REMIND_HOUR = 18;
 const REMIND_MINUTE = 0;
