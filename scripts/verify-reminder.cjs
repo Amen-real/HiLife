@@ -264,7 +264,7 @@ const PROFILE_WXML = 'pages/profile/profile.wxml';
   }
   truthy(/weekRange\s*\(/.test(homeJs) && /inRange\s*\(/.test(homeJs),
     '首页周进度走 dateRange 自然周口径（不另写周区间）');
-  truthy(/weekTargetOf\s*\(/.test(homeJs), '首页周目标读 trainingStats.weekTargetOf（daysPerWeek > weeklyTarget > 3 单源）');
+  truthy(/weekTargetOf\s*\(/.test(homeJs), '首页周目标读 trainingStats.weekTargetOf（用户显式设置 > daysPerWeek > 3 单源）');
   truthy(/snoozeReminder\s*\(/.test(homeJs) && /setReminderSnooze\s*\(/.test(homeJs),
     '首页有 snoozeReminder() 且落库');
   truthy(/setReminderSnooze\s*\(/.test(storeJs) && /getReminderSnooze\s*\(/.test(storeJs),

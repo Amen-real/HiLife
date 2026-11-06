@@ -10,7 +10,7 @@ const dateRange = require('../../utils/dateRange.js');
 const navMetrics = require('../../utils/navMetrics.js');
 // 「今日未训练提醒」的口径真源：本页只负责展示与关闭，判据/文案一律读它（勿在此另写一套）
 const reminder = require('../../utils/reminder.js');
-// 周目标口径（daysPerWeek > weeklyTarget > 3）单源：提醒的 catchup 档要用
+// 周目标口径（用户显式设置 > daysPerWeek > 3）单源：提醒的 catchup 档要用
 const trainingStats = require('../../utils/trainingStats.js');
 // 订阅消息提醒的云端唯一通道：首页 refresh 时上报快照（intent 由 reminder.intentToday 算），失败静默
 const reminderCloud = require('../../utils/reminderCloud.js');
@@ -195,7 +195,7 @@ Page({
     // —— 今日未训练提醒：开关（我的页）× 今天没练 × 今天没关掉 × 过时刻线（用户档位/稍后再说）× 有意图。
     //    判据全在 utils/reminder.js，这里只把已有的事实喂进去：
     //      trainingDone 就是上面算好的「今天有没有训练记录」，hasPlan 直接复用 suggest；
-    //      周进度用自然周口径（dateRange 单源）+ weekTargetOf（daysPerWeek > weeklyTarget > 3）——
+    //      周进度用自然周口径（dateRange 单源）+ weekTargetOf（用户显式设置 > daysPerWeek > 3）——
     //      没排课但周目标没达成的日子也提醒（catchup 档，CTA 跳训练 tab 补一场）；
     //      trainDates 给 reminder 算「连续未练天数」做文案分级。
     //    故意在「今日推荐」之后展示：提醒说的就是这张卡上的事，放一起才可执行。

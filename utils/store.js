@@ -231,8 +231,18 @@ const store = {
   },
   setActivePlan(id) {
     g().activePlanId = id;
+    this._seedWeeklyTarget(id);
     this.persist();
     return id;
+  },
+  // 激活计划时播种周目标（回填一次）：用户从未显式设置（weeklyTarget 空/0）时，
+  // 把计划 daysPerWeek 写进 profile.weeklyTarget，避免「5 天计划用户因没进过设置页而显示 3」。
+  // 此后设置页编辑永远优先（口径真源 trainingStats.weekTargetOf：用户显式 > 计划 > 默认 3）。
+  _seedWeeklyTarget(id) {
+    const plan = (g().trainingPlans || []).find(p => p.id === id);
+    const days = Math.round(Number(plan && plan.daysPerWeek)) || 0;
+    const cur = Number(g().profile && g().profile.weeklyTarget) || 0;
+    if (days > 0 && cur === 0) g().profile.weeklyTarget = days;
   },
   getActivePlan() {
     const id = g().activePlanId;
@@ -251,6 +261,7 @@ const store = {
     const sibs = this.getProgramPlans(programId);
     if (!sibs.length) return null;
     g().activePlanId = sibs[0].id;
+    this._seedWeeklyTarget(sibs[0].id);
     this.persist();
     return sibs[0];
   },
@@ -434,7 +445,8 @@ const store = {
     };
     wx.setStorageSync('uu_fitness_backup', backup);
     // 重置为默认值，使所有页面显示空状态
-    data.profile = { gender: '', goal: '减脂', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: 3, age: null, activityLevel: 'moderate', intakeOverride: null };
+    // weeklyTarget: null = 「从未显式设置」（激活计划时播种一次；显示回落默认 3，见 trainingStats.weekTargetOf）
+    data.profile = { gender: '', goal: '减脂', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: null, age: null, activityLevel: 'moderate', intakeOverride: null };
     data.weightRecords = [];
     data.trainingLogs = [];
     data.meals = [];

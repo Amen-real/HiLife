@@ -142,13 +142,15 @@ function effortText(avgRpe, hasRpe) {
   return '强度适中，稳步推进即可';
 }
 
-// 周训练目标优先级：计划（daysPerWeek）> 个人设置（profile.weeklyTarget）> 默认 3。
-// 由计划决定时 fromPlan=true，UI 需标注「由计划决定」，且此时不允许就地改（改的是计划）。
+// 周训练目标优先级（2026-11-06 反转）：用户显式设置（profile.weeklyTarget）> 计划（daysPerWeek）> 默认 3。
+// 设置页「每周训练目标」编辑后立即生效，不再被计划静默覆盖；
+// 计划 daysPerWeek 只在用户从未显式设置（null/0；激活计划时由 store 播种一次）时兜底。
+// fromPlan=true 表示当前值来自计划兜底（UI 可据此标注「由计划决定」）。
 function weekTargetOf(profile, activePlan) {
-  const planDays = activePlan ? num(activePlan.daysPerWeek) : 0;
-  if (planDays > 0) return { target: planDays, fromPlan: true };
   const p = profile ? num(profile.weeklyTarget) : 0;
   if (p > 0) return { target: p, fromPlan: false };
+  const planDays = activePlan ? num(activePlan.daysPerWeek) : 0;
+  if (planDays > 0) return { target: planDays, fromPlan: true };
   return { target: DEFAULT_WEEK_TARGET, fromPlan: false };
 }
 

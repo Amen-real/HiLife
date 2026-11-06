@@ -393,7 +393,7 @@ Page({
         });
       });
     });
-    // 周目标口径：计划 daysPerWeek > profile.weeklyTarget > 默认 3（单一真源在 trainingStats.weekTargetOf）
+    // 周目标口径：用户显式设置 > 计划 daysPerWeek > 默认 3（单一真源在 trainingStats.weekTargetOf）
     const weekTarget = stats.weekTargetOf(p, store.getActivePlan()).target;
     const totals = {
       days: trainDates.size,
@@ -773,7 +773,8 @@ Page({
         g.userInfo = { loggedIn: false, nickname: '', avatar: '' };
         // 与 utils/store.js logout() 里的重置对象保持完全一致（字段与默认值都对齐），
         // 否则两处默认值会各自漂移：此前此处缺 weeklyTarget/age/activityLevel/intakeOverride
-        g.profile = { gender: '', goal: '减脂', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: 3, age: null, activityLevel: 'moderate', intakeOverride: null };
+        // weeklyTarget: null =「从未显式设置」（与 store 重置默认一致；激活计划时播种一次）
+        g.profile = { gender: '', goal: '减脂', targetWeight: null, height: null, currentWeight: null, fitnessDays: 0, weeklyTarget: null, age: null, activityLevel: 'moderate', intakeOverride: null };
         g.selectedActions = [];
         g.trainingPlans = [];
         g.activePlanId = '';

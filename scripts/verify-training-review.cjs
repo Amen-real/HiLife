@@ -10,7 +10,7 @@
  *
  * 本脚本锁定修好后的口径（实现集中在 utils/dateRange.js + utils/trainingStats.js）：
  *   A. dateRange：自然周半开区间 [周一 00:00, 下周一 00:00) —— 含跨月/跨年/周日归属
- *   B. weekTargetOf：计划 daysPerWeek > 个人 weeklyTarget > 默认 3
+ *   B. weekTargetOf：用户 weeklyTarget > 计划 daysPerWeek > 默认 3（2026-11-06 反转：用户显式设置优先）
  *   C. buildVerdict：首次 / 有共同动作 / 无共同动作降级 / 彻底无可比 —— 四分支
  *   D. setsMetaOf：逐组聚合（均匀 / 12-10-8 / 旧日志退化）
  *   E. 单源常量：kcal 8 只有一处、旧的滚动 7 天 helper 已删除
@@ -73,19 +73,31 @@ isTrue('todayStr \u5f62\u72b6 YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(dateRange.
 eq('\u7a7a\u5165\u53c2\u4e0d\u5d29\uff08parseISO \u515c\u5e95\uff09',
   [typeof dateRange.parseISO('').getTime(), typeof dateRange.mondayOf('').getTime()], ['number', 'number']);
 
-/* ============ B. weekTargetOf —— 目标优先级 ============ */
-console.log('\n[B] weekTargetOf \u2014\u2014 \u8ba1\u5212 > \u4e2a\u4eba\u8bbe\u7f6e > \u9ed8\u8ba4 3');
-eq('\u6709\u8ba1\u5212 daysPerWeek \u2192 \u7528\u8ba1\u5212\u503c\u5e76\u6807 fromPlan',
-  stats.weekTargetOf({ weeklyTarget: 5 }, { daysPerWeek: 4 }), { target: 4, fromPlan: true });
-eq('\u65e0\u8ba1\u5212 \u2192 \u7528\u4e2a\u4eba\u8bbe\u7f6e',
+/* ============ B. weekTargetOf —— 目标优先级（2026-11-06 反转：用户显式设置优先） ============ */
+console.log('\n[B] weekTargetOf —— 用户显式设置 > 计划 > 默认 3');
+eq('用户显式设置赢过计划 daysPerWeek',
+  stats.weekTargetOf({ weeklyTarget: 5 }, { daysPerWeek: 4 }), { target: 5, fromPlan: false });
+eq('无计划 → 用个人设置',
   stats.weekTargetOf({ weeklyTarget: 5 }, null), { target: 5, fromPlan: false });
-eq('\u90fd\u6ca1\u6709 \u2192 \u9ed8\u8ba4 3',
+eq('都没有 → 默认 3',
   stats.weekTargetOf({}, null), { target: 3, fromPlan: false });
-eq('profile \u7f3a\u5931\u4e0d\u5d29', stats.weekTargetOf(null, null), { target: 3, fromPlan: false });
-eq('\u8ba1\u5212 daysPerWeek=0 \u2192 \u56de\u9000\u4e2a\u4eba\u8bbe\u7f6e',
-  stats.weekTargetOf({ weeklyTarget: 5 }, { daysPerWeek: 0 }), { target: 5, fromPlan: false });
-eq('\u8ba1\u5212 daysPerWeek \u5b57\u7b26\u4e32\u4e5f\u8ba4',
-  stats.weekTargetOf({ weeklyTarget: 5 }, { daysPerWeek: '3' }), { target: 3, fromPlan: true });
+eq('profile 缺失不崩', stats.weekTargetOf(null, null), { target: 3, fromPlan: false });
+eq('计划 daysPerWeek=0 且无个人设置 → 默认 3',
+  stats.weekTargetOf({}, { daysPerWeek: 0 }), { target: 3, fromPlan: false });
+eq('从未显式设置（null）→ 计划兜底并标 fromPlan',
+  stats.weekTargetOf({ weeklyTarget: null }, { daysPerWeek: 4 }), { target: 4, fromPlan: true });
+eq('从未显式设置（0）→ 计划兜底',
+  stats.weekTargetOf({ weeklyTarget: 0 }, { daysPerWeek: 4 }), { target: 4, fromPlan: true });
+eq('计划 daysPerWeek 字符串也认（个人同样缺省时）',
+  stats.weekTargetOf({}, { daysPerWeek: '3' }), { target: 3, fromPlan: true });
+
+// 播种契约（激活计划回填一次）：store.setActivePlan / setActiveProgram 都必须走 _seedWeeklyTarget，
+// 且播种只在「从未显式设置」（cur===0）时发生 —— 防止激活计划悄悄覆盖用户已设目标
+const storeSrc = read('utils/store.js');
+// 注意 [^}]* 不跨闭括号：防止正则越过函数体、匹配到 _seedWeeklyTarget 方法定义本身（假绿，变异测试抓出过）
+isTrue('store.setActivePlan 调 _seedWeeklyTarget', /setActivePlan\(id\)\s*\{[^}]*_seedWeeklyTarget\(id\)/.test(storeSrc));
+isTrue('store.setActiveProgram 调 _seedWeeklyTarget', /setActiveProgram\(programId\)\s*\{[^}]*_seedWeeklyTarget\(sibs\[0\]\.id\)/.test(storeSrc));
+isTrue('播种仅限从未显式设置（cur === 0 才写）', /days > 0 && cur === 0\)\s*g\(\)\.profile\.weeklyTarget = days/.test(storeSrc));
 
 // 合法区间单源：输入框 / store / 未来首页进度卡都走这一个口径
 eq('clampWeekTarget(5) = 5', stats.clampWeekTarget(5), 5);

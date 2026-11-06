@@ -3,7 +3,7 @@
 //
 // 口径单源（零新口径，全部复用现有真源）：
 //   · 自然周 = dateRange.weekRangeOffset（周一 00:00 起，半开 [monStr, sunStr)）；
-//   · 周目标 = trainingStats.weekTargetOf（计划 daysPerWeek > 个人设置 > 默认 3）；
+//   · 周目标 = trainingStats.weekTargetOf（用户显式设置 > 计划 daysPerWeek > 默认 3）；
 //   · 时长   = trainingStats.durationSecOfLog；容量 = trainingStats.loadOfLog；
 //   · 对比抑噪 = trainingStats.DELTA_SESSION（±5% 内记持平，抑制噪声抖动）；
 //   · 容量格式 = trainingStats.fmtVol（与「我的」页累计容量同一真源）。

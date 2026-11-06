@@ -353,7 +353,8 @@ Page({
 
   // 一键导入整套模板（主入口）：把全部训练日生成为「我的计划」卡片，
   // 默认激活第 0 天（A 日）；此后每完成一次训练自动轮转（见 store.advanceActivePlan）。
-  // 本周训练目标取自模板的 daysPerWeek（导入时已写入每个计划）。
+  // 激活时把模板 daysPerWeek 播种进用户周目标（store._seedWeeklyTarget，仅「从未显式设置」时；
+  // 此后设置页编辑永远优先，见 trainingStats.weekTargetOf）。
   importProgram(e) {
     if (!auth.requireLogin()) return;
     const pid = e.currentTarget.dataset.pid;
