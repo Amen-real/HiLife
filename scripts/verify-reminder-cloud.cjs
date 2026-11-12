@@ -291,6 +291,11 @@ console.log('\n[W] 小程序端接线 + 云函数结构');
     && cfg.triggers[0].type === 'timer'
     && cfg.triggers[0].config === '0 0 * * * * *',
     'W31 定时触发器 reminder-hourly 每小时整点（0 0 * * * * *）');
+  // W35 云调用权限声明 —— 缺失会报 invalid wx openapi access_token（2026-11-12 真机实测踩坑）；
+  // 官方要求 config.json permissions.openapi 显式声明接口，随上传更新（10 分钟缓存）
+  truthy(!!cfg && Array.isArray(cfg.permissions && cfg.permissions.openapi)
+    && cfg.permissions.openapi.indexOf('subscribeMessage.send') >= 0,
+    'W35 config.json 声明 permissions.openapi 含 subscribeMessage.send（缺了云调用拿不到 token）');
 
   truthy(/require\(['"]\.\/normalize\.js['"]\)/.test(code(syncIdx)), 'W32 薄壳复用 normalize 纯函数');
   truthy(/require\(['"]\.\/picker\.js['"]\)/.test(code(pushIdx)), 'W32b 薄壳复用 picker 纯函数');
