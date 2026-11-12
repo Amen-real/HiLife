@@ -278,7 +278,7 @@ console.log('\n[W] 小程序端接线 + 云函数结构');
   truthy(/serverDate/.test(code(syncIdx)), 'W26 updatedAt 用 db.serverDate()');
   truthy(/TMPL_ID/.test(code(pushIdx)), 'W27 reminderPush 读环境变量 TMPL_ID');
   truthy(/subscribeMessage\.send/.test(code(pushIdx)), 'W28 走 cloud.openapi.subscribeMessage.send');
-  truthy(/pages\/training\/training/.test(code(pushIdx)), 'W29 卡片落地训练 tab');
+  truthy(/pages\/home\/home/.test(code(pushIdx)), 'W29 卡片落地首页 tab');
   truthy(/lastPushDate/.test(code(pushIdx)) && /inc\(\s*-1\s*\)|\.quota,\s*-1|p\.quota/.test(code(pushIdx)),
     'W30 send 成功才扣额度 + 写 lastPushDate');
   truthy(/continue/.test(code(pushIdx)), 'W30b send 失败静默跳过（不扣额度）');

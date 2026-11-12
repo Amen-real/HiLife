@@ -7,8 +7,8 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 const COLL = 'reminderUsers';
-// 订阅消息落地页：训练 tab（tabBar 页，冷启动可直达；见 docs/deploy-reminder.md 的实测说明）
-const JUMP_PAGE = 'pages/training/training';
+// 订阅消息落地页：首页 tab（tabBar 页，冷启动可直达；见 docs/deploy-reminder.md 的实测说明）
+const JUMP_PAGE = 'pages/home/home';
 
 function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
